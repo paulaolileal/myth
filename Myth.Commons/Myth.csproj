@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Platforms>x64</Platforms>
+    <Version>1.0.0.1-dev-7</Version>
+    <Authors>Paulo Leal</Authors>
+    <Description>Common functions for all myth projects</Description>
+    <RepositoryUrl>https://gitlab.com/harpy-framework/harpy</RepositoryUrl>
+    <PackageProjectUrl>https://gitlab.com/harpy-framework/harpy</PackageProjectUrl>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageOutputPath>$(AppData)/NuGet/Packages</PackageOutputPath>
+    <PackageId>Myth.Commons</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+  </ItemGroup>
+
+</Project>

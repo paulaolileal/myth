@@ -1,0 +1,24 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30128.74
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth", "Myth.Commons\Myth.csproj", "{F0B8E629-F5BC-4CDC-BC00-E469E8B963AD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F0B8E629-F5BC-4CDC-BC00-E469E8B963AD}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{F0B8E629-F5BC-4CDC-BC00-E469E8B963AD}.Debug|Any CPU.Build.0 = Debug|x64
+		{F0B8E629-F5BC-4CDC-BC00-E469E8B963AD}.Release|Any CPU.ActiveCfg = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {57C72C75-3DFD-47D6-BEBE-072183C4FAA7}
+	EndGlobalSection
+EndGlobal
