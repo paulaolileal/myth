@@ -3,12 +3,10 @@
 namespace Myth.ValueObjects {
 
     public class Pagination: ValueObject {
-        public int PageNumber { get; private set; }
-        public int PageSize { get; private set; }
+        public int PageNumber { get; set; }
+        public int PageSize { get; set; }
 
         public Pagination( ) {
-            PageNumber = -1;
-            PageSize = -1;
         }
 
         public Pagination( int startIndex, int pageSize ) {

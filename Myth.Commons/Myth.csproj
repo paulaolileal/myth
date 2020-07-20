@@ -4,7 +4,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Platforms>x64</Platforms>
-    <Version>1.0.0.4</Version>
+    <Version>1.0.0.7-dev-2</Version>
     <Authors>Paulo Leal</Authors>
     <Description>Common functions for all myth projects</Description>
     <RepositoryUrl>https://gitlab.com/harpy-framework/harpy</RepositoryUrl>
@@ -17,6 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="10.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>
 
@@ -26,5 +27,4 @@
       <PackagePath></PackagePath>
     </None>
   </ItemGroup>
-
 </Project>
