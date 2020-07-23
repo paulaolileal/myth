@@ -4,7 +4,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Platforms>x64</Platforms>
-    <Version>1.0.0.7-stage-01</Version>
+    <Version>1.0.0.7-stage-02</Version>
     <Authors>Paulo Leal</Authors>
     <Description>Common functions for all myth projects</Description>
     <RepositoryUrl>https://gitlab.com/harpy-framework/harpy</RepositoryUrl>
