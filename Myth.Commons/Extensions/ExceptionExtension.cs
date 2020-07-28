@@ -11,7 +11,7 @@ namespace Myth.Extensions {
 
         public static async Task<Exception> ThrowExceptionAsync( this HttpResponseMessage request, Exception exception = null ) {
             switch ( request.StatusCode ) {
-                case HttpStatusCode.NotFound: {
+                case HttpStatusCode.UnprocessableEntity: {
                     var validation = await request.GetResponse<ValidationResponse>( );
                     return new ValidationException( validation?.Errors, "Some validation errors were found" );
                 }

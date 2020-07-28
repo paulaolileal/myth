@@ -8,5 +8,9 @@ namespace Myth.ViewModels.Errors {
         public ValidationResponse( ) {
             Errors = new List<MessageResponse>( );
         }
+
+        public ValidationResponse( IEnumerable<MessageResponse> errors ) {
+            Errors = errors;
+        }
     }
 }
