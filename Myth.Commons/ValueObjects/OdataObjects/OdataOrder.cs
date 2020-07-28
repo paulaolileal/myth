@@ -8,11 +8,11 @@ using System.Linq.Expressions;
 namespace Myth.ValueObjects.OdataObjects {
 
     public class OdataOrder<TSource, TDest> {
-        public IEnumerable<string> Conditions { get; set; } = new List<string>( );
+        public IEnumerable<string> Order { get; set; } = new List<string>( );
 
-        public OdataOrder( IEnumerable<string> conditions ) {
-            if ( conditions != null )
-                Conditions = conditions;
+        public OdataOrder( IEnumerable<string> order ) {
+            if ( order != null )
+                Order = order;
         }
 
         public IEnumerable<OrderCondition<TDest>> Build( IMapper mapper ) {
@@ -20,7 +20,7 @@ namespace Myth.ValueObjects.OdataObjects {
 
             var conditions = new List<OrderCondition<TDest>>( );
 
-            foreach ( var item in Conditions.Where( x => !string.IsNullOrEmpty( x ) ) ) {
+            foreach ( var item in Order.Where( x => !string.IsNullOrEmpty( x ) ) ) {
                 var fields = item.Split( " ", StringSplitOptions.RemoveEmptyEntries );
 
                 var desc = false;

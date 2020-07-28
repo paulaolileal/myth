@@ -8,11 +8,11 @@ using System.Linq.Expressions;
 namespace Myth.ValueObjects.OdataObjects {
 
     public class OdataFilter<TSource, TDest> {
-        public IEnumerable<string> Conditions { get; set; } = new List<string>( );
+        public IEnumerable<string> Filter { get; set; } = new List<string>( );
 
-        public OdataFilter( IEnumerable<string> conditions ) {
-            if ( conditions != null )
-                Conditions = conditions;
+        public OdataFilter( IEnumerable<string> filter ) {
+            if ( filter != null )
+                Filter = filter;
         }
 
         public Expression<Func<TDest, bool>> Build( IMapper mapper ) {
@@ -20,7 +20,7 @@ namespace Myth.ValueObjects.OdataObjects {
 
             Expression expression = Expression.Constant( true );
 
-            foreach ( var item in Conditions.Where( x => !string.IsNullOrEmpty( x ) ) ) {
+            foreach ( var item in Filter.Where( x => !string.IsNullOrEmpty( x ) ) ) {
                 var data = item.Split( " ", StringSplitOptions.RemoveEmptyEntries );
 
                 var property = ExpressionExtension.GenerateNavigationProperty<TSource>( data[ 0 ], parameter );
