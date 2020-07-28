@@ -10,6 +10,11 @@ namespace Myth.ValueObjects.OdataObjects {
     public class OdataFilter<TSource, TDest> {
         public IEnumerable<string> Conditions { get; set; } = new List<string>( );
 
+        public OdataFilter( IEnumerable<string> conditions ) {
+            if ( conditions != null )
+                Conditions = conditions;
+        }
+
         public Expression<Func<TDest, bool>> Build( IMapper mapper ) {
             var parameter = Expression.Parameter( typeof( TSource ) );
 
@@ -20,7 +25,7 @@ namespace Myth.ValueObjects.OdataObjects {
 
                 var property = ExpressionExtension.GenerateNavigationProperty<TSource>( data[ 0 ], parameter );
 
-                var value = ExpressionExtension.GenerateConstant( data[ 2 ] );
+                var value = ExpressionExtension.GenerateConstant( data );
 
                 var condition = ConvertOperator( data[ 1 ], property, value );
 

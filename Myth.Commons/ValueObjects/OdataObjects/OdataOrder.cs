@@ -10,6 +10,11 @@ namespace Myth.ValueObjects.OdataObjects {
     public class OdataOrder<TSource, TDest> {
         public IEnumerable<string> Conditions { get; set; } = new List<string>( );
 
+        public OdataOrder( IEnumerable<string> conditions ) {
+            if ( conditions != null )
+                Conditions = conditions;
+        }
+
         public IEnumerable<OrderCondition<TDest>> Build( IMapper mapper ) {
             var parameter = Expression.Parameter( typeof( TSource ) );
 

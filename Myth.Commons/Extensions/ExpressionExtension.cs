@@ -54,5 +54,10 @@ namespace Myth.Extensions {
 
             return constant;
         }
+
+        public static ConstantExpression GenerateConstant( params string[ ] data ) {
+            var value = string.Join( " ", data.Skip( 2 ) );
+            return GenerateConstant( value );
+        }
     }
 }

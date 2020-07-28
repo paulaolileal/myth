@@ -9,8 +9,8 @@ namespace Myth.ValueObjects {
         public Pagination( ) {
         }
 
-        public Pagination( int startIndex, int pageSize ) {
-            PageNumber = startIndex;
+        public Pagination( int pageNumber, int pageSize ) {
+            PageNumber = pageNumber;
             PageSize = pageSize;
         }
 

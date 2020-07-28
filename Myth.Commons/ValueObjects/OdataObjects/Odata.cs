@@ -1,17 +1,24 @@
-﻿using AutoMapper;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace Myth.ValueObjects.OdataObjects {
 
-    public class Odata<TSource, TDest> {
-        public OdataFilter<TSource, TDest> Filter { get; set; }
-        public OdataOrder<TSource, TDest> Order { get; set; }
-        public Pagination Pagination { get; set; }
+    public class Odata<TDest> {
+        public IEnumerable<Order<TDest>> Order { get; set; }
+        public Filter<TDest> Filter { get; private set; }
+        public Pagination Pagination { get; private set; }
 
-        public OdataCast<TDest> Build( IMapper mapper ) {
-            var order = Order?.Build( mapper );
-            var filter = Filter?.Build( mapper );
+        public Odata( Expression<Func<TDest, bool>> filter, IEnumerable<OrderCondition<TDest>> orders, Pagination pagination ) {
+            if ( filter != null )
+                Filter = new Filter<TDest>( filter );
 
-            return new OdataCast<TDest>( filter, order, Pagination );
+            if ( orders != null )
+                Order = orders.Select( order => new Order<TDest>( order.Expression, order.Descending ) );
+
+            if ( pagination != null )
+                Pagination = pagination;
         }
     }
 }

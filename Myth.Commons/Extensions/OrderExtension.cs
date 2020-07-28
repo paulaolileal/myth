@@ -7,7 +7,7 @@ namespace Myth.Extensions {
     public static class OrderExtension {
 
         public static string Order( this string url, string condition ) =>
-             new String( url.Concat( $"{( url.Contains( "?" ) ? "&" : "?" )}Order.Conditions={condition}" ).ToArray( ) );
+             new String( url.Concat( $"{( url.Contains( "?" ) ? "&" : "?" )}Order={condition}" ).ToArray( ) );
 
         public static string Order( this string url, IEnumerable<string> orders ) {
             foreach ( var order in orders )
