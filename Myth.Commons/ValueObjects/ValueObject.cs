@@ -12,8 +12,7 @@ namespace Myth.ValueObjects {
             return left is null || left.Equals( right );
         }
 
-        public static bool operator !=( ValueObject left, ValueObject right ) =>
-             !( left == right );
+        public static bool operator !=( ValueObject left, ValueObject right ) => !( left == right );
 
         protected abstract IEnumerable<object> GetAtomicValues( );
 
@@ -42,5 +41,16 @@ namespace Myth.ValueObjects {
 
         public ValueObject GetCopy( ) =>
              this.MemberwiseClone( ) as ValueObject;
+
+        public static IEnumerable<TConstant> ToList<TConstant>() where TConstant : ValueObject {
+            var type = typeof( TConstant );
+            var constants = type
+                .GetProperties( )
+                .Where( prop => prop.PropertyType == type )
+                .Select( x => ( TConstant ) x.GetValue( type, null ) )
+                .ToList( );
+
+            return constants;
+        }
     }
 }
