@@ -7,7 +7,7 @@ namespace Myth.Extensions {
 
     public static class UrlExtension {
 
-        public static string ToQuery( this object value ) {
+        public static string ToQuery<T>( this T value ) {
             var properties = new Stack<PropertyInfo>( value.GetType( ).GetProperties( ) );
             var prop = properties.Pop( );
             var query = $"?{ prop.Name }={ prop.GetValueEncoded( value ) }";

@@ -19,13 +19,16 @@ namespace Myth.Extensions {
                     var error = await request.GetResponse<ExeceptionResponse>( );
                     return new ServerException( error.Message, error.StackTrace );
                 }
+                case HttpStatusCode.Unauthorized: {
+                    return new RequestException( request.StatusCode, request.RequestMessage.RequestUri, await request.Content.ReadAsStringAsync( ), "Not autorized!" );
+                }
                 default: {
                     return new RequestException( request.StatusCode, request.RequestMessage.RequestUri, await request.Content.ReadAsStringAsync( ), exception?.Message );
                 }
             }
         }
 
-        public static Exception ThrowExceptionAsync( this HttpClient client, Exception exception = null ) {
+        public static Exception ThrowException( this HttpClient client, Exception exception = null ) {
             return new RequestException( null, client.BaseAddress, default, exception.Message );
         }
     }
