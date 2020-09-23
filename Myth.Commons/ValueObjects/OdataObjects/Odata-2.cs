@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Myth.ValueObjects.QueryObjects;
 using System.Collections.Generic;
 
 namespace Myth.ValueObjects.OdataObjects {

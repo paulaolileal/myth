@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Myth.ValueObjects {
+namespace Myth.ValueObjects.QueryObjects {
 
     public class Pagination: ValueObject {
         public int PageNumber { get; set; }
@@ -23,6 +23,10 @@ namespace Myth.ValueObjects {
             PageNumber = -1,
             PageSize = -1
         };
+
+        public string Build( ) {
+            return $"PageNumber={PageNumber}&PageSize={PageSize}";
+        }
 
         protected override IEnumerable<object> GetAtomicValues( ) {
             yield return PageNumber;

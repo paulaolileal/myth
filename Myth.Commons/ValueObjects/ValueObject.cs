@@ -42,7 +42,7 @@ namespace Myth.ValueObjects {
         public ValueObject GetCopy( ) =>
              this.MemberwiseClone( ) as ValueObject;
 
-        public static IEnumerable<TConstant> ToList<TConstant>() where TConstant : ValueObject {
+        public static IEnumerable<TConstant> ToList<TConstant>( ) where TConstant : ValueObject {
             var type = typeof( TConstant );
             var constants = type
                 .GetProperties( )

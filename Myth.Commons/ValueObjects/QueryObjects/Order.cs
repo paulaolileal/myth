@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq.Expressions;
 
-namespace Myth.ValueObjects {
+namespace Myth.ValueObjects.QueryObjects {
 
     public class Order<TDest> {
         public Expression<Func<TDest, object>> OrderBy { get; private set; }
