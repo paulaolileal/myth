@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Platforms>x64</Platforms>
-    <Version>1.0.0.8-dev-14</Version>
+    <Version>1.0.0.8-dev-22</Version>
     <Authors>Paulo Leal</Authors>
     <Description>Common functions for all myth projects</Description>
     <RepositoryUrl>https://gitlab.com/harpy-framework/harpy</RepositoryUrl>

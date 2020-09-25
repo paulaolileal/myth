@@ -11,7 +11,7 @@ namespace Myth.ValueObjects.QueryObjects {
         public Filter<TDest> Filter { get; private set; }
         public Pagination Pagination { get; private set; }
 
-        public Odata( Expression<Func<TDest, bool>> filter, IEnumerable<OrderCondition<TDest>> orders, Pagination pagination ) {
+        public Odata( Expression<Func<TDest, bool>> filter = null, IEnumerable<OrderCondition<TDest>> orders = null, Pagination pagination = null ) {
             if ( filter != null )
                 Filter = new Filter<TDest>( filter );
 
@@ -21,5 +21,7 @@ namespace Myth.ValueObjects.QueryObjects {
             if ( pagination != null )
                 Pagination = pagination;
         }
+
+        public static Odata<TDest> Default = new Odata<TDest>( pagination: Pagination.All );
     }
 }

@@ -4,14 +4,19 @@ using System.Linq;
 namespace Myth.ValueObjects.RequestObjects {
 
     public class Odata<TViewModel> {
-        public Filter<TViewModel> Filter { get; private set; }
-        public Order<TViewModel> Order { get; private set; }
-        public Pagination Pagination { get; private set; }
+        public Filter<TViewModel> Filter { get; private set; } = new Filter<TViewModel>( );
+        public Order<TViewModel> Order { get; private set; } = new Order<TViewModel>( );
+        public Pagination Pagination { get; private set; } = new Pagination( );
 
-        public Odata( ) {
-            Filter = new Filter<TViewModel>( );
-            Order = new Order<TViewModel>( );
-            Pagination = new Pagination( );
+        public Odata( Filter<TViewModel> filter = null, Order<TViewModel> order = null, Pagination pagination = null ) {
+            if ( filter != null )
+                Filter = filter;
+
+            if ( order != null )
+                Order = order;
+
+            if ( pagination != null )
+                Pagination = pagination;
         }
 
         public void SetFilter( Filter<TViewModel> filter ) =>

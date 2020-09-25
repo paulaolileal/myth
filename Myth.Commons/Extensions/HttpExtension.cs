@@ -31,6 +31,9 @@ namespace Myth.Extensions {
         /// </summary>
         /// <returns>Task<HttpResponseMessage></returns>
         public static async Task<HttpResponseMessage> RequestAsync<TViewModel>( this HttpClient httpClient, string url, Odata<TViewModel> odata, CancellationToken cancellationToken = default ) {
+            if ( odata == null )
+                odata = new Odata<TViewModel>( );
+
             return await RequestAsync( httpClient, odata.Build( url ), cancellationToken );
         }
 
@@ -44,6 +47,21 @@ namespace Myth.Extensions {
 
             try {
                 request = await httpClient.PostAsync( url, new StringContent( JsonConvert.SerializeObject( body ), Encoding.UTF8, "application/json" ), cancellationToken );
+            } catch ( Exception exception ) {
+                await ThrowExceptionAsync( httpClient, request, exception );
+            }
+
+            return request;
+        }
+
+        public static async Task<HttpResponseMessage> RequestAsync<TRequest, TViewModel>( this HttpClient httpClient, string url, Odata<TViewModel> odata, TRequest body, CancellationToken cancellationToken = default ) {
+            HttpResponseMessage request = null;
+
+            if ( odata == null )
+                odata = new Odata<TViewModel>( );
+
+            try {
+                request = await httpClient.PostAsync( odata.Build( url ), new StringContent( JsonConvert.SerializeObject( body ), Encoding.UTF8, "application/json" ), cancellationToken );
             } catch ( Exception exception ) {
                 await ThrowExceptionAsync( httpClient, request, exception );
             }

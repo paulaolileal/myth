@@ -34,23 +34,22 @@ namespace Myth.Extensions {
             var value = values.FirstOrDefault( );
 
             var constant = Expression.Constant( value );
+            object castvalue = value;
 
-            if ( type == "int" || ( type == "" && value.All( x => char.IsDigit( x ) ) ) ) {
-                var @int = Convert.ToInt32( value );
-                constant = Expression.Constant( @int );
-            } else if ( type == "short" ) {
-                var @short = Convert.ToInt16( value );
-                constant = Expression.Constant( @short );
-            } else if ( type == "long" ) {
-                var @long = Convert.ToInt64( value );
-                constant = Expression.Constant( @long );
-            } else if ( type == "bool" || ( type == "" && value.ToLower( ) == "true" || value.ToLower( ) == "false" ) ) {
-                var @bool = Convert.ToBoolean( value );
-                constant = Expression.Constant( @bool );
-            } else if ( type == "char" ) {
-                var @char = Convert.ToChar( value );
-                constant = Expression.Constant( @char );
-            }
+            if ( type == "int" || ( type == "" && value.All( x => char.IsDigit( x ) ) ) )
+                castvalue = Convert.ToInt32( value );
+            else if ( type == "short" )
+                castvalue = Convert.ToInt16( value );
+            else if ( type == "long" )
+                castvalue = Convert.ToInt64( value );
+            else if ( type == "bool" || ( type == "" && value.ToLower( ) == "true" || value.ToLower( ) == "false" ) )
+                castvalue = Convert.ToBoolean( value );
+            else if ( type == "char" )
+                castvalue = Convert.ToChar( value );
+            else if ( value.ToLower( ) == "null" )
+                castvalue = null;
+
+            constant = Expression.Constant( castvalue );
 
             return constant;
         }

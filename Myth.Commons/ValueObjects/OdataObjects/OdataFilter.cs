@@ -23,9 +23,12 @@ namespace Myth.ValueObjects.OdataObjects {
             foreach ( var item in Filter.Where( x => !string.IsNullOrEmpty( x ) ) ) {
                 var data = item.Split( " ", StringSplitOptions.RemoveEmptyEntries );
 
-                var property = ExpressionExtension.GenerateNavigationProperty<TSource>( data[ 0 ], parameter );
+                MemberExpression property = ExpressionExtension.GenerateNavigationProperty<TSource>( data[ 0 ], parameter );
 
-                var value = ExpressionExtension.GenerateConstant( data );
+                Expression value = ExpressionExtension.GenerateConstant( data );
+
+                if ( property.Type.Name.Contains( nameof( Nullable ) ) )
+                    value = Expression.Convert( value, property.Type );
 
                 var condition = ConvertOperator( data[ 1 ], property, value );
 
