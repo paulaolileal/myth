@@ -4,15 +4,8 @@ namespace Myth.ValueObjects.QueryObjects {
 
     public class Pagination: ValueObject {
         public int PageNumber { get; set; }
+
         public int PageSize { get; set; }
-
-        public Pagination( ) {
-        }
-
-        public Pagination( int pageNumber, int pageSize ) {
-            PageNumber = pageNumber;
-            PageSize = pageSize;
-        }
 
         public static readonly Pagination Default = new Pagination {
             PageNumber = 0,
@@ -24,13 +17,21 @@ namespace Myth.ValueObjects.QueryObjects {
             PageSize = -1
         };
 
-        public string Build( ) {
-            return $"PageNumber={PageNumber}&PageSize={PageSize}";
+        public Pagination( ) {
+        }
+
+        public Pagination( int pageNumber, int pageSize ) {
+            PageNumber = pageNumber;
+            PageSize = pageSize;
         }
 
         protected override IEnumerable<object> GetAtomicValues( ) {
             yield return PageNumber;
             yield return PageSize;
+        }
+
+        public string Build( ) {
+            return $"PageNumber={PageNumber}&PageSize={PageSize}";
         }
     }
 }

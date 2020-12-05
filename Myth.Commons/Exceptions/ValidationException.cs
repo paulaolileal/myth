@@ -14,7 +14,7 @@ namespace Myth.Exceptions {
         }
 
         public ValidationException( string message, HttpStatusCode statusCode, params MessageResponse[ ] messages )
-            : base( message ) {
+                    : base( message ) {
             StatusCode = statusCode;
             Errors = new List<MessageResponse>( messages );
         }

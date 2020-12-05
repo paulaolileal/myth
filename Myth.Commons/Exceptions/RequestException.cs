@@ -5,7 +5,9 @@ namespace Myth.Exceptions {
 
     public class RequestException: Exception {
         public int? StatusCode { get; set; }
+
         public string Url { get; set; }
+
         public string Content { get; set; }
 
         protected RequestException( ) {

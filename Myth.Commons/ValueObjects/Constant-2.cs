@@ -9,19 +9,6 @@ namespace Myth.ValueObjects {
             Value2 = value2;
         }
 
-        public override string ToString( ) =>
-             Value.ToString( ) + " " + Value2.ToString( );
-
-        public virtual bool Equals( Constant<T1, T2> other ) =>
-             other.Value.ToString( ) == Value.ToString( ) &&
-             other.Value2.ToString( ) == Value2.ToString( );
-
-        public override int GetHashCode( ) =>
-             -1937169414 + EqualityComparer<T1>.Default.GetHashCode( Value );
-
-        public override bool Equals( object obj ) =>
-             base.Equals( obj );
-
         public static implicit operator T1( Constant<T1, T2> a ) =>
              a.Value;
 
@@ -33,5 +20,18 @@ namespace Myth.ValueObjects {
 
         public static bool operator ==( Constant<T1, T2> a, Constant<T1, T2> b ) =>
              a.ToString( ) == b.ToString( );
+
+        public override string ToString( ) =>
+                                             Value.ToString( ) + " " + Value2.ToString( );
+
+        public virtual bool Equals( Constant<T1, T2> other ) =>
+             other.Value.ToString( ) == Value.ToString( ) &&
+             other.Value2.ToString( ) == Value2.ToString( );
+
+        public override int GetHashCode( ) =>
+             -1937169414 + EqualityComparer<T1>.Default.GetHashCode( Value );
+
+        public override bool Equals( object obj ) =>
+             base.Equals( obj );
     }
 }

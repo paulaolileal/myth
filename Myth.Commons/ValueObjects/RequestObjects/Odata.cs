@@ -5,7 +5,9 @@ namespace Myth.ValueObjects.RequestObjects {
 
     public class Odata<TViewModel> {
         public Filter<TViewModel> Filter { get; private set; } = new Filter<TViewModel>( );
+
         public Order<TViewModel> Order { get; private set; } = new Order<TViewModel>( );
+
         public Pagination Pagination { get; private set; } = new Pagination( );
 
         public Odata( Filter<TViewModel> filter = null, Order<TViewModel> order = null, Pagination pagination = null ) {

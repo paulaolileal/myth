@@ -10,6 +10,15 @@ namespace Myth.Extensions {
 
     public static class HttpExtension {
 
+        private static async Task ThrowExceptionAsync( HttpClient httpClient, HttpResponseMessage httpResponse, Exception exception ) {
+            if ( httpResponse == null )
+                throw httpClient.ThrowException( exception );
+            else if ( !httpResponse.IsSuccessStatusCode )
+                throw await httpResponse.ThrowExceptionAsync( exception );
+            else if ( exception != null )
+                throw new Exception( "Error on request!", exception );
+        }
+
         /// <summary>
         /// Make a get request
         /// </summary>
@@ -89,15 +98,6 @@ namespace Myth.Extensions {
             } catch ( Exception ) {
                 throw new Exception( $"Error: the content type is different of {typeof( T )}" );
             }
-        }
-
-        private static async Task ThrowExceptionAsync( HttpClient httpClient, HttpResponseMessage httpResponse, Exception exception ) {
-            if ( httpResponse == null )
-                throw httpClient.ThrowException( exception );
-            else if ( !httpResponse.IsSuccessStatusCode )
-                throw await httpResponse.ThrowExceptionAsync( exception );
-            else if ( exception != null )
-                throw new Exception( "Error on request!", exception );
         }
     }
 }

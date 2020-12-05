@@ -16,26 +16,6 @@ namespace Myth.ValueObjects.RequestObjects {
             Filters = conditions.Split( '&', '?', StringSplitOptions.RemoveEmptyEntries ).ToList( ); ;
         }
 
-        public void Add<TMember>( Expression<Func<TViewModel, TMember>> destinationMember ) {
-            var binaryExpression = ( BinaryExpression ) destinationMember.Body;
-            var memberLeftExpression = ( MemberExpression ) binaryExpression.Left;
-            var property = memberLeftExpression.Member.Name;
-
-            var memberRightExpression = ( ConstantExpression ) binaryExpression.Right;
-            var value = memberRightExpression.Value;
-
-            var @operator = ConvertOperator( binaryExpression.NodeType );
-
-            Filters.Add( $"Filter={property} {@operator} {value}" );
-        }
-
-        public void Add( string condition ) {
-            Filters.Add( condition );
-        }
-
-        public string Build( ) =>
-            string.Join( "&", Filters.ToArray( ) );
-
         private string ConvertOperator( ExpressionType @operator ) {
             return ( @operator ) switch
             {
@@ -56,5 +36,25 @@ namespace Myth.ValueObjects.RequestObjects {
                 _ => throw new Exception( "Operator not exists!" ),
             };
         }
+
+        public void Add<TMember>( Expression<Func<TViewModel, TMember>> destinationMember ) {
+            var binaryExpression = ( BinaryExpression ) destinationMember.Body;
+            var memberLeftExpression = ( MemberExpression ) binaryExpression.Left;
+            var property = memberLeftExpression.Member.Name;
+
+            var memberRightExpression = ( ConstantExpression ) binaryExpression.Right;
+            var value = memberRightExpression.Value;
+
+            var @operator = ConvertOperator( binaryExpression.NodeType );
+
+            Filters.Add( $"Filter={property} {@operator} {value}" );
+        }
+
+        public void Add( string condition ) {
+            Filters.Add( condition );
+        }
+
+        public string Build( ) =>
+            string.Join( "&", Filters.ToArray( ) );
     }
 }

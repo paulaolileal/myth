@@ -15,6 +15,27 @@ namespace Myth.ValueObjects.OdataObjects {
                 Filter = filter;
         }
 
+        private Expression ConvertOperator( string @operator, Expression member, Expression value = null ) {
+            return ( @operator.ToLower( ) ) switch
+            {
+                "eq" => Expression.Equal( member, value ),
+                "ne" => Expression.NotEqual( member, value ),
+                "gt" => Expression.GreaterThan( member, value ),
+                "ge" => Expression.GreaterThanOrEqual( member, value ),
+                "lt" => Expression.LessThan( member, value ),
+                "le" => Expression.LessThanOrEqual( member, value ),
+                "and" => Expression.And( member, value ),
+                "or" => Expression.Or( member, value ),
+                "not" => Expression.Not( member ),
+                "add" => Expression.Add( member, value ),
+                "sub" => Expression.Subtract( member, value ),
+                "mul" => Expression.Multiply( member, value ),
+                "div" => Expression.Divide( member, value ),
+                "mod" => Expression.Modulo( member, value ),
+                _ => throw new Exception( "Operator not exists!" ),
+            };
+        }
+
         public Expression<Func<TDest, bool>> Build( IMapper mapper ) {
             var parameter = Expression.Parameter( typeof( TSource ) );
 
@@ -42,27 +63,6 @@ namespace Myth.ValueObjects.OdataObjects {
             var destExpression = mapper.Map<Expression<Func<TDest, bool>>>( sourceExpression );
 
             return destExpression;
-        }
-
-        private Expression ConvertOperator( string @operator, Expression member, Expression value = null ) {
-            return ( @operator.ToLower( ) ) switch
-            {
-                "eq" => Expression.Equal( member, value ),
-                "ne" => Expression.NotEqual( member, value ),
-                "gt" => Expression.GreaterThan( member, value ),
-                "ge" => Expression.GreaterThanOrEqual( member, value ),
-                "lt" => Expression.LessThan( member, value ),
-                "le" => Expression.LessThanOrEqual( member, value ),
-                "and" => Expression.And( member, value ),
-                "or" => Expression.Or( member, value ),
-                "not" => Expression.Not( member ),
-                "add" => Expression.Add( member, value ),
-                "sub" => Expression.Subtract( member, value ),
-                "mul" => Expression.Multiply( member, value ),
-                "div" => Expression.Divide( member, value ),
-                "mod" => Expression.Modulo( member, value ),
-                _ => throw new Exception( "Operator not exists!" ),
-            };
         }
     }
 }
