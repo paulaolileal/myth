@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Platforms>x64</Platforms>
-    <Version>1.0.0.8</Version>
+    <Version>2.0.0.0-stage-01</Version>
     <Authors>Paulo Leal</Authors>
     <Description>Common functions for all myth projects</Description>
     <RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons</RepositoryUrl>
@@ -28,6 +28,8 @@
     </None>
   </ItemGroup>
 </Project>
+
+
 
 
 
