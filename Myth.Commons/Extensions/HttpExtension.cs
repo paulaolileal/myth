@@ -1,4 +1,4 @@
-﻿using Myth.ValueObjects;
+﻿using Myth.ValueObjects.RequestObjects;
 using Newtonsoft.Json;
 using System;
 using System.Net.Http;
@@ -10,25 +10,26 @@ namespace Myth.Extensions {
 
     public static class HttpExtension {
 
+        private static async Task ThrowExceptionAsync( HttpClient httpClient, HttpResponseMessage httpResponse, Exception exception ) {
+            if ( httpResponse == null )
+                throw httpClient.ThrowException( exception );
+            else if ( !httpResponse.IsSuccessStatusCode )
+                throw await httpResponse.ThrowExceptionAsync( exception );
+            else if ( exception != null )
+                throw new Exception( "Error on request!", exception );
+        }
+
         /// <summary>
         /// Make a get request
         /// </summary>
         /// <returns>Task<HttpResponseMessage></returns>
-        public static async Task<HttpResponseMessage> RequestAsync( this HttpClient httpClient, string url, CancellationToken cancellationToken ) {
+        public static async Task<HttpResponseMessage> RequestAsync( this HttpClient httpClient, string url, CancellationToken cancellationToken = default ) {
             HttpResponseMessage request = null;
-            Exception exception = null;
 
             try {
                 request = await httpClient.GetAsync( url, cancellationToken );
             } catch ( Exception e ) {
-                exception = e;
-            } finally {
-                if ( request == null )
-                    throw httpClient.ThrowExceptionAsync( exception );
-                else if ( !request.IsSuccessStatusCode )
-                    throw await request.ThrowExceptionAsync( exception );
-                else if ( exception != null )
-                    throw new Exception( "Error on request!", exception );
+                await ThrowExceptionAsync( httpClient, request, e );
             }
 
             return request;
@@ -38,13 +39,11 @@ namespace Myth.Extensions {
         /// Make a get request with pagination
         /// </summary>
         /// <returns>Task<HttpResponseMessage></returns>
-        public static async Task<HttpResponseMessage> RequestAsync( this HttpClient httpClient, string url, Pagination pagination, CancellationToken cancellationToken ) {
-            if ( pagination is null )
-                pagination = Pagination.Default;
+        public static async Task<HttpResponseMessage> RequestAsync<TViewModel>( this HttpClient httpClient, string url, Odata<TViewModel> odata, CancellationToken cancellationToken = default ) {
+            if ( odata == null )
+                odata = new Odata<TViewModel>( );
 
-            url = url.Paginate( pagination.PageNumber, pagination.PageSize );
-
-            return await RequestAsync( httpClient, url, cancellationToken );
+            return await RequestAsync( httpClient, odata.Build( url ), cancellationToken );
         }
 
         /// <summary>
@@ -52,21 +51,28 @@ namespace Myth.Extensions {
         /// </summary>
         /// <param name="body">Content body</param>
         /// <returns>Task<HttpResponseMessage></returns>
-        public static async Task<HttpResponseMessage> RequestAsync( this HttpClient httpClient, string url, object body, CancellationToken cancellationToken ) {
+        public static async Task<HttpResponseMessage> RequestAsync<TRequest>( this HttpClient httpClient, string url, TRequest body, CancellationToken cancellationToken = default ) {
             HttpResponseMessage request = null;
-            Exception exception = null;
 
             try {
                 request = await httpClient.PostAsync( url, new StringContent( JsonConvert.SerializeObject( body ), Encoding.UTF8, "application/json" ), cancellationToken );
-            } catch ( Exception e ) {
-                exception = e;
-            } finally {
-                if ( request == null )
-                    throw httpClient.ThrowExceptionAsync( exception );
-                else if ( !request.IsSuccessStatusCode )
-                    throw await request.ThrowExceptionAsync( exception );
-                else if ( exception != null )
-                    throw new Exception( "Error on request!", exception );
+            } catch ( Exception exception ) {
+                await ThrowExceptionAsync( httpClient, request, exception );
+            }
+
+            return request;
+        }
+
+        public static async Task<HttpResponseMessage> RequestAsync<TRequest, TViewModel>( this HttpClient httpClient, string url, Odata<TViewModel> odata, TRequest body, CancellationToken cancellationToken = default ) {
+            HttpResponseMessage request = null;
+
+            if ( odata == null )
+                odata = new Odata<TViewModel>( );
+
+            try {
+                request = await httpClient.PostAsync( odata.Build( url ), new StringContent( JsonConvert.SerializeObject( body ), Encoding.UTF8, "application/json" ), cancellationToken );
+            } catch ( Exception exception ) {
+                await ThrowExceptionAsync( httpClient, request, exception );
             }
 
             return request;
@@ -79,13 +85,19 @@ namespace Myth.Extensions {
         /// <returns>Expected type</returns>
         public static async Task<T> ThenGet<T>( this Task<HttpResponseMessage> httpResponse ) {
             var response = await httpResponse;
-            return JsonConvert.DeserializeObject<T>( await response.Content.ReadAsStringAsync( ) );
+            return await response.GetResponse<T>( );
         }
 
+        [Obsolete]
         public static Task<HttpResponseMessage> PostAsync( this HttpClient httpClient, string url, object body, CancellationToken cancellationToken = default ) =>
             httpClient.PostAsync( url, new StringContent( JsonConvert.SerializeObject( body ), Encoding.UTF8, "application/json" ), cancellationToken );
 
-        public static async Task<T> GetResponse<T>( this HttpResponseMessage httpClient ) =>
-            JsonConvert.DeserializeObject<T>( await httpClient.Content.ReadAsStringAsync( ) );
+        public static async Task<T> GetResponse<T>( this HttpResponseMessage httpClient ) {
+            try {
+                return JsonConvert.DeserializeObject<T>( await httpClient.Content.ReadAsStringAsync( ) );
+            } catch ( Exception ) {
+                throw new Exception( $"Error: the content type is different of {typeof( T )}" );
+            }
+        }
     }
 }

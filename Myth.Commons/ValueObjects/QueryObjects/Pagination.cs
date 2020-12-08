@@ -1,18 +1,11 @@
 ﻿using System.Collections.Generic;
 
-namespace Myth.ValueObjects {
+namespace Myth.ValueObjects.QueryObjects {
 
     public class Pagination: ValueObject {
         public int PageNumber { get; set; }
+
         public int PageSize { get; set; }
-
-        public Pagination( ) {
-        }
-
-        public Pagination( int pageNumber, int pageSize ) {
-            PageNumber = pageNumber;
-            PageSize = pageSize;
-        }
 
         public static readonly Pagination Default = new Pagination {
             PageNumber = 0,
@@ -24,9 +17,21 @@ namespace Myth.ValueObjects {
             PageSize = -1
         };
 
+        public Pagination( ) {
+        }
+
+        public Pagination( int pageNumber, int pageSize ) {
+            PageNumber = pageNumber;
+            PageSize = pageSize;
+        }
+
         protected override IEnumerable<object> GetAtomicValues( ) {
             yield return PageNumber;
             yield return PageSize;
+        }
+
+        public string Build( ) {
+            return $"PageNumber={PageNumber}&PageSize={PageSize}";
         }
     }
 }

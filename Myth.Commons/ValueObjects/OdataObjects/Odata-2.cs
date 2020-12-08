@@ -1,12 +1,16 @@
 ﻿using AutoMapper;
+using Myth.ValueObjects.QueryObjects;
 using System.Collections.Generic;
 
 namespace Myth.ValueObjects.OdataObjects {
 
     public class Odata<TSource, TDest> {
         public IEnumerable<string> Filter { get; set; }
+
         public IEnumerable<string> Order { get; set; }
+
         public int PageNumber { get; set; }
+
         public int PageSize { get; set; }
 
         public Odata<TDest> Build( IMapper mapper ) {

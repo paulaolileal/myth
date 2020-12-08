@@ -1,16 +1,21 @@
-﻿using System;
+﻿using Myth.ValueObjects.OdataObjects;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Myth.ValueObjects.OdataObjects {
+namespace Myth.ValueObjects.QueryObjects {
 
     public class Odata<TDest> {
         public IEnumerable<Order<TDest>> Order { get; set; }
+
         public Filter<TDest> Filter { get; private set; }
+
         public Pagination Pagination { get; private set; }
 
-        public Odata( Expression<Func<TDest, bool>> filter, IEnumerable<OrderCondition<TDest>> orders, Pagination pagination ) {
+        public static Odata<TDest> Default = new Odata<TDest>( pagination: Pagination.All );
+
+        public Odata( Expression<Func<TDest, bool>> filter = null, IEnumerable<OrderCondition<TDest>> orders = null, Pagination pagination = null ) {
             if ( filter != null )
                 Filter = new Filter<TDest>( filter );
 
