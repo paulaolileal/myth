@@ -4,11 +4,11 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Platforms>x64</Platforms>
-    <Version>1.0.0.8-stage-02</Version>
+    <Version>1.0.0.8</Version>
     <Authors>Paulo Leal</Authors>
     <Description>Common functions for all myth projects</Description>
-    <RepositoryUrl>https://gitlab.com/harpy-framework/harpy</RepositoryUrl>
-    <PackageProjectUrl>https://gitlab.com/harpy-framework/harpy</PackageProjectUrl>
+    <RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons</RepositoryUrl>
+    <PackageProjectUrl>https://gitlab.com/dotnet-myth/myth-commons</PackageProjectUrl>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageOutputPath>$(AppData)/NuGet/Packages</PackageOutputPath>
@@ -28,6 +28,8 @@
     </None>
   </ItemGroup>
 </Project>
+
+
 
 
 
