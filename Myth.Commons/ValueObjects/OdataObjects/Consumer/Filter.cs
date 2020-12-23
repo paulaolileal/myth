@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 namespace Myth.ValueObjects.OdataObjects.Consumer {
 
     public class Filter<TViewModel> {
+
         public List<string> Filters { get; private set; }
 
         public Filter( ) {
@@ -13,12 +14,12 @@ namespace Myth.ValueObjects.OdataObjects.Consumer {
         }
 
         public Filter( string conditions ) {
-            Filters = conditions.Split( '&', '?', StringSplitOptions.RemoveEmptyEntries ).ToList( ); ;
+            Filters = conditions.Split( '&', '?', StringSplitOptions.RemoveEmptyEntries ).ToList( );
+            ;
         }
 
         private string ConvertOperator( ExpressionType @operator ) {
-            return ( @operator ) switch
-            {
+            return ( @operator ) switch {
                 ExpressionType.Equal => "eq",
                 ExpressionType.NotEqual => "ne",
                 ExpressionType.GreaterThan => "gt",

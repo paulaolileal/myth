@@ -8,6 +8,7 @@ using System.Linq.Expressions;
 namespace Myth.ValueObjects.OdataObjects.Requests {
 
     public class FilterRequest<TSource, TDest> {
+
         public IEnumerable<string> Filter { get; set; } = new List<string>( );
 
         public FilterRequest( IEnumerable<string> filter ) {
@@ -16,8 +17,7 @@ namespace Myth.ValueObjects.OdataObjects.Requests {
         }
 
         private Expression ConvertOperator( string @operator, Expression member, Expression value = null ) {
-            return ( @operator.ToLower( ) ) switch
-            {
+            return ( @operator.ToLower( ) ) switch {
                 "eq" => Expression.Equal( member, value ),
                 "ne" => Expression.NotEqual( member, value ),
                 "gt" => Expression.GreaterThan( member, value ),

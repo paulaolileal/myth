@@ -2,7 +2,8 @@
 
 namespace Myth.ValueObjects.OdataObjects {
 
-    public class Pagination: ValueObject {
+    public class Pagination : ValueObject {
+
         public int PageNumber { get; set; }
 
         public int PageSize { get; set; }

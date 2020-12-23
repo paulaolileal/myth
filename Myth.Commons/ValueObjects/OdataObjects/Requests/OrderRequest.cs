@@ -9,6 +9,7 @@ using System.Linq.Expressions;
 namespace Myth.ValueObjects.OdataObjects.Requests {
 
     public class OrderRequest<TSource, TDest> {
+
         public IEnumerable<string> Order { get; set; } = new List<string>( );
 
         public OrderRequest( IEnumerable<string> order ) {

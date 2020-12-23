@@ -2,7 +2,8 @@
 
 namespace Myth.ValueObjects {
 
-    public class Constant<T1, T2>: Constant<T1> {
+    public class Constant<T1, T2> : Constant<T1> {
+
         public T2 Value2 { get; private set; }
 
         public Constant( T1 value, T2 value2 ) : base( value ) {

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 namespace Myth.ValueObjects.OdataObjects.Requests {
 
     public class Odata<TSource, TDest> {
+
         public IEnumerable<string> Filter { get; set; }
 
         public IEnumerable<string> Order { get; set; }
@@ -13,7 +14,7 @@ namespace Myth.ValueObjects.OdataObjects.Requests {
 
         public int PageSize { get; set; }
 
-        public static implicit operator Odata<TDest>( Odata<TSource, TDest> odata) {
+        public static implicit operator Odata<TDest>( Odata<TSource, TDest> odata ) {
             return odata.Build( );
         }
     }

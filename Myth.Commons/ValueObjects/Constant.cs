@@ -3,7 +3,8 @@ using System.Collections.Generic;
 
 namespace Myth.ValueObjects {
 
-    public class Constant<T>: IEquatable<Constant<T>> {
+    public class Constant<T> : IEquatable<Constant<T>> {
+
         public T Value { get; private set; }
 
         protected Constant( T value ) {
@@ -22,8 +23,7 @@ namespace Myth.ValueObjects {
         public static bool operator ==( Constant<T> a, Constant<T> b ) =>
              a.ToString( ) == b.ToString( );
 
-        public override string ToString( ) =>
-                                             Value.ToString( );
+        public override string ToString( ) => Value.ToString( );
 
         public virtual bool Equals( Constant<T> other ) =>
              other.Value.ToString( ) == Value.ToString( );

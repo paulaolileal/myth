@@ -4,7 +4,9 @@ using Myth.ValueObjects.OdataObjects.Queries;
 using Myth.ValueObjects.OdataObjects.Requests;
 
 namespace Myth.Extensions {
+
     public static class OdataExtension {
+
         private static IMapper _mapper;
 
         public static void Configure( IMapper mapper ) {

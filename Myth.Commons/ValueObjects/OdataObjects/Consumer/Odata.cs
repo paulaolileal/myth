@@ -3,6 +3,7 @@
 namespace Myth.ValueObjects.OdataObjects.Consumer {
 
     public class Odata<TViewModel> {
+
         public Filter<TViewModel> Filter { get; private set; } = new Filter<TViewModel>( );
 
         public Order<TViewModel> Order { get; private set; } = new Order<TViewModel>( );

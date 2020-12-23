@@ -3,6 +3,7 @@
 namespace Myth.ViewModels.Errors {
 
     public class ValidationResponse {
+
         public IEnumerable<MessageResponse> Errors { get; set; }
 
         public ValidationResponse( ) {

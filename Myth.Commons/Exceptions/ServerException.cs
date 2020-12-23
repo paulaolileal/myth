@@ -2,7 +2,8 @@
 
 namespace Myth.Exceptions {
 
-    public class ServerException: Exception {
+    public class ServerException : Exception {
+
         public string InnerMessage { get; set; }
 
         public Exception Stack { get; set; }

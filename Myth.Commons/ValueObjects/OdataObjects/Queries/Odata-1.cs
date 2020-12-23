@@ -1,5 +1,4 @@
-﻿using Myth.ValueObjects.OdataObjects;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -7,6 +6,7 @@ using System.Linq.Expressions;
 namespace Myth.ValueObjects.OdataObjects.Queries {
 
     public class Odata<TDest> {
+
         public IEnumerable<OrderExpression<TDest>> Order { get; set; }
 
         public FilterExpression<TDest> Filter { get; private set; }

@@ -3,7 +3,8 @@ using System.Net;
 
 namespace Myth.Exceptions {
 
-    public class RequestException: Exception {
+    public class RequestException : Exception {
+
         public int? StatusCode { get; set; }
 
         public string Url { get; set; }

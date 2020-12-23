@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 namespace Myth.ValueObjects.OdataObjects.Consumer {
 
     public class Order<TViewModel> {
+
         public List<string> Orders { get; private set; }
 
         public Order( ) {

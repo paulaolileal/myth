@@ -1,6 +1,7 @@
 ﻿namespace Myth.ViewModels.Errors {
 
     public class ExeceptionResponse {
+
         public string Message { get; set; }
 
         public string InnerMessage { get; set; }

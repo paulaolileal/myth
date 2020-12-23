@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 namespace Myth.ValueObjects.OdataObjects.Queries {
 
     public class ConditionExpression<T> {
+
         public Expression<Func<T, object>> Expression { get; private set; }
 
         public bool Descending { get; private set; }

@@ -5,7 +5,8 @@ using System.Net;
 
 namespace Myth.Exceptions {
 
-    public class ValidationException: Exception {
+    public class ValidationException : Exception {
+
         public IEnumerable<MessageResponse> Errors { get; }
 
         public HttpStatusCode StatusCode { get; }
