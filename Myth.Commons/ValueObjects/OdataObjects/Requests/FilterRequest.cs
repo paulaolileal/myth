@@ -5,12 +5,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Myth.ValueObjects.OdataObjects {
+namespace Myth.ValueObjects.OdataObjects.Requests {
 
-    public class OdataFilter<TSource, TDest> {
+    public class FilterRequest<TSource, TDest> {
         public IEnumerable<string> Filter { get; set; } = new List<string>( );
 
-        public OdataFilter( IEnumerable<string> filter ) {
+        public FilterRequest( IEnumerable<string> filter ) {
             if ( filter != null )
                 Filter = filter;
         }

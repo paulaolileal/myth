@@ -1,7 +1,6 @@
-﻿using Myth.ValueObjects.QueryObjects;
-using System.Linq;
+﻿using System.Linq;
 
-namespace Myth.ValueObjects.RequestObjects {
+namespace Myth.ValueObjects.OdataObjects.Consumer {
 
     public class Odata<TViewModel> {
         public Filter<TViewModel> Filter { get; private set; } = new Filter<TViewModel>( );

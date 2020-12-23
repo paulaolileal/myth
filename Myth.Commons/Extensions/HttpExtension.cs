@@ -1,4 +1,4 @@
-﻿using Myth.ValueObjects.RequestObjects;
+﻿using Myth.ValueObjects.OdataObjects.Consumer;
 using Newtonsoft.Json;
 using System;
 using System.Net.Http;

@@ -1,24 +1,25 @@
 ﻿using AutoMapper;
 using Myth.Extensions;
+using Myth.ValueObjects.OdataObjects.Queries;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Myth.ValueObjects.OdataObjects {
+namespace Myth.ValueObjects.OdataObjects.Requests {
 
-    public class OdataOrder<TSource, TDest> {
+    public class OrderRequest<TSource, TDest> {
         public IEnumerable<string> Order { get; set; } = new List<string>( );
 
-        public OdataOrder( IEnumerable<string> order ) {
+        public OrderRequest( IEnumerable<string> order ) {
             if ( order != null )
                 Order = order;
         }
 
-        public IEnumerable<OrderCondition<TDest>> Build( IMapper mapper ) {
+        public IEnumerable<ConditionExpression<TDest>> Build( IMapper mapper ) {
             var parameter = Expression.Parameter( typeof( TSource ) );
 
-            var conditions = new List<OrderCondition<TDest>>( );
+            var conditions = new List<ConditionExpression<TDest>>( );
 
             foreach ( var item in Order.Where( x => !string.IsNullOrEmpty( x ) ) ) {
                 var fields = item.Split( " ", StringSplitOptions.RemoveEmptyEntries );
@@ -33,7 +34,7 @@ namespace Myth.ValueObjects.OdataObjects {
 
                 var expression = mapper.Map<Expression<Func<TDest, object>>>( sort );
 
-                var condition = new OrderCondition<TDest>( expression, desc );
+                var condition = new ConditionExpression<TDest>( expression, desc );
 
                 conditions.Add( condition );
             }

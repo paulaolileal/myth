@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Myth.ValueObjects.QueryObjects {
+namespace Myth.ValueObjects.OdataObjects {
 
     public class Pagination: ValueObject {
         public int PageNumber { get; set; }

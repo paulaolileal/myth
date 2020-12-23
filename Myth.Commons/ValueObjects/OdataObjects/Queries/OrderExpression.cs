@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Linq.Expressions;
 
-namespace Myth.ValueObjects.QueryObjects {
+namespace Myth.ValueObjects.OdataObjects.Queries {
 
-    public class Order<TDest> {
+    public class OrderExpression<TDest> {
         public Expression<Func<TDest, object>> OrderBy { get; private set; }
 
         public bool Desc { get; private set; }
 
-        public Order( Expression<Func<TDest, object>> order, bool desc = false ) {
+        public OrderExpression( Expression<Func<TDest, object>> order, bool desc = false ) {
             OrderBy = order;
             Desc = desc;
         }

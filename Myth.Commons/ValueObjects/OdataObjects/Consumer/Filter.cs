@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace Myth.ValueObjects.RequestObjects {
+namespace Myth.ValueObjects.OdataObjects.Consumer {
 
     public class Filter<TViewModel> {
         public List<string> Filters { get; private set; }

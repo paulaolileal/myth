@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Linq.Expressions;
 
-namespace Myth.ValueObjects.QueryObjects {
+namespace Myth.ValueObjects.OdataObjects.Queries {
 
-    public class Filter<TDest> {
+    public class FilterExpression<TDest> {
         public Expression<Func<TDest, bool>> Conditions { get; private set; }
 
-        public Filter( Expression<Func<TDest, bool>> conditions ) {
+        public FilterExpression( Expression<Func<TDest, bool>> conditions ) {
             Conditions = conditions;
         }
     }
