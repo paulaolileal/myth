@@ -4,17 +4,17 @@ using Myth.ValueObjects.OdataObjects.Queries;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 
 namespace Myth.ValueObjects.OdataObjects.Requests {
 
     public class OrderRequest<TSource, TDest> {
 
-        public IEnumerable<string> Order { get; set; } = new List<string>( );
+        public string Order { get; set; }
 
-        public OrderRequest( IEnumerable<string> order ) {
-            if ( order != null )
-                Order = order;
+        public OrderRequest( string order ) {
+            Order = order;
         }
 
         public IEnumerable<ConditionExpression<TDest>> Build( IMapper mapper ) {
@@ -22,16 +22,14 @@ namespace Myth.ValueObjects.OdataObjects.Requests {
 
             var conditions = new List<ConditionExpression<TDest>>( );
 
-            foreach ( var item in Order.Where( x => !string.IsNullOrEmpty( x ) ) ) {
-                var fields = item.Split( " ", StringSplitOptions.RemoveEmptyEntries );
+            var itens = Order.Split( ",", StringSplitOptions.RemoveEmptyEntries );
 
-                var desc = false;
-                if ( fields.Length > 1 && fields[ 1 ].ToLower( ) == "desc" )
-                    desc = true;
+            foreach ( var item in itens ) {
+                var clause = item.Split( " ", StringSplitOptions.RemoveEmptyEntries );
 
-                var property = ExpressionExtension.GenerateNavigationProperty<TSource>( fields[ 0 ], parameter );
+                var desc = clause.Length > 1 && clause.ElementAt( 1 ).ToLower() == "desc";
 
-                var sort = Expression.Lambda( property, parameter );
+                var sort = DynamicExpressionParser.ParseLambda( new ParameterExpression[ ] { parameter }, null, clause.First() );
 
                 var expression = mapper.Map<Expression<Func<TDest, object>>>( sort );
 
@@ -39,6 +37,7 @@ namespace Myth.ValueObjects.OdataObjects.Requests {
 
                 conditions.Add( condition );
             }
+
 
             return conditions;
         }

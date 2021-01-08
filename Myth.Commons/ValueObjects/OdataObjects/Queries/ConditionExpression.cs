@@ -17,5 +17,7 @@ namespace Myth.ValueObjects.OdataObjects.Queries {
         public ConditionExpression( Expression<Func<T, object>> expression )
             : this( expression, false ) {
         }
+
+        public void SetDescending( ) => Descending = true;
     }
 }
