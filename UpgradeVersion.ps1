@@ -18,7 +18,7 @@ if($args[0] -ne $null -And $args[0] -ne ''){
 			$content = $content -Replace $matches[1], $version
 		}
 		
-		Set-Content -Path $file -Value ($content)
+		Set-Content -Path $file -Value ($content.Trim())
 	}
 	
 	# Remove all harpy packages generated
