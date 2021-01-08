@@ -2,6 +2,7 @@
 using Myth.ValueObjects.OdataObjects;
 using Myth.ValueObjects.OdataObjects.Queries;
 using Myth.ValueObjects.OdataObjects.Requests;
+using System;
 
 namespace Myth.Extensions {
 
@@ -14,11 +15,28 @@ namespace Myth.Extensions {
         }
 
         public static Odata<TDest> Build<TSource, TDest>( this Odata<TSource, TDest> odata ) {
-            var order = new OrderRequest<TSource, TDest>( odata.Order ).Build( _mapper );
-            var filter = new FilterRequest<TSource, TDest>( odata.Filter )?.Build( _mapper );
-            var pagination = new Pagination( odata.PageNumber, odata.PageSize );
+            try {
+                var order = new OrderRequest<TSource, TDest>( odata.Order ).Build( _mapper );
+                var filter = new FilterRequest<TSource, TDest>( odata.Filter )?.Build( _mapper );
+                var pagination = new Pagination( odata.PageNumber, odata.PageSize );
 
-            return new Odata<TDest>( filter, order, pagination );
+                return new Odata<TDest>( filter, order, pagination );
+            } catch ( Exception ) {
+                var message = "";
+                if ( !string.IsNullOrEmpty( odata.Filter ) )
+                    message += $"| $filter={ odata.Filter}";
+
+                if ( !string.IsNullOrEmpty( odata.Order ) )
+                    message += $"| $orderby={odata.Order}";
+
+                if ( odata.PageNumber > 0 )
+                    message += $"| pagenumber={odata.PageNumber}";
+
+                if ( odata.PageSize > 0 )
+                    message += $"| pagesize={odata.PageSize}";
+
+                throw new Exception( $"Error on parse Odata, please review: {message}" );
+            }
         }
     }
 }
