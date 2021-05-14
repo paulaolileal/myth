@@ -1,14 +1,15 @@
 ﻿using Ardalis.SmartEnum;
+using System;
 
 namespace Myth.ValueObjects {
 
-    public abstract class Constant<T> : SmartEnum<Constant<T>> {
-        private static int _value;
-        public Constant( string name, int value ) : base( name, value ) { }
+    public abstract class Constant<TConstant, TValue> : SmartEnum<TConstant, TValue>
+        where TConstant : SmartEnum<TConstant, TValue>
+        where TValue : IEquatable<TValue>, IComparable<TValue> {
 
-        public Constant( string name ) : this( name, ++_value ) { }
+        public Constant( string name, TValue value ) : base( name, value ) {
+        }
 
-        public static implicit operator string( Constant<T> constant ) => constant.Name;
-        public static implicit operator int( Constant<T> constant ) => constant.Value;
+        public static implicit operator TValue( Constant<TConstant, TValue> constant ) => constant.Value;
     }
 }
