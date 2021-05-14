@@ -1,9 +1,5 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
-using Myth.Extensions;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Linq.Dynamic.Core.Parser;
 using System.Linq.Expressions;
@@ -20,10 +16,10 @@ namespace Myth.ValueObjects.OdataObjects.Requests {
 
         public Expression<Func<TDest, bool>> Build( IMapper mapper ) {
             var parameter = Expression.Parameter( typeof( TSource ) );
-            
+
             Expression expression = Expression.Constant( true );
 
-            if(!string.IsNullOrEmpty(Filter))
+            if ( !string.IsNullOrEmpty( Filter ) )
                 expression = new ExpressionParser( new[ ] { parameter }, Filter, Array.Empty<object>( ), new ParsingConfig( ) ).Parse( typeof( bool ) );
 
             var sourceExpression = Expression.Lambda<Func<TSource, bool>>( expression, parameter );

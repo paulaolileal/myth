@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Myth.Extensions;
 using Myth.ValueObjects.OdataObjects.Queries;
 using System;
 using System.Collections.Generic;
@@ -27,9 +26,9 @@ namespace Myth.ValueObjects.OdataObjects.Requests {
             foreach ( var item in itens ) {
                 var clause = item.Split( " ", StringSplitOptions.RemoveEmptyEntries );
 
-                var desc = clause.Length > 1 && clause.ElementAt( 1 ).ToLower() == "desc";
+                var desc = clause.Length > 1 && clause.ElementAt( 1 ).ToLower( ) == "desc";
 
-                var sort = DynamicExpressionParser.ParseLambda( new ParameterExpression[ ] { parameter }, null, clause.First() );
+                var sort = DynamicExpressionParser.ParseLambda( new ParameterExpression[ ] { parameter }, null, clause.First( ) );
 
                 var expression = mapper.Map<Expression<Func<TDest, object>>>( sort );
 
@@ -37,7 +36,6 @@ namespace Myth.ValueObjects.OdataObjects.Requests {
 
                 conditions.Add( condition );
             }
-
 
             return conditions;
         }
