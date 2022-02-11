@@ -8,13 +8,15 @@ namespace Myth.Extensions {
 
         public static string ToCamelCase( this string text ) {
             if ( text.Any( ) )
-                return Char.ToLowerInvariant( text.First( ) ) + text.Substring( 1 );
+                return char.ToLowerInvariant( text.First( ) ) + text.Substring( 1 );
+
             return text;
         }
 
         public static string ToFirstUpper( this string text ) {
             if ( text.Any( ) )
-                return Char.ToUpperInvariant( text.First( ) ) + text.Substring( 1 );
+                return char.ToUpperInvariant( text.First( ) ) + text.Substring( 1 );
+
             return text;
         }
 
@@ -29,36 +31,43 @@ namespace Myth.Extensions {
             if ( endCharacter == null )
                 endCharacter = startCharacter;
 
-            return string.Concat( text.Substring( text.IndexOf( startCharacter ) + 1 ).TakeWhile( ( c ) => c != endCharacter ) );
+            return string.Concat( 
+                text
+                    .Substring( text.IndexOf( startCharacter ) + 1 )
+                    .TakeWhile( ( c ) => c != endCharacter ) );
         }
 
         public static string GetWordThatContains( this string text, string word, bool removeWord = false ) {
-            var founded = text
+            var foundedWord = text
                 .Split( " ", StringSplitOptions.RemoveEmptyEntries )
                 .FirstOrDefault( x => x.Contains( word, StringComparison.InvariantCultureIgnoreCase ) );
 
             if ( removeWord )
-                founded = founded.Replace( word, "", StringComparison.InvariantCultureIgnoreCase );
+                foundedWord = foundedWord.Replace( word, "", StringComparison.InvariantCultureIgnoreCase );
 
-            return founded;
+            return foundedWord;
         }
 
         public static string GetWordBefore( this string text, string word ) {
             var split = text.Replace( "(", " (" ).Split( " ", StringSplitOptions.RemoveEmptyEntries ).ToList( );
             var index = split.IndexOf( word );
+            
             if ( index > 0 && index - 1 >= 0 ) {
                 return split.ElementAtOrDefault( index - 1 );
             }
+            
             return string.Empty;
         }
 
         public static string GetWordAfter( this string text, string word ) {
             var split = text.Replace( "(", " (" ).Split( " ", StringSplitOptions.RemoveEmptyEntries ).ToList( );
             var index = split.IndexOf( word );
+            
             if ( index > 0 && index + 1 < split.Count ) {
                 return split.ElementAtOrDefault( index + 1 );
             }
-            return "";
+            
+            return string.Empty;
         }
     }
 }

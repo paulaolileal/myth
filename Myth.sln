@@ -1,14 +1,35 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30128.74
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth", "Myth.Commons\Myth.csproj", "{F0B8E629-F5BC-4CDC-BC00-E469E8B963AD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Commons", "Myth.Commons\Myth.Commons.csproj", "{F0B8E629-F5BC-4CDC-BC00-E469E8B963AD}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F6861C44-E45C-4EBC-A10A-DCC18E867FFC}"
 	ProjectSection(SolutionItems) = preProject
+		logo.png = logo.png
 		UpgradeVersion.ps1 = UpgradeVersion.ps1
 	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Repository", "Myth.Repository\Myth.Repository.csproj", "{64BCED11-ACBC-4F67-911D-DDA0395D06C0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Specification", "Myth.Specification\Myth.Specification.csproj", "{027EC915-129B-412C-AD74-35225C0DA686}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Repository.EntityFramework", "Myth.Repository.EntityFramework\Myth.Repository.EntityFramework.csproj", "{2AA55F9C-C220-4C16-A39F-1C5EF87BD3F2}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Odata", "Myth.Odata\Myth.Odata.csproj", "{66BC5194-664E-4CEA-8B9B-1F7D1D2A8AD6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Rest", "Myth.Rest\Myth.Rest.csproj", "{5F5F3A78-09C0-4601-B313-9AA8B1AC687A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Rest", "Rest", "{32DEEFE7-14EA-43F8-BC99-5D8CADFB294E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Rest.Test", "Myth.Rest.Test\Myth.Rest.Test.csproj", "{267B1999-B895-449F-96EA-478799497603}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Odata", "Odata", "{EA751109-A1C6-4581-8D56-1E2D69C56D33}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Odata.Test", "Myth.Odata.Test\Myth.Odata.Test.csproj", "{1A83C52A-4543-4C10-A0A4-65907E214F4E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Repository", "Repository", "{169339F6-1B73-4B4E-AAB6-9036A8CB5235}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,9 +41,45 @@ Global
 		{F0B8E629-F5BC-4CDC-BC00-E469E8B963AD}.Debug|Any CPU.Build.0 = Debug|x64
 		{F0B8E629-F5BC-4CDC-BC00-E469E8B963AD}.Release|Any CPU.ActiveCfg = Release|x64
 		{F0B8E629-F5BC-4CDC-BC00-E469E8B963AD}.Release|Any CPU.Build.0 = Release|x64
+		{64BCED11-ACBC-4F67-911D-DDA0395D06C0}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{64BCED11-ACBC-4F67-911D-DDA0395D06C0}.Debug|Any CPU.Build.0 = Debug|x64
+		{64BCED11-ACBC-4F67-911D-DDA0395D06C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{64BCED11-ACBC-4F67-911D-DDA0395D06C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{027EC915-129B-412C-AD74-35225C0DA686}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{027EC915-129B-412C-AD74-35225C0DA686}.Debug|Any CPU.Build.0 = Debug|x64
+		{027EC915-129B-412C-AD74-35225C0DA686}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{027EC915-129B-412C-AD74-35225C0DA686}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2AA55F9C-C220-4C16-A39F-1C5EF87BD3F2}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{2AA55F9C-C220-4C16-A39F-1C5EF87BD3F2}.Debug|Any CPU.Build.0 = Debug|x64
+		{2AA55F9C-C220-4C16-A39F-1C5EF87BD3F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2AA55F9C-C220-4C16-A39F-1C5EF87BD3F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66BC5194-664E-4CEA-8B9B-1F7D1D2A8AD6}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{66BC5194-664E-4CEA-8B9B-1F7D1D2A8AD6}.Debug|Any CPU.Build.0 = Debug|x64
+		{66BC5194-664E-4CEA-8B9B-1F7D1D2A8AD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66BC5194-664E-4CEA-8B9B-1F7D1D2A8AD6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F5F3A78-09C0-4601-B313-9AA8B1AC687A}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{5F5F3A78-09C0-4601-B313-9AA8B1AC687A}.Debug|Any CPU.Build.0 = Debug|x64
+		{5F5F3A78-09C0-4601-B313-9AA8B1AC687A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F5F3A78-09C0-4601-B313-9AA8B1AC687A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{267B1999-B895-449F-96EA-478799497603}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{267B1999-B895-449F-96EA-478799497603}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{267B1999-B895-449F-96EA-478799497603}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{267B1999-B895-449F-96EA-478799497603}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A83C52A-4543-4C10-A0A4-65907E214F4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A83C52A-4543-4C10-A0A4-65907E214F4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A83C52A-4543-4C10-A0A4-65907E214F4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A83C52A-4543-4C10-A0A4-65907E214F4E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{64BCED11-ACBC-4F67-911D-DDA0395D06C0} = {169339F6-1B73-4B4E-AAB6-9036A8CB5235}
+		{2AA55F9C-C220-4C16-A39F-1C5EF87BD3F2} = {169339F6-1B73-4B4E-AAB6-9036A8CB5235}
+		{66BC5194-664E-4CEA-8B9B-1F7D1D2A8AD6} = {EA751109-A1C6-4581-8D56-1E2D69C56D33}
+		{5F5F3A78-09C0-4601-B313-9AA8B1AC687A} = {32DEEFE7-14EA-43F8-BC99-5D8CADFB294E}
+		{267B1999-B895-449F-96EA-478799497603} = {32DEEFE7-14EA-43F8-BC99-5D8CADFB294E}
+		{1A83C52A-4543-4C10-A0A4-65907E214F4E} = {EA751109-A1C6-4581-8D56-1E2D69C56D33}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {57C72C75-3DFD-47D6-BEBE-072183C4FAA7}
