@@ -34,6 +34,7 @@ namespace Myth.ValueObjects {
             var other = ( ValueObject ) obj;
             var thisValues = GetAtomicValues( ).GetEnumerator( );
             var otherValues = other.GetAtomicValues( ).GetEnumerator( );
+            
             while ( thisValues.MoveNext( ) && otherValues.MoveNext( ) ) {
                 if ( thisValues.Current is null ^ otherValues.Current is null )
                     return false;
@@ -41,6 +42,7 @@ namespace Myth.ValueObjects {
                 if ( thisValues.Current != null && !thisValues.Current.Equals( otherValues.Current ) )
                     return false;
             }
+            
             return !thisValues.MoveNext( ) && !otherValues.MoveNext( );
         }
 
