@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -7,7 +7,7 @@
     <RootNamespace>Myth</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Platforms>x64</Platforms>
-    <Version>2.0.0.0-stage-01</Version>
+    <Version>2.0.0.0</Version>
     <Authors>Paulo Leal</Authors>
     <Description>A simple OData implementation separating database entities and view models</Description>
     <RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons</RepositoryUrl>
