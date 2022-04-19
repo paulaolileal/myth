@@ -31,7 +31,7 @@ if($args[0] -ne $null -And $args[0] -ne ''){
 			}
 		}		
 		
-		Set-Content -Path $file -Value ($content.Trim())
+		Set-Content -Path $file -Value ($content)
 	}
 	Write-Host "Myth packages set to $($version) in all procjects" -fore green
 	
