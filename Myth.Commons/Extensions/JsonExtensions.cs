@@ -1,20 +1,26 @@
 ﻿using Newtonsoft.Json;
-using System;
-using System.Net.Http;
+using Newtonsoft.Json.Serialization;
 using System.Text;
 
 namespace Myth.Extensions {
 
     public static class JsonExtensions {
 
-        public static string ToJson( this object content, bool ignoreNullValue = true, Action<JsonSerializerSettings>? settings = null ) {
+        public enum CaseStrategy { CamelCase, SnakeCase }
+
+        public static string ToJson( this object content, bool ignoreNullValue = true, CaseStrategy caseStrategy = CaseStrategy.CamelCase, Action<JsonSerializerSettings>? settings = null ) {
+            var contractResolver = new DefaultContractResolver {
+                NamingStrategy = StrategyResolver( caseStrategy )
+            };
+
             var jsonSettings = new JsonSerializerSettings {
                 Formatting = Formatting.Indented,
                 NullValueHandling = ignoreNullValue ? NullValueHandling.Ignore : NullValueHandling.Include,
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                ContractResolver = contractResolver
             };
-            
-            if(settings is not null)
+
+            if ( settings is not null )
                 settings.Invoke( jsonSettings );
 
             try {
@@ -24,8 +30,15 @@ namespace Myth.Extensions {
             }
         }
 
-        public static HttpContent ToHttpContent( this object content ) {
-            return new StringContent( content.ToJson( ), Encoding.UTF8, "application/json" );
+        public static HttpContent ToHttpContent( this object content, CaseStrategy caseStrategy = CaseStrategy.CamelCase ) {
+            return new StringContent( content.ToJson( caseStrategy: caseStrategy ), Encoding.UTF8, "application/json" );
+        }
+
+        private static NamingStrategy StrategyResolver( CaseStrategy caseStrategy ) {
+            return caseStrategy switch {
+                CaseStrategy.SnakeCase => new SnakeCaseNamingStrategy( ),
+                _ => new CamelCaseNamingStrategy( )
+            };
         }
     }
 }

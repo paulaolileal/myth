@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace Myth.Extensions {
+﻿namespace Myth.Extensions {
 
     public static class ListExtension {
 

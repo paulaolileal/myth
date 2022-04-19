@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace Myth.ValueObjects {
+﻿namespace Myth.ValueObjects {
 
     public abstract class ValueObject {
 
@@ -21,7 +18,7 @@ namespace Myth.ValueObjects {
             var constants = type
                 .GetProperties( )
                 .Where( prop => prop.PropertyType == type )
-                .Select( x => ( TConstant ) x.GetValue( type, null ) )
+                .Select( x => ( TConstant )x.GetValue( type, null ) )
                 .ToList( );
 
             return constants;
@@ -31,10 +28,10 @@ namespace Myth.ValueObjects {
             if ( obj == null || obj.GetType( ) != GetType( ) )
                 return false;
 
-            var other = ( ValueObject ) obj;
+            var other = ( ValueObject )obj;
             var thisValues = GetAtomicValues( ).GetEnumerator( );
             var otherValues = other.GetAtomicValues( ).GetEnumerator( );
-            
+
             while ( thisValues.MoveNext( ) && otherValues.MoveNext( ) ) {
                 if ( thisValues.Current is null ^ otherValues.Current is null )
                     return false;
@@ -42,7 +39,7 @@ namespace Myth.ValueObjects {
                 if ( thisValues.Current != null && !thisValues.Current.Equals( otherValues.Current ) )
                     return false;
             }
-            
+
             return !thisValues.MoveNext( ) && !otherValues.MoveNext( );
         }
 

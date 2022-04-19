@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Text;
+using static Myth.Extensions.JsonExtensions;
 
 namespace Myth.Rest {
 
@@ -7,10 +8,12 @@ namespace Myth.Rest {
         protected internal string _baseUrl;
         protected internal AuthenticationHeaderValue _authorizationHeader;
         protected internal string _acceptContentType;
+        protected internal CaseStrategy _caseStrategy;
         protected internal IDictionary<string, string> _customHeaders;
 
         public RestConfigBuilder( ) {
             _customHeaders = new Dictionary<string, string>( );
+            _caseStrategy = CaseStrategy.CamelCase;
         }
 
         public bool AuthorizationIsSetted => _authorizationHeader != null;
@@ -45,6 +48,11 @@ namespace Myth.Rest {
 
         public RestConfigBuilder AddHeader( string key, string value ) {
             _customHeaders.Add( key, value );
+            return this;
+        }
+
+        public RestConfigBuilder WithBodySerialization( CaseStrategy caseStrategy ) {
+            _caseStrategy = caseStrategy;
             return this;
         }
     }

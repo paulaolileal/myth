@@ -14,7 +14,7 @@ namespace Myth.Rest {
         }
 
         public static bool IsSuccessStatusCode( HttpStatusCode statusCode ) {
-            return ( ( int ) statusCode >= 200 ) && ( ( int ) statusCode <= 299 );
+            return ( ( int )statusCode >= 200 ) && ( ( int )statusCode <= 299 );
         }
 
         public RestStatusBuilder StatusIs<TResult>( HttpStatusCode statusCode, bool shouldThrowException = false ) {
@@ -44,7 +44,7 @@ namespace Myth.Rest {
             return this;
         }
 
-        public RestStatusBuilder NonSuccessStatusCodeThrows( bool shouldThrowException ) {
+        public RestStatusBuilder NonSuccessStatusCodeThrowsException( bool shouldThrowException ) {
             _throwOnNonSuccess = shouldThrowException;
             return this;
         }

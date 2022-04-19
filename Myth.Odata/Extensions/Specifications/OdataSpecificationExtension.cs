@@ -1,9 +1,7 @@
 ﻿using Myth.Interfaces;
 using Myth.Repositories;
-using Myth.Extensions.Specifications;
 
-namespace Myth.Extensions.Specifications
-{
+namespace Myth.Extensions.Specifications {
 
     public static class OdataSpecificationExtension {
 

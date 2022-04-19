@@ -8,7 +8,7 @@ namespace Myth.Exceptions {
         protected TypeStatusException( ) {
         }
 
-        public TypeStatusException( HttpStatusCode statusCode ) : base( $"Type for status code `{( int ) statusCode} {statusCode}` not found!" ) {
+        public TypeStatusException( HttpStatusCode statusCode ) : base( $"Type for status code `{( int )statusCode} {statusCode}` not found!" ) {
             StatusCode = statusCode;
         }
     }

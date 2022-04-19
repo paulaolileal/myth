@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace Myth.Extensions {
 
@@ -31,7 +29,7 @@ namespace Myth.Extensions {
             if ( endCharacter == null )
                 endCharacter = startCharacter;
 
-            return string.Concat( 
+            return string.Concat(
                 text
                     .Substring( text.IndexOf( startCharacter ) + 1 )
                     .TakeWhile( ( c ) => c != endCharacter ) );
@@ -51,22 +49,22 @@ namespace Myth.Extensions {
         public static string GetWordBefore( this string text, string word ) {
             var split = text.Replace( "(", " (" ).Split( " ", StringSplitOptions.RemoveEmptyEntries ).ToList( );
             var index = split.IndexOf( word );
-            
+
             if ( index > 0 && index - 1 >= 0 ) {
                 return split.ElementAtOrDefault( index - 1 );
             }
-            
+
             return string.Empty;
         }
 
         public static string GetWordAfter( this string text, string word ) {
             var split = text.Replace( "(", " (" ).Split( " ", StringSplitOptions.RemoveEmptyEntries ).ToList( );
             var index = split.IndexOf( word );
-            
+
             if ( index > 0 && index + 1 < split.Count ) {
                 return split.ElementAtOrDefault( index + 1 );
             }
-            
+
             return string.Empty;
         }
     }
