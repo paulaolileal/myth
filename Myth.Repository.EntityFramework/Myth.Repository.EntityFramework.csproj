@@ -1,45 +1,45 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <RootNamespace>Myth</RootNamespace>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Platforms>x64</Platforms>
-    <Version>2.0.0.0</Version>
-    <Authors>Paulo Leal</Authors>
-    <Description>The implementation of generic repositories using expressions and specifications for entity framework</Description>
-    <RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons</RepositoryUrl>
-    <PackageProjectUrl>https://gitlab.com/dotnet-myth/myth-commons</PackageProjectUrl>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageOutputPath>$(AppData)/NuGet/Packages</PackageOutputPath>
-    <PackageId>Myth.Repository.EntityFramework</PackageId>
-    <PackageIcon>logo.png</PackageIcon>
-  </PropertyGroup>
+<PropertyGroup>
+<TargetFramework>net6.0</TargetFramework>
+<ImplicitUsings>enable</ImplicitUsings>
+<Nullable>enable</Nullable>
+<RootNamespace>Myth</RootNamespace>
+<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+<Platforms>x64</Platforms>
+<Version>2.0.0.5</Version>
+<Authors>Paulo Leal</Authors>
+<Description>The implementation of generic repositories using expressions and specifications for entity framework</Description>
+<RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons</RepositoryUrl>
+<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth-commons</PackageProjectUrl>
+<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+<PackageLicenseExpression>MIT</PackageLicenseExpression>
+<PackageOutputPath>$(AppData)/NuGet/Packages</PackageOutputPath>
+<PackageId>Myth.Repository.EntityFramework</PackageId>
+<PackageIcon>logo.png</PackageIcon>
+</PropertyGroup>
 
-  <ItemGroup>
-    <None Include="..\logo.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
+<ItemGroup>
+<None Include="..\logo.png">
+<Pack>True</Pack>
+<PackagePath>\</PackagePath>
+</None>
+</ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="Results\**" />
-    <EmbeddedResource Remove="Results\**" />
-    <None Remove="Results\**" />
-  </ItemGroup>
+<ItemGroup>
+<Compile Remove="Results\**" />
+<EmbeddedResource Remove="Results\**" />
+<None Remove="Results\**" />
+</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Myth.Repository\Myth.Repository.csproj" />
-    <ProjectReference Include="..\Myth.Specification\Myth.Specification.csproj" />
-  </ItemGroup>
+<ItemGroup>
+<ProjectReference Include="..\Myth.Repository\Myth.Repository.csproj" />
+<ProjectReference Include="..\Myth.Specification\Myth.Specification.csproj" />
+</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.2" />
-  </ItemGroup>
+<ItemGroup>
+<PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.2" />
+<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.2" />
+</ItemGroup>
 
 </Project>

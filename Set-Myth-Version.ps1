@@ -1,22 +1,35 @@
 if($args[0] -ne $null -And $args[0] -ne ''){
 
 	$version = $args[0]
+	$mythVersion = $version
 	$current = $PSScriptRoot # Get the current script path
+
+	if($args[1] -ne $null -And $args[1] -ne ''){
+		$mythVersion = $args[1]
+	}
+
+	$versionRegex = '<Version>(.*)<\/Version>'
+	$mythRegex = 'Myth.*Version="(.*)"'
 
 	# Replace all the versions of Myth reference to the new one
 	$files = Get-ChildItem -Path $current -Include *.csproj -Recurse | % { $_.FullName }	
+	
 	foreach($file in $files) {
-		$content = (Get-Content -Path $file -Raw)		
+		$content = (Get-Content -Path $file)		
 		
-		$vFoundReferences = $content -match 'Myth.*Version="(.*)"'
-		if($vFoundReferences){
-			$content = $content -Replace $matches[1], $version
-		}
-		
-		$vFoundVersion = $content -match '<Version>(.*)<\/Version>'
-		if($vFoundVersion){
-			$content = $content -Replace $matches[1], $version
-		}
+		foreach($line in $content) {
+			if($line -match $mythRegex){
+				$temp = $line
+				$temp = $temp -Replace $matches[1], $mythVersion
+				$content = $content -Replace $line, $temp
+			}
+			
+			if($line -match $versionRegex){
+				$temp = $line
+				$temp = $temp -Replace $matches[1], $version
+				$content = $content -Replace $line, $temp
+			}
+		}		
 		
 		Set-Content -Path $file -Value ($content.Trim())
 	}

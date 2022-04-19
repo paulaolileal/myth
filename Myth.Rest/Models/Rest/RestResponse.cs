@@ -1,4 +1,5 @@
 ﻿using Myth.Exceptions;
+using Myth.Rest;
 using System.Net;
 
 namespace Myth.Models.Rest {
@@ -28,9 +29,12 @@ namespace Myth.Models.Rest {
 
         public TResult GetAs<TResult>( ) {
             if ( Result is not null && typeof( TResult ) == ResultType )
-                return ( TResult ) Result;            
+                return ( TResult )Result;
 
             throw new ResponseTypeException( typeof( TResult ), ResultType );
         }
+
+        public bool IsSuccessStatusCode( ) =>
+            RestStatusBuilder.IsSuccessStatusCode( StatusCode );
     }
 }

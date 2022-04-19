@@ -24,13 +24,13 @@ namespace Myth.Rest.Test {
             var response = await _restClient
                 .DoGet( "posts" )
                     .When( config => config
-                        .NonSuccessStatusCodeThrows( true )
+                        .NonSuccessStatusCodeThrowsException( true )
                         .StatusIs<IEnumerable<Post>>( HttpStatusCode.OK ) )
                     .BuildResultAsync( );
 
             // Assert
             Assert.NotNull( response );
-            var actual = ( IEnumerable<Post> ) response.Result!;
+            var actual = ( IEnumerable<Post> )response.Result!;
             Assert.True( actual.Any( ) );
             Assert.Equal( HttpStatusCode.OK, response.StatusCode );
             Assert.Equal( HttpMethod.Get, response.Method );
@@ -49,13 +49,13 @@ namespace Myth.Rest.Test {
             var response = await _restClient
                 .DoPost( "posts", body )
                     .When( config => config
-                        .NonSuccessStatusCodeThrows( true )
+                        .NonSuccessStatusCodeThrowsException( true )
                         .StatusIs<Post>( HttpStatusCode.Created ) )
                     .BuildResultAsync( );
 
             // Assert
             Assert.NotNull( response );
-            var actual = ( Post ) response.Result!;
+            var actual = ( Post )response.Result!;
             Assert.Equal( 101, actual.Id );
             Assert.Equal( "foo", actual.Title );
             Assert.Equal( "bar", actual.Body );
@@ -77,13 +77,13 @@ namespace Myth.Rest.Test {
             var response = await _restClient
                 .DoPut( "posts/1", body )
                     .When( config => config
-                        .NonSuccessStatusCodeThrows( true )
+                        .NonSuccessStatusCodeThrowsException( true )
                         .StatusIs<Post>( HttpStatusCode.OK ) )
                     .BuildResultAsync( );
 
             // Assert
             Assert.NotNull( response );
-            var actual = ( Post ) response.Result!;
+            var actual = ( Post )response.Result!;
             Assert.Equal( 1, actual.Id );
             Assert.Equal( "foo", actual.Title );
             Assert.Equal( "bar", actual.Body );
@@ -103,13 +103,13 @@ namespace Myth.Rest.Test {
             var response = await _restClient
                 .DoPatch( "posts/1", body )
                     .When( config => config
-                        .NonSuccessStatusCodeThrows( true )
+                        .NonSuccessStatusCodeThrowsException( true )
                         .StatusIs<Post>( HttpStatusCode.OK ) )
                     .BuildResultAsync( );
 
             // Assert
             Assert.NotNull( response );
-            var actual = ( Post ) response.Result!;
+            var actual = ( Post )response.Result!;
             Assert.Equal( 0, actual.UserId );
             Assert.Equal( HttpStatusCode.OK, response.StatusCode );
             Assert.Equal( HttpMethod.Patch, response.Method );
@@ -121,7 +121,7 @@ namespace Myth.Rest.Test {
             var response = await _restClient
                 .DoDelete( "posts/1" )
                     .When( config => config
-                        .NonSuccessStatusCodeThrows( true ) )
+                        .NonSuccessStatusCodeThrowsException( true ) )
                     .BuildResultAsync( );
 
             // Assert

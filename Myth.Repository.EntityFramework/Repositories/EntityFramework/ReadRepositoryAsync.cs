@@ -5,7 +5,6 @@ using Myth.Interfaces.Repositories.EntityFramework;
 namespace Myth.Repositories.EntityFramework {
 
     public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity> where TEntity : class {
-        
         protected readonly BaseContext _context;
 
         public ReadRepositoryAsync( BaseContext context ) => _context = context;

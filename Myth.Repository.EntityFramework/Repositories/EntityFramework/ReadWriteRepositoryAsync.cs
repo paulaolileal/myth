@@ -99,6 +99,7 @@ namespace Myth.Repositories.EntityFramework {
 
         public virtual IQueryable<TEntity> Where( ISpec<TEntity> spec ) =>
                                             _readRepository.Where( spec );
+
         public IQueryable<TEntity> Where( Expression<Func<TEntity, bool>> predicate ) =>
             _readRepository.Where( predicate );
     }

@@ -1,9 +1,7 @@
 ﻿using Myth.Interfaces.Repositories.Results;
 using System.Linq.Expressions;
-using Myth.Interfaces.Repositories.Base;
 
-namespace Myth.Interfaces.Repositories.Base
-{
+namespace Myth.Interfaces.Repositories.Base {
 
     public interface IReadRepositoryAsync<TEntity> : IRepository {
 

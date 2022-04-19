@@ -1,8 +1,7 @@
 ﻿using Myth.Interfaces;
 using Myth.Repositories.Expressions;
 
-namespace Myth.Extensions.Specifications
-{
+namespace Myth.Extensions.Specifications {
 
     public static class FilterSpecificationExtension {
 

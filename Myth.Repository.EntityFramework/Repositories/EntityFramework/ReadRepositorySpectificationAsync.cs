@@ -16,7 +16,7 @@ namespace Myth.Repositories.EntityFramework {
             var totalItens = await specification.Filtered( _context.Set<TEntity>( ).AsQueryable( ) ).CountAsync( cancellationToken );
             var pageSize = specification.ItensTaked > 0 ? specification.ItensTaked : totalItens;
             var pageNumber = ( specification.ItensSkiped > 0 ? ( specification.ItensSkiped / pageSize ) : 0 ) + 1;
-            var totalPages = ( int ) Math.Ceiling( decimal.Divide( totalItens, ( pageSize > 0 ? pageSize : totalItens ) ) );
+            var totalPages = ( int )Math.Ceiling( decimal.Divide( totalItens, ( pageSize > 0 ? pageSize : totalItens ) ) );
             var paginatedResult = new Paginated<TEntity>( pageNumber, pageSize, totalItens, totalPages, itens );
             return paginatedResult;
         }
