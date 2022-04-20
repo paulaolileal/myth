@@ -47,7 +47,7 @@ namespace Myth.Rest {
         }
 
         public RestConfigBuilder AddHeader( string key, string value ) {
-            _customHeaders.Add( key, value );
+            _customHeaders.TryAdd( key, value );
             return this;
         }
 

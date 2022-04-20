@@ -18,14 +18,14 @@ namespace Myth.Rest {
         }
 
         public RestStatusBuilder StatusIs<TResult>( HttpStatusCode statusCode, bool shouldThrowException = false ) {
-            _mapStatus.Add( statusCode, typeof( TResult ) );
-            _mapException.Add( statusCode, shouldThrowException );
+            _mapStatus.TryAdd( statusCode, typeof( TResult ) );
+            _mapException.TryAdd( statusCode, shouldThrowException );
             return this;
         }
 
         public RestStatusBuilder StatusIs( HttpStatusCode statusCode, Type type, bool shouldThrowException = false ) {
-            _mapStatus.Add( statusCode, type );
-            _mapException.Add( statusCode, shouldThrowException );
+            _mapStatus.TryAdd( statusCode, type );
+            _mapException.TryAdd( statusCode, shouldThrowException );
             return this;
         }
 
