@@ -148,15 +148,20 @@ foreach($file in $files) {
 	# Save file
 	Set-Content -Path $file -Value ($content)
 }
-Print("$($name) packages changed to the new version $($version) in all procjects", '-foregroundcolor green')
+
+Write-Host '-------------------------------------------------------------------------------' -foregroundcolor green
+Write-Host "$($name) packages..." -foregroundcolor green
+Write-Host "...changed to the new version $($version) in all procjects" -foregroundcolor green
 
 # Remove all myth packages already generated
 Remove-Cached-Files -path '\AppData\Roaming\NuGet\Packages' -isDirectory 'false'
-Print("$($name) packages cleaned from local Nuget Packages", '-foregroundcolor green')
+Write-Host "...cleaned from local Nuget Packages" -foregroundcolor green
 
 # Remove all myth packages cached local
 Remove-Cached-Files -path '\.nuget\packages' -isDirectory 'true'
-Print("$($name) packages cleaned from cached Nuget Packages", '-foregroundcolor green')
+Write-Host "...cleaned from cached Nuget Packages" -foregroundcolor green
+
+Write-Host '-------------------------------------------------------------------------------' -foregroundcolor green
 
 # Build and pack projects
 foreach($file in $projects) {
