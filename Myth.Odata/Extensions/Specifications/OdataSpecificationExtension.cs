@@ -14,7 +14,7 @@ namespace Myth.Extensions.Specifications {
                     foreach ( var order in odata.Order )
                         spec = spec.Order( order );
 
-                if ( odata.Pagination != null )
+                if ( odata.Pagination is not null )
                     spec = spec.Paginate( odata.Pagination );
             }
 

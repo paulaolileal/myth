@@ -20,7 +20,8 @@ namespace Myth.Api {
 
         public Odata( ) {
             Filter = Order = string.Empty;
-            PageNumber = PageSize = 0;
+            PageNumber = 0;
+            PageSize = 10;
         }
 
         public static implicit operator Odata<TDest>( Odata<TSource, TDest> odata ) => odata.Build( );
