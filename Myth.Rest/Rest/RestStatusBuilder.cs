@@ -29,6 +29,24 @@ namespace Myth.Rest {
             return this;
         }
 
+        public RestStatusBuilder StatusIs( Type type, bool shouldThrowException = false, params HttpStatusCode[ ] statusCodes ) {
+            statusCodes = statusCodes.Distinct( ).ToArray( );
+            foreach ( var statusCode in statusCodes ) {
+                _mapStatus.TryAdd( statusCode, type );
+                _mapException.TryAdd( statusCode, shouldThrowException );
+            }
+            return this;
+        }
+
+        public RestStatusBuilder StatusIs<TResult>( bool shouldThrowException = false, params HttpStatusCode[ ] statusCodes ) {
+            statusCodes = statusCodes.Distinct( ).ToArray( );
+            foreach ( var statusCode in statusCodes ) {
+                _mapStatus.TryAdd( statusCode, typeof( TResult ) );
+                _mapException.TryAdd( statusCode, shouldThrowException );
+            }
+            return this;
+        }
+
         public RestStatusBuilder AnyStatus( Type type ) {
             _allMapStatus = type;
             return this;
