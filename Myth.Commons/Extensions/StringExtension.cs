@@ -67,5 +67,19 @@ namespace Myth.Extensions {
 
             return string.Empty;
         }
+
+        public static bool ContainsAny( this string s, IEnumerable<string> substrings ) {
+            if ( string.IsNullOrEmpty( s ) || substrings == null )
+                return false;
+
+            return substrings.Any( substring => s.Contains( substring, StringComparison.CurrentCultureIgnoreCase ) );
+        }
+
+        public static bool StartsWithAny( this string s, IEnumerable<string> substrings ) {
+            if ( string.IsNullOrEmpty( s ) || substrings == null )
+                return false;
+
+            return substrings.Any( substring => s.StartsWith( substring, StringComparison.CurrentCultureIgnoreCase ) );
+        }
     }
 }
