@@ -25,7 +25,8 @@ $projects = @(
 	"Myth.Repository\Myth.Repository.csproj",		
 	"Myth.Repository.EntityFramework\Myth.Repository.EntityFramework.csproj",		
 	"Myth.Rest\Myth.Rest.csproj",		
-	"Myth.Odata\Myth.Odata.csproj"	
+	"Myth.Odata\Myth.Odata.csproj",	
+	"Myth.DependencyInjection\Myth.DependencyInjection.csproj"	
 )	
 
 # Projects to ignore on delete cached packages
