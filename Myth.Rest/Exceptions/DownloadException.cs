@@ -1,8 +1,8 @@
 ﻿namespace Myth.Exceptions {
 
     public class DownloadException : Exception {
-        public string FilePath { get; set; }
-        public string Url { get; set; }
+        public string? FilePath { get; set; }
+        public string? Url { get; set; }
 
         protected DownloadException( ) {
         }

@@ -23,7 +23,7 @@ namespace Myth.Extensions {
             } catch ( Exception ) {
                 var message = "";
                 if ( !string.IsNullOrEmpty( odata.Filter ) )
-                    message += $"| $filter={ odata.Filter}";
+                    message += $"| $filter={odata.Filter}";
 
                 if ( !string.IsNullOrEmpty( odata.Order ) )
                     message += $"| $orderby={odata.Order}";

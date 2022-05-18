@@ -1,7 +1,7 @@
 ﻿namespace Myth.Exceptions {
 
     public class ResponseTypeException : Exception {
-        public Type InformedType { get; private set; }
+        public Type? InformedType { get; private set; }
         public Type? ExpectedType { get; private set; }
 
         protected ResponseTypeException( ) {

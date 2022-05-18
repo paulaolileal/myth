@@ -8,8 +8,8 @@ namespace Myth.Rest {
 
     public class RestBuilder : IDisposable {
         protected HttpClient _client;
-        protected Exception _exception;
-        protected Task<HttpResponseMessage> _responseMessage;
+        protected Exception? _exception;
+        protected Task<HttpResponseMessage>? _responseMessage;
 
         protected RestConfigBuilder _configBuilder;
         protected readonly RestStatusBuilder _statusBuilder;
@@ -63,6 +63,7 @@ namespace Myth.Rest {
 
         public RestBuilder DoPost<TBody>( string url, TBody body, CancellationToken cancellationToken = default ) {
             try {
+                ArgumentNullException.ThrowIfNull( body, nameof( body ) );
                 PreRequestSettings( );
                 _responseMessage = _client.PostAsync( url, body.ToHttpContent( _configBuilder._caseStrategy ), cancellationToken );
             } catch ( Exception exception ) {
@@ -73,6 +74,7 @@ namespace Myth.Rest {
 
         public RestBuilder DoPut<TBody>( string url, TBody body, CancellationToken cancellationToken = default ) {
             try {
+                ArgumentNullException.ThrowIfNull( body, nameof( body ) );
                 PreRequestSettings( );
                 _responseMessage = _client.PutAsync( url, body.ToHttpContent( _configBuilder._caseStrategy ), cancellationToken );
             } catch ( Exception exception ) {
@@ -93,6 +95,7 @@ namespace Myth.Rest {
 
         public RestBuilder DoPatch<TBody>( string url, TBody body, CancellationToken cancellationToken = default ) {
             try {
+                ArgumentNullException.ThrowIfNull( body, nameof( body ) );
                 PreRequestSettings( );
                 _responseMessage = _client.PatchAsync( url, body.ToHttpContent( _configBuilder._caseStrategy ), cancellationToken );
             } catch ( Exception exception ) {
@@ -119,12 +122,16 @@ namespace Myth.Rest {
 
         public async Task<RestResponse> BuildResultAsync<TResult>( ) {
             try {
+                if ( _responseMessage is null )
+                    throw new RequestException( );
+
                 var message = await _responseMessage;
                 var content = await message.Content.ReadAsStringAsync( );
 
-                TResult responseBody;
+                TResult? responseBody = default;
                 try {
-                    responseBody = JsonConvert.DeserializeObject<TResult>( content );
+                    if ( !string.IsNullOrEmpty( content ) )
+                        responseBody = JsonConvert.DeserializeObject<TResult>( content! );
                 } catch ( Exception exception ) {
                     throw new MapContentException( typeof( TResult ), content, exception );
                 }
@@ -144,6 +151,9 @@ namespace Myth.Rest {
 
         public async Task<RestResponse> BuildResultAsync( ) {
             try {
+                if ( _responseMessage is null )
+                    throw new RequestException( );
+
                 var message = await _responseMessage;
                 var content = await message.Content.ReadAsStringAsync( );
 
@@ -154,9 +164,9 @@ namespace Myth.Rest {
                     type = _statusBuilder.GetMappedType( message.StatusCode );
 
                     try {
-                        responseBody = JsonConvert.DeserializeObject( content, type );
+                        responseBody = JsonConvert.DeserializeObject( content, type! );
                     } catch ( Exception exception ) {
-                        throw new MapContentException( type, content, exception );
+                        throw new MapContentException( type!, content, exception );
                     }
                 }
 

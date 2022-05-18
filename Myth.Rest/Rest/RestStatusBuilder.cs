@@ -5,7 +5,7 @@ namespace Myth.Rest {
     public class RestStatusBuilder {
         private readonly IDictionary<HttpStatusCode, Type> _mapStatus;
         private readonly IDictionary<HttpStatusCode, bool> _mapException;
-        private Type _allMapStatus;
+        private Type? _allMapStatus;
         private bool _throwOnNonSuccess;
 
         public RestStatusBuilder( ) {
@@ -75,7 +75,7 @@ namespace Myth.Rest {
             return _mapException.ContainsKey( statusCode );
         }
 
-        public Type GetMappedType( HttpStatusCode statusCode ) {
+        public Type? GetMappedType( HttpStatusCode statusCode ) {
             var result = _allMapStatus;
 
             if ( _mapStatus.ContainsKey( statusCode ) )

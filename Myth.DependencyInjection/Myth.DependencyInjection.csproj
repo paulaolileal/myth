@@ -8,7 +8,7 @@
 		<Platforms>x64</Platforms>
 		<Version>2.0.0.5</Version>
 		<Authors>Paulo Leal</Authors>
-		<Description>An implementation of the specification pattern for data repositories</Description>
+		<Description>The components of dependency injection from myth</Description>
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons</RepositoryUrl>
 		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth-commons</PackageProjectUrl>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
@@ -25,8 +25,8 @@
 		</None>
 	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
+	</ItemGroup>
 
 </Project>

@@ -1,4 +1,6 @@
+using Myth.Exceptions;
 using Myth.Rest.Test.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -30,7 +32,7 @@ namespace Myth.Rest.Test {
 
             // Assert
             Assert.NotNull( response );
-            var actual = ( IEnumerable<Post> )response.Result!;
+            var actual = response.GetAs<IEnumerable<Post>>( );
             Assert.True( actual.Any( ) );
             Assert.Equal( HttpStatusCode.OK, response.StatusCode );
             Assert.Equal( HttpMethod.Get, response.Method );
@@ -55,7 +57,7 @@ namespace Myth.Rest.Test {
 
             // Assert
             Assert.NotNull( response );
-            var actual = ( Post )response.Result!;
+            var actual = response.GetAs<Post>( );
             Assert.Equal( 101, actual.Id );
             Assert.Equal( "foo", actual.Title );
             Assert.Equal( "bar", actual.Body );
@@ -83,7 +85,7 @@ namespace Myth.Rest.Test {
 
             // Assert
             Assert.NotNull( response );
-            var actual = ( Post )response.Result!;
+            var actual = response.GetAs<Post>( );
             Assert.Equal( 1, actual.Id );
             Assert.Equal( "foo", actual.Title );
             Assert.Equal( "bar", actual.Body );
@@ -109,7 +111,7 @@ namespace Myth.Rest.Test {
 
             // Assert
             Assert.NotNull( response );
-            var actual = ( Post )response.Result!;
+            var actual = response.GetAs<Post>( );
             Assert.Equal( 0, actual.UserId );
             Assert.Equal( HttpStatusCode.OK, response.StatusCode );
             Assert.Equal( HttpMethod.Patch, response.Method );
@@ -130,6 +132,19 @@ namespace Myth.Rest.Test {
             Assert.Null( response.ResultType );
             Assert.Equal( HttpStatusCode.OK, response.StatusCode );
             Assert.Equal( HttpMethod.Delete, response.Method );
+        }
+
+        [Fact]
+        public async Task Get_should_throw_request_exception( ) {
+            // Act
+            Func<Task> requestAction = async ( ) => await _restClient
+                    .When( config => config
+                        .NonSuccessStatusCodeThrowsException( true )
+                        .StatusIs<IEnumerable<Post>>( HttpStatusCode.OK ) )
+                    .BuildResultAsync( );
+
+            // Assert
+            await Assert.ThrowsAsync<RequestException>( async ( ) => await requestAction( ) );
         }
     }
 }

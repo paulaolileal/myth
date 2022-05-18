@@ -35,12 +35,12 @@ namespace Myth.Extensions {
                     .TakeWhile( ( c ) => c != endCharacter ) );
         }
 
-        public static string GetWordThatContains( this string text, string word, bool removeWord = false ) {
+        public static string? GetWordThatContains( this string text, string word, bool removeWord = false ) {
             var foundedWord = text
                 .Split( " ", StringSplitOptions.RemoveEmptyEntries )
                 .FirstOrDefault( x => x.Contains( word, StringComparison.InvariantCultureIgnoreCase ) );
 
-            if ( removeWord )
+            if ( removeWord && !string.IsNullOrEmpty( foundedWord ) )
                 foundedWord = foundedWord.Replace( word, "", StringComparison.InvariantCultureIgnoreCase );
 
             return foundedWord;
@@ -50,8 +50,8 @@ namespace Myth.Extensions {
             var split = text.Replace( "(", " (" ).Split( " ", StringSplitOptions.RemoveEmptyEntries ).ToList( );
             var index = split.IndexOf( word );
 
-            if ( index > 0 && index - 1 >= 0 ) {
-                return split.ElementAtOrDefault( index - 1 );
+            if ( index > 0 && index - 1 >= 0 && split.Any( ) ) {
+                return split.ElementAtOrDefault( index - 1 )!;
             }
 
             return string.Empty;

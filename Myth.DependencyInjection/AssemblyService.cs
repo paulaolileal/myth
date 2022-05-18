@@ -108,8 +108,8 @@ namespace Myth.DependencyInjection {
         private static IEnumerable<Type> LoadFrameworkTypes( IEnumerable<Assembly> frameworkAssemblies ) =>
             frameworkAssemblies.SelectMany( assembly => assembly.GetExportedTypes( ) );
 
-        private IEnumerable<Assembly> LoadFrameworkAssemblies( List<Assembly> assemblies, IEnumerable<string> ignoreNames ) =>
-            assemblies.Where( assembly => assembly.FullName.StartsWithAny( ignoreNames ) );
+        private static IEnumerable<Assembly> LoadFrameworkAssemblies( List<Assembly> assemblies, IEnumerable<string> ignoreNames ) =>
+            assemblies.Where( assembly => assembly.FullName is not null && assembly.FullName.StartsWithAny( ignoreNames ) );
 
         private static List<Assembly> LoadAssembliesFromFiles( IEnumerable<Assembly> current ) {
             var localFiles = Directory.GetFiles( AppDomain.CurrentDomain.BaseDirectory, "*.dll", SearchOption.TopDirectoryOnly );
