@@ -2,6 +2,7 @@
 using Myth.Extensions;
 using Myth.Models.Rest;
 using Newtonsoft.Json;
+using System.Diagnostics;
 using System.Net.Http.Headers;
 
 namespace Myth.Rest {
@@ -120,72 +121,18 @@ namespace Myth.Rest {
             return this;
         }
 
-        public async Task<RestResponse> BuildResultAsync<TResult>( ) {
+        public async Task<RestResponse> BuildResultAsync<TResult>( ) => await BuildResultAsync( typeof( TResult ) );
+
+        public async Task<RestResponse> BuildResultAsync( ) => await BuildResultAsync( null );
+
+        private async Task<RestResponse> BuildResultAsync( Type? responseType = null ) {
             try {
-                if ( _responseMessage is null )
-                    throw new RequestException( );
+                var restResponse = await ProcessResponseAsync( responseType );
 
-                var message = await _responseMessage;
-                var content = await message.Content.ReadAsStringAsync( );
+                if ( _statusBuilder.ShouldThrowException( restResponse.StatusCode ) )
+                    throw new NonSuccessException( restResponse );
 
-                TResult? responseBody = default;
-                try {
-                    if ( !string.IsNullOrEmpty( content ) )
-                        responseBody = JsonConvert.DeserializeObject<TResult>( content! );
-                } catch ( Exception exception ) {
-                    throw new MapContentException( typeof( TResult ), content, exception );
-                }
-
-                return new RestResponse(
-                    message.StatusCode,
-                    message.RequestMessage!.RequestUri!,
-                    message.RequestMessage.Method,
-                    content,
-                    typeof( TResult ),
-                    responseBody );
-            } catch ( Exception exception ) {
-                _exception = exception;
-                throw _exception;
-            }
-        }
-
-        public async Task<RestResponse> BuildResultAsync( ) {
-            try {
-                if ( _responseMessage is null )
-                    throw new RequestException( );
-
-                var message = await _responseMessage;
-                var content = await message.Content.ReadAsStringAsync( );
-
-                Type? type = null;
-                object? responseBody = null;
-
-                if ( _statusBuilder.ContainsStatus( message.StatusCode ) ) {
-                    type = _statusBuilder.GetMappedType( message.StatusCode );
-
-                    try {
-                        responseBody = JsonConvert.DeserializeObject( content, type! );
-                    } catch ( Exception exception ) {
-                        throw new MapContentException( type!, content, exception );
-                    }
-                }
-
-                if ( _statusBuilder.ShouldThrowException( message.StatusCode ) )
-                    throw new NonSuccessException(
-                        message.StatusCode,
-                        message.RequestMessage!.RequestUri!,
-                        message.RequestMessage.Method,
-                        content,
-                        type,
-                        responseBody );
-
-                return new RestResponse(
-                    message.StatusCode,
-                    message.RequestMessage!.RequestUri!,
-                    message.RequestMessage.Method,
-                    content,
-                    type,
-                    responseBody );
+                return restResponse;
             } catch ( Exception exception ) {
                 _exception = exception;
                 throw _exception;
@@ -239,6 +186,43 @@ namespace Myth.Rest {
                     _client
                         .DefaultRequestHeaders.Add( header.Key, header.Value );
                 }
+        }
+
+        private async Task<RestResponse> ProcessResponseAsync( Type? responseType = null ) {
+            if ( _responseMessage is null )
+                throw new RequestException( );
+
+            var requestTime = new Stopwatch( );
+
+            requestTime.Start( );
+            var message = await _responseMessage;
+            requestTime.Stop( );
+
+            var content = await message.Content.ReadAsStringAsync( );
+            object? responseBody = null;
+
+            if ( responseType is null && _statusBuilder.ContainsStatus( message.StatusCode ) ) {
+                responseType = _statusBuilder.GetMappedType( message.StatusCode );
+            }
+
+            if ( responseType is not null && !string.IsNullOrEmpty( content ) ) {
+                try {
+                    responseBody = JsonConvert.DeserializeObject( content, responseType );
+                } catch ( Exception exception ) {
+                    throw new MapContentException( responseType, content, exception );
+                }
+            }
+
+            var restResponse = new RestResponse(
+                message.StatusCode,
+                message.RequestMessage!.RequestUri!,
+                message.RequestMessage.Method,
+                content,
+                responseType,
+                responseBody,
+                requestTime.Elapsed );
+
+            return restResponse;
         }
 
         public void Dispose( ) {

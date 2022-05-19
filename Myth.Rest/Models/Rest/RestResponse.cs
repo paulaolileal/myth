@@ -11,6 +11,7 @@ namespace Myth.Models.Rest {
         public string RawMessage { get; private set; }
         public Type? ResultType { get; private set; }
         public object? Result { get; private set; }
+        public TimeSpan ElapsedTime { get; private set; }
 
         public RestResponse(
             HttpStatusCode statusCode,
@@ -18,13 +19,15 @@ namespace Myth.Models.Rest {
             HttpMethod method,
             string rawMessage,
             Type? resultType,
-            object? message ) {
+            object? message,
+            TimeSpan elapsedTime ) {
             StatusCode = statusCode;
             Url = url;
             Method = method;
             RawMessage = rawMessage;
             ResultType = resultType;
             Result = message;
+            ElapsedTime = elapsedTime;
         }
 
         public TResult GetAs<TResult>( ) {

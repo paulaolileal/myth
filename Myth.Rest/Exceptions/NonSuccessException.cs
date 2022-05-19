@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using Myth.Models.Rest;
+using System.Net;
 
 namespace Myth.Exceptions {
 
@@ -28,5 +29,14 @@ namespace Myth.Exceptions {
             Type = type;
             Message = message;
         }
+
+        public NonSuccessException( RestResponse response )
+            : this(
+            response.StatusCode,
+            response.Url,
+            response.Method,
+            response.RawMessage,
+            response.ResultType,
+            response.Result ) { }
     }
 }
