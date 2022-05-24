@@ -1,8 +1,13 @@
-﻿namespace Myth.ValueObjects {
+﻿using Microsoft.AspNetCore.Mvc;
+
+namespace Myth.ValueObjects {
 
     public class Pagination : ValueObject {
+
+        [FromQuery( Name = "$pagenumber" )]
         public int PageNumber { get; set; }
 
+        [FromQuery( Name = "$pagesize" )]
         public int PageSize { get; set; }
 
         public static readonly Pagination Default = new Pagination {
@@ -31,5 +36,7 @@
         public string Build( ) {
             return $"PageNumber={PageNumber}&PageSize={PageSize}";
         }
+
+        public int GetPageNumberToSkip( ) => ( PageNumber - 1 ) * PageSize;
     }
 }
