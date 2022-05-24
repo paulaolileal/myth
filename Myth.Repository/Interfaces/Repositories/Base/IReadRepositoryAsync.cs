@@ -27,13 +27,13 @@ namespace Myth.Interfaces.Repositories.Base {
 
         Task<bool> AnyAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
 
-        Task<TEntity> FirstOrDefaultAsync( ISpec<TEntity> specification, CancellationToken cancellationToken );
+        Task<TEntity?> FirstOrDefaultAsync( ISpec<TEntity> specification, CancellationToken cancellationToken );
 
-        Task<TEntity> FirstOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
+        Task<TEntity?> FirstOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
 
-        Task<TEntity> LastOrDefaultAsync( ISpec<TEntity> specification, CancellationToken cancellationToken );
+        Task<TEntity?> LastOrDefaultAsync( ISpec<TEntity> specification, CancellationToken cancellationToken );
 
-        Task<TEntity> LastOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
+        Task<TEntity?> LastOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
 
         Task<bool> AllAsync( ISpec<TEntity> specification, CancellationToken cancellationToken );
 

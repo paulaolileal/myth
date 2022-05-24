@@ -30,10 +30,10 @@ namespace Myth.Repositories.EntityFramework {
         public virtual Task<bool> AnyAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
             _context.Set<TEntity>( ).AnyAsync( predicate, cancellationToken );
 
-        public virtual Task<TEntity> FirstOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
+        public virtual Task<TEntity?> FirstOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
             _context.Set<TEntity>( ).FirstOrDefaultAsync( predicate, cancellationToken );
 
-        public virtual Task<TEntity> LastOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
+        public virtual Task<TEntity?> LastOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
             _context.Set<TEntity>( ).LastOrDefaultAsync( predicate, cancellationToken );
 
         public virtual Task<bool> AllAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
