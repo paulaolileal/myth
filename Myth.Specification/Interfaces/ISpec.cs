@@ -46,5 +46,7 @@ namespace Myth.Interfaces {
         ISpec<T> Order<TProperty>( Expression<Func<T, TProperty>> property );
 
         ISpec<T> OrderDescending<TProperty>( Expression<Func<T, TProperty>> property );
+
+        ISpec<T> DistinctBy<TProperty>( Expression<Func<T, TProperty>> property );
     }
 }

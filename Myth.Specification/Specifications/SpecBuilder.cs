@@ -80,6 +80,9 @@ namespace Myth.Specifications {
         public ISpec<T> OrderDescending<TProperty>( Expression<Func<T, TProperty>> property ) =>
             new OrderDescendingSpec<T, TProperty>( this, property );
 
+        public ISpec<T> DistinctBy<TProperty>( Expression<Func<T, TProperty>> property ) =>
+           new DistinctSpec<T, TProperty>( this, property );
+
         public IQueryable<T> Prepare( IQueryable<T> query ) {
             if ( query == null )
                 throw new ArgumentNullException( nameof( query ) );
