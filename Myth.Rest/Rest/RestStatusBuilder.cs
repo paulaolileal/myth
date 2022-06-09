@@ -13,6 +13,13 @@ namespace Myth.Rest {
             _mapException = new Dictionary<HttpStatusCode, bool>( );
         }
 
+        public void Clear( ) {
+            _mapException.Clear();
+            _mapStatus.Clear();
+            _allMapStatus = null;
+            _throwOnNonSuccess = false;
+        }
+
         public static bool IsSuccessStatusCode( HttpStatusCode statusCode ) {
             return ( ( int )statusCode >= 200 ) && ( ( int )statusCode <= 299 );
         }
