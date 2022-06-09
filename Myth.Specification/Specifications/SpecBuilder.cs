@@ -19,11 +19,11 @@ namespace Myth.Specifications {
             ItensTaked = left.ItensTaked;
         }
 
-        public static SpecBuilder<T> Create( ) => new NullSpec<T>( );
+        public static ISpec<T> Create( ) => new NullSpec<T>( );
 
         public IQueryable<T> SatisfyingItemsFrom( IQueryable<T> query ) => Prepare( query );
 
-        public T SatisfyingItemFrom( IQueryable<T> query ) {
+        public T? SatisfyingItemFrom( IQueryable<T> query ) {
             if ( query is null )
                 throw new ArgumentNullException( nameof( query ) );
 

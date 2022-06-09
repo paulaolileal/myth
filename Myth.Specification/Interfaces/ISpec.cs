@@ -23,7 +23,7 @@ namespace Myth.Interfaces {
 
         IQueryable<T> Processed( IQueryable<T> query );
 
-        T SatisfyingItemFrom( IQueryable<T> query );
+        T? SatisfyingItemFrom( IQueryable<T> query );
 
         IQueryable<T> SatisfyingItemsFrom( IQueryable<T> query );
 
