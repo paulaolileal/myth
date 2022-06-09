@@ -8,12 +8,14 @@ namespace Myth.Rest {
         protected internal string _baseUrl;
         protected internal AuthenticationHeaderValue _authorizationHeader;
         protected internal string _acceptContentType;
-        protected internal CaseStrategy _caseStrategy;
+        protected internal CaseStrategy _serializationCaseStrategy;
+        protected internal CaseStrategy _deserializationCaseStrategy;
         protected internal IDictionary<string, string> _customHeaders;
 
         public RestConfigBuilder( ) {
             _customHeaders = new Dictionary<string, string>( );
-            _caseStrategy = CaseStrategy.CamelCase;
+            _serializationCaseStrategy = CaseStrategy.CamelCase;
+            _deserializationCaseStrategy = CaseStrategy.CamelCase;
         }
 
         public bool AuthorizationIsSetted => _authorizationHeader != null;
@@ -51,8 +53,13 @@ namespace Myth.Rest {
             return this;
         }
 
-        public RestConfigBuilder WithBodySerialization( CaseStrategy caseStrategy ) {
-            _caseStrategy = caseStrategy;
+        public RestConfigBuilder WithBodySerialization( CaseStrategy serializationCaseStrategy ) {
+            _serializationCaseStrategy = serializationCaseStrategy;
+            return this;
+        }
+
+        public RestConfigBuilder WithBodyDeserialization( CaseStrategy deserializationCaseStrategy ) {
+            _deserializationCaseStrategy = deserializationCaseStrategy;
             return this;
         }
     }

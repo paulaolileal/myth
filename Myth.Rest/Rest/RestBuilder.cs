@@ -66,7 +66,7 @@ namespace Myth.Rest {
             try {
                 ArgumentNullException.ThrowIfNull( body, nameof( body ) );
                 PreRequestSettings( );
-                _responseMessage = _client.PostAsync( url, body.ToHttpContent( _configBuilder._caseStrategy ), cancellationToken );
+                _responseMessage = _client.PostAsync( url, body.ToHttpContent( _configBuilder._serializationCaseStrategy ), cancellationToken );
             } catch ( Exception exception ) {
                 _exception = exception;
             }
@@ -77,7 +77,7 @@ namespace Myth.Rest {
             try {
                 ArgumentNullException.ThrowIfNull( body, nameof( body ) );
                 PreRequestSettings( );
-                _responseMessage = _client.PutAsync( url, body.ToHttpContent( _configBuilder._caseStrategy ), cancellationToken );
+                _responseMessage = _client.PutAsync( url, body.ToHttpContent( _configBuilder._serializationCaseStrategy ), cancellationToken );
             } catch ( Exception exception ) {
                 _exception = exception;
             }
@@ -98,7 +98,7 @@ namespace Myth.Rest {
             try {
                 ArgumentNullException.ThrowIfNull( body, nameof( body ) );
                 PreRequestSettings( );
-                _responseMessage = _client.PatchAsync( url, body.ToHttpContent( _configBuilder._caseStrategy ), cancellationToken );
+                _responseMessage = _client.PatchAsync( url, body.ToHttpContent( _configBuilder._serializationCaseStrategy ), cancellationToken );
             } catch ( Exception exception ) {
                 _exception = exception;
             }
@@ -106,17 +106,19 @@ namespace Myth.Rest {
         }
 
         public RestBuilder WithConfiguration( Action<RestConfigBuilder>? configurationBuilder ) {
-            var configBuilder = new RestConfigBuilder( );
+            if ( _configBuilder is null )
+                _configBuilder = new RestConfigBuilder( );
 
             if ( configurationBuilder != null )
-                configurationBuilder.Invoke( configBuilder );
-
-            _configBuilder = configBuilder;
+                configurationBuilder.Invoke( _configBuilder );
 
             return this;
         }
 
-        public RestBuilder When( Action<RestStatusBuilder> statusConfiguration ) {
+        public RestBuilder When( Action<RestStatusBuilder> statusConfiguration, bool clearOldSettings = true ) {
+            if(clearOldSettings)
+                _statusBuilder.Clear( );
+
             statusConfiguration.Invoke( _statusBuilder );
             return this;
         }
@@ -183,8 +185,9 @@ namespace Myth.Rest {
 
             if ( _configBuilder._customHeaders.Any( ) )
                 foreach ( var header in _configBuilder._customHeaders ) {
-                    _client
-                        .DefaultRequestHeaders.Add( header.Key, header.Value );
+                    if ( !_client.DefaultRequestHeaders.Contains( header.Key ) )
+                        _client
+                            .DefaultRequestHeaders.Add( header.Key, header.Value );
                 }
         }
 
@@ -207,7 +210,7 @@ namespace Myth.Rest {
 
             if ( responseType is not null && !string.IsNullOrEmpty( content ) ) {
                 try {
-                    responseBody = JsonConvert.DeserializeObject( content, responseType );
+                    responseBody = content.FromJson( responseType, _configBuilder._deserializationCaseStrategy );
                 } catch ( Exception exception ) {
                     throw new MapContentException( responseType, content, exception );
                 }
