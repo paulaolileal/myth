@@ -7,11 +7,14 @@ using System.Linq.Expressions;
 namespace Myth.Repositories.EntityFramework {
 
     public abstract class ReadWriteRepositoryAsync<TEntity> : IReadWriteRepositoryAsync<TEntity> where TEntity : class {
+        protected readonly BaseContext _context;
+
         private readonly IReadRepositoryAsync<TEntity> _readRepository;
 
         private readonly IWriteRepositoryAsync<TEntity> _writeRepository;
 
         public ReadWriteRepositoryAsync( BaseContext context ) {
+            _context = context;
             _readRepository = new ReadRepositoryAsync<TEntity>( context );
             _writeRepository = new WriteRepositoryAsync<TEntity>( context );
         }
