@@ -46,5 +46,8 @@ namespace Myth.Repositories.EntityFramework {
 
         public virtual Task<int> SaveChangesAsync( CancellationToken cancellationToken = default ) =>
             _context.SaveChangesAsync( cancellationToken );
+
+        public virtual Task<int> ExecuteSqlAsync( string query, IEnumerable<object> parameters, CancellationToken cancellationToken ) =>
+            _context.Database.ExecuteSqlRawAsync( query, parameters, cancellationToken );
     }
 }

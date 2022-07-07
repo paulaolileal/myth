@@ -100,10 +100,12 @@ namespace Myth.Repositories.EntityFramework {
         public virtual Task UpdateRangeAsync( IEnumerable<TEntity> entities, CancellationToken cancellationToken = default ) =>
             _writeRepository.UpdateRangeAsync( entities, cancellationToken );
 
-        public virtual IQueryable<TEntity> Where( ISpec<TEntity> spec ) =>
-                                            _readRepository.Where( spec );
+        public virtual IQueryable<TEntity> Where( ISpec<TEntity> spec ) => _readRepository.Where( spec );
 
         public IQueryable<TEntity> Where( Expression<Func<TEntity, bool>> predicate ) =>
             _readRepository.Where( predicate );
+
+        public Task<int> ExecuteSqlAsync( string query, IEnumerable<object> parameters, CancellationToken cancellationToken ) =>
+            _writeRepository.ExecuteSqlAsync( query, parameters, cancellationToken );
     }
 }
