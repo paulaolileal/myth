@@ -1,7 +1,6 @@
 ﻿using Myth.Exceptions;
 using Myth.Extensions;
 using Myth.Models.Rest;
-using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 
@@ -66,7 +65,10 @@ namespace Myth.Rest {
             try {
                 ArgumentNullException.ThrowIfNull( body, nameof( body ) );
                 PreRequestSettings( );
-                _responseMessage = _client.PostAsync( url, body.ToHttpContent( _configBuilder._serializationCaseStrategy ), cancellationToken );
+
+                var request = ToHttpContent( body );
+
+                _responseMessage = _client.PostAsync( url, request, cancellationToken );
             } catch ( Exception exception ) {
                 _exception = exception;
             }
@@ -77,7 +79,10 @@ namespace Myth.Rest {
             try {
                 ArgumentNullException.ThrowIfNull( body, nameof( body ) );
                 PreRequestSettings( );
-                _responseMessage = _client.PutAsync( url, body.ToHttpContent( _configBuilder._serializationCaseStrategy ), cancellationToken );
+
+                var request = ToHttpContent( body );
+
+                _responseMessage = _client.PutAsync( url, request, cancellationToken );
             } catch ( Exception exception ) {
                 _exception = exception;
             }
@@ -98,7 +103,10 @@ namespace Myth.Rest {
             try {
                 ArgumentNullException.ThrowIfNull( body, nameof( body ) );
                 PreRequestSettings( );
-                _responseMessage = _client.PatchAsync( url, body.ToHttpContent( _configBuilder._serializationCaseStrategy ), cancellationToken );
+
+                var request = ToHttpContent( body );
+
+                _responseMessage = _client.PatchAsync( url, request, cancellationToken );
             } catch ( Exception exception ) {
                 _exception = exception;
             }
@@ -116,7 +124,7 @@ namespace Myth.Rest {
         }
 
         public RestBuilder When( Action<RestStatusBuilder> statusConfiguration, bool clearOldSettings = true ) {
-            if(clearOldSettings)
+            if ( clearOldSettings )
                 _statusBuilder.Clear( );
 
             statusConfiguration.Invoke( _statusBuilder );
@@ -226,6 +234,15 @@ namespace Myth.Rest {
                 requestTime.Elapsed );
 
             return restResponse;
+        }
+
+        private HttpContent ToHttpContent<TBody>( TBody body ) {
+            HttpContent request;
+            if ( body is HttpContent content )
+                request = content;
+            else
+                request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
+            return request;
         }
 
         public void Dispose( ) {
