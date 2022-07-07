@@ -39,11 +39,15 @@ namespace Myth.DependencyInjection {
                 if ( string.IsNullOrEmpty( interfaceName ) )
                     @interface = type.Name;
 
-                var interfaceType = type
-                     .GetInterfaces( )
+                var interfaces = type.GetInterfaces( );
+
+                var interfaceType = interfaces
                      .FirstOrDefault( i => i.Name
                         .ToLower( )
                         .Contains( @interface.ToLower( ) ) );
+
+                if(interfaceType is null)
+                    interfaceType = interfaces.First();
 
                 return new ServiceDescriptor( interfaceType, type, serviceLifetime );
             } );
