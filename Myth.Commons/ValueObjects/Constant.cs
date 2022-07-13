@@ -12,12 +12,9 @@ namespace Myth.ValueObjects {
 
         public static implicit operator TValue( Constant<TConstant, TValue> constant ) => constant.Value;
 
-        public static string GetOptions( ) {
-            var optionsList = List
+        public static string GetOptions( ) =>
+            List
                 .Select( x => $"({x.Value}): {x.Name}" )
-                .ToList( );
-
-            return optionsList.ToStringWithSeparator( " | " );
-        }
+                .ToStringWithSeparator( " | " );
     }
 }
