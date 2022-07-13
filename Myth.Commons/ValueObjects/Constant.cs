@@ -14,7 +14,7 @@ namespace Myth.ValueObjects {
 
         public static string GetOptions( ) {
             var optionsList = List
-                .Select( x => $"({x.Value}): x.Name" )
+                .Select( x => $"({x.Value}): {x.Name}" )
                 .ToList( );
 
             return optionsList.ToStringWithSeparator( " | " );
