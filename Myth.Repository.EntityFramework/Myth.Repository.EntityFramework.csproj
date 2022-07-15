@@ -7,7 +7,7 @@
 		<RootNamespace>Myth</RootNamespace>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Platforms>x64</Platforms>
-		<Version>2.0.0.8</Version>
+		<Version>2.0.0.9</Version>
 		<Authors>Paulo Leal</Authors>
 		<Description>The implementation of generic repositories using expressions and specifications for entity framework</Description>
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons</RepositoryUrl>
