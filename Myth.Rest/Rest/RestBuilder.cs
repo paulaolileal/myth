@@ -113,6 +113,17 @@ namespace Myth.Rest {
             return this;
         }
 
+        public RestBuilder DoPatch( string url, CancellationToken cancellationToken = default ) {
+            try {
+                PreRequestSettings( );
+
+                _responseMessage = _client.PatchAsync( url, null, cancellationToken );
+            } catch ( Exception exception ) {
+                _exception = exception;
+            }
+            return this;
+        }
+
         public RestBuilder WithConfiguration( Action<RestConfigBuilder>? configurationBuilder ) {
             if ( _configBuilder is null )
                 _configBuilder = new RestConfigBuilder( );
