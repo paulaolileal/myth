@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Platforms>x64</Platforms>
-		<Version>2.0.0.10</Version>
+		<Version>2.0.0.11</Version>
 		<Authors>Paulo Leal</Authors>
 		<Description>The components of dependency injection from myth</Description>
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons</RepositoryUrl>

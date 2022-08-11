@@ -7,7 +7,7 @@
 		<RootNamespace>Myth</RootNamespace>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Platforms>x64</Platforms>
-		<Version>2.0.0.10</Version>
+		<Version>2.0.0.11</Version>
 		<Authors>Paulo Leal</Authors>
 		<Description>A rest client implementation, using fluent and type-by-status mapping</Description>
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons</RepositoryUrl>
