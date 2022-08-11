@@ -20,7 +20,7 @@ namespace Myth.Extensions {
                 var pagination = new Pagination( odata.PageNumber, odata.PageSize );
 
                 return new Odata<TDest>( filter, order, pagination );
-            } catch ( Exception ) {
+            } catch ( Exception e) {
                 var message = "";
                 if ( !string.IsNullOrEmpty( odata.Filter ) )
                     message += $"| $filter={odata.Filter}";
@@ -34,7 +34,7 @@ namespace Myth.Extensions {
                 if ( odata.PageSize > 0 )
                     message += $"| pagesize={odata.PageSize}";
 
-                throw new Exception( $"Error on parse Odata, please review: {message}" );
+                throw new Exception( $"Error on parse Odata, please review: {message}", e );
             }
         }
     }
