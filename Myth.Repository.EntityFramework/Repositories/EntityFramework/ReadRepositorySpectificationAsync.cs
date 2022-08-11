@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿
+using Microsoft.EntityFrameworkCore;
 using Myth.Interfaces;
 using Myth.Interfaces.Repositories.EntityFramework;
 using Myth.Interfaces.Repositories.Results;
@@ -12,8 +13,20 @@ namespace Myth.Repositories.EntityFramework {
             specification.Prepare( _context.Set<TEntity>( ).AsQueryable( ) ).ToListAsync( cancellationToken );
 
         public virtual async Task<IPaginated<TEntity>> SearchPaginatedAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) {
-            var itens = await specification.Prepare( _context.Set<TEntity>( ).AsQueryable( ) ).ToListAsync( cancellationToken );
-            var totalItens = await specification.Filtered( _context.Set<TEntity>( ).AsQueryable( ) ).CountAsync( cancellationToken );
+            List<TEntity> itens;
+            int totalItens;
+            try {
+                itens = await specification.Prepare( _context.Set<TEntity>( ).AsQueryable( ) ).ToListAsync( cancellationToken );
+                totalItens = await specification.Filtered( _context.Set<TEntity>( ).AsQueryable( ) ).CountAsync( cancellationToken );
+            } catch ( InvalidOperationException ) {
+                var entitySet = _context.Set<TEntity>( ).AsEnumerable( );
+                var processedEntitySet = entitySet.Where( specification.Predicate.Compile( ) );
+                totalItens = processedEntitySet.Count( );
+                processedEntitySet = specification.Sorted( processedEntitySet.AsQueryable( ) );
+                processedEntitySet = specification.Processed( processedEntitySet.AsQueryable( ) );
+                itens = processedEntitySet.ToList( );
+            }
+
             var pageSize = specification.ItensTaked > 0 ? specification.ItensTaked : totalItens;
             var pageNumber = ( specification.ItensSkiped > 0 ? ( specification.ItensSkiped / pageSize ) : 0 ) + 1;
             var totalPages = ( int )Math.Ceiling( decimal.Divide( totalItens, ( pageSize > 0 ? pageSize : totalItens ) ) );
