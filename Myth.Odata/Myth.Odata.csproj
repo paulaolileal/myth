@@ -7,8 +7,8 @@
 		<RootNamespace>Myth</RootNamespace>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Platforms>x64</Platforms>
-		<Version>2.0.0.11</Version>
-		<Authors>Paulo Leal</Authors>
+		<Version>2.0.0.15</Version>
+		<Authors>Paula Leal</Authors>
 		<Description>A simple OData implementation separating database entities and view models</Description>
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons</RepositoryUrl>
 		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth-commons</PackageProjectUrl>
@@ -28,6 +28,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
+		<ProjectReference Include="..\Myth.Repository\Myth.Repository.csproj" />
 		<ProjectReference Include="..\Myth.Specification\Myth.Specification.csproj" />
 	</ItemGroup>
 

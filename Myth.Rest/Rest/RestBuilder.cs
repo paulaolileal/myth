@@ -10,6 +10,7 @@ namespace Myth.Rest {
         protected HttpClient _client;
         protected Exception? _exception;
         protected Task<HttpResponseMessage>? _responseMessage;
+        protected Func<CancellationToken, Task<HttpResponseMessage>>? _request;
 
         protected RestConfigBuilder _configBuilder;
         protected readonly RestStatusBuilder _statusBuilder;
@@ -51,73 +52,64 @@ namespace Myth.Rest {
 
         public static RestBuilder Create( HttpClient httpClient ) => new( httpClient );
 
-        public RestBuilder DoGet( string url, CancellationToken cancellationToken = default ) {
+        public RestBuilder DoGet( string url ) {
             try {
                 PreRequestSettings( );
-                _responseMessage = _client.GetAsync( url, cancellationToken );
+
+                _request = async ( CancellationToken cancellationToken ) => await _client.GetAsync( url, cancellationToken );
             } catch ( Exception exception ) {
                 _exception = exception;
             }
             return this;
         }
 
-        public RestBuilder DoPost<TBody>( string url, TBody body, CancellationToken cancellationToken = default ) {
+        public RestBuilder DoPost<TBody>( string url, TBody? body = default ) {
             try {
                 ArgumentNullException.ThrowIfNull( body, nameof( body ) );
                 PreRequestSettings( );
 
-                var request = ToHttpContent( body );
+                var request = ToHttpContent( body ) ?? null;
 
-                _responseMessage = _client.PostAsync( url, request, cancellationToken );
+                _request = async ( CancellationToken cancellationToken ) => await _client.PostAsync( url, request, cancellationToken );
             } catch ( Exception exception ) {
                 _exception = exception;
             }
             return this;
         }
 
-        public RestBuilder DoPut<TBody>( string url, TBody body, CancellationToken cancellationToken = default ) {
+        public RestBuilder DoPut<TBody>( string url, TBody? body = default ) {
             try {
                 ArgumentNullException.ThrowIfNull( body, nameof( body ) );
                 PreRequestSettings( );
 
-                var request = ToHttpContent( body );
+                var request = ToHttpContent( body ) ?? null;
 
-                _responseMessage = _client.PutAsync( url, request, cancellationToken );
+                _request = async ( CancellationToken cancellationToken ) => await _client.PutAsync( url, request, cancellationToken );
             } catch ( Exception exception ) {
                 _exception = exception;
             }
             return this;
         }
 
-        public RestBuilder DoDelete( string url, CancellationToken cancellationToken = default ) {
+        public RestBuilder DoDelete( string url ) {
             try {
                 PreRequestSettings( );
-                _responseMessage = _client.DeleteAsync( url, cancellationToken );
+
+                _request = async ( CancellationToken cancellationToken ) => await _client.DeleteAsync( url, cancellationToken );
             } catch ( Exception exception ) {
                 _exception = exception;
             }
             return this;
         }
 
-        public RestBuilder DoPatch<TBody>( string url, TBody body, CancellationToken cancellationToken = default ) {
+        public RestBuilder DoPatch<TBody>( string url, TBody? body = default ) {
             try {
                 ArgumentNullException.ThrowIfNull( body, nameof( body ) );
                 PreRequestSettings( );
 
-                var request = ToHttpContent( body );
+                var request = ToHttpContent( body ) ?? null;
 
-                _responseMessage = _client.PatchAsync( url, request, cancellationToken );
-            } catch ( Exception exception ) {
-                _exception = exception;
-            }
-            return this;
-        }
-
-        public RestBuilder DoPatch( string url, CancellationToken cancellationToken = default ) {
-            try {
-                PreRequestSettings( );
-
-                _responseMessage = _client.PatchAsync( url, null, cancellationToken );
+                _request = async ( CancellationToken cancellationToken ) => await _client.PatchAsync( url, request, cancellationToken );
             } catch ( Exception exception ) {
                 _exception = exception;
             }
@@ -142,15 +134,15 @@ namespace Myth.Rest {
             return this;
         }
 
-        public async Task<RestResponse> BuildResultAsync<TResult>( ) => await BuildResultAsync( typeof( TResult ) );
+        public async Task<RestResponse> BuildResultAsync<TResult>( CancellationToken cancellationToken = default ) => await BuildResultAsync( typeof( TResult ), cancellationToken );
 
-        public async Task<RestResponse> BuildResultAsync( ) => await BuildResultAsync( null );
+        public async Task<RestResponse> BuildResultAsync( CancellationToken cancellationToken = default ) => await BuildResultAsync( null, cancellationToken );
 
-        private async Task<RestResponse> BuildResultAsync( Type? responseType = null ) {
+        private async Task<RestResponse> BuildResultAsync( Type? responseType = null, CancellationToken cancellationToken = default ) {
             try {
-                var restResponse = await ProcessResponseAsync( responseType );
+                var restResponse = await ProcessResponseAsync( responseType, cancellationToken );
 
-                if ( _statusBuilder.ShouldThrowException( restResponse.StatusCode ) )
+                if ( _statusBuilder.ShouldThrowException( restResponse.StatusCode, restResponse.RawMessage ) )
                     throw new NonSuccessException( restResponse );
 
                 return restResponse;
@@ -164,21 +156,21 @@ namespace Myth.Rest {
         /// Downloads a file
         /// </summary>
         /// <param name="url">Url of location</param>
-        /// <param name="fullPath">The full path including the file name</param>
+        /// <param name="destinationPath">The full path including the file name</param>
         /// <param name="replaceExistingFile">If remove old file and create a new one</param>
         /// <returns></returns>
         /// <exception cref="DownloadException"></exception>
-        public async Task DownloadFileAsync( string url, string fullPath, bool replaceExistingFile = false, CancellationToken cancellationToken = default ) {
+        public async Task DownloadFileAsync( string url, string destinationPath, bool replaceExistingFile = false, CancellationToken cancellationToken = default ) {
             try {
                 PreRequestSettings( );
-                if ( File.Exists( fullPath ) && !replaceExistingFile )
-                    throw new DownloadException( "File already exists!", fullPath, url );
+                if ( File.Exists( destinationPath ) && !replaceExistingFile )
+                    throw new DownloadException( "File already exists!", destinationPath, url );
 
                 if ( replaceExistingFile )
-                    File.Delete( fullPath );
+                    File.Delete( destinationPath );
 
                 var fileBytes = await _client.GetByteArrayAsync( url, cancellationToken: cancellationToken );
-                await File.WriteAllBytesAsync( fullPath, fileBytes, cancellationToken );
+                await File.WriteAllBytesAsync( destinationPath, fileBytes, cancellationToken );
             } catch ( Exception exception ) {
                 _exception = exception;
                 throw _exception;
@@ -210,22 +202,23 @@ namespace Myth.Rest {
                 }
         }
 
-        private async Task<RestResponse> ProcessResponseAsync( Type? responseType = null ) {
-            if ( _responseMessage is null )
+        private async Task<RestResponse> ProcessResponseAsync( Type? responseType = null, CancellationToken cancellationToken = default ) {
+            if ( _request is null )
                 throw new RequestException( );
 
             var requestTime = new Stopwatch( );
 
             requestTime.Start( );
-            var message = await _responseMessage;
+
+            var message = await _request.Invoke( cancellationToken );
+
             requestTime.Stop( );
 
-            var content = await message.Content.ReadAsStringAsync( );
+            var content = await message.Content.ReadAsStringAsync( cancellationToken );
             object? responseBody = null;
 
-            if ( responseType is null && _statusBuilder.ContainsStatus( message.StatusCode ) ) {
-                responseType = _statusBuilder.GetMappedType( message.StatusCode );
-            }
+            if ( responseType is null && _statusBuilder.ContainsStatus( message.StatusCode, content, out var type ) )
+                responseType = type;
 
             if ( responseType is not null && !string.IsNullOrEmpty( content ) ) {
                 try {

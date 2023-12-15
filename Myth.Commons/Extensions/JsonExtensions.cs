@@ -53,7 +53,7 @@ namespace Myth.Extensions {
         }
 
         public static TResponse? FromJson<TResponse>( this string content, CaseStrategy caseStrategy = CaseStrategy.CamelCase, bool ignoreNullValue = true, Action<JsonSerializerSettings>? settings = null ) {
-            return (TResponse?) content.FromJson( typeof( TResponse ), caseStrategy, ignoreNullValue, settings );
+            return ( TResponse? )content.FromJson( typeof( TResponse ), caseStrategy, ignoreNullValue, settings );
         }
 
         public static HttpContent ToHttpContent( this object content, CaseStrategy caseStrategy = CaseStrategy.CamelCase ) {

@@ -1,21 +1,22 @@
-﻿using System.Net;
+﻿using Myth.Models.Rest;
+using System.Net;
 
 namespace Myth.Rest {
 
     public class RestStatusBuilder {
-        private readonly IDictionary<HttpStatusCode, Type> _mapStatus;
+        private readonly MappingResultList _mapStatus;
         private readonly IDictionary<HttpStatusCode, bool> _mapException;
         private Type? _allMapStatus;
         private bool _throwOnNonSuccess;
 
         public RestStatusBuilder( ) {
-            _mapStatus = new Dictionary<HttpStatusCode, Type>( );
+            _mapStatus = new MappingResultList( );
             _mapException = new Dictionary<HttpStatusCode, bool>( );
         }
 
         public void Clear( ) {
-            _mapException.Clear();
-            _mapStatus.Clear();
+            _mapException.Clear( );
+            _mapStatus.Clear( );
             _allMapStatus = null;
             _throwOnNonSuccess = false;
         }
@@ -24,33 +25,31 @@ namespace Myth.Rest {
             return ( ( int )statusCode >= 200 ) && ( ( int )statusCode <= 299 );
         }
 
-        public RestStatusBuilder StatusIs<TResult>( HttpStatusCode statusCode, bool shouldThrowException = false ) {
-            _mapStatus.TryAdd( statusCode, typeof( TResult ) );
-            _mapException.TryAdd( statusCode, shouldThrowException );
+        public RestStatusBuilder StatusIs<TResult>( HttpStatusCode statusCode, Func<string, bool>? condition = null ) {
+            return StatusIs( statusCode, typeof( TResult ), condition );
+        }
+
+        public RestStatusBuilder StatusIs( HttpStatusCode statusCode, Type type, Func<string, bool>? condition = null ) {
+            _mapStatus.AddResultMap( statusCode, condition, type );
             return this;
         }
 
-        public RestStatusBuilder StatusIs( HttpStatusCode statusCode, Type type, bool shouldThrowException = false ) {
-            _mapStatus.TryAdd( statusCode, type );
-            _mapException.TryAdd( statusCode, shouldThrowException );
-            return this;
-        }
-
-        public RestStatusBuilder StatusIs( Type type, bool shouldThrowException = false, params HttpStatusCode[ ] statusCodes ) {
+        public RestStatusBuilder StatusIn( Type type, Func<string, bool>? condition = null, params HttpStatusCode[ ] statusCodes ) {
             statusCodes = statusCodes.Distinct( ).ToArray( );
-            foreach ( var statusCode in statusCodes ) {
-                _mapStatus.TryAdd( statusCode, type );
-                _mapException.TryAdd( statusCode, shouldThrowException );
-            }
+            foreach ( var statusCode in statusCodes )
+                StatusIs( statusCode, type, condition );
+
             return this;
         }
 
-        public RestStatusBuilder StatusIs<TResult>( bool shouldThrowException = false, params HttpStatusCode[ ] statusCodes ) {
-            statusCodes = statusCodes.Distinct( ).ToArray( );
-            foreach ( var statusCode in statusCodes ) {
-                _mapStatus.TryAdd( statusCode, typeof( TResult ) );
-                _mapException.TryAdd( statusCode, shouldThrowException );
-            }
+        public RestStatusBuilder StatusIs<TResult>( Func<string, bool>? condition = null, params HttpStatusCode[ ] statusCodes ) {
+            return StatusIn( typeof( TResult ), condition, statusCodes );
+        }
+
+        public RestStatusBuilder ThrownOn( Func<string, bool>? condition = null, params HttpStatusCode[ ] statusCodes ) {
+            foreach ( var statusCode in statusCodes )
+                _mapStatus.AddExceptionMap( statusCode, condition );
+
             return this;
         }
 
@@ -74,31 +73,17 @@ namespace Myth.Rest {
             return this;
         }
 
-        public bool ContainsStatus( HttpStatusCode statusCode ) {
-            return _mapStatus.ContainsKey( statusCode ) || _allMapStatus is not null;
+        public bool ContainsStatus( HttpStatusCode statusCode, string content, out Type type ) {
+            return _mapStatus.GetResultMap( statusCode, content, out type ) || _allMapStatus is not null;
         }
 
-        public bool ContainsException( HttpStatusCode statusCode ) {
-            return _mapException.ContainsKey( statusCode );
+        public bool ContainsException( HttpStatusCode statusCode, string content ) {
+            return _mapStatus.GetExceptiontMap( statusCode, content );
         }
 
-        public Type? GetMappedType( HttpStatusCode statusCode ) {
-            var result = _allMapStatus;
-
-            if ( _mapStatus.ContainsKey( statusCode ) )
-                result = _mapStatus[ statusCode ];
-
-            return result;
-        }
-
-        public bool GetMappedException( HttpStatusCode statusCode ) {
-            return _mapException[ statusCode ];
-        }
-
-        public bool ShouldThrowException( HttpStatusCode statusCode ) {
+        public bool ShouldThrowException( HttpStatusCode statusCode, string content ) {
             var shouldThrow = _throwOnNonSuccess && !IsSuccessStatusCode( statusCode );
-            if ( ContainsException( statusCode ) )
-                shouldThrow = GetMappedException( statusCode );
+            shouldThrow = ContainsException( statusCode, content );
 
             return shouldThrow;
         }

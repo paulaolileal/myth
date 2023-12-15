@@ -10,12 +10,12 @@ namespace Myth.ValueObjects {
         [FromQuery( Name = "$pagesize" )]
         public int PageSize { get; set; }
 
-        public static readonly Pagination Default = new Pagination {
+        public static readonly Pagination Default = new( ) {
             PageNumber = 0,
             PageSize = 3
         };
 
-        public static readonly Pagination All = new Pagination {
+        public static readonly Pagination All = new( ) {
             PageNumber = -1,
             PageSize = -1
         };
@@ -34,9 +34,12 @@ namespace Myth.ValueObjects {
         }
 
         public string Build( ) {
-            return $"PageNumber={PageNumber}&PageSize={PageSize}";
+            return $"$pagenumber={PageNumber}&$pagesize={PageSize}";
         }
 
-        public int GetPageNumberToSkip( ) => ( PageNumber - 1 ) * PageSize;
+        public int GetPagesToSkip( ) =>
+            PageNumber > 0
+            ? ( PageNumber - 1 ) * PageSize
+            : 1;
     }
 }

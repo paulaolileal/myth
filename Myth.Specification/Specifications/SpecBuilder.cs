@@ -10,6 +10,7 @@ namespace Myth.Specifications {
         public abstract Func<IQueryable<T>, IQueryable<T>> PostProcess { get; }
         public abstract Expression<Func<T, bool>> Predicate { get; }
         public abstract Func<IQueryable<T>, IOrderedQueryable<T>> Sort { get; }
+        public Func<T, bool> Query => Predicate.Compile( );
 
         protected SpecBuilder( ) {
         }

@@ -20,7 +20,7 @@ namespace Myth.Extensions {
                 var pagination = new Pagination( odata.PageNumber, odata.PageSize );
 
                 return new Odata<TDest>( filter, order, pagination );
-            } catch ( Exception e) {
+            } catch ( Exception e ) {
                 var message = "";
                 if ( !string.IsNullOrEmpty( odata.Filter ) )
                     message += $"| $filter={odata.Filter}";

@@ -4,7 +4,7 @@ namespace Myth.Contexts {
 
     public abstract class BaseContext : DbContext {
 
-        public BaseContext( DbContextOptions options, params object[ ] args )
+        public BaseContext( DbContextOptions options )
             : base( options ) {
         }
 

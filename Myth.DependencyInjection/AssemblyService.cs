@@ -46,8 +46,8 @@ namespace Myth.DependencyInjection {
                         .ToLower( )
                         .Contains( @interface.ToLower( ) ) );
 
-                if(interfaceType is null)
-                    interfaceType = interfaces.First();
+                if ( interfaceType is null )
+                    interfaceType = interfaces.First( );
 
                 return new ServiceDescriptor( interfaceType, type, serviceLifetime );
             } );

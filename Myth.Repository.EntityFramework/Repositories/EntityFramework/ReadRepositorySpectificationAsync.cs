@@ -1,5 +1,4 @@
-﻿
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Myth.Interfaces;
 using Myth.Interfaces.Repositories.EntityFramework;
 using Myth.Interfaces.Repositories.Results;
