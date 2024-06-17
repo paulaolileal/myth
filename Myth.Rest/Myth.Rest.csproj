@@ -1,33 +1,33 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<RootNamespace>Myth</RootNamespace>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Platforms>x64</Platforms>
-		<Version>2.0.0.15</Version>
+		<Version>2.0.0.17</Version>
 		<Authors>Paula Leal</Authors>
 		<Description>A rest client implementation, using fluent and type-by-status mapping</Description>
-		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons</RepositoryUrl>
-		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth-commons</PackageProjectUrl>
+		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons/-/tree/main/Myth.Rest?ref_type=heads</RepositoryUrl>
+		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth-commons/-/tree/main/Myth.Rest?ref_type=heads</PackageProjectUrl>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageOutputPath>$(AppData)/NuGet/Packages</PackageOutputPath>
 		<PackageId>Myth.Rest</PackageId>
-		<PackageIcon>logo.png</PackageIcon>
+		<PackageIcon>Logo.jpg</PackageIcon>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\logo.png">
+		<ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<None Include="..\Logo.jpg">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
-	</ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -1,260 +1,169 @@
 ﻿using Myth.Exceptions;
 using Myth.Extensions;
 using Myth.Models.Rest;
-using System.Diagnostics;
-using System.Net.Http.Headers;
+using Newtonsoft.Json;
 
 namespace Myth.Rest {
 
-    public class RestBuilder : IDisposable {
-        protected HttpClient _client;
-        protected Exception? _exception;
-        protected Task<HttpResponseMessage>? _responseMessage;
-        protected Func<CancellationToken, Task<HttpResponseMessage>>? _request;
+	public partial class RestBuilder : RestBuilderBase {
 
-        protected RestConfigBuilder _configBuilder;
-        protected readonly RestStatusBuilder _statusBuilder;
+		#region [ Pre-Request ]
 
-        public RestBuilder( ) {
-            _client = new HttpClient( );
-            _statusBuilder = new( );
-            _configBuilder = new( );
-        }
+		public override RestBuilder Configure( Action<ConfigurationBuilder>? configurationBuilder ) =>
+			( base.Configure( configurationBuilder ) as RestBuilder )!;
 
-        public RestBuilder( HttpClient httpClient ) : this( ) {
-            _client = httpClient;
-        }
+		public RestBuilder OnResult( Action<ResultBuilder> resultSettings ) {
+			_exceptionBuilder.Clear( );
+			resultSettings.Invoke( _statusBuilder );
+			return this;
+		}
 
-        public RestBuilder( RestConfigBuilder configBuilder ) : this( ) {
-            _configBuilder = configBuilder;
-        }
+		public override RestBuilder OnError( Action<ExceptionBuilder> exceptionSettings ) =>
+			( base.OnError( exceptionSettings ) as RestBuilder )!;
 
-        public RestBuilder( HttpClient httpClient, RestConfigBuilder configBuilder ) : this( ) {
-            _client = httpClient;
-            _configBuilder = configBuilder;
-        }
+		#endregion [ Pre-Request ]
 
-        public static RestBuilder Create( HttpClient httpClient, Action<RestConfigBuilder> configurationBuilder ) {
-            var configBuilder = new RestConfigBuilder( );
-            configurationBuilder.Invoke( configBuilder );
+		#region [ Building ]
 
-            return new( httpClient, configBuilder );
-        }
+		public async Task<RestResponse> BuildAsync<TResult>( CancellationToken cancellationToken = default ) =>
+			await BuildAsync( typeof( TResult ), cancellationToken );
 
-        public static RestBuilder Create( Action<RestConfigBuilder>? configurationBuilder = null ) {
-            var configBuilder = new RestConfigBuilder( );
+		public async Task<RestResponse> BuildAsync( CancellationToken cancellationToken = default ) =>
+			await BuildAsync( null, cancellationToken );
 
-            if ( configurationBuilder != null )
-                configurationBuilder.Invoke( configBuilder );
+		protected async Task<RestResponse> BuildAsync( Type? responseType = null, CancellationToken cancellationToken = default ) {
+			try {
+				if ( responseType is not null ) {
+					_statusBuilder.Clear( );
+					_statusBuilder.UseTypeForAll( responseType );
+				}
 
-            return new( configBuilder );
-        }
+				return await ProcessRequestAsync( cancellationToken );
+			} catch ( Exception exception ) {
+				_exception = exception;
+				throw _exception;
+			}
+		}
 
-        public static RestBuilder Create( HttpClient httpClient ) => new( httpClient );
+		#endregion [ Building ]
 
-        public RestBuilder DoGet( string url ) {
-            try {
-                PreRequestSettings( );
+		#region [ Processing ]
 
-                _request = async ( CancellationToken cancellationToken ) => await _client.GetAsync( url, cancellationToken );
-            } catch ( Exception exception ) {
-                _exception = exception;
-            }
-            return this;
-        }
+		private async Task<RestResponse> ProcessRequestAsync( CancellationToken cancellationToken ) {
+			var (message, elapsedTime) = await ProcessAsync( cancellationToken );
 
-        public RestBuilder DoPost<TBody>( string url, TBody? body = default ) {
-            try {
-                ArgumentNullException.ThrowIfNull( body, nameof( body ) );
-                PreRequestSettings( );
+			var content = await message.Content.ReadAsStringAsync( cancellationToken );
 
-                var request = ToHttpContent( body ) ?? null;
+			var restResponse = new RestResponse(
+				message.StatusCode,
+				message.RequestMessage!.RequestUri!,
+				message.RequestMessage.Method,
+				content,
+				elapsedTime );
 
-                _request = async ( CancellationToken cancellationToken ) => await _client.PostAsync( url, request, cancellationToken );
-            } catch ( Exception exception ) {
-                _exception = exception;
-            }
-            return this;
-        }
+			var dynamicContent = JsonConvert.DeserializeObject<dynamic>( content );
 
-        public RestBuilder DoPut<TBody>( string url, TBody? body = default ) {
-            try {
-                ArgumentNullException.ThrowIfNull( body, nameof( body ) );
-                PreRequestSettings( );
+			if ( _exceptionBuilder.TryGet( message.StatusCode, dynamicContent ) )
+				throw new NonSuccessException( restResponse );
 
-                var request = ToHttpContent( body ) ?? null;
+			var mappedTypeExists = _statusBuilder.TryGet( message.StatusCode, dynamicContent, out Type? type );
+			if ( _exceptionBuilder._throwForNonMappedResult ) {
+				if ( !mappedTypeExists || type is null )
+					throw new NotMappedResultTypeException( message.StatusCode );
+				else if ( !string.IsNullOrEmpty( content ) ) {
+					try {
+						var typedResponse = content.FromJson( type!, _configBuilder._deserializationCaseStrategy );
+						restResponse.SetTypedResult( type!, typedResponse! );
+					} catch ( Exception exception ) {
+						throw new ParsingTypeException( message.StatusCode, type!, content, exception );
+					}
+				}
+			}
 
-                _request = async ( CancellationToken cancellationToken ) => await _client.PutAsync( url, request, cancellationToken );
-            } catch ( Exception exception ) {
-                _exception = exception;
-            }
-            return this;
-        }
+			return restResponse;
+		}
 
-        public RestBuilder DoDelete( string url ) {
-            try {
-                PreRequestSettings( );
+		#endregion [ Processing ]
 
-                _request = async ( CancellationToken cancellationToken ) => await _client.DeleteAsync( url, cancellationToken );
-            } catch ( Exception exception ) {
-                _exception = exception;
-            }
-            return this;
-        }
+		#region [ Actions ]
 
-        public RestBuilder DoPatch<TBody>( string url, TBody? body = default ) {
-            try {
-                ArgumentNullException.ThrowIfNull( body, nameof( body ) );
-                PreRequestSettings( );
+		public RestBuilder DoGet( string url ) {
+			try {
+				PreRequestSettings( );
 
-                var request = ToHttpContent( body ) ?? null;
+				_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.GetAsync( url, cancellationToken );
+			} catch ( Exception exception ) {
+				_exception = exception;
+			}
+			return this;
+		}
 
-                _request = async ( CancellationToken cancellationToken ) => await _client.PatchAsync( url, request, cancellationToken );
-            } catch ( Exception exception ) {
-                _exception = exception;
-            }
-            return this;
-        }
+		public RestBuilder DoPost<TBody>( string url, TBody? body = default ) {
+			try {
+				ArgumentNullException.ThrowIfNull( body, nameof( body ) );
+				PreRequestSettings( );
 
-        public RestBuilder WithConfiguration( Action<RestConfigBuilder>? configurationBuilder ) {
-            if ( _configBuilder is null )
-                _configBuilder = new RestConfigBuilder( );
+				var request = ToHttpContent( body ) ?? null;
 
-            if ( configurationBuilder != null )
-                configurationBuilder.Invoke( _configBuilder );
+				_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.PostAsync( url, request, cancellationToken );
+			} catch ( System.Exception exception ) {
+				_exception = exception;
+			}
+			return this;
+		}
 
-            return this;
-        }
+		public RestBuilder DoPut<TBody>( string url, TBody? body = default ) {
+			try {
+				ArgumentNullException.ThrowIfNull( body, nameof( body ) );
+				PreRequestSettings( );
 
-        public RestBuilder When( Action<RestStatusBuilder> statusConfiguration, bool clearOldSettings = true ) {
-            if ( clearOldSettings )
-                _statusBuilder.Clear( );
+				var request = ToHttpContent( body ) ?? null;
 
-            statusConfiguration.Invoke( _statusBuilder );
-            return this;
-        }
+				_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.PutAsync( url, request, cancellationToken );
+			} catch ( System.Exception exception ) {
+				_exception = exception;
+			}
+			return this;
+		}
 
-        public async Task<RestResponse> BuildResultAsync<TResult>( CancellationToken cancellationToken = default ) => await BuildResultAsync( typeof( TResult ), cancellationToken );
+		public RestBuilder DoDelete( string url ) {
+			try {
+				PreRequestSettings( );
 
-        public async Task<RestResponse> BuildResultAsync( CancellationToken cancellationToken = default ) => await BuildResultAsync( null, cancellationToken );
+				_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.DeleteAsync( url, cancellationToken );
+			} catch ( System.Exception exception ) {
+				_exception = exception;
+			}
+			return this;
+		}
 
-        private async Task<RestResponse> BuildResultAsync( Type? responseType = null, CancellationToken cancellationToken = default ) {
-            try {
-                var restResponse = await ProcessResponseAsync( responseType, cancellationToken );
+		public RestBuilder DoPatch<TBody>( string url, TBody? body = default ) {
+			try {
+				ArgumentNullException.ThrowIfNull( body, nameof( body ) );
+				PreRequestSettings( );
 
-                if ( _statusBuilder.ShouldThrowException( restResponse.StatusCode, restResponse.RawMessage ) )
-                    throw new NonSuccessException( restResponse );
+				var request = ToHttpContent( body ) ?? null;
 
-                return restResponse;
-            } catch ( Exception exception ) {
-                _exception = exception;
-                throw _exception;
-            }
-        }
+				_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.PatchAsync( url, request, cancellationToken );
+			} catch ( System.Exception exception ) {
+				_exception = exception;
+			}
+			return this;
+		}
 
-        /// <summary>
-        /// Downloads a file
-        /// </summary>
-        /// <param name="url">Url of location</param>
-        /// <param name="destinationPath">The full path including the file name</param>
-        /// <param name="replaceExistingFile">If remove old file and create a new one</param>
-        /// <returns></returns>
-        /// <exception cref="DownloadException"></exception>
-        public async Task DownloadFileAsync( string url, string destinationPath, bool replaceExistingFile = false, CancellationToken cancellationToken = default ) {
-            try {
-                PreRequestSettings( );
-                if ( File.Exists( destinationPath ) && !replaceExistingFile )
-                    throw new DownloadException( "File already exists!", destinationPath, url );
+		#endregion [ Actions ]
 
-                if ( replaceExistingFile )
-                    File.Delete( destinationPath );
+		#region [ Utils ]
 
-                var fileBytes = await _client.GetByteArrayAsync( url, cancellationToken: cancellationToken );
-                await File.WriteAllBytesAsync( destinationPath, fileBytes, cancellationToken );
-            } catch ( Exception exception ) {
-                _exception = exception;
-                throw _exception;
-            }
-        }
+		private HttpContent ToHttpContent<TBody>( TBody body ) {
+			HttpContent request;
+			if ( body is HttpContent content )
+				request = content;
+			else
+				request = body!.ToHttpContent( _configBuilder._serializationCaseStrategy );
+			return request;
+		}
 
-        private void PreRequestSettings( ) {
-            var baseAddress = _configBuilder._baseUrl;
-            if ( !string.IsNullOrEmpty( baseAddress ) &&
-               ( _client.BaseAddress is null ||
-               ( _client.BaseAddress is not null &&
-               !_client.BaseAddress.ToString( ).Contains( baseAddress ) ) ) )
-                _client.BaseAddress = new Uri( baseAddress );
-
-            if ( _configBuilder.AuthorizationIsSetted )
-                _client.DefaultRequestHeaders.Authorization = _configBuilder._authorizationHeader;
-
-            if ( !string.IsNullOrEmpty( _configBuilder._acceptContentType ) )
-                _client
-                    .DefaultRequestHeaders
-                    .Accept
-                    .Add( new MediaTypeWithQualityHeaderValue( _configBuilder._acceptContentType ) );
-
-            if ( _configBuilder._customHeaders.Any( ) )
-                foreach ( var header in _configBuilder._customHeaders ) {
-                    if ( !_client.DefaultRequestHeaders.Contains( header.Key ) )
-                        _client
-                            .DefaultRequestHeaders.Add( header.Key, header.Value );
-                }
-        }
-
-        private async Task<RestResponse> ProcessResponseAsync( Type? responseType = null, CancellationToken cancellationToken = default ) {
-            if ( _request is null )
-                throw new RequestException( );
-
-            var requestTime = new Stopwatch( );
-
-            requestTime.Start( );
-
-            var message = await _request.Invoke( cancellationToken );
-
-            requestTime.Stop( );
-
-            var content = await message.Content.ReadAsStringAsync( cancellationToken );
-            object? responseBody = null;
-
-            if ( responseType is null && _statusBuilder.ContainsStatus( message.StatusCode, content, out var type ) )
-                responseType = type;
-
-            if ( responseType is not null && !string.IsNullOrEmpty( content ) ) {
-                try {
-                    responseBody = content.FromJson( responseType, _configBuilder._deserializationCaseStrategy );
-                } catch ( Exception exception ) {
-                    throw new MapContentException( responseType, content, exception );
-                }
-            }
-
-            var restResponse = new RestResponse(
-                message.StatusCode,
-                message.RequestMessage!.RequestUri!,
-                message.RequestMessage.Method,
-                content,
-                responseType,
-                responseBody,
-                requestTime.Elapsed );
-
-            return restResponse;
-        }
-
-        private HttpContent ToHttpContent<TBody>( TBody body ) {
-            HttpContent request;
-            if ( body is HttpContent content )
-                request = content;
-            else
-                request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
-            return request;
-        }
-
-        public void Dispose( ) {
-            if ( _client is not null )
-                _client.Dispose( );
-
-            if ( _responseMessage is not null )
-                _responseMessage.Dispose( );
-        }
-    }
+		#endregion [ Utils ]
+	}
 }

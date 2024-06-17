@@ -1,12 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿using Myth.Constants;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System.Text;
 
 namespace Myth.Extensions {
 
-    public static class JsonExtensions {
-
-        public enum CaseStrategy { CamelCase, SnakeCase }
+	public static partial class JsonExtensions {
 
         public static string ToJson( this object content, bool ignoreNullValue = true, CaseStrategy caseStrategy = CaseStrategy.CamelCase, Action<JsonSerializerSettings>? settings = null ) {
             var contractResolver = new DefaultContractResolver {
