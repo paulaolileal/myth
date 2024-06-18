@@ -72,7 +72,7 @@ namespace Myth.Rest {
 					throw new NotMappedResultTypeException( message.StatusCode );
 				else if ( !string.IsNullOrEmpty( content ) ) {
 					try {
-						var typedResponse = content.FromJson( type!, _configBuilder._deserializationCaseStrategy );
+						var typedResponse = content.FromJson( type!, conf => conf.SetCaseAs( _configBuilder._deserializationCaseStrategy ) );
 						restResponse.SetTypedResult( type!, typedResponse! );
 					} catch ( Exception exception ) {
 						throw new ParsingTypeException( message.StatusCode, type!, content, exception );
