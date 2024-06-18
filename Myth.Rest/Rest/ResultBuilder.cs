@@ -46,7 +46,7 @@ namespace Myth.Rest {
 			return this;
 		}
 
-		public ResultBuilder UseTypeFor( List<HttpStatusCode> statusCodes, Type type, Func<dynamic, bool>? condition = null ) {
+		public ResultBuilder UseTypeFor( IEnumerable<HttpStatusCode> statusCodes, Type type, Func<dynamic, bool>? condition = null ) {
 			foreach ( var statusCode in statusCodes ) {
 				_resultMapping.Add( statusCode, type, condition );
 			}
@@ -54,7 +54,7 @@ namespace Myth.Rest {
 			return this;
 		}
 
-		public ResultBuilder UseTypeFor<TResult>( List<HttpStatusCode> statusCodes, Func<dynamic, bool>? condition = null ) {
+		public ResultBuilder UseTypeFor<TResult>( IEnumerable<HttpStatusCode> statusCodes, Func<dynamic, bool>? condition = null ) {
 			return UseTypeFor( statusCodes, typeof( TResult ), condition );
 		}
 
