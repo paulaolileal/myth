@@ -4,11 +4,11 @@ using System.Net;
 
 namespace Myth.Rest {
 
-	public class ExceptionBuilder {
+	public class ErrorBuilder {
 		private readonly ExceptionMappingList _exceptionMapping;
 		public bool _throwForNonMappedResult;
 
-		public ExceptionBuilder( ) {
+		public ErrorBuilder( ) {
 			_exceptionMapping = new( );
 			_throwForNonMappedResult = true;
 		}
@@ -21,7 +21,7 @@ namespace Myth.Rest {
 			return _exceptionMapping.TryGet( statusCode, content );
 		}
 
-		public ExceptionBuilder ThrowForNonSuccess( Func<dynamic, bool>? condition = null ) {
+		public ErrorBuilder ThrowForNonSuccess( Func<dynamic, bool>? condition = null ) {
 			foreach ( var statusCode in Enum.GetValues<HttpStatusCode>( ) ) {
 				if ( !statusCode.IsSuccess( ) )
 					ThrowFor( statusCode, condition );
@@ -30,12 +30,12 @@ namespace Myth.Rest {
 			return this;
 		}
 
-		public ExceptionBuilder ThrowFor( HttpStatusCode statusCode, Func<dynamic, bool>? condition = null ) {
+		public ErrorBuilder ThrowFor( HttpStatusCode statusCode, Func<dynamic, bool>? condition = null ) {
 			_exceptionMapping.Add( statusCode, condition );
 			return this;
 		}
 
-		public ExceptionBuilder ThrowFor( List<HttpStatusCode> statusCodes, Func<dynamic, bool>? condition = null ) {
+		public ErrorBuilder ThrowFor( List<HttpStatusCode> statusCodes, Func<dynamic, bool>? condition = null ) {
 			foreach ( var statusCode in statusCodes ) {
 				ThrowFor( statusCode, condition );
 			}
@@ -43,7 +43,7 @@ namespace Myth.Rest {
 			return this;
 		}
 
-		public ExceptionBuilder ThrowForAll( Func<dynamic, bool>? condition = null ) {
+		public ErrorBuilder ThrowForAll( Func<dynamic, bool>? condition = null ) {
 			foreach ( var statusCode in Enum.GetValues<HttpStatusCode>( ) ) {
 				_exceptionMapping.Add( statusCode, condition );
 			}
@@ -51,13 +51,13 @@ namespace Myth.Rest {
 			return this;
 		}
 
-		public ExceptionBuilder NotThrowForNonMappedResult( ) {
+		public ErrorBuilder NotThrowForNonMappedResult( ) {
 			_throwForNonMappedResult = false;
 
 			return this;
 		}
 
-		public ExceptionBuilder NotThrowFor( HttpStatusCode statusCode, Func<dynamic, bool>? condition = null ) {
+		public ErrorBuilder NotThrowFor( HttpStatusCode statusCode, Func<dynamic, bool>? condition = null ) {
 			_exceptionMapping.Remove( statusCode );
 
 			return this;

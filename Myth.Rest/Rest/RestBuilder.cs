@@ -18,7 +18,7 @@ namespace Myth.Rest {
 			return this;
 		}
 
-		public override RestBuilder OnError( Action<ExceptionBuilder> exceptionSettings ) =>
+		public override RestBuilder OnError( Action<ErrorBuilder> exceptionSettings ) =>
 			( base.OnError( exceptionSettings ) as RestBuilder )!;
 
 		#endregion [ Pre-Request ]

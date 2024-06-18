@@ -5,7 +5,7 @@ using System.Net.Http.Headers;
 namespace Myth.Rest {
 
 	public abstract class RestBuilderBase : IDisposable {
-		protected readonly ExceptionBuilder _exceptionBuilder;
+		protected readonly ErrorBuilder _exceptionBuilder;
 		protected readonly ResultBuilder _statusBuilder;
 		protected Exception? _exception;
 		protected Func<CancellationToken, Task<HttpResponseMessage>>? _request;
@@ -25,7 +25,7 @@ namespace Myth.Rest {
 			return this;
 		}
 
-		public virtual RestBuilderBase OnError( Action<ExceptionBuilder> exceptionSettings ) {
+		public virtual RestBuilderBase OnError( Action<ErrorBuilder> exceptionSettings ) {
 			_exceptionBuilder.Clear( );
 			exceptionSettings.Invoke( _exceptionBuilder );
 			return this;

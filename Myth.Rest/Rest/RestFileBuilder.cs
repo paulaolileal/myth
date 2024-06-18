@@ -13,7 +13,7 @@ namespace Myth.Rest {
 		public override RestFileBuilder Configure( Action<ConfigurationBuilder>? configurationBuilder ) =>
 			( base.Configure( configurationBuilder ) as RestFileBuilder )!;
 
-		public override RestFileBuilder OnError( Action<ExceptionBuilder> exceptionSettings ) =>
+		public override RestFileBuilder OnError( Action<ErrorBuilder> exceptionSettings ) =>
 			( base.OnError( exceptionSettings ) as RestFileBuilder )!;
 
 		#endregion [ Pre-Request ]
