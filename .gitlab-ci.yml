@@ -1,7 +1,6 @@
 stages:
   - build
   - publish
-  - test
 
 variables:
   NUGET_API_URL: "https://api.nuget.org/v3/index.json" # Substitua pela URL da sua API NuGet se necessário
@@ -9,17 +8,22 @@ variables:
   MAJOR_VERSION: 2
   MINOR_VERSION: 0
 
-build:
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+
+build_job:
   stage: build
   script:
     - dotnet build --configuration Release
 
-test:
-  stage: test
+test_job:
+  stage: build
   script:
-    - dotnet test
+    - dotnet test --no-build
+  dependencies:
+    - build_job
 
-publish:
+
+publish_job:
   stage: publish
   script:
     - version_suffix=""
@@ -33,3 +37,6 @@ publish:
   only:
     - main
     - develop
+  dependencies:
+    - build_job
+    - test_job
