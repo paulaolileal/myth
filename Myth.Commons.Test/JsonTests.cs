@@ -4,6 +4,7 @@ using Myth.Exceptions;
 using Myth.Extensions;
 
 namespace Myth.Commons.Test {
+
 	public class JsonTests {
 
 		[Fact]
@@ -21,7 +22,9 @@ namespace Myth.Commons.Test {
 
 			// Act
 
-			var result = testObject.ToJson( x => x.Minify( ) );
+			var result = testObject.ToJson( x => x
+				.Minify( )
+				.IgnoreNull( ) );
 
 			// Assert
 
@@ -50,7 +53,6 @@ namespace Myth.Commons.Test {
 			result.Should( ).Be( "{\"prop_one\":\"Ok\",\"prop_two\":true}" );
 		}
 
-
 		[Fact]
 		public void From_json_should_create_type_from_string( ) {
 			// Arrange
@@ -66,7 +68,6 @@ namespace Myth.Commons.Test {
 			result.Should( ).NotBeNull( );
 		}
 
-
 		[Fact]
 		public void From_json_should_throw_exception_on_non_json( ) {
 			// Arrange
@@ -75,7 +76,7 @@ namespace Myth.Commons.Test {
 
 			// Act
 
-			var action = () => json.FromJson<object>( );
+			var action = ( ) => json.FromJson<object>( );
 
 			// Assert
 

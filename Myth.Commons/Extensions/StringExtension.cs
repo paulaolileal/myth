@@ -6,21 +6,25 @@ namespace Myth.Extensions {
 
 		public static string Remove( this string value, string text ) => value.Replace( text, string.Empty );
 
-		public static string ToCamelCase( this string text ) {
-			if ( !string.IsNullOrEmpty(text) && text.Any( ) )
-				return char.ToLowerInvariant( text.First( ) ) + text.Substring( 1 );
+		public static string Minify( this string text ) => Regex.Replace( text, @"\s+", "" );
+
+		public static string ToFirstLower( this string text ) {
+			if ( !string.IsNullOrEmpty( text ) && text.Any( ) )
+				return string.Concat(
+					text.First( ).ToString( ).ToLowerInvariant( ),
+					text.AsSpan( 1 ) );
 
 			return string.Empty;
 		}
 
 		public static string ToFirstUpper( this string text ) {
 			if ( !string.IsNullOrEmpty( text ) && text.Any( ) )
-				return char.ToUpperInvariant( text.First( ) ) + text.Substring( 1 );
+				return string.Concat(
+					text.First( ).ToString( ).ToUpperInvariant( ),
+					text.AsSpan( 1 ) );
 
 			return string.Empty;
 		}
-
-		public static string Minify( this string text ) => Regex.Replace( text, @"\s+", "" );
 
 		public static string GetStringBetween( this string text, char startCharacter, char? endCharacter = null ) {
 			if ( string.IsNullOrEmpty( text ) )
@@ -34,13 +38,13 @@ namespace Myth.Extensions {
 					.TakeWhile( ( c ) => c != endCharacter ) );
 		}
 
-		public static string? GetWordThatContains( this string text, string word, bool removeWord = false ) {
+		public static string? GetWordThatContains( this string text, string word ) {
+			if ( string.IsNullOrEmpty( text ) || string.IsNullOrEmpty( word ) )
+				return string.Empty;
+
 			var foundedWord = text
 				.Split( " ", StringSplitOptions.RemoveEmptyEntries )
 				.FirstOrDefault( x => x.Contains( word, StringComparison.InvariantCultureIgnoreCase ) );
-
-			if ( removeWord && !string.IsNullOrEmpty( foundedWord ) )
-				foundedWord = foundedWord.Replace( word, "", StringComparison.InvariantCultureIgnoreCase );
 
 			return foundedWord;
 		}
@@ -67,18 +71,28 @@ namespace Myth.Extensions {
 			return string.Empty;
 		}
 
-		public static bool ContainsAnyOf( this string s, IEnumerable<string> substrings ) {
-			if ( string.IsNullOrEmpty( s ) || substrings == null )
+		public static bool ContainsAnyOf( this string text, params string[ ] substrings ) {
+			if ( string.IsNullOrEmpty( text ) ||
+				 substrings is null ||
+				 !substrings.Any( ) )
 				return false;
 
-			return substrings.Any( substring => s.Contains( substring, StringComparison.CurrentCultureIgnoreCase ) );
+			return substrings.Any( substring => text
+				.Contains(
+					substring,
+					StringComparison.CurrentCultureIgnoreCase ) );
 		}
 
-		public static bool StartsWithAnyOf( this string s, IEnumerable<string> substrings ) {
-			if ( string.IsNullOrEmpty( s ) || substrings == null )
+		public static bool StartsWithAnyOf( this string text, params string[ ] substrings ) {
+			if ( string.IsNullOrEmpty( text ) ||
+				 substrings is null ||
+				 !substrings.Any( ) )
 				return false;
 
-			return substrings.Any( substring => s.StartsWith( substring, StringComparison.CurrentCultureIgnoreCase ) );
+			return substrings.Any( substring => text
+				.StartsWith(
+					substring,
+					StringComparison.CurrentCultureIgnoreCase ) );
 		}
 	}
 }

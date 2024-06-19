@@ -13,17 +13,6 @@
 
 		public static bool operator !=( ValueObject left, ValueObject right ) => !( left == right );
 
-		public static IEnumerable<TConstant> ToList<TConstant>( ) where TConstant : ValueObject {
-			var type = typeof( TConstant );
-			var constants = type
-				.GetProperties( )
-				.Where( prop => prop.PropertyType == type )
-				.Select( x => ( TConstant )x.GetValue( type, null )! )
-				.ToList( );
-
-			return constants;
-		}
-
 		public override bool Equals( object? obj ) {
 			if ( obj == null || obj.GetType( ) != GetType( ) )
 				return false;
@@ -49,6 +38,6 @@
 			 .Aggregate( ( x, y ) => x ^ y );
 		}
 
-		public ValueObject GetCopy( ) => ( ValueObject )MemberwiseClone( );
+		public ValueObject Clone( ) => ( ValueObject )MemberwiseClone( );
 	}
 }

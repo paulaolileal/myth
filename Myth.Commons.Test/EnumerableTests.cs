@@ -1,12 +1,8 @@
 ﻿using FluentAssertions;
 using Myth.Extensions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Myth.Commons.Test {
+
 	public class EnumerableTests {
 
 		public static IEnumerable<object[ ]> Data( ) {
@@ -26,9 +22,9 @@ namespace Myth.Commons.Test {
 		}
 
 		[Fact]
-		public void To_string_with_separator_should_return_empty_on_empty_param() {
+		public void To_string_with_separator_should_return_empty_on_empty_param( ) {
 			// Arrange
-			var list = new List<string>();
+			var list = new List<string>( );
 
 			// Act
 			var result = list.ToStringWithSeparator( );
