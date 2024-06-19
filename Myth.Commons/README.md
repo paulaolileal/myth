@@ -11,4 +11,4 @@ It is a .NET library for common functionalities across various applications.
 - JSON deserialization
 - String manipulation
 - Base for `Value Objects`
-- Base for constants
+- Base for constants'
