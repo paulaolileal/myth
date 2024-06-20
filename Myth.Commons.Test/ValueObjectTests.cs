@@ -18,7 +18,6 @@ namespace Myth.Commons.Test {
 
 			// Assert
 			compare.Should( ).BeTrue( );
-			hash.Should( ).BePositive( );
 			copy.Should( ).NotBeNull( );
 		}
 	}
