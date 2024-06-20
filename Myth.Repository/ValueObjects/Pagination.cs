@@ -2,44 +2,37 @@
 
 namespace Myth.ValueObjects {
 
-    public class Pagination : ValueObject {
+	public class Pagination : ValueObject {
 
-        [FromQuery( Name = "$pagenumber" )]
-        public int PageNumber { get; set; }
+		/// <summary>
+		/// Page number
+		/// </summary>
+		[FromQuery( Name = "$pagenumber" )]
+		public int PageNumber { get; set; }
 
-        [FromQuery( Name = "$pagesize" )]
-        public int PageSize { get; set; }
+		/// <summary>
+		/// Page size
+		/// </summary>
+		[FromQuery( Name = "$pagesize" )]
+		public int PageSize { get; set; }
 
-        public static readonly Pagination Default = new( ) {
-            PageNumber = 0,
-            PageSize = 3
-        };
+		public static readonly Pagination Default = new( );
 
-        public static readonly Pagination All = new( ) {
-            PageNumber = -1,
-            PageSize = -1
-        };
+		public static readonly Pagination All = new( -1, -1 );
 
-        public Pagination( ) {
-        }
+		public Pagination( ) {
+			PageNumber = 1;
+			PageSize = 10;
+		}
 
-        public Pagination( int pageNumber, int pageSize ) {
-            PageNumber = pageNumber;
-            PageSize = pageSize;
-        }
+		public Pagination( int pageNumber, int pageSize ) {
+			PageNumber = pageNumber;
+			PageSize = pageSize;
+		}
 
-        protected override IEnumerable<object> GetAtomicValues( ) {
-            yield return PageNumber;
-            yield return PageSize;
-        }
-
-        public string Build( ) {
-            return $"$pagenumber={PageNumber}&$pagesize={PageSize}";
-        }
-
-        public int GetPagesToSkip( ) =>
-            PageNumber > 0
-            ? ( PageNumber - 1 ) * PageSize
-            : 1;
-    }
+		protected override IEnumerable<object> GetAtomicValues( ) {
+			yield return PageNumber;
+			yield return PageSize;
+		}
+	}
 }

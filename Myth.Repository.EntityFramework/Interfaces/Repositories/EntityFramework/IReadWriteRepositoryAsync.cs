@@ -1,5 +1,5 @@
 ﻿namespace Myth.Interfaces.Repositories.EntityFramework {
 
-    public interface IReadWriteRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity>, IWriteRepositoryAsync<TEntity> {
-    }
+	public interface IReadWriteRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity>, IWriteRepositoryAsync<TEntity> {
+	}
 }
