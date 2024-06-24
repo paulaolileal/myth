@@ -1,5 +1,6 @@
 stages:
   - build
+  - test
   - publish
 
 variables:
@@ -17,12 +18,11 @@ build_job:
     - dotnet build --configuration Release
 
 test_job:
-  stage: build
+  stage: test
   script:
     - dotnet test --no-build
   dependencies:
-    - build_job
-
+    - build
 
 publish_job:
   stage: publish
@@ -39,5 +39,5 @@ publish_job:
     - main
     - develop
   dependencies:
-    - build_job
-    - test_job
+    - build
+    - test
