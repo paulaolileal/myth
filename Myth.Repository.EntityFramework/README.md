@@ -60,4 +60,4 @@ The entity's independent functionalities are as follows:
 - `CommitAsync`: Executes all transaction changes
 - `RollbackAsync`: Undoes transaction changes
 - `CreateSavepointAsync`: Creates a transaction checkpoint
-- `RollbackToSavepointAsync`: Returns to a transaction checkpoint
+- `RollbackToSavepointAsync`: Returns to a t'ransaction checkpoint
