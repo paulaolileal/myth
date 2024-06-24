@@ -129,7 +129,7 @@ namespace Myth.Repository.Test {
 		}
 
 		[Fact]
-		public async Task Get_provider_name_should_return_a_name( ) {
+		public void Get_provider_name_should_return_a_name( ) {
 			// Act
 			var result = _repository.GetProviderName( );
 

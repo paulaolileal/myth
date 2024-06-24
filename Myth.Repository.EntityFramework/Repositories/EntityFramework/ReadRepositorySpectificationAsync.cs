@@ -9,19 +9,17 @@ namespace Myth.Repositories.EntityFramework {
 	public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity> where TEntity : class {
 
 		public virtual Task<List<TEntity>> SearchAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) =>
-			specification
-				.Prepare(
-					_context
-						.Set<TEntity>( )
-						.AsQueryable( ) )
+			_context
+				.Set<TEntity>( )
+				.AsQueryable( )
+				.Specify( specification )
 				.ToListAsync( cancellationToken );
 
 		public virtual async Task<IPaginated<TEntity>> SearchPaginatedAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) {
 			return await Task.Run( ( ) => {
 				var processedEntitySet = _context
 					.Set<TEntity>( )
-					.Where( specification.Predicate.Compile( ) )
-					.AsEnumerable( );
+					.Where( specification );
 
 				var totalItems = processedEntitySet.Count( );
 
