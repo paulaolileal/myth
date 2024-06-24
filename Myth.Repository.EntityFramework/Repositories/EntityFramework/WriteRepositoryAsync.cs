@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Myth.Contexts;
 using Myth.Interfaces.Repositories.EntityFramework;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Myth.Repositories.EntityFramework {
 
@@ -62,13 +61,13 @@ namespace Myth.Repositories.EntityFramework {
 					.AttachRange( entitiesToAttach );
 			}, cancellationToken );
 
-		public virtual Task<int> SaveChangesAsync( CancellationToken cancellationToken = default ) =>
-			_context.SaveChangesAsync( cancellationToken );
+		public ValueTask DisposeAsync( ) => DisposeAsyncCore( );
 
-		[ExcludeFromCodeCoverage]
-		public virtual Task<int> ExecuteSqlAsync( string query, IEnumerable<object>? parameters = null, CancellationToken cancellationToken = default ) {
-			parameters ??= [ ];
-			return _context.Database.ExecuteSqlRawAsync( query, parameters, cancellationToken );
+		protected virtual async ValueTask DisposeAsyncCore( ) {
+			if ( _context is not null )
+				await _context.DisposeAsync( );
+
+			GC.SuppressFinalize( this );
 		}
 	}
 }

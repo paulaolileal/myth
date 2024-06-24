@@ -25,5 +25,14 @@ namespace Myth.Repositories.EntityFramework {
 			.ToListAsync( cancellationToken );
 
 		public string? GetProviderName( ) => _context.Database.ProviderName;
+
+		public ValueTask DisposeAsync( ) => DisposeAsyncCore( );
+
+		protected virtual async ValueTask DisposeAsyncCore( ) {
+			if ( _context is not null )
+				await _context.DisposeAsync( );
+
+			GC.SuppressFinalize( this );
+		}
 	}
 }

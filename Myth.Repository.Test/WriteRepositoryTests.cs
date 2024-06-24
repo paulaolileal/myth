@@ -1,5 +1,6 @@
 ﻿using Bogus;
 using FluentAssertions;
+using Myth.Interfaces.Repositories.EntityFramework;
 using Myth.Repository.Test.Contexts;
 using Myth.Repository.Test.Interfaces;
 using Myth.Repository.Test.Mocks;
@@ -9,12 +10,14 @@ namespace Myth.Repository.Test {
 
 	public class WriteRepositoryTests : IClassFixture<DatabaseMock> {
 		private readonly IRepositoryTest _repository;
+		private readonly IUnitOfWorkRepository _unitOfWork;
 		private readonly ContextTest _context;
 		private readonly Faker _faker;
 		private readonly Func<Task<Person>> _mockAsync;
 		private readonly Func<int, Task<IEnumerable<Person>>> _mockManyAsync;
 
 		public WriteRepositoryTests( DatabaseMock databaseMock ) {
+			_unitOfWork = databaseMock.UnitOfWork;
 			_repository = databaseMock.Repository;
 			_context = databaseMock.Context;
 			_faker = databaseMock.Faker;
@@ -28,9 +31,13 @@ namespace Myth.Repository.Test {
 			var person = Person.Mock( );
 
 			// Act
+			await _unitOfWork.BeginTransactionAsync( );
+
 			await _repository.AddAsync( person );
 
-			await _repository.SaveChangesAsync( );
+			await _unitOfWork.SaveChangesAsync( );
+
+			await _unitOfWork.CommitAsync( );
 
 			// Assert
 			var result = _context.Persons;
@@ -46,7 +53,7 @@ namespace Myth.Repository.Test {
 			// Act
 			await _repository.AddRangeAsync( persons );
 
-			await _repository.SaveChangesAsync( );
+			await _unitOfWork.SaveChangesAsync( );
 
 			// Assert
 			var result = _context.Persons;
@@ -62,7 +69,7 @@ namespace Myth.Repository.Test {
 			// Act
 			await _repository.RemoveAsync( person );
 
-			await _repository.SaveChangesAsync( );
+			await _unitOfWork.SaveChangesAsync( );
 
 			// Assert
 			var result = _context.Persons;
@@ -78,7 +85,7 @@ namespace Myth.Repository.Test {
 			// Act
 			await _repository.RemoveRangeAsync( persons );
 
-			await _repository.SaveChangesAsync( );
+			await _unitOfWork.SaveChangesAsync( );
 
 			// Assert
 			var result = _context.Persons;
@@ -95,7 +102,7 @@ namespace Myth.Repository.Test {
 			person.Name = _faker.Person.FullName;
 			await _repository.UpdateAsync( person );
 
-			await _repository.SaveChangesAsync( );
+			await _unitOfWork.SaveChangesAsync( );
 
 			// Assert
 			var result = _context.Persons;
@@ -113,7 +120,7 @@ namespace Myth.Repository.Test {
 				person.Name = _faker.Person.FullName;
 			await _repository.UpdateRangeAsync( persons );
 
-			await _repository.SaveChangesAsync( );
+			await _unitOfWork.SaveChangesAsync( );
 
 			// Assert
 			var result = _context.Persons;

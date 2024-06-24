@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 
 namespace Myth.Repositories.EntityFramework {
 
-	public abstract class ReadWriteRepositoryAsync<TEntity> : IReadWriteRepositoryAsync<TEntity> where TEntity : class {
+	public abstract class ReadWriteRepositoryAsync<TEntity> : IAsyncDisposable, IReadWriteRepositoryAsync<TEntity> where TEntity : class {
 		protected readonly BaseContext _context;
 
 		private readonly IReadRepositoryAsync<TEntity> _readRepository;
@@ -73,9 +73,6 @@ namespace Myth.Repositories.EntityFramework {
 		public virtual Task RemoveRangeAsync( IEnumerable<TEntity> entities, CancellationToken cancellationToken = default ) =>
 			_writeRepository.RemoveRangeAsync( entities, cancellationToken );
 
-		public virtual Task<int> SaveChangesAsync( CancellationToken cancellationToken = default ) =>
-			_writeRepository.SaveChangesAsync( cancellationToken );
-
 		public virtual Task<List<TEntity>> SearchAsync( ISpec<TEntity> spec, CancellationToken cancellationToken = default ) =>
 			_readRepository.SearchAsync( spec, cancellationToken );
 
@@ -102,7 +99,19 @@ namespace Myth.Repositories.EntityFramework {
 		public IQueryable<TEntity> Where( Expression<Func<TEntity, bool>> predicate ) =>
 			_readRepository.Where( predicate );
 
-		public Task<int> ExecuteSqlAsync( string query, IEnumerable<object>? parameters = null, CancellationToken cancellationToken = default ) =>
-			_writeRepository.ExecuteSqlAsync( query, parameters, cancellationToken );
+		public ValueTask DisposeAsync( ) => DisposeAsyncCore( );
+
+		protected virtual async ValueTask DisposeAsyncCore( ) {
+			if ( _writeRepository is not null )
+				await _writeRepository.DisposeAsync( );
+
+			if ( _readRepository is not null )
+				await _readRepository.DisposeAsync( );
+
+			if ( _context is not null )
+				await _context.DisposeAsync( );
+
+			GC.SuppressFinalize( this );
+		}
 	}
 }

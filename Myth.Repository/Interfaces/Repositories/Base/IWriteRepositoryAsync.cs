@@ -1,6 +1,6 @@
 ﻿namespace Myth.Interfaces.Repositories.Base {
 
-	public interface IWriteRepositoryAsync<TEntity> : IRepository {
+	public interface IWriteRepositoryAsync<TEntity> : IRepository, IAsyncDisposable {
 
 		Task AddAsync( TEntity entity, CancellationToken cancellationToken = default );
 

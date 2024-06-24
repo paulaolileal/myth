@@ -11,7 +11,7 @@ namespace Myth.Repositories.Results {
 
 		public int TotalPages { get; private set; }
 
-		public IEnumerable<TEntity> Items { get; private set; }
+		public IEnumerable<TEntity> Items { get; private set; } = [ ];
 
 		public Paginated(
 			int pageNumber,

@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 
 namespace Myth.Interfaces.Repositories.Base {
 
-	public interface IReadRepositoryAsync<TEntity> : IRepository {
+	public interface IReadRepositoryAsync<TEntity> : IRepository, IAsyncDisposable {
 
 		IQueryable<TEntity> Where( ISpec<TEntity> specification );
 

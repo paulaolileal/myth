@@ -1,5 +1,8 @@
 using Bogus;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Myth.Interfaces.Repositories.EntityFramework;
+using Myth.Repositories.EntityFramework;
 using Myth.Repository.Test.Contexts;
 using Myth.Repository.Test.Interfaces;
 using Myth.Repository.Test.Repositories;
@@ -10,17 +13,22 @@ namespace Myth.Repository.Test.Mocks {
 	public class DatabaseMock : IDisposable {
 		internal ContextTest Context { get; }
 		internal IRepositoryTest Repository { get; }
+		internal IUnitOfWorkRepository UnitOfWork { get; }
 		internal Faker Faker { get; }
 
 		public DatabaseMock( ) {
 			Faker = new Faker( );
 
 			var dbContextOptionsBuilder = new DbContextOptionsBuilder( )
-				.UseInMemoryDatabase( "DataBaseTest" );
+				.UseInMemoryDatabase( "DataBaseTest" )
+				.ConfigureWarnings( warnings => warnings
+					.Ignore( InMemoryEventId.TransactionIgnoredWarning ) );
 
 			Context = new ContextTest( dbContextOptionsBuilder.Options );
 
 			Repository = new RepositoryTest( Context );
+
+			UnitOfWork = new UnitOfWorkRepository( Context );
 		}
 
 		internal async Task<Person> MockAsync( ) {
@@ -43,7 +51,12 @@ namespace Myth.Repository.Test.Mocks {
 
 		public void Dispose( ) {
 			Context.Database.EnsureDeleted( );
+
 			Context.Dispose( );
+
+			UnitOfWork.DisposeAsync( ).GetAwaiter( ).GetResult( );
+
+			Repository.DisposeAsync( ).GetAwaiter( ).GetResult( );
 		}
 	}
 }
