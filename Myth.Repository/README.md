@@ -1,4 +1,4 @@
-# Myth.Rest
+# Myth.Repository
 
 ![NuGet Version](https://img.shields.io/nuget/v/Myth.commons?style=for-the-badge&logo=nuget) ![NuGet Version](https://img.shields.io/nuget/vpre/Myth.commons?style=for-the-badge&logo=nuget&color=rgb(255%2C%20185%2C%200))
 
