@@ -4,11 +4,12 @@
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge)](https://opensource.org/licenses/Apache-2.0)
 
-It is a .NET library for common functionalities across various applications.
+It is a .NET library for defining database access repositories.
 
-⭐ Features
-- JSON serialization
-- JSON deserialization
-- String manipulation
-- Base for `Value Objects`
-- Base for constants'
+# ⭐ Features
+- Interfaces
+- Setting for reading
+- Definition for writing
+- Definition for reading and writing
+- Pagination
+- Paginated search

@@ -4,7 +4,6 @@
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge)](https://opensource.org/licenses/Apache-2.0)
 
-
 É uma biblioteca .NET para definições de repositórios de acessos a bancos de dados.
 
 # ⭐ Funcionalidades
@@ -14,4 +13,3 @@
 - Definição para leitura e escrita
 - Paginação
 - Pesquisa paginada
-- 

@@ -76,7 +76,7 @@ Specifications can be of three types and worked individually or in groups.
 
 Applying all types can be done as follows:
 
-```
+```csharp
 var enumerable = Enumerable.Empty<Person>();
 
 var spec = SpecBuilder<Person>
@@ -97,7 +97,7 @@ var result = enumerable
 
 Filters can be applied directly as follows:
 
-```
+```csharp
 var enumerable = Enumerable.Empty<Person>();
 
 var spec = SpecBuilder<Person>
@@ -121,7 +121,7 @@ The following filters are available:
 
 Ordering can be applied directly as follows:
 
-```
+```csharp
 var enumerable = Enumerable.Empty<Person>();
 
 var spec = SpecBuilder<Person>
@@ -142,7 +142,7 @@ The following orderings are available:
 
 Paginations and post processing can be applied directly as follows:
 
-```
+```csharp
 var enumerable = Enumerable.Empty<Person>();
 
 var spec = SpecBuilder<Person>

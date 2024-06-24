@@ -4,7 +4,6 @@
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge)](https://opensource.org/licenses/Apache-2.0)
 
-
 É uma biblioteca .NET para funcionalidades comuns a diversas aplicações.
 
 # ⭐ Funcionalidades
