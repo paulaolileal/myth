@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<RootNamespace>Myth</RootNamespace>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Platforms>x64</Platforms>
-		<Version>2.0.0.15</Version>
+		<Version>2.0.0.17</Version>
 		<Authors>Paula Leal</Authors>
 		<Description>An implementation of the specification pattern for data repositories</Description>
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons</RepositoryUrl>
@@ -16,11 +16,11 @@
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageOutputPath>$(AppData)/NuGet/Packages</PackageOutputPath>
 		<PackageId>Myth.Specification</PackageId>
-		<PackageIcon>logo.png</PackageIcon>
+		<PackageIcon>Logo.jpg</PackageIcon>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\logo.png">
+		<None Include="..\Logo.jpg">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
