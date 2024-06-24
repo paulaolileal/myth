@@ -8,6 +8,7 @@ variables:
   MAJOR_VERSION: 2
   MINOR_VERSION: 0
 
+default:
   image: mcr.microsoft.com/dotnet/sdk:8.0
 
 build_job:
