@@ -19,10 +19,10 @@ To use, the following pattern must be followed:
 
 ```csharp
 var spec = SpecBuilder<Entity>
-  .Create()
-  .And(...)
-  .Or(...)
-  .Not()
+	.Create()
+	.And(...)
+	.Or(...)
+	.Not()
   ...
 ```
 
@@ -34,17 +34,17 @@ To do this, I should create a static class with the creation of each part of thi
 
 ```csharp
 public static class PersonSpecifications {
-  public static ISpec<Person> IsGenerationX(this ISpec<Person> spec) {
-  return spec.And(person => person.Birthdate.Year >= 2000);
-  }
+	public static ISpec<Person> IsGenerationX(this ISpec<Person> spec) {
+		return spec.And(person => person.Birthdate.Year >= 2000);
+	}
 
-  public static ISpec<Person> IsIdentifiedAsFemale(this ISpec<Person> spec) {
-  return spec.And(person => person.Gender == "female");
-  }
+	public static ISpec<Person> IsIdentifiedAsFemale(this ISpec<Person> spec) {
+		return spec.And(person => person.Gender == "female");
+	}
 
-  public static ISpec<Person> LivesOnCity(this ISpec<Person> spec, string city) {
-  return spec.And(person => person.Address.City == city);
-  }
+	public static ISpec<Person> LivesOnCity(this ISpec<Person> spec, string city) {
+		return spec.And(person => person.Address.City == city);
+	}
 }
 ```
 
@@ -52,20 +52,20 @@ And then when building my filter, search:
 
 ```csharp
 public class PersonService {
-  private IPersonRepository _personRepository;
+	private IPersonRepository _personRepository;
 
   ...
 
-  public IEnumerable<Person> GetFemalePersonsOfGenerationXOfCityAsync( string city, CancellationToken cancellationToken ) {
-  var spec = SpecBuilder<Person>
-  .Create()
-  .IsGenerationX()
-  .IsIdentifiedAsFemale()
-  .LivesOnCity(city);
+	public IEnumerable<Person> GetFemalePersonsOfGenerationXOfCityAsync( string city, CancellationToken cancellationToken ) {
+		var spec = SpecBuilder<Person>
+			.Create()
+			.IsGenerationX()
+			.IsIdentifiedAsFemale()
+			.LivesOnCity(city);
 
-  var result = _repository.SearchAsync(spec, cancellationToken);
+		var result = _repository.SearchAsync(spec, cancellationToken);
 
-  return result;
+		return result;
   }
 }
 ```
@@ -82,17 +82,17 @@ Applying all types can be done as follows:
 var enumerable = Enumerable.Empty<Person>();
 
 var spec = SpecBuilder<Person>
-  .Create()
-  .And(x => x.PersonId != null)
-  .Distinct()
-  .Order(x => x.Name)
-  .Order(x => x.Address)
-  .Skip(10)
-  .Take(10);
+	.Create()
+	.And(x => x.PersonId != null)
+	.Distinct()
+	.Order(x => x.Name)
+	.Order(x => x.Address)
+	.Skip(10)
+	.Take(10);
 
 var result = enumerable
-  .Specify(spec)
-  .ToList();
+	.Specify(spec)
+	.ToList();
 ````
 
 ## 🔽 Filters
@@ -103,12 +103,12 @@ Filters can be applied directly as follows:
 var enumerable = Enumerable.Empty<Person>();
 
 var spec = SpecBuilder<Person>
-  .Create()
-  .And(x => x.PersonId != null);
+	.Create()
+	.And(x => x.PersonId != null);
 
 var result = enumerable
-  .Filter(spec)
-  .ToList();
+	.Filter(spec)
+	.ToList();
 ```
 
 The following filters are available:
@@ -127,12 +127,12 @@ Ordering can be applied directly as follows:
 var enumerable = Enumerable.Empty<Person>();
 
 var spec = SpecBuilder<Person>
-  .Create()
-  .Order(x => x.Name);
+	.Create()
+	.Order(x => x.Name);
 
 var result = enumerable
-  .Sort(spec)
-  .ToList();
+	.Sort(spec)
+	.ToList();
 ```
 
 The following orderings are available:
@@ -148,14 +148,14 @@ Paginations and post processing can be applied directly as follows:
 var enumerable = Enumerable.Empty<Person>();
 
 var spec = SpecBuilder<Person>
-  .Create()
-  .DistinctBy(x => x.Name)
-  .Skip(10)
-  .Take(10);
+	.Create()
+	.DistinctBy(x => x.Name)
+	.Skip(10)
+	.Take(10);
 
 var result = enumerable
-  .Paginate(spec)
-  .ToList();
+	.Paginate(spec)
+	.ToList();
 ```
 
 The following functions are available:

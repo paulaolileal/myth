@@ -1,4 +1,4 @@
-﻿# Myth.Rest
+﻿# Myth.DependencyInjection
 
 ![NuGet Version](https://img.shields.io/nuget/v/Myth.DependencyInjection?style=for-the-badge&logo=nuget) ![NuGet Version](https://img.shields.io/nuget/vpre/Myth.DependencyInjection?style=for-the-badge&logo=nuget&color=rgb(255%2C%20185%2C%200))
 
@@ -22,7 +22,7 @@ Para injetar todos os tipos que implementam uma interface utilize o seguinte có
 services.AddServiceFromType<IMyInterface>();
 ```
 
-Para utilizar os tipos definidos pela aplicação ou __assemblies_, utilize o provedor de tipos:
+Para utilizar os tipos definidos pela aplicação ou _assemblies_, utilize o provedor de tipos:
 
 ```csharp
 TypeProvider.ApplicationAssemblies	// Mostra todos os assemblies da aplicação

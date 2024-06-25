@@ -1,30 +1,53 @@
-# Myth.Rest
+# Myth.DependencyInjection.Providers
 
-![NuGet Version](https://img.shields.io/nuget/v/Myth.commons?style=for-the-badge&logo=nuget) ![NuGet Version](https://img.shields.io/nuget/vpre/Myth.commons?style=for-the-badge&logo=nuget&color=rgb(255%2C%20185%2C%200))
+![NuGet Version](https://img.shields.io/nuget/v/Myth.DependencyInjection.Providers?style=for-the-badge&logo=nuget) ![NuGet Version](https://img.shields.io/nuget/vpre/Myth.DependencyInjection.Providers?style=for-the-badge&logo=nuget&color=rgb(255%2C%20185%2C%200))
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge)](https://opensource.org/licenses/Apache-2.0)
 
 [![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg?style=for-the-badge)](/README.pt-br.md) [![en](https://img.shields.io/badge/lang-en-red.svg?style=for-the-badge)](/README.md)
 
-It is a .NET library for working with dependency injection, types and _assemblies_.
+It is a .NET library to perform dependency injection for pre-configured third-party libraries.
 
 # ⭐ Features
-- Loading application assemblies
-- Find application types
-- Find types from an interface
-- Inject services from an interface automatically
+- Add versioning
+- Adds versioned Swagger
+- Adds AutoMapper with pagination settings
+- Adds methods to make using AutoMapper easier
 
 # 🔮 Usage
 
-To inject all types that implement an interface use the following code.
+To use, simply use the functions you need in the `Startup` of your application.
 
 ```csharp
-services.AddServiceFromType<IMyInterface>();
+services.AddVersioning( 1 );                      // For versioning
+services.AddSwaggerVersioned( settings => {       // To add versioned Swagger
+  settings.Title = "API Test";
+  settings.Description = "This is an API test";
+  settings.Options.UseBasicAuthorization( );
+} );
+services.AddTypeMapping( );                      // To add type mapping
 ```
 
-To use application-defined types or _assemblies_, use the type provider:
+# 👓 Observations
+
+## 🔢 Versioning
+
+For the vesionation to work correctly, the _controllers_ must have the following format:
 
 ```csharp
-TypeProvider.ApplicationAssemblies // Shows all application assemblies
-TypeProvider.ApplicationTypes // Shows all application types
+[ApiController]
+[ApiVersion( "1.0" )]
+[Route( "api/v{version:apiVersion}/[controller]" )]
+internal class MyController : ControllerBase {
+
+  ...
+
+}
 ```
+
+## 🗺️ Type Mapping
+
+The following static methods will be available to use and perform mapping at any time:
+
+- `.MapTo<DestinationType>()`: Maps to the destination type
+- `.MapToAsync<SourceType, DestinationType>()`: Maps to the destination type asynchronously
