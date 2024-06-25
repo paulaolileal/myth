@@ -18,11 +18,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Myth.DependencyInjection.Providers\Myth.DependencyInjection.Providers.csproj" />
     <ProjectReference Include="..\Myth.DependencyInjection\Myth.DependencyInjection.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
