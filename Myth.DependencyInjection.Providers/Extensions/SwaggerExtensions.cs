@@ -21,10 +21,10 @@ namespace Myth.DependencyInjection.Providers.Extensions {
 		/// The data must be created in App Settings
 		/// </remarks>
 		public static IServiceCollection AddSwaggerVersioned( this IServiceCollection services, Action<SwaggerSettings> swaggerSettings ) {
+			services.AddEndpointsApiExplorer( );
+
 			var serviceProvider = services.BuildServiceProvider( );
 			var versionProvider = serviceProvider.GetRequiredService<IApiVersionDescriptionProvider>( );
-
-			services.AddEndpointsApiExplorer( );
 
 			services.AddSwaggerGen( swaggerConfig => {
 				var settings = new SwaggerSettings( swaggerConfig );

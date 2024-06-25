@@ -17,7 +17,6 @@ namespace Myth.DependencyInjection.Test {
 
 			services.AddLogging( );
 			services.AddControllers( );
-			services.AddEndpointsApiExplorer( );
 			services.AddVersioning( 1 );
 
 			// Act

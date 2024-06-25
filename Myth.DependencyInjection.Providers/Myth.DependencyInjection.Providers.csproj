@@ -15,7 +15,7 @@
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageOutputPath>$(AppData)/NuGet/Packages</PackageOutputPath>
-		<PackageId>Myth.DependencyInjection</PackageId>
+		<PackageId>Myth.DependencyInjection.Providers</PackageId>
 		<PackageIcon>Logo.jpg</PackageIcon>
 	</PropertyGroup>
 
@@ -31,6 +31,14 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Myth.DependencyInjection\Myth.DependencyInjection.csproj" />
 		<ProjectReference Include="..\Myth.Repository\Myth.Repository.csproj" />
+	</ItemGroup>
+
+
+	<ItemGroup>
+		<None Include="..\Logo.jpg">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
 	</ItemGroup>
 
 </Project>
