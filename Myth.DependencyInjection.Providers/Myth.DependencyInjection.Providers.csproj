@@ -13,8 +13,7 @@
 		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>
 		<Description>It is a .NET library to perform dependency injection for pre-configured third-party libraries.</Description>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageOutputPath>$(AppData)/NuGet/Packages</PackageOutputPath>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.DependencyInjection.Providers</RepositoryUrl>
 		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.DependencyInjection.Providers</PackageProjectUrl>
@@ -22,6 +21,17 @@
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<None Include="..\Logo.jpg">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+	
 	<ItemGroup>
 		<PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />
 		<PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
@@ -33,14 +43,6 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Myth.DependencyInjection\Myth.DependencyInjection.csproj" />
 		<ProjectReference Include="..\Myth.Repository\Myth.Repository.csproj" />
-	</ItemGroup>
-
-
-	<ItemGroup>
-		<None Include="..\Logo.jpg">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
 	</ItemGroup>
 
 </Project>

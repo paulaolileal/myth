@@ -16,7 +16,7 @@ build-job:
     - dotnet build --configuration Release
   artifacts:
     paths:
-      - bin/Release/*.*
+      - *.dll
 
 test-job:
   stage: test

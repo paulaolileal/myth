@@ -13,8 +13,7 @@
 		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>
 		<Description>It is a .NET library for consuming REST APIs as a client. The main goal is to simplify consumption and enable working with RESTFUL.</Description>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PackageOutputPath>$(AppData)/NuGet/Packages</PackageOutputPath>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Rest</RepositoryUrl>
 		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Rest</PackageProjectUrl>
@@ -29,9 +28,13 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
 	</ItemGroup>
-	
+
 	<ItemGroup>
 		<None Include="..\Logo.jpg">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="README.md">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
