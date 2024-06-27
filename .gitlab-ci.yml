@@ -14,6 +14,8 @@ build-job:
   stage: build
   script:
     - dotnet build --configuration Release
+  only:
+    - tags
 
 test-job:
   stage: test
@@ -24,6 +26,8 @@ test-job:
   artifacts:
     paths:
       - Coverage/**/coverage.opencover.xml
+  only:
+    - tags
   dependencies:
     - build-job
 
