@@ -1,11 +1,6 @@
 ﻿using System.Net;
 
-namespace Myth.Exceptions {
+namespace Myth.Exceptions;
 
-	public class NotMappedResultTypeException : Exception {
-
-		public NotMappedResultTypeException( HttpStatusCode statusCode )
-			: base( $"No types have been mapped to `{statusCode}` status code!" ) {
-		}
-	}
+public class NotMappedResultTypeException( HttpStatusCode statusCode ) : Exception( $"No types have been mapped to `{statusCode}` status code!" ) {
 }

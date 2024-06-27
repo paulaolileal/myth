@@ -1,8 +1,5 @@
-﻿namespace Myth.Exceptions {
+﻿namespace Myth.Exceptions;
 
-	public class InterfaceNotFoundException : Exception {
-
-		public InterfaceNotFoundException( string? message ) : base( message ) {
-		}
-	}
+public class InterfaceNotFoundException( string? message )
+	: Exception( message ) {
 }

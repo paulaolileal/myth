@@ -1,15 +1,14 @@
 ﻿using Myth.Constants;
 using System.Text;
 
-namespace Myth.Extensions {
+namespace Myth.Extensions;
 
-	public static class HttpContentExtensions {
+public static class HttpContentExtensions {
 
-		public static HttpContent ToHttpContent( this object content, CaseStrategy caseStrategy = CaseStrategy.CamelCase ) {
-			return new StringContent(
-				content.ToJson( conf => conf.SetCaseAs( caseStrategy ) ),
-				Encoding.UTF8,
-				"application/json" );
-		}
+	public static HttpContent ToHttpContent( this object content, CaseStrategy caseStrategy = CaseStrategy.CamelCase ) {
+		return new StringContent(
+			content.ToJson( conf => conf.SetCaseAs( caseStrategy ) ),
+			Encoding.UTF8,
+			"application/json" );
 	}
 }

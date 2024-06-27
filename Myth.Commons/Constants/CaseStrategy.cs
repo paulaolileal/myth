@@ -1,4 +1,3 @@
-﻿namespace Myth.Constants {
+﻿namespace Myth.Constants;
 
-	public enum CaseStrategy { CamelCase, SnakeCase }
-}
+public enum CaseStrategy { CamelCase, SnakeCase }

@@ -1,46 +1,45 @@
 ﻿using Myth.Interfaces.Repositories.Results;
 using System.Linq.Expressions;
 
-namespace Myth.Interfaces.Repositories.Base {
+namespace Myth.Interfaces.Repositories.Base;
 
-	public interface IReadRepositoryAsync<TEntity> : IRepository, IAsyncDisposable {
+public interface IReadRepositoryAsync<TEntity> : IRepository, IAsyncDisposable {
 
-		IQueryable<TEntity> Where( ISpec<TEntity> specification );
+	IQueryable<TEntity> Where( ISpec<TEntity> specification );
 
-		IQueryable<TEntity> Where( Expression<Func<TEntity, bool>> predicate );
+	IQueryable<TEntity> Where( Expression<Func<TEntity, bool>> predicate );
 
-		IQueryable<TEntity> AsQueryable( );
+	IQueryable<TEntity> AsQueryable( );
 
-		IEnumerable<TEntity> AsEnumerable( );
+	IEnumerable<TEntity> AsEnumerable( );
 
-		Task<List<TEntity>> SearchAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
+	Task<List<TEntity>> SearchAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
 
-		Task<List<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
+	Task<List<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
 
-		Task<IPaginated<TEntity>> SearchPaginatedAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
+	Task<IPaginated<TEntity>> SearchPaginatedAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
 
-		Task<IPaginated<TEntity>> SearchPaginatedAsync( Expression<Func<TEntity, bool>> predicate, int take = 0, int skip = 0, CancellationToken cancellationToken = default );
+	Task<IPaginated<TEntity>> SearchPaginatedAsync( Expression<Func<TEntity, bool>> predicate, int take = 0, int skip = 0, CancellationToken cancellationToken = default );
 
-		Task<int> CountAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
+	Task<int> CountAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
 
-		Task<int> CountAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
+	Task<int> CountAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
 
-		Task<bool> AnyAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
+	Task<bool> AnyAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
 
-		Task<bool> AnyAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
+	Task<bool> AnyAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
 
-		Task<TEntity?> FirstOrDefaultAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
+	Task<TEntity?> FirstOrDefaultAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
 
-		Task<TEntity?> FirstOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
+	Task<TEntity?> FirstOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
 
-		Task<TEntity?> LastOrDefaultAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
+	Task<TEntity?> LastOrDefaultAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
 
-		Task<TEntity?> LastOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
+	Task<TEntity?> LastOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
 
-		Task<bool> AllAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
+	Task<bool> AllAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
 
-		Task<bool> AllAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
+	Task<bool> AllAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
 
-		Task<List<TEntity>> ToListAsync( CancellationToken cancellationToken = default );
-	}
+	Task<List<TEntity>> ToListAsync( CancellationToken cancellationToken = default );
 }

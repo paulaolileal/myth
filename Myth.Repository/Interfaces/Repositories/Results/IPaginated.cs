@@ -1,12 +1,11 @@
-﻿namespace Myth.Interfaces.Repositories.Results {
+﻿namespace Myth.Interfaces.Repositories.Results;
 
-	public interface IPaginated {
-		public int PageNumber { get; }
+public interface IPaginated {
+	public int PageNumber { get; }
 
-		public int PageSize { get; }
+	public int PageSize { get; }
 
-		public int TotalPages { get; }
+	public int TotalPages { get; }
 
-		public int TotalItems { get; }
-	}
+	public int TotalItems { get; }
 }

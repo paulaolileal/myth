@@ -1,8 +1,7 @@
-﻿namespace Myth.Exceptions {
+﻿namespace Myth.Exceptions;
 
-	public class TypeMappingNotConfiguredException : Exception {
+public class TypeMappingNotConfiguredException : Exception {
 
-		public TypeMappingNotConfiguredException( ) : base( "Auto Mapper was not injected or Type Mapping was not configured!" ) {
-		}
+	public TypeMappingNotConfiguredException( ) : base( "Auto Mapper was not injected or Type Mapping was not configured!" ) {
 	}
 }

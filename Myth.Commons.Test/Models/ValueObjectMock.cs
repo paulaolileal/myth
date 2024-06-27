@@ -1,16 +1,11 @@
 ﻿using Myth.ValueObjects;
 
-namespace Myth.Commons.Test.Models {
+namespace Myth.Commons.Test.Models;
 
-	internal class ValueObjectMock : ValueObject {
-		public string Test { get; private set; }
+internal class ValueObjectMock( string test ) : ValueObject {
+	public string Test { get; private set; } = test;
 
-		public ValueObjectMock( string test ) {
-			Test = test;
-		}
-
-		protected override IEnumerable<object> GetAtomicValues( ) {
-			yield return Test;
-		}
+	protected override IEnumerable<object> GetAtomicValues( ) {
+		yield return Test;
 	}
 }

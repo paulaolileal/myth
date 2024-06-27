@@ -1,10 +1,5 @@
-﻿namespace Myth.Exceptions {
+﻿namespace Myth.Exceptions;
 
-	[Serializable]
-	public sealed class InvalidSpecificationException : Exception {
-
-		public InvalidSpecificationException( string message )
-			: base( message ) {
-		}
-	}
+[Serializable]
+public sealed class InvalidSpecificationException( string message ) : Exception( message ) {
 }

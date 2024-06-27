@@ -1,5 +1,4 @@
-﻿namespace Myth.DependencyInjection.Test.Models {
+﻿namespace Myth.DependencyInjection.Test.Models;
 
-	internal class Person {
-	}
+internal class Person {
 }

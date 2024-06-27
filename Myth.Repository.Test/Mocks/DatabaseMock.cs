@@ -8,55 +8,54 @@ using Myth.Repository.Test.Interfaces;
 using Myth.Repository.Test.Repositories;
 using Person = Myth.Repository.Test.Models.Person;
 
-namespace Myth.Repository.Test.Mocks {
+namespace Myth.Repository.Test.Mocks;
 
-	public class DatabaseMock : IDisposable {
-		internal ContextTest Context { get; }
-		internal IRepositoryTest Repository { get; }
-		internal IUnitOfWorkRepository UnitOfWork { get; }
-		internal Faker Faker { get; }
+public class DatabaseMock : IDisposable {
+	internal ContextTest Context { get; }
+	internal IRepositoryTest Repository { get; }
+	internal IUnitOfWorkRepository UnitOfWork { get; }
+	internal Faker Faker { get; }
 
-		public DatabaseMock( ) {
-			Faker = new Faker( );
+	public DatabaseMock( ) {
+		Faker = new Faker( );
 
-			var dbContextOptionsBuilder = new DbContextOptionsBuilder( )
-				.UseInMemoryDatabase( "DataBaseTest" )
-				.ConfigureWarnings( warnings => warnings
-					.Ignore( InMemoryEventId.TransactionIgnoredWarning ) );
+		var dbContextOptionsBuilder = new DbContextOptionsBuilder( )
+			.UseInMemoryDatabase( "DataBaseTest" )
+			.ConfigureWarnings( warnings => warnings
+				.Ignore( InMemoryEventId.TransactionIgnoredWarning ) );
 
-			Context = new ContextTest( dbContextOptionsBuilder.Options );
+		Context = new ContextTest( dbContextOptionsBuilder.Options );
 
-			Repository = new RepositoryTest( Context );
+		Repository = new RepositoryTest( Context );
 
-			UnitOfWork = new UnitOfWorkRepository( Context );
-		}
+		UnitOfWork = new UnitOfWorkRepository( Context );
+	}
 
-		internal async Task<Person> MockAsync( ) {
-			var person = Person.Mock( );
+	internal async Task<Person> MockAsync( ) {
+		var person = Person.Mock( );
 
-			await Context.AddAsync( person );
-			Context.SaveChanges( );
+		await Context.AddAsync( person );
+		Context.SaveChanges( );
 
-			return person;
-		}
+		return person;
+	}
 
-		internal async Task<IEnumerable<Person>> MockAsync( int count ) {
-			var persons = Person.Mock( count );
+	internal async Task<IEnumerable<Person>> MockAsync( int count ) {
+		var persons = Person.Mock( count );
 
-			await Context.AddRangeAsync( persons );
-			Context.SaveChanges( );
+		await Context.AddRangeAsync( persons );
+		Context.SaveChanges( );
 
-			return persons;
-		}
+		return persons;
+	}
 
-		public void Dispose( ) {
-			Context.Database.EnsureDeleted( );
+	public void Dispose( ) {
+		Context.Database.EnsureDeleted( );
 
-			Context.Dispose( );
+		Context.Dispose( );
 
-			UnitOfWork.DisposeAsync( ).GetAwaiter( ).GetResult( );
+		UnitOfWork.DisposeAsync( ).GetAwaiter( ).GetResult( );
 
-			Repository.DisposeAsync( ).GetAwaiter( ).GetResult( );
-		}
+		Repository.DisposeAsync( ).GetAwaiter( ).GetResult( );
 	}
 }

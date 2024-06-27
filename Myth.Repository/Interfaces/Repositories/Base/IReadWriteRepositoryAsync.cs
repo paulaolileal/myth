@@ -1,5 +1,4 @@
-﻿namespace Myth.Interfaces.Repositories.Base {
+﻿namespace Myth.Interfaces.Repositories.Base;
 
-	public interface IReadWriteRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity>, IWriteRepositoryAsync<TEntity>, IAsyncDisposable {
-	}
+public interface IReadWriteRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity>, IWriteRepositoryAsync<TEntity>, IAsyncDisposable {
 }

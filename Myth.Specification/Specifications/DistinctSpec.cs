@@ -1,33 +1,27 @@
 ﻿using Myth.Interfaces;
 using System.Linq.Expressions;
 
-namespace Myth.Specifications {
+namespace Myth.Specifications;
 
-	public class DistinctSpec<T, TKey> : SpecBuilder<T> {
-		private readonly ISpec<T> _left;
+public class DistinctSpec<T, TKey>( ISpec<T> left, Expression<Func<T, TKey>> keySelector ) : SpecBuilder<T>( left ) {
+	private readonly ISpec<T> _left = left;
 
-		private readonly Expression<Func<T, TKey>> _keySelector;
+	private readonly Expression<Func<T, TKey>> _keySelector = keySelector;
 
-		public override Expression<Func<T, bool>> Predicate => _left.Predicate;
+	public override Expression<Func<T, bool>> Predicate => _left.Predicate;
 
-		public override Func<IQueryable<T>, IOrderedQueryable<T>> Sort => _left.Sort;
+	public override Func<IQueryable<T>, IOrderedQueryable<T>> Sort => _left.Sort;
 
-		public override Func<IQueryable<T>, IQueryable<T>> PostProcess => DistinctBy( _left, _keySelector );
+	public override Func<IQueryable<T>, IQueryable<T>> PostProcess => DistinctBy( _left, _keySelector );
 
-		public DistinctSpec( ISpec<T> left, Expression<Func<T, TKey>> keySelector ) : base( left ) {
-			_left = left;
-			_keySelector = keySelector;
-		}
+	private Func<IQueryable<T>, IQueryable<T>> DistinctBy( ISpec<T> left, Expression<Func<T, TKey>> keySelector ) {
+		Func<IQueryable<T>, IQueryable<T>> process;
 
-		private Func<IQueryable<T>, IQueryable<T>> DistinctBy( ISpec<T> left, Expression<Func<T, TKey>> keySelector ) {
-			Func<IQueryable<T>, IQueryable<T>> process;
+		if ( left.PostProcess != null )
+			process = items => left.PostProcess( items ).DistinctBy( keySelector );
+		else
+			process = items => items.DistinctBy( keySelector );
 
-			if ( left.PostProcess != null )
-				process = items => left.PostProcess( items ).DistinctBy( keySelector );
-			else
-				process = items => items.DistinctBy( keySelector );
-
-			return process;
-		}
+		return process;
 	}
 }

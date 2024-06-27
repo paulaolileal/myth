@@ -1,5 +1,4 @@
-﻿namespace Myth.DependencyInjection.Test.Interfaces {
+﻿namespace Myth.DependencyInjection.Test.Interfaces;
 
-	internal interface ITest {
-	}
+internal interface ITest {
 }
