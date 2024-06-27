@@ -231,3 +231,5 @@ _Pvt_Extensions
 .fake/
 
 *.bak
+
+Coverage

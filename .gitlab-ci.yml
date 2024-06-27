@@ -18,6 +18,8 @@ build-job:
 test-job:
   stage: test
   script:
+    - dotnet dev-certs https
+    - dotnet dev-certs https --trust
     - dotnet test --logger trx --results-directory "Coverage" --configuration Release --collect "XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
   artifacts:
     paths:
