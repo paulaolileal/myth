@@ -1,22 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<!-- Patform -->
 		<TargetFramework>net8.0</TargetFramework>
+		<Platforms>x64</Platforms>
+		<!-- Settings -->
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<RootNamespace>Myth</RootNamespace>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<Platforms>x64</Platforms>
-		<Version>2.0.0.17</Version>
-		<Authors>Paula Leal</Authors>
-		<Description>The implementation of generic repositories using expressions and specifications for entity framework</Description>
-		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons</RepositoryUrl>
-		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth-commons</PackageProjectUrl>
-		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageOutputPath>$(AppData)/NuGet/Packages</PackageOutputPath>
+		<!-- Package -->
 		<PackageId>Myth.Repository.EntityFramework</PackageId>
+		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>
+		<Description>It is a .NET library for defining database access repositories using Entity Framework.</Description>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageOutputPath>$(AppData)/NuGet/Packages</PackageOutputPath>
+		<!-- Docs -->
+		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Repository.EntityFramework</RepositoryUrl>
+		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Repository.EntityFramework</PackageProjectUrl>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -24,12 +27,6 @@
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
-	</ItemGroup>
-
-	<ItemGroup>
-		<Compile Remove="Results\**" />
-		<EmbeddedResource Remove="Results\**" />
-		<None Remove="Results\**" />
 	</ItemGroup>
 
 	<ItemGroup>

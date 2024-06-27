@@ -17,15 +17,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Specification", "Myth.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Repository.EntityFramework", "Myth.Repository.EntityFramework\Myth.Repository.EntityFramework.csproj", "{2AA55F9C-C220-4C16-A39F-1C5EF87BD3F2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Odata", "Myth.Odata\Myth.Odata.csproj", "{66BC5194-664E-4CEA-8B9B-1F7D1D2A8AD6}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Rest", "Myth.Rest\Myth.Rest.csproj", "{5F5F3A78-09C0-4601-B313-9AA8B1AC687A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Rest", "Rest", "{32DEEFE7-14EA-43F8-BC99-5D8CADFB294E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Rest.Test", "Myth.Rest.Test\Myth.Rest.Test.csproj", "{267B1999-B895-449F-96EA-478799497603}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Odata", "Odata", "{EA751109-A1C6-4581-8D56-1E2D69C56D33}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Repository", "Repository", "{169339F6-1B73-4B4E-AAB6-9036A8CB5235}"
 EndProject
@@ -48,9 +44,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DependencyInjection", "Depe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Specification.Test", "Myth.Specification.Test\Myth.Specification.Test.csproj", "{82366A95-031B-4A35-89AC-751BA26229AC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myth.DependencyInjection.Test", "Myth.DependencyInjection.Test\Myth.DependencyInjection.Test.csproj", "{5BA8D581-CCD2-46F3-ADDD-B58A1A583995}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.DependencyInjection.Test", "Myth.DependencyInjection.Test\Myth.DependencyInjection.Test.csproj", "{5BA8D581-CCD2-46F3-ADDD-B58A1A583995}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myth.DependencyInjection.Providers", "Myth.DependencyInjection.Providers\Myth.DependencyInjection.Providers.csproj", "{FAEB35BF-73A0-42B7-B9AD-D41B57D696CD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.DependencyInjection.Providers", "Myth.DependencyInjection.Providers\Myth.DependencyInjection.Providers.csproj", "{FAEB35BF-73A0-42B7-B9AD-D41B57D696CD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -92,14 +88,6 @@ Global
 		{2AA55F9C-C220-4C16-A39F-1C5EF87BD3F2}.Release|Any CPU.Build.0 = Release|x64
 		{2AA55F9C-C220-4C16-A39F-1C5EF87BD3F2}.Release|x64.ActiveCfg = Release|x64
 		{2AA55F9C-C220-4C16-A39F-1C5EF87BD3F2}.Release|x64.Build.0 = Release|x64
-		{66BC5194-664E-4CEA-8B9B-1F7D1D2A8AD6}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{66BC5194-664E-4CEA-8B9B-1F7D1D2A8AD6}.Debug|Any CPU.Build.0 = Debug|x64
-		{66BC5194-664E-4CEA-8B9B-1F7D1D2A8AD6}.Debug|x64.ActiveCfg = Debug|x64
-		{66BC5194-664E-4CEA-8B9B-1F7D1D2A8AD6}.Debug|x64.Build.0 = Debug|x64
-		{66BC5194-664E-4CEA-8B9B-1F7D1D2A8AD6}.Release|Any CPU.ActiveCfg = Release|x64
-		{66BC5194-664E-4CEA-8B9B-1F7D1D2A8AD6}.Release|Any CPU.Build.0 = Release|x64
-		{66BC5194-664E-4CEA-8B9B-1F7D1D2A8AD6}.Release|x64.ActiveCfg = Release|x64
-		{66BC5194-664E-4CEA-8B9B-1F7D1D2A8AD6}.Release|x64.Build.0 = Release|x64
 		{5F5F3A78-09C0-4601-B313-9AA8B1AC687A}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{5F5F3A78-09C0-4601-B313-9AA8B1AC687A}.Debug|Any CPU.Build.0 = Debug|x64
 		{5F5F3A78-09C0-4601-B313-9AA8B1AC687A}.Debug|x64.ActiveCfg = Debug|x64
@@ -173,7 +161,6 @@ Global
 		{64BCED11-ACBC-4F67-911D-DDA0395D06C0} = {169339F6-1B73-4B4E-AAB6-9036A8CB5235}
 		{027EC915-129B-412C-AD74-35225C0DA686} = {1E5D8247-3644-4962-80DE-BE25A5162DBF}
 		{2AA55F9C-C220-4C16-A39F-1C5EF87BD3F2} = {169339F6-1B73-4B4E-AAB6-9036A8CB5235}
-		{66BC5194-664E-4CEA-8B9B-1F7D1D2A8AD6} = {EA751109-A1C6-4581-8D56-1E2D69C56D33}
 		{5F5F3A78-09C0-4601-B313-9AA8B1AC687A} = {32DEEFE7-14EA-43F8-BC99-5D8CADFB294E}
 		{267B1999-B895-449F-96EA-478799497603} = {32DEEFE7-14EA-43F8-BC99-5D8CADFB294E}
 		{677FAC0E-17A5-41A8-9BE1-840E72C2CC9A} = {16B0B348-060E-48A7-B0B7-FA23DAEAA320}

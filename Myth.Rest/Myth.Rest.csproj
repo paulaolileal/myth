@@ -1,22 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<!-- Patform -->
 		<TargetFramework>net8.0</TargetFramework>
+		<Platforms>x64</Platforms>
+		<!-- Settings -->
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<RootNamespace>Myth</RootNamespace>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<Platforms>x64</Platforms>
-		<Version>2.0.0.17</Version>
-		<Authors>Paula Leal</Authors>
-		<Description>A rest client implementation, using fluent and type-by-status mapping</Description>
-		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons/-/tree/main/Myth.Rest?ref_type=heads</RepositoryUrl>
-		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth-commons/-/tree/main/Myth.Rest?ref_type=heads</PackageProjectUrl>
-		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageOutputPath>$(AppData)/NuGet/Packages</PackageOutputPath>
+		<!-- Package -->
 		<PackageId>Myth.Rest</PackageId>
+		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>
+		<Description>It is a .NET library for consuming REST APIs as a client. The main goal is to simplify consumption and enable working with RESTFUL.</Description>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageOutputPath>$(AppData)/NuGet/Packages</PackageOutputPath>
+		<!-- Docs -->
+		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Rest</RepositoryUrl>
+		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Rest</PackageProjectUrl>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>
