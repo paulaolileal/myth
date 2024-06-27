@@ -8,6 +8,15 @@ namespace Myth.Extensions;
 
 public static class AutoMapperExtensions {
 
+	/// <summary>
+	/// Makes available AutoMapper with pre-built configurations
+	/// </summary>
+	/// <param name="services">The service collection</param>
+	/// <param name="options">Customizations for mapping</param>
+	/// <returns>The service collection</returns>
+	/// <remarks>
+	/// The pagination types will be pre-builted mapped
+	/// </remarks>
 	public static IServiceCollection AddTypeMapping( this IServiceCollection services, Action<IMapperConfigurationExpression>? options = null ) {
 		var assemblies = TypeProvider.ApplicationAssemblies;
 

@@ -5,6 +5,12 @@ namespace Myth.Extensions;
 
 public static class VersioningExtensions {
 
+	/// <summary>
+	/// Add versioning to API
+	/// </summary>
+	/// <param name="services"></param>
+	/// <param name="currentVersion"></param>
+	/// <returns></returns>
 	public static IServiceCollection AddVersioning( this IServiceCollection services, double currentVersion ) {
 		var versioningService = services.AddApiVersioning( options => {
 			options.ReportApiVersions = true;

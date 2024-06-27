@@ -1,7 +1,6 @@
 ﻿using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using Myth.DependencyInjection.Providers.Extensions;
 using Myth.DependencyInjection.Test.Models;
 using Myth.Extensions;
 using Myth.ValueProviders;

@@ -11,7 +11,7 @@ public abstract class RestResponseBase(
 	public HttpStatusCode StatusCode { get; private set; } = statusCode;
 	public Uri Url { get; private set; } = url;
 	public HttpMethod Method { get; private set; } = method;
-	public TimeSpan ElapsedTime { get; private set; }
+	public TimeSpan ElapsedTime { get; private set; } = elapsedTime;
 
 	public bool IsSuccessStatusCode( ) => StatusCode.IsSuccess( );
 }

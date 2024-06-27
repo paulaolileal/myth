@@ -12,13 +12,13 @@ namespace Myth.Extensions;
 public static class SwaggerExtensions {
 
 	/// <summary>
-	/// Add a pre-configured Swagger to the application service collections
+	/// Makes avalilable a pre-built Swagger with versioning
 	/// </summary>
-	/// <param name="services">The application service collection</param>
-	/// <param name="swaggerOptions">Addtional Swagger options</param>
-	/// <returns></returns>
+	/// <param name="services">The service collection</param>
+	/// <param name="swaggerSettings">Customizations for swagger</param>
+	/// <returns>The service collection</returns>
 	/// <remarks>
-	/// The data must be created in App Settings
+	/// The application must have at least one version
 	/// </remarks>
 	public static IServiceCollection AddSwaggerVersioned( this IServiceCollection services, Action<SwaggerSettings> swaggerSettings ) {
 		services.AddEndpointsApiExplorer( );
@@ -63,13 +63,10 @@ public static class SwaggerExtensions {
 	}
 
 	/// <summary>
-	/// Add a pre-configured Swagger to the application service collections with basic authorization
+	/// Apply to swagger a basic authorization, based on username and password
 	/// </summary>
-	/// <param name="services">The application service collection</param>
-	/// <returns></returns>
-	/// <remarks>
-	/// The data must be created in App Settings
-	/// </remarks>
+	/// <param name="options">The swagger options</param>
+	/// <returns>The swagger options</returns>
 	public static SwaggerGenOptions UseBasicAuthorization( this SwaggerGenOptions options ) {
 		options.AddSecurityDefinition( "basic", new OpenApiSecurityScheme {
 			Name = "Authorization",
@@ -97,7 +94,7 @@ public static class SwaggerExtensions {
 	}
 
 	/// <summary>
-	/// Uses the pre configurated Swagger previously added
+	/// Creates the json file for all versions of API
 	/// </summary>
 	/// <param name="app"></param>
 	/// <returns></returns>

@@ -56,7 +56,7 @@ public class DependencyInjectionTests {
 
 		// Assert
 		var result = services.First( );
-		result.ImplementationType.Name.Should( ).Be( typeof( Models.Test ).Name );
+		result!.ImplementationType!.Name.Should( ).Be( typeof( Models.Test ).Name );
 		result.ServiceType.Name.Should( ).Be( typeof( ITest ).Name );
 		result.Lifetime.Should( ).Be( ServiceLifetime.Scoped );
 	}

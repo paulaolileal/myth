@@ -19,7 +19,7 @@ public static class TypeMappingProvider {
 	/// <param name="model">The source object to be mapped</param>
 	/// <returns>A object casted to TDest type</returns>
 	/// <remarks>
-	/// The AutoMapper profile must be created
+	/// The AutoMapper profile must exists
 	/// </remarks>
 	public static TDest MapTo<TDest>( this object model ) =>
 		_mapper is not null
@@ -33,7 +33,7 @@ public static class TypeMappingProvider {
 	/// <param name="model">The source object to be mapped</param>
 	/// <returns>A object casted to TDest type</returns>
 	/// <remarks>
-	/// The AutoMapper profile must be created
+	/// The AutoMapper profile must exists
 	/// </remarks>
 	public static async Task<TDest> MapToAsync<TSource, TDest>( this Task<TSource> task ) =>
 		_mapper is not null
@@ -47,7 +47,7 @@ public static class TypeMappingProvider {
 	/// <param name="model">The source object to be mapped</param>
 	/// <returns>A object casted to TDest type</returns>
 	/// <remarks>
-	/// The AutoMapper profile must be created
+	/// The AutoMapper profile must exists
 	/// </remarks>
 	public static async ValueTask<TDest> MapToAsync<TSource, TDest>( this ValueTask<TSource> task ) =>
 		_mapper is not null

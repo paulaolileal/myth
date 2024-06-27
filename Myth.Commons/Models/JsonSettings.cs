@@ -4,27 +4,24 @@ using Newtonsoft.Json;
 namespace Myth.Models;
 
 public class JsonSettings {
-	public bool IgnoreNullValues { get; private set; } = false;
 
-	public JsonSettings IgnoreNull( ) {
-		IgnoreNullValues = true;
+	/// <summary>
+	/// Should ignore null values on object
+	/// </summary>
+	public bool IgnoreNullValues { get; set; } = false;
 
-		return this;
-	}
+	/// <summary>
+	/// The case strategy to be used in serialization
+	/// </summary>
+	public CaseStrategy CaseStrategy { get; set; } = CaseStrategy.CamelCase;
 
-	public CaseStrategy CaseStrategy { get; private set; } = CaseStrategy.CamelCase;
+	/// <summary>
+	/// If the result should be minified
+	/// </summary>
+	public bool MinifyResult { get; set; } = false;
 
-	public JsonSettings SetCaseAs( CaseStrategy caseStrategy ) {
-		CaseStrategy = caseStrategy;
-		return this;
-	}
-
-	public bool MinifyResult { get; private set; } = false;
-
-	public JsonSettings Minify( ) {
-		MinifyResult = true;
-		return this;
-	}
-
+	/// <summary>
+	/// Other settings on base serializer settings
+	/// </summary>
 	public Action<JsonSerializerSettings>? OtherSettings { get; }
 }

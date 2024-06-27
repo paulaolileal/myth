@@ -4,6 +4,11 @@ namespace Myth.Extensions;
 
 public static class UrlExtension {
 
+	/// <summary>
+	/// Changes a content to url encoding format
+	/// </summary>
+	/// <param name="value">The object to encode</param>
+	/// <returns>An encoded value</returns>
 	public static object? EncodeAsUrl( this object value ) {
 		var property = value.GetType( );
 

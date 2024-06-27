@@ -24,6 +24,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\Myth.DependencyInjection.Providers\Myth.DependencyInjection.Providers.csproj" />
 		<ProjectReference Include="..\Myth.DependencyInjection\Myth.DependencyInjection.csproj" />
 	</ItemGroup>

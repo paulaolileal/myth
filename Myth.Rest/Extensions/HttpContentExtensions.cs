@@ -5,10 +5,9 @@ namespace Myth.Extensions;
 
 public static class HttpContentExtensions {
 
-	public static HttpContent ToHttpContent( this object content, CaseStrategy caseStrategy = CaseStrategy.CamelCase ) {
-		return new StringContent(
-			content.ToJson( conf => conf.SetCaseAs( caseStrategy ) ),
+	public static HttpContent ToHttpContent( this object content, CaseStrategy caseStrategy = CaseStrategy.CamelCase ) =>
+		new StringContent(
+			content.ToJson( conf => conf.CaseStrategy = caseStrategy ),
 			Encoding.UTF8,
 			"application/json" );
-	}
 }

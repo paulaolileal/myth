@@ -6,8 +6,6 @@ stages:
 variables:
   NUGET_API_URL: "https://api.nuget.org/v3/index.json" # Substitua pela URL da sua API NuGet se necessário
   NUGET_API_KEY: $NUGET_API_KEY # Defina esta variável no GitLab CI/CD environment variables
-  MAJOR_VERSION: 2
-  MINOR_VERSION: 0
 
 default:
   image: mcr.microsoft.com/dotnet/sdk:8.0
@@ -27,17 +25,12 @@ test_job:
 publish_job:
   stage: publish
   script:
-    - version_suffix=""
-    - if [ "$CI_COMMIT_BRANCH" == "develop" ]; 
-        then version_suffix="-preview"; 
-      fi
     - for project in $(ls **/*.csproj); do
-        dotnet pack $project --configuration Release --no-build --output nupkgs /p:PackageVersion=${CI_PIPELINE_IID}${version_suffix};
+        dotnet pack $project --configuration Release --no-build --output nupkgs /p:PackageVersion=${CI_COMMIT_TAG};
         dotnet nuget push "nupkgs/*.nupkg" --source $NUGET_API_URL --api-key $NUGET_API_KEY;
       done
   only:
-    - main
-    - develop
+    - tags
   dependencies:
     - build
     - test

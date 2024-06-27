@@ -32,11 +32,10 @@ public abstract class ValueObject {
 		return !thisValues.MoveNext( ) && !otherValues.MoveNext( );
 	}
 
-	public override int GetHashCode( ) {
-		return GetAtomicValues( )
+	public override int GetHashCode( ) =>
+		GetAtomicValues( )
 		 .Select( x => x != null ? x.GetHashCode( ) : 0 )
 		 .Aggregate( ( x, y ) => x ^ y );
-	}
 
 	public ValueObject Clone( ) => ( ValueObject )MemberwiseClone( );
 }
