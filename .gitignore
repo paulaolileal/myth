@@ -233,3 +233,5 @@ _Pvt_Extensions
 *.bak
 
 Coverage
+*.cobertura.xml
+*.coverage.xml

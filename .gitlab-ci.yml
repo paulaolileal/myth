@@ -23,7 +23,7 @@ test-job:
   script:
     - dotnet dev-certs https
     - dotnet dev-certs https --trust
-    - dotnet tool install --global dotnet-coverage
+    - dotnet tool install dotnet-coverage
     - dotnet test --filter FullyQualifiedName!~Rest --logger trx --results-directory "Coverage" --configuration Release --collect "XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
     - dotnet-coverage merge *.cobertura.xml --recursive --output merged.cobertura.xml --output-format cobertura
   artifacts:
