@@ -26,6 +26,8 @@ test-job:
     - dotnet test --filter FullyQualifiedName!~Rest --logger trx --results-directory "Coverage" --configuration Release --collect "XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
     - dotnet-coverage merge *.cobertura.xml --recursive --output merged.cobertura.xml --output-format cobertura
   artifacts:
+    paths:
+      - merged.cobertura.xml
     reports:
       coverage_report:
         coverage_format: cobertura
@@ -40,7 +42,7 @@ publish-job:
   script:
     - PACKAGE_VERSION=$(echo "$PACKAGE_VERSION" | cut -d "v" -f2 )
     - for project in $(ls **/*.csproj); do
-        dotnet pack $project --configuration Release --output nupkgs /p:PackageVersion=${CI_COMMIT_TAG};
+        dotnet pack $project --configuration Release --output nupkgs /p:PackageVersion=${PACKAGE_VERSION};
         dotnet nuget push "nupkgs/*.nupkg" --source $NUGET_API_URL --api-key $NUGET_API_KEY;
       done
   only:
