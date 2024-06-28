@@ -41,10 +41,10 @@ publish-job:
   stage: publish
   script:
     - PACKAGE_VERSION=$(echo "$PACKAGE_VERSION" | cut -d "v" -f2 )
-    - for project in $(ls **/*.csproj); do
+    - for project in $(ls **/*.csproj | grep -v 'Test.csproj$'); do
         dotnet pack $project --configuration Release --output nupkgs /p:PackageVersion=${PACKAGE_VERSION};
-        dotnet nuget push "nupkgs/*.nupkg" --source $NUGET_API_URL --api-key $NUGET_API_KEY;
       done
+    - dotnet nuget push "nupkgs/*.nupkg" --source $NUGET_API_URL --api-key $NUGET_API_KEY;
   only:
     - tags
   dependencies:
