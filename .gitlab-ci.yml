@@ -6,6 +6,10 @@ stages:
 default:
   image: mcr.microsoft.com/dotnet/sdk:8.0
 
+variables:
+  NUGET_API_KEY: $NUGET_API_KEY
+  NUGET_API_URL: $NUGET_API_URL
+
 build-job:
   stage: build
   script:
