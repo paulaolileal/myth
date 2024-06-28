@@ -11,9 +11,6 @@ variables:
 default:
   image: mcr.microsoft.com/dotnet/sdk:8.0
 
-before_script:
-  - export PACKAGE_VERSION=${PACKAGE_VERSION#"v"} # Remove the "v" prefix
-
 build-job:
   stage: build
   script:
@@ -28,8 +25,10 @@ test-job:
     - dotnet dev-certs https --trust
     - dotnet test --filter FullyQualifiedName!~Rest --logger trx --results-directory "Coverage" --configuration Release --collect "XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
   artifacts:
-    paths:
-      - Coverage/**/coverage.opencover.xml
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: Coverage/**/coverage.opencover.xml
   only:
     - tags
   dependencies:
@@ -38,6 +37,7 @@ test-job:
 publish-job:
   stage: publish
   script:
+    - PACKAGE_VERSION=`expr match "$PACKAGE_VERSION" '[\d|.|\-|preview]+' `
     - for project in $(ls **/*.csproj); do
         dotnet pack $project --configuration Release --output nupkgs /p:PackageVersion=${CI_COMMIT_TAG};
         dotnet nuget push "nupkgs/*.nupkg" --source $NUGET_API_URL --api-key $NUGET_API_KEY;
