@@ -23,12 +23,14 @@ test-job:
   script:
     - dotnet dev-certs https
     - dotnet dev-certs https --trust
+    - dotnet tool install --global dotnet-coverage
     - dotnet test --filter FullyQualifiedName!~Rest --logger trx --results-directory "Coverage" --configuration Release --collect "XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+    - dotnet-coverage merge *.cobertura.xml --recursive --output merged.cobertura.xml --output-format cobertura
   artifacts:
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: Coverage/**/coverage.opencover.xml
+        path: merged.cobertura.xml
   only:
     - tags
   dependencies:
@@ -37,7 +39,7 @@ test-job:
 publish-job:
   stage: publish
   script:
-    - PACKAGE_VERSION=`expr match "$PACKAGE_VERSION" '[\d|.|\-|preview]+' `
+    - PACKAGE_VERSION=$(echo "$PACKAGE_VERSION" | cut -d "v" -f2 )
     - for project in $(ls **/*.csproj); do
         dotnet pack $project --configuration Release --output nupkgs /p:PackageVersion=${CI_COMMIT_TAG};
         dotnet nuget push "nupkgs/*.nupkg" --source $NUGET_API_URL --api-key $NUGET_API_KEY;
