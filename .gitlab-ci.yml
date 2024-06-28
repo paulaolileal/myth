@@ -15,26 +15,23 @@ build-job:
   script:
     - dotnet build --configuration Release
   only:
-    refs: 
-      - tags
+    - branches 
+    - tags
 
 test-job:
   stage: test
   script:
     - export PATH="$PATH:/root/.dotnet/tools"
     - dotnet tool install --global dotnet-coverage
-    - dotnet test --filter FullyQualifiedName!~Rest --logger trx --results-directory "Coverage" --configuration Release --collect "XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
-    - dotnet-coverage merge *.cobertura.xml --recursive --output merged.cobertura.xml --output-format cobertura
+    - dotnet test --filter FullyQualifiedName!~Rest --configuration Release --results-directory "Coverage" --collect "XPlat Code Coverage"
   artifacts:
-    paths:
-      - merged.cobertura.xml
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: merged.cobertura.xml
+        path: Coverage/*/coverage.cobertura.xml
   only:
-    refs: 
-      - tags
+    - branches 
+    - tags
   dependencies:
     - build-job
 
