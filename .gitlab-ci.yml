@@ -21,8 +21,8 @@ build-job:
 test-job:
   stage: test
   script:
-    - dotnet new tool-manifest
-    - dotnet tool install dotnet-coverage
+    - export PATH="$PATH:/root/.dotnet/tools"
+    - dotnet tool install --global dotnet-coverage
     - dotnet test --filter FullyQualifiedName!~Rest --logger trx --results-directory "Coverage" --configuration Release --collect "XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
     - dotnet-coverage merge *.cobertura.xml --recursive --output merged.cobertura.xml --output-format cobertura
   artifacts:
