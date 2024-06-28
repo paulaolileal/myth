@@ -16,7 +16,7 @@ build-job:
     - dotnet build --configuration Release
   artifacts:
     paths:
-      - /*/Bin/**
+      - /*/bin/**
   only:
     - branches 
     - tags
