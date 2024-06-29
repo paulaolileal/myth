@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 namespace Myth.Specifications;
 
 public abstract class SpecBuilder<T> : ISpec<T> {
-	public int ItensSkiped { get; set; }
+	public int ItemsSkiped { get; set; }
 	public int ItemsTaked { get; set; }
 	public abstract Func<IQueryable<T>, IQueryable<T>> PostProcess { get; }
 	public abstract Expression<Func<T, bool>> Predicate { get; }
@@ -16,7 +16,7 @@ public abstract class SpecBuilder<T> : ISpec<T> {
 	}
 
 	protected SpecBuilder( ISpec<T> left ) {
-		ItensSkiped = left.ItensSkiped;
+		ItemsSkiped = left.ItemsSkiped;
 		ItemsTaked = left.ItemsTaked;
 	}
 

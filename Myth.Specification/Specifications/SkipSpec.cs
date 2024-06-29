@@ -19,7 +19,7 @@ public class SkipSpec<T> : SpecBuilder<T> {
 
 		_amount = amount;
 
-		ItensSkiped += amount;
+		ItemsSkiped += amount;
 	}
 
 	private Func<IQueryable<T>, IQueryable<T>> Skip( ISpec<T> left, int amount ) {

@@ -25,9 +25,20 @@ public partial class RestBuilder : RestBuilderBase {
 
 	#region [ Building ]
 
+	/// <summary>
+	/// Runs the request and get the response
+	/// </summary>
+	/// <typeparam name="TResult">The result type</typeparam>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>A task with the result</returns>
 	public async Task<RestResponse> BuildAsync<TResult>( CancellationToken cancellationToken = default ) =>
 		await BuildAsync( typeof( TResult ), cancellationToken );
 
+	/// <summary>
+	/// Runs the request and get the response
+	/// </summary>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>A task with the result</returns>
 	public async Task<RestResponse> BuildAsync( CancellationToken cancellationToken = default ) =>
 		await BuildAsync( null, cancellationToken );
 
@@ -72,7 +83,7 @@ public partial class RestBuilder : RestBuilderBase {
 				throw new NotMappedResultTypeException( message.StatusCode );
 			else if ( !string.IsNullOrEmpty( content ) ) {
 				try {
-					var typedResponse = content.FromJson( type!, conf => conf.CaseStrategy = _configBuilder._deserializationCaseStrategy );
+					var typedResponse = content.FromJson( type!, conf => conf.UseCaseStrategy( _configBuilder._deserializationCaseStrategy ) );
 					restResponse.SetTypedResult( type!, typedResponse! );
 				} catch ( Exception exception ) {
 					throw new ParsingTypeException( message.StatusCode, type!, content, exception );
@@ -87,6 +98,11 @@ public partial class RestBuilder : RestBuilderBase {
 
 	#region [ Actions ]
 
+	/// <summary>
+	/// Use a `GET` as method for request
+	/// </summary>
+	/// <param name="url">The url</param>
+	/// <returns>This object</returns>
 	public RestBuilder DoGet( string url ) {
 		try {
 			PreRequestSettings( );
@@ -98,6 +114,13 @@ public partial class RestBuilder : RestBuilderBase {
 		return this;
 	}
 
+	/// <summary>
+	/// Use a `POST` as method for request
+	/// </summary>
+	/// <typeparam name="TBody">The type of body</typeparam>
+	/// <param name="url">The url</param>
+	/// <param name="body">The body</param>
+	/// <returns>This object</returns>
 	public RestBuilder DoPost<TBody>( string url, TBody? body = default ) {
 		try {
 			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
@@ -112,6 +135,13 @@ public partial class RestBuilder : RestBuilderBase {
 		return this;
 	}
 
+	/// <summary>
+	/// Use a `PUT` as method for request
+	/// </summary>
+	/// <typeparam name="TBody">The type of body</typeparam>
+	/// <param name="url">The url</param>
+	/// <param name="body">The body</param>
+	/// <returns>This object</returns>
 	public RestBuilder DoPut<TBody>( string url, TBody? body = default ) {
 		try {
 			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
@@ -126,6 +156,11 @@ public partial class RestBuilder : RestBuilderBase {
 		return this;
 	}
 
+	/// <summary>
+	/// Use a `DELETE` as method for request
+	/// </summary>
+	/// <param name="url">The url</param>
+	/// <returns>This object</returns>
 	public RestBuilder DoDelete( string url ) {
 		try {
 			PreRequestSettings( );
@@ -137,6 +172,13 @@ public partial class RestBuilder : RestBuilderBase {
 		return this;
 	}
 
+	/// <summary>
+	/// Use a `PATCH` as method for request
+	/// </summary>
+	/// <typeparam name="TBody">The type of body</typeparam>
+	/// <param name="url">The url</param>
+	/// <param name="body">The body</param>
+	/// <returns>This object</returns>
 	public RestBuilder DoPatch<TBody>( string url, TBody? body = default ) {
 		try {
 			ArgumentNullException.ThrowIfNull( body, nameof( body ) );

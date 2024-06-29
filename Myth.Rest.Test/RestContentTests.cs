@@ -40,7 +40,7 @@ public class RestContentTests : IDisposable {
 	}
 
 	[Fact]
-	public async Task Get_should_return_list_of_itens( ) {
+	public async Task Get_should_return_list_of_items( ) {
 		// Arrange
 		_server
 			.Given(

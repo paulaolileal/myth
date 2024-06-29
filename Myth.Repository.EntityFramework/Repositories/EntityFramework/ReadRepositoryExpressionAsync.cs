@@ -8,26 +8,29 @@ namespace Myth.Repositories.EntityFramework;
 
 public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity> where TEntity : class {
 
-	public virtual Task<List<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
-		_context
+	public virtual async Task<IEnumerable<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) {
+		var result = await _context
 			.Set<TEntity>( )
 			.Where( predicate )
 			.AsQueryable( )
 			.ToListAsync( cancellationToken );
+
+		return result.AsEnumerable();
+	}
 
 	public virtual async Task<IPaginated<TEntity>> SearchPaginatedAsync( Expression<Func<TEntity, bool>> predicate, int take = 0, int skip = 0, CancellationToken cancellationToken = default ) {
-		var itens = await _context
+		var items = await _context
 			.Set<TEntity>( )
 			.Where( predicate )
 			.AsQueryable( )
 			.ToListAsync( cancellationToken );
 
-		var totalItens = await _context
+		var totalItems = await _context
 			.Set<TEntity>( )
 			.AsQueryable( )
 			.CountAsync( cancellationToken );
 
-		return itens.AsPaginated( totalItens, take, skip );
+		return items.AsPaginated( totalItems, take, skip );
 	}
 
 	public virtual IQueryable<TEntity> Where( Expression<Func<TEntity, bool>> predicate ) =>

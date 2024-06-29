@@ -11,11 +11,20 @@ public class RestUploadSettings {
 		PATCH
 	}
 
-	public UploadMethod Method { get; private set; }
+	internal UploadMethod Method { get; private set; }
 
+	/// <summary>
+	/// Use `POST` as method for upload
+	/// </summary>
 	public void UsePostAsMethod( ) => Method = UploadMethod.POST;
 
+	/// <summary>
+	/// Use `PUT` as method for upload
+	/// </summary>
 	public void UsePutAsMethod( ) => Method = UploadMethod.PUT;
 
+	/// <summary>
+	/// Use `PATCH` as method for upload
+	/// </summary>
 	public void UsePatchAsMethod( ) => Method = UploadMethod.PATCH;
 }

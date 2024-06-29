@@ -19,12 +19,22 @@ public abstract class RestBuilderBase : IDisposable {
 		_configBuilder = new( );
 	}
 
+	/// <summary>
+	/// Pre configure before the request
+	/// </summary>
+	/// <param name="configurationBuilder">Configurations</param>
+	/// <returns>This object</returns>
 	public virtual RestBuilderBase Configure( Action<ConfigurationBuilder>? configurationBuilder ) {
 		configurationBuilder?.Invoke( _configBuilder );
 
 		return this;
 	}
 
+	/// <summary>
+	/// Defines the treatment for error cases
+	/// </summary>
+	/// <param name="exceptionSettings">Errors treatment</param>
+	/// <returns>This object</returns>
 	public virtual RestBuilderBase OnError( Action<ErrorBuilder> exceptionSettings ) {
 		_exceptionBuilder.Clear( );
 		exceptionSettings.Invoke( _exceptionBuilder );
@@ -35,6 +45,8 @@ public abstract class RestBuilderBase : IDisposable {
 		_configBuilder._httpClient?.Dispose( );
 
 		_responseMessage?.Dispose( );
+
+		GC.SuppressFinalize( this );
 	}
 
 	protected async Task<(HttpResponseMessage, TimeSpan)> ProcessAsync( CancellationToken cancellationToken = default ) {

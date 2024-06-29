@@ -20,11 +20,11 @@ public class JsonTests {
 		};
 
 		// Act
-		var result = testObject.ToJson( x => {
-			x.MinifyResult = true;
-			x.IgnoreNullValues = true;
-		} );
-		
+		var result = testObject.ToJson( x => x
+			.Minify( )
+			.IgnoreNull( )
+		 );
+
 		// Assert
 		result.Should( ).NotBeEmpty( );
 		result.Should( ).Be( "{\"prop1\":\"Ok\",\"prop2\":true,\"prop3\":-1,\"prop4\":{\"prop5\":\"Yes\"}}" );
@@ -39,10 +39,10 @@ public class JsonTests {
 		};
 
 		// Act
-		var result = testObject.ToJson( x => {
-			x.MinifyResult = true;
-			x.CaseStrategy = CaseStrategy.SnakeCase;
-		} );
+		var result = testObject.ToJson( x => x
+			.Minify( )
+			.UseCaseStrategy( CaseStrategy.SnakeCase )
+		 );
 
 		// Assert
 		result.Should( ).NotBeEmpty( );

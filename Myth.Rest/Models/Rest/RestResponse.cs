@@ -15,11 +15,17 @@ public class RestResponse(
 	public object? Result { get; private set; }
 	public dynamic DynamicResult { get; private set; } = JsonConvert.DeserializeObject<dynamic>( rawMessage )!;
 
-	public void SetTypedResult( Type type, object result ) {
+	internal void SetTypedResult( Type type, object result ) {
 		ResultType = type;
 		Result = result;
 	}
 
+	/// <summary>
+	/// Get the result typed with the mapped type
+	/// </summary>
+	/// <typeparam name="TResult">The mapped type</typeparam>
+	/// <returns>The strongly typed object</returns>
+	/// <exception cref="DifferentResponseTypeException">Throws when the <c>TResult</c> is different from mapped type</exception>
 	public TResult GetAs<TResult>( ) {
 		if ( Result is not null && ResultType == typeof( TResult ) )
 			return ( TResult )Result;

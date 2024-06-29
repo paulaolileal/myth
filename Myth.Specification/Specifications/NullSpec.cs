@@ -14,7 +14,7 @@ public class NullSpec<T> : SpecBuilder<T> {
 	public override Func<IQueryable<T>, IQueryable<T>> PostProcess { get; }
 
 	public NullSpec( ) {
-		ItensSkiped = 0;
+		ItemsSkiped = 0;
 		ItemsTaked = 0;
 	}
 }

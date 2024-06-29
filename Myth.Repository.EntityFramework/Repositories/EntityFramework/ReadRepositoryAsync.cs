@@ -18,10 +18,13 @@ public partial class ReadRepositoryAsync<TEntity>( BaseContext context )
 			.Set<TEntity>( )
 			.AsEnumerable( );
 
-	public virtual Task<List<TEntity>> ToListAsync( CancellationToken cancellationToken = default ) =>
-		_context
-		.Set<TEntity>( )
-		.ToListAsync( cancellationToken );
+	public virtual async Task<IEnumerable<TEntity>> ToListAsync( CancellationToken cancellationToken = default ) {
+		var result = await _context
+			.Set<TEntity>( )
+			.ToListAsync( cancellationToken );
+
+		return result.AsEnumerable( );
+	}
 
 	public string? GetProviderName( ) => _context.Database.ProviderName;
 

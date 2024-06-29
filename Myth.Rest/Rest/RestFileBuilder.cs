@@ -23,10 +23,8 @@ public class RestFileBuilder : RestBuilderBase {
 	/// <summary>
 	/// Downloads a file
 	/// </summary>
-	/// <param name="url">Url of location</param>
-	/// <param name="replaceExistingFile">If remove old file and create a new one</param>
-	/// <returns></returns>
-	/// <exception cref="FileAlreadyExsistsOnDownloadException"></exception>
+	/// <param name="url">The url</param>
+	/// <returns>This object</returns>
 	public RestFileBuilder DoDownload( string url ) {
 		try {
 			PreRequestSettings( );
@@ -41,6 +39,14 @@ public class RestFileBuilder : RestBuilderBase {
 		return this;
 	}
 
+	/// <summary>
+	/// Upload a file
+	/// </summary>
+	/// <param name="url">The url</param>
+	/// <param name="body">The body</param>
+	/// <param name="contentType">The content type</param>
+	/// <param name="settings">Other settngs</param>
+	/// <returns>This object</returns>
 	public RestFileBuilder DoUpload( string url, byte[ ] body, string contentType, Action<RestUploadSettings>? settings = null ) {
 		try {
 			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
@@ -69,6 +75,14 @@ public class RestFileBuilder : RestBuilderBase {
 		return this;
 	}
 
+	/// <summary>
+	/// Upload a file
+	/// </summary>
+	/// <param name="url">The url</param>
+	/// <param name="stream">The stream</param>
+	/// <param name="contentType">The content type</param>
+	/// <param name="settings">Other settings</param>
+	/// <returns>This object</returns>
 	public RestFileBuilder DoUpload( string url, Stream stream, string contentType, Action<RestUploadSettings>? settings = null ) {
 		try {
 			ArgumentNullException.ThrowIfNull( stream, nameof( stream ) );
@@ -86,6 +100,13 @@ public class RestFileBuilder : RestBuilderBase {
 		return this;
 	}
 
+	/// <summary>
+	/// Upload a file
+	/// </summary>
+	/// <param name="url">The url</param>
+	/// <param name="file">The file</param>
+	/// <param name="settings">Other settings</param>
+	/// <returns>This object</returns>
 	public RestFileBuilder DoUpload( string url, IFormFile file, Action<RestUploadSettings>? settings = null ) {
 		try {
 			ArgumentNullException.ThrowIfNull( file, nameof( file ) );
@@ -107,8 +128,11 @@ public class RestFileBuilder : RestBuilderBase {
 
 	#region [ Building ]
 
-	public async Task<RestFileResponse> BuildAsync<TResult>( CancellationToken cancellationToken = default ) =>
-		await BuildAsync( typeof( TResult ), cancellationToken );
+	/// <summary>
+	/// Runs the request and get the response
+	/// </summary>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>A task with the result</returns>
 
 	public async Task<RestFileResponse> BuildAsync( CancellationToken cancellationToken = default ) =>
 		await BuildAsync( null, cancellationToken );

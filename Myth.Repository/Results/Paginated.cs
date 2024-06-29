@@ -8,6 +8,7 @@ public class Paginated<TEntity>(
 	int totalItems,
 	int totalPages,
 	IEnumerable<TEntity> items ) : IPaginated<TEntity> {
+
 	public int PageNumber { get; private set; } = pageNumber;
 
 	public int PageSize { get; private set; } = pageSize;

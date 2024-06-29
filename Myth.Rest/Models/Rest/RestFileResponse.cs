@@ -11,6 +11,15 @@ public class RestFileResponse(
 	byte[ ] content ) : RestResponseBase( statusCode, url, method, elapsedTime ) {
 	public byte[ ] Content { get; set; } = content;
 
+	/// <summary>
+	/// Save the dowloaded stream into a local file
+	/// </summary>
+	/// <param name="directory">The directory</param>
+	/// <param name="name">The file name</param>
+	/// <param name="replaceExistingFile">Replace a existing file</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>A task</returns>
+	/// <exception cref="FileAlreadyExsistsOnDownloadException">Throws when a file with name already exists and replace options is not checked</exception>
 	public async Task SaveToFileAsync( string directory, string name, bool replaceExistingFile = false, CancellationToken cancellationToken = default ) {
 		var destinationPath = Path.Combine( directory, name );
 
@@ -24,9 +33,9 @@ public class RestFileResponse(
 		await File.WriteAllBytesAsync( destinationPath, Content, cancellationToken );
 	}
 
-	public Stream ToStream( ) {
-		var stream = new MemoryStream( Content );
-
-		return stream;
-	}
+	/// <summary>
+	/// Get a stream from current dowload
+	/// </summary>
+	/// <returns>A stream</returns>
+	public Stream ToStream( ) => new MemoryStream( Content );
 }
