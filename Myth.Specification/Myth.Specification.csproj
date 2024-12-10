@@ -1,26 +1,32 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
+		<!-- Patform -->
+		<TargetFramework>net8.0</TargetFramework>
+		<Platforms>x64</Platforms>
+		<!-- Settings -->
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<RootNamespace>Myth</RootNamespace>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<Platforms>x64</Platforms>
-		<Version>2.0.0.15</Version>
-		<Authors>Paula Leal</Authors>
-		<Description>An implementation of the specification pattern for data repositories</Description>
-		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons</RepositoryUrl>
-		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth-commons</PackageProjectUrl>
-		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageOutputPath>$(AppData)/NuGet/Packages</PackageOutputPath>
+		<!-- Package -->
 		<PackageId>Myth.Specification</PackageId>
-		<PackageIcon>logo.png</PackageIcon>
+		<Authors>Paula Leal</Authors>
+		<PackageIcon>Logo.jpg</PackageIcon>
+		<Description>It is a .NET library for constructing _queries_ in a very readable way, keeping the business rules in mind.</Description>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<!-- Docs -->
+		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Specification</RepositoryUrl>
+		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Specification</PackageProjectUrl>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\logo.png">
+		<None Include="..\Logo.jpg">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="README.md">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>

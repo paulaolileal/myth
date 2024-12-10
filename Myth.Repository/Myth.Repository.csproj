@@ -1,26 +1,36 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
+		<!-- Patform -->
+		<TargetFramework>net8.0</TargetFramework>
+		<Platforms>x64</Platforms>
+		<!-- Settings -->
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<RootNamespace>Myth</RootNamespace>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<Platforms>x64</Platforms>
-		<Version>2.0.0.15</Version>
-		<Authors>Paula Leal</Authors>
-		<Description>The interfaces declaration of generic repositories using expressions and specifications</Description>
-		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons</RepositoryUrl>
-		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth-commons</PackageProjectUrl>
-		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageOutputPath>$(AppData)/NuGet/Packages</PackageOutputPath>
+		<!-- Package -->
 		<PackageId>Myth.Repository</PackageId>
-		<PackageIcon>logo.png</PackageIcon>
+		<Authors>Paula Leal</Authors>
+		<PackageIcon>Logo.jpg</PackageIcon>
+		<Description>It is a .NET library for defining database access repositories.</Description>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<!-- Docs -->
+		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Repository</RepositoryUrl>
+		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Repository</PackageProjectUrl>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\logo.png">
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\Logo.jpg">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="README.md">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>

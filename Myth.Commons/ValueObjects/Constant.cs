@@ -1,20 +1,28 @@
 ﻿using Ardalis.SmartEnum;
 using Myth.Extensions;
 
-namespace Myth.ValueObjects {
+namespace Myth.ValueObjects;
 
-    public abstract class Constant<TConstant, TValue> : SmartEnum<TConstant, TValue>
-        where TConstant : SmartEnum<TConstant, TValue>
-        where TValue : IEquatable<TValue>, IComparable<TValue> {
+/// <summary>
+/// A base for creating constants higly typed
+/// </summary>
+/// <typeparam name="TConstant">Type of constant</typeparam>
+/// <typeparam name="TValue">Type of value</typeparam>
+/// <param name="name">Name of option</param>
+/// <param name="value">Value of option</param>
+public abstract class Constant<TConstant, TValue>( string name, TValue value )
+	: SmartEnum<TConstant, TValue>( name, value )
+		where TConstant : SmartEnum<TConstant, TValue>
+		where TValue : IEquatable<TValue>, IComparable<TValue> {
 
-        public Constant( string name, TValue value ) : base( name, value ) {
-        }
+	public static implicit operator TValue( Constant<TConstant, TValue> constant ) => constant.Value;
 
-        public static implicit operator TValue( Constant<TConstant, TValue> constant ) => constant.Value;
-
-        public static string GetOptions( ) =>
-            List
-                .Select( x => $"({x.Value}): {x.Name}" )
-                .ToStringWithSeparator( " | " );
-    }
+	/// <summary>
+	/// Get a list of all values of this constant
+	/// </summary>
+	/// <returns></returns>
+	public static string GetOptions( ) =>
+		List
+			.Select( x => $"({x.Name}): {x.Value}" )
+			.ToStringWithSeparator( " | " );
 }

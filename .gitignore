@@ -231,3 +231,7 @@ _Pvt_Extensions
 .fake/
 
 *.bak
+
+Coverage
+*.cobertura.xml
+*.coverage.xml

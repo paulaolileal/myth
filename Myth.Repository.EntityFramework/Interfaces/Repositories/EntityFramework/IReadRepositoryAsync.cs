@@ -1,9 +1,10 @@
-﻿namespace Myth.Interfaces.Repositories.EntityFramework {
+﻿namespace Myth.Interfaces.Repositories.EntityFramework;
 
-    public interface IReadRepositoryAsync<TEntity> : Base.IReadRepositoryAsync<TEntity> {
+public interface IReadRepositoryAsync<TEntity> : Base.IReadRepositoryAsync<TEntity> {
 
-        ValueTask<TEntity> FindAsync( CancellationToken cancellationToken, params object[ ] keys );
-
-        string GetProviderName( );
-    }
+	/// <summary>
+	/// Get the name of provider beeing used
+	/// </summary>
+	/// <returns>A value with the name</returns>
+	string? GetProviderName( );
 }

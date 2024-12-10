@@ -1,45 +1,37 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace Myth.ValueObjects {
+namespace Myth.ValueObjects;
 
-    public class Pagination : ValueObject {
+public class Pagination( int pageNumber, int pageSize ) : ValueObject {
 
-        [FromQuery( Name = "$pagenumber" )]
-        public int PageNumber { get; set; }
+	public Pagination( ) : this( 1, 10 ) { }
 
-        [FromQuery( Name = "$pagesize" )]
-        public int PageSize { get; set; }
+	/// <summary>
+	/// Page number
+	/// </summary>
+	[FromQuery( Name = "$pagenumber" )]
+	public int PageNumber { get; set; } = pageNumber;
 
-        public static readonly Pagination Default = new( ) {
-            PageNumber = 0,
-            PageSize = 3
-        };
+	/// <summary>
+	/// Page size
+	/// </summary>
+	[FromQuery( Name = "$pagesize" )]
+	public int PageSize { get; set; } = pageSize;
 
-        public static readonly Pagination All = new( ) {
-            PageNumber = -1,
-            PageSize = -1
-        };
+	protected override IEnumerable<object> GetAtomicValues( ) {
+		yield return PageNumber;
+		yield return PageSize;
+	}
 
-        public Pagination( ) {
-        }
+	/// <summary>
+	/// The default pagination
+	/// <para>Page number: 1</para>
+	/// <para>Page size: 10</para>
+	/// </summary>
+	public static readonly Pagination Default = new( );
 
-        public Pagination( int pageNumber, int pageSize ) {
-            PageNumber = pageNumber;
-            PageSize = pageSize;
-        }
-
-        protected override IEnumerable<object> GetAtomicValues( ) {
-            yield return PageNumber;
-            yield return PageSize;
-        }
-
-        public string Build( ) {
-            return $"$pagenumber={PageNumber}&$pagesize={PageSize}";
-        }
-
-        public int GetPagesToSkip( ) =>
-            PageNumber > 0
-            ? ( PageNumber - 1 ) * PageSize
-            : 1;
-    }
+	/// <summary>
+	/// To get all items in only one page
+	/// </summary>
+	public static readonly Pagination All = new( -1, -1 );
 }

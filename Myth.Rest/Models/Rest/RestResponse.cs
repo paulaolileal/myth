@@ -1,43 +1,35 @@
 ﻿using Myth.Exceptions;
-using Myth.Rest;
+using Newtonsoft.Json;
 using System.Net;
 
-namespace Myth.Models.Rest {
+namespace Myth.Models.Rest;
 
-    public class RestResponse {
-        public HttpStatusCode StatusCode { get; private set; }
-        public Uri Url { get; private set; }
-        public HttpMethod Method { get; private set; }
-        public string RawMessage { get; private set; }
-        public Type? ResultType { get; private set; }
-        public object? Result { get; private set; }
-        public TimeSpan ElapsedTime { get; private set; }
+public class RestResponse(
+	HttpStatusCode statusCode,
+	Uri url,
+	HttpMethod method,
+	string rawMessage,
+	TimeSpan elapsedTime ) : RestResponseBase( statusCode, url, method, elapsedTime ) {
+	public string RawMessage { get; private set; } = rawMessage;
+	public Type? ResultType { get; private set; }
+	public object? Result { get; private set; }
+	public dynamic DynamicResult { get; private set; } = JsonConvert.DeserializeObject<dynamic>( rawMessage )!;
 
-        public RestResponse(
-            HttpStatusCode statusCode,
-            Uri url,
-            HttpMethod method,
-            string rawMessage,
-            Type? resultType,
-            object? message,
-            TimeSpan elapsedTime ) {
-            StatusCode = statusCode;
-            Url = url;
-            Method = method;
-            RawMessage = rawMessage;
-            ResultType = resultType;
-            Result = message;
-            ElapsedTime = elapsedTime;
-        }
+	internal void SetTypedResult( Type type, object result ) {
+		ResultType = type;
+		Result = result;
+	}
 
-        public TResult GetAs<TResult>( ) {
-            if ( Result is not null && typeof( TResult ) == ResultType )
-                return ( TResult )Result;
+	/// <summary>
+	/// Get the result typed with the mapped type
+	/// </summary>
+	/// <typeparam name="TResult">The mapped type</typeparam>
+	/// <returns>The strongly typed object</returns>
+	/// <exception cref="DifferentResponseTypeException">Throws when the <c>TResult</c> is different from mapped type</exception>
+	public TResult GetAs<TResult>( ) {
+		if ( Result is not null && ResultType == typeof( TResult ) )
+			return ( TResult )Result;
 
-            throw new ResponseTypeException( typeof( TResult ), ResultType );
-        }
-
-        public bool IsSuccessStatusCode( ) =>
-            RestStatusBuilder.IsSuccessStatusCode( StatusCode );
-    }
+		throw new DifferentResponseTypeException( typeof( TResult ), ResultType );
+	}
 }

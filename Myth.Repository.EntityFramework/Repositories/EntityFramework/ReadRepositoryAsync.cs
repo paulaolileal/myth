@@ -2,23 +2,38 @@
 using Myth.Contexts;
 using Myth.Interfaces.Repositories.EntityFramework;
 
-namespace Myth.Repositories.EntityFramework {
+namespace Myth.Repositories.EntityFramework;
 
-    public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity> where TEntity : class {
-        protected readonly BaseContext _context;
+public partial class ReadRepositoryAsync<TEntity>( BaseContext context )
+	: IReadRepositoryAsync<TEntity> where TEntity : class {
+	protected readonly BaseContext _context = context;
 
-        public ReadRepositoryAsync( BaseContext context ) => _context = context;
+	public virtual IQueryable<TEntity> AsQueryable( ) =>
+		_context
+			.Set<TEntity>( )
+			.AsQueryable( );
 
-        public virtual ValueTask<TEntity> FindAsync( CancellationToken cancellationToken, params object[ ] keys ) =>
-            _context.Set<TEntity>( ).FindAsync( keys, cancellationToken );
+	public virtual IEnumerable<TEntity> AsEnumerable( ) =>
+		_context
+			.Set<TEntity>( )
+			.AsEnumerable( );
 
-        public virtual IQueryable<TEntity> AsQueryable( ) =>
-            _context.Set<TEntity>( ).AsQueryable( );
+	public virtual async Task<IEnumerable<TEntity>> ToListAsync( CancellationToken cancellationToken = default ) {
+		var result = await _context
+			.Set<TEntity>( )
+			.ToListAsync( cancellationToken );
 
-        public virtual Task<List<TEntity>> ToListAsync( CancellationToken cancellationToken = default ) =>
-            _context.Set<TEntity>( ).ToListAsync( );
+		return result.AsEnumerable( );
+	}
 
-        public string GetProviderName( ) =>
-            _context.Database.ProviderName;
-    }
+	public string? GetProviderName( ) => _context.Database.ProviderName;
+
+	public ValueTask DisposeAsync( ) => DisposeAsyncCore( );
+
+	protected virtual async ValueTask DisposeAsyncCore( ) {
+		if ( _context is not null )
+			await _context.DisposeAsync( );
+
+		GC.SuppressFinalize( this );
+	}
 }

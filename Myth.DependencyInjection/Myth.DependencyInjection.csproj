@@ -1,28 +1,39 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
+		<!-- Patform -->
+		<TargetFramework>net8.0</TargetFramework>
+		<Platforms>x64</Platforms>
+		<!-- Settings -->
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<Platforms>x64</Platforms>
-		<Version>2.0.0.15</Version>
-		<Authors>Paula Leal</Authors>
-		<Description>The components of dependency injection from myth</Description>
-		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth-commons</RepositoryUrl>
-		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth-commons</PackageProjectUrl>
-		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageOutputPath>$(AppData)/NuGet/Packages</PackageOutputPath>
+		<RootNamespace>Myth</RootNamespace>
+		<!-- Package -->
 		<PackageId>Myth.DependencyInjection</PackageId>
-		<PackageIcon>logo.png</PackageIcon>
+		<Authors>Paula Leal</Authors>
+		<PackageIcon>Logo.jpg</PackageIcon>
+		<Description>It is a .NET library for working with dependency injection, types and assemblies.</Description>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<!-- Docs -->
+		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.DependencyInjection</RepositoryUrl>
+		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.DependencyInjection</PackageProjectUrl>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\logo.png">
+		<None Include="..\Logo.jpg">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
+		<None Include="README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
 	</ItemGroup>
 
 	<ItemGroup>

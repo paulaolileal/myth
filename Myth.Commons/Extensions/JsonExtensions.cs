@@ -1,70 +1,82 @@
-﻿using Newtonsoft.Json;
+﻿using Myth.Constants;
+using Myth.Exceptions;
+using Myth.Models;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using System.Text;
 
-namespace Myth.Extensions {
+namespace Myth.Extensions;
 
-    public static class JsonExtensions {
+public static class JsonExtensions {
 
-        public enum CaseStrategy { CamelCase, SnakeCase }
+	private static JsonSerializerSettings BaseSerializer( Action<JsonSettings>? settings = null ) {
+		var jsonSettings = new JsonSettings( );
 
-        public static string ToJson( this object content, bool ignoreNullValue = true, CaseStrategy caseStrategy = CaseStrategy.CamelCase, Action<JsonSerializerSettings>? settings = null ) {
-            var contractResolver = new DefaultContractResolver {
-                NamingStrategy = StrategyResolver( caseStrategy )
-            };
+		settings?.Invoke( jsonSettings );
 
-            var jsonSettings = new JsonSerializerSettings {
-                Formatting = Formatting.Indented,
-                NullValueHandling = ignoreNullValue ? NullValueHandling.Ignore : NullValueHandling.Include,
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                ContractResolver = contractResolver
-            };
+		var contractResolver = new DefaultContractResolver {
+			NamingStrategy = StrategyResolver( jsonSettings.CaseStrategy )
+		};
 
-            if ( settings is not null )
-                settings.Invoke( jsonSettings );
+		var serializerSettings = new JsonSerializerSettings {
+			Formatting = jsonSettings.MinifyResult ? Formatting.None : Formatting.Indented,
+			NullValueHandling = jsonSettings.IgnoreNullValues ? NullValueHandling.Ignore : NullValueHandling.Include,
+			ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+			ContractResolver = contractResolver
+		};
 
-            try {
-                return JsonConvert.SerializeObject( content, jsonSettings );
-            } catch ( Exception exception ) {
-                throw new JsonException( "Error on serialize object.", exception );
-            }
-        }
+		jsonSettings.OtherSettings?.Invoke( serializerSettings );
 
-        public static object? FromJson( this string content, Type responseType, CaseStrategy caseStrategy = CaseStrategy.CamelCase, bool ignoreNullValue = true, Action<JsonSerializerSettings>? settings = null ) {
-            var contractResolver = new DefaultContractResolver {
-                NamingStrategy = StrategyResolver( caseStrategy )
-            };
+		return serializerSettings;
+	}
 
-            var jsonSettings = new JsonSerializerSettings {
-                Formatting = Formatting.Indented,
-                NullValueHandling = ignoreNullValue ? NullValueHandling.Ignore : NullValueHandling.Include,
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                ContractResolver = contractResolver
-            };
+	/// <summary>
+	/// Produces a string in json format
+	/// </summary>
+	/// <param name="content">An object to be serializable</param>
+	/// <param name="settings">Customizations for serialization</param>
+	/// <returns>A string in json format</returns>
+	/// <exception cref="JsonParsingException">Throws when object can't be serializable</exception>
+	public static string ToJson( this object content, Action<JsonSettings>? settings = null ) {
+		var serializerSettings = BaseSerializer( settings );
 
-            if ( settings is not null )
-                settings.Invoke( jsonSettings );
+		try {
+			return JsonConvert.SerializeObject( content, serializerSettings );
+		} catch ( Exception exception ) {
+			throw new JsonParsingException( "Error on serialize object.", exception );
+		}
+	}
 
-            try {
-                return JsonConvert.DeserializeObject( content, responseType, jsonSettings );
-            } catch ( Exception exception ) {
-                throw new JsonException( "Error on deserialize object.", exception );
-            }
-        }
+	/// <summary>
+	/// Produces an object based on json in a string
+	/// </summary>
+	/// <param name="content">The json</param>
+	/// <param name="responseType">A type to construct the object</param>
+	/// <param name="settings">Customizations for deserialization</param>
+	/// <returns>An object based on json</returns>
+	/// <exception cref="JsonParsingException">Throws when the string can't be parsed into a file</exception>
+	public static object? FromJson( this string content, Type responseType, Action<JsonSettings>? settings = null ) {
+		var serializerSettings = BaseSerializer( settings );
 
-        public static TResponse? FromJson<TResponse>( this string content, CaseStrategy caseStrategy = CaseStrategy.CamelCase, bool ignoreNullValue = true, Action<JsonSerializerSettings>? settings = null ) {
-            return ( TResponse? )content.FromJson( typeof( TResponse ), caseStrategy, ignoreNullValue, settings );
-        }
+		try {
+			return JsonConvert.DeserializeObject( content, responseType, serializerSettings );
+		} catch ( Exception exception ) {
+			throw new JsonParsingException( "Error on deserialize object.", exception );
+		}
+	}
 
-        public static HttpContent ToHttpContent( this object content, CaseStrategy caseStrategy = CaseStrategy.CamelCase ) {
-            return new StringContent( content.ToJson( caseStrategy: caseStrategy ), Encoding.UTF8, "application/json" );
-        }
+	/// <summary>
+	/// Produces an object based on json in a string
+	/// </summary>
+	/// <param name="content">The json</param>
+	/// <param name="settings">Customizations for deserialization</param>
+	/// <returns>An object based on json</returns>
+	/// <exception cref="JsonParsingException">Throws when the string can't be parsed into a file</exception>
+	public static TResponse? FromJson<TResponse>( this string content, Action<JsonSettings>? settings = null ) =>
+		( TResponse? )content.FromJson( typeof( TResponse ), settings );
 
-        private static NamingStrategy StrategyResolver( CaseStrategy caseStrategy ) {
-            return caseStrategy switch {
-                CaseStrategy.SnakeCase => new SnakeCaseNamingStrategy( ),
-                _ => new CamelCaseNamingStrategy( )
-            };
-        }
-    }
+	private static NamingStrategy StrategyResolver( CaseStrategy caseStrategy ) =>
+		caseStrategy switch {
+			CaseStrategy.SnakeCase => new SnakeCaseNamingStrategy( ),
+			_ => new CamelCaseNamingStrategy( )
+		};
 }

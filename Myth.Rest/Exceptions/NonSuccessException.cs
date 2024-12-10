@@ -1,42 +1,33 @@
 ﻿using Myth.Models.Rest;
 using System.Net;
 
-namespace Myth.Exceptions {
+namespace Myth.Exceptions;
 
-    public class NonSuccessException : Exception {
-        public HttpStatusCode StatusCode { get; private set; }
-        public Uri Url { get; private set; }
-        public HttpMethod Method { get; private set; }
-        public string RawMessage { get; private set; }
-        public Type? Type { get; private set; }
-        public object? Message { get; private set; }
+public class NonSuccessException(
+	HttpStatusCode statusCode,
+	Uri url,
+	HttpMethod method,
+	string rawMessage,
+	object? result ) : Exception( "The request return a non sucess status code." ) {
+	public HttpStatusCode StatusCode { get; private set; } = statusCode;
+	public Uri Url { get; private set; } = url;
+	public HttpMethod Method { get; private set; } = method;
+	public string RawMessage { get; private set; } = rawMessage;
+	public object? Result { get; private set; } = result;
 
-        protected NonSuccessException( ) {
-        }
+	public NonSuccessException( RestResponse response )
+		: this(
+		response.StatusCode,
+		response.Url,
+		response.Method,
+		response.RawMessage,
+		response.Result ) { }
 
-        public NonSuccessException(
-            HttpStatusCode statusCode,
-            Uri url,
-            HttpMethod method,
-            string rawMessage,
-            Type? type,
-            object? message )
-            : base( "The request return a non sucess status code." ) {
-            StatusCode = statusCode;
-            Url = url;
-            Method = method;
-            RawMessage = rawMessage;
-            Type = type;
-            Message = message;
-        }
-
-        public NonSuccessException( RestResponse response )
-            : this(
-            response.StatusCode,
-            response.Url,
-            response.Method,
-            response.RawMessage,
-            response.ResultType,
-            response.Result ) { }
-    }
+	public NonSuccessException( RestFileResponse response )
+		: this(
+		response.StatusCode,
+		response.Url,
+		response.Method,
+		"File",
+		null ) { }
 }

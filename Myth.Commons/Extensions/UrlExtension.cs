@@ -1,28 +1,22 @@
-﻿using System.Reflection;
-using System.Web;
+﻿using System.Web;
 
-namespace Myth.Extensions {
+namespace Myth.Extensions;
 
-    public static class UrlExtension {
+public static class UrlExtension {
 
-        public static object GetValueEncoded( this PropertyInfo property, object obj ) {
-            var value = property.GetValue( obj );
-            if ( property.PropertyType == typeof( string ) )
-                value = HttpUtility.UrlEncode( value as string );
-            else if ( property.PropertyType == typeof( bool ) )
-                value = Convert.ToBoolean( value );
+	/// <summary>
+	/// Changes a content to url encoding format
+	/// </summary>
+	/// <param name="value">The object to encode</param>
+	/// <returns>An encoded value</returns>
+	public static object? EncodeAsUrl( this object value ) {
+		var property = value.GetType( );
 
-            return value;
-        }
+		if ( property == typeof( string ) )
+			value = HttpUtility.UrlEncode( value as string )!;
+		else if ( property == typeof( bool ) )
+			value = Convert.ToBoolean( value );
 
-        public static object GetValueEncoded( this object value ) {
-            var property = value.GetType( );
-            if ( property == typeof( string ) )
-                value = HttpUtility.UrlEncode( value as string );
-            else if ( property == typeof( bool ) )
-                value = Convert.ToBoolean( value );
-
-            return value;
-        }
-    }
+		return value;
+	}
 }

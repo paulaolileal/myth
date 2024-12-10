@@ -1,0 +1,57 @@
+stages:
+  - build
+  - test
+  - publish
+  
+default:
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+
+variables:
+  NUGET_API_KEY: $NUGET_API_KEY
+  NUGET_API_URL: $NUGET_API_URL
+
+build-job:
+  stage: build
+  only:
+    - branches 
+    - tags
+  script:
+    - dotnet build 
+      --configuration Release
+
+test-job:
+  stage: test
+  only:
+    - branches 
+    - tags
+  script:
+    - dotnet test 
+      --filter FullyQualifiedName!~Rest 
+      --configuration Release 
+      --results-directory "Coverage" 
+      --collect "XPlat Code Coverage"
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: Coverage/*/coverage.cobertura.xml
+  dependencies:
+    - build-job
+
+publish-job:
+  stage: publish
+  only:
+    refs: 
+      - tags
+  dependencies:
+    - build-job
+    - test-job
+  script:
+    - PACKAGE_VERSION=$(echo "$CI_COMMIT_TAG" | cut -d "v" -f2- )
+    - for project in $(ls **/*.csproj | grep -v 'Test.csproj$'); do
+        dotnet pack $project 
+          --configuration Release 
+          --output nupkgs 
+          /p:PackageVersion=${PACKAGE_VERSION};
+      done
+    - dotnet nuget push "nupkgs/*.nupkg" --source $NUGET_API_URL --api-key $NUGET_API_KEY;

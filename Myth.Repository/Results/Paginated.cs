@@ -1,29 +1,21 @@
 ﻿using Myth.Interfaces.Repositories.Results;
 
-namespace Myth.Repositories.Results {
+namespace Myth.Repositories.Results;
 
-    public class Paginated<TEntity> : IPaginated<TEntity> {
-        public int PageNumber { get; private set; }
+public class Paginated<TEntity>(
+	int pageNumber,
+	int pageSize,
+	int totalItems,
+	int totalPages,
+	IEnumerable<TEntity> items ) : IPaginated<TEntity> {
 
-        public int PageSize { get; private set; }
+	public int PageNumber { get; private set; } = pageNumber;
 
-        public int TotalItens { get; private set; }
+	public int PageSize { get; private set; } = pageSize;
 
-        public int TotalPages { get; private set; }
+	public int TotalItems { get; private set; } = totalItems;
 
-        public IEnumerable<TEntity> Itens { get; private set; }
+	public int TotalPages { get; private set; } = totalPages;
 
-        public Paginated(
-            int pageNumber,
-            int pageSize,
-            int totalItens,
-            int totalPages,
-            IEnumerable<TEntity> itens ) {
-            PageNumber = pageNumber;
-            PageSize = pageSize;
-            TotalItens = totalItens;
-            TotalPages = totalPages;
-            Itens = itens;
-        }
-    }
+	public IEnumerable<TEntity> Items { get; private set; } = items;
 }

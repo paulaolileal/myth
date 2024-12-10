@@ -1,8 +1,4 @@
-﻿namespace Myth.Exceptions {
+﻿namespace Myth.Exceptions;
 
-    public class SpecificationException : Exception {
-
-        public SpecificationException( string message, Exception? exception ) : base( message, exception ) {
-        }
-    }
+public class SpecificationException( string message, Exception? exception ) : Exception( message, exception ) {
 }

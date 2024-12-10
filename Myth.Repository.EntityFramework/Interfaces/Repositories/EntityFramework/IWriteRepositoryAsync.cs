@@ -1,13 +1,20 @@
-﻿namespace Myth.Interfaces.Repositories.EntityFramework {
+﻿namespace Myth.Interfaces.Repositories.EntityFramework;
 
-    public interface IWriteRepositoryAsync<TEntity> : Base.IWriteRepositoryAsync<TEntity> {
+public interface IWriteRepositoryAsync<TEntity> : Base.IWriteRepositoryAsync<TEntity> {
 
-        Task AttachAsync( TEntity entity, CancellationToken cancellationToken );
+	/// <summary>
+	/// Tracks a entity back to context
+	/// </summary>
+	/// <param name="entity">The entity</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>A task</returns>
+	Task AttachAsync( TEntity entity, CancellationToken cancellationToken = default );
 
-        Task AttachRangeAsync( IEnumerable<TEntity> entities, CancellationToken cancellationToken );
-
-        Task<int> ExecuteSqlAsync( string query, IEnumerable<object> parameters, CancellationToken cancellationToken );
-
-        Task<int> SaveChangesAsync( CancellationToken cancellationToken );
-    }
+	/// <summary>
+	/// Tracks a list of entities back to context
+	/// </summary>
+	/// <param name="entities">The entities</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>A task</returns>
+	Task AttachRangeAsync( IEnumerable<TEntity> entities, CancellationToken cancellationToken = default );
 }

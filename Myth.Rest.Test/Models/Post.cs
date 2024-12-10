@@ -1,9 +1,15 @@
-﻿namespace Myth.Rest.Test.Models {
+﻿using System;
 
-    public class Post {
-        public long Id { get; set; }
-        public string Title { get; set; }
-        public string Body { get; set; }
-        public long UserId { get; set; }
-    }
+namespace Myth.Rest.Test.Models;
+
+public class Post {
+	public long Id { get; set; }
+	public string Title { get; set; } = null!;
+	public string Body { get; set; } = null!;
+	public Guid UserId { get; set; }
+}
+
+public class Error {
+	public long ErrorCode { get; set; }
+	public string Message { get; set; } = null!;
 }
