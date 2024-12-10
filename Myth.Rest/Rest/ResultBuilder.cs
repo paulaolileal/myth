@@ -44,6 +44,30 @@ public class ResultBuilder {
 	}
 
 	/// <summary>
+	/// Set the same type for all non success status codes
+	/// </summary>
+	/// <typeparam name="TResult">The type</typeparam>
+	/// <param name="condition">A condition to check before the mapping</param>
+	/// <returns>This object</returns>
+	public ResultBuilder UseTypeForNonSuccess<TResult>( Func<dynamic, bool>? condition = null ) =>
+		UseTypeForNonSuccess( typeof( TResult ), condition );
+
+	/// <summary>
+	/// Set the same type for all non success status code
+	/// </summary>
+	/// <param name="type">The type</param>
+	/// <param name="condition">A condition to check before the mapping</param>
+	/// <returns>This object</returns>
+	public ResultBuilder UseTypeForNonSuccess( Type type, Func<dynamic, bool>? condition = null ) {
+		foreach ( var statusCode in Enum.GetValues<HttpStatusCode>( ) ) {
+			if ( !statusCode.IsSuccess( ) )
+				UseTypeFor( statusCode, type, condition );
+		}
+
+		return this;
+	}
+
+	/// <summary>
 	/// Set a type for a specific status code
 	/// </summary>
 	/// <typeparam name="TResult">The type</typeparam>

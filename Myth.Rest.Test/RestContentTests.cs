@@ -89,6 +89,53 @@ public class RestContentTests : IDisposable {
 	}
 
 	[Fact]
+	public async Task Get_should_return_list_of_items_on_non_success( ) {
+		// Arrange
+		_server
+			.Given(
+				Request
+					.Create( )
+					.WithPath( "/get-non-success" )
+					.UsingGet( ) )
+			.RespondWith(
+				Response
+					.Create( )
+					.WithBodyAsJson( new[ ] {
+						new { id = _faker.UniqueIndex,title = _faker.Lorem.Lines(1), body = _faker.Lorem.Text(), userId = _faker.Random.Guid()},
+						new { id = _faker.UniqueIndex,title = _faker.Lorem.Lines(1), body = _faker.Lorem.Text(), userId = _faker.Random.Guid()},
+						new { id = _faker.UniqueIndex,title = _faker.Lorem.Lines(1), body = _faker.Lorem.Text(), userId = _faker.Random.Guid()},
+						new { id = _faker.UniqueIndex,title = _faker.Lorem.Lines(1), body = _faker.Lorem.Text(), userId = _faker.Random.Guid()},
+						new { id = _faker.UniqueIndex,title = _faker.Lorem.Lines(1), body = _faker.Lorem.Text(), userId = _faker.Random.Guid()},
+					} )
+					.WithStatusCode( HttpStatusCode.BadRequest ) );
+
+		// Act
+		var response = await _restClient
+			.DoGet( "get-non-success" )
+			.OnResult( config => config
+				.UseTypeForNonSuccess<IEnumerable<Post>>( ) )
+			.BuildAsync( );
+
+		// Assert
+		response.Should( ).NotBeNull( );
+		response.StatusCode.Should( ).Be( HttpStatusCode.BadRequest );
+		response.Method.Should( ).Be( HttpMethod.Get );
+		response.ElapsedTime.Should( ).BeGreaterThan( TimeSpan.MinValue );
+		response.IsSuccessStatusCode( ).Should( ).BeFalse( );
+
+		var result = response.GetAs<IEnumerable<Post>>( );
+
+		result.Should( )
+			.NotBeEmpty( ).And
+			.AllSatisfy( prop => {
+				prop.Id.Should( ).BeGreaterThanOrEqualTo( 0 );
+				prop.Title.Should( ).NotBeEmpty( );
+				prop.Body.Should( ).NotBeEmpty( );
+				prop.UserId.Should( ).NotBeEmpty( );
+			} );
+	}
+
+	[Fact]
 	public async Task Get_should_throw_exception_on_non_success_status_code( ) {
 		// Arrange
 		_server
