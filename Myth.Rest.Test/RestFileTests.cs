@@ -2,10 +2,12 @@ using Bogus;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Myth.Exceptions;
+using Myth.Extensions;
 using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
@@ -245,6 +247,39 @@ public class RestFileTests : IDisposable {
 		// Act
 		var response = await _restUploadClient
 			.DoUpload( "test?do=test&subdo=file_upload", file )
+			.OnError( error => error
+				.ThrowForNonSuccess( ) )
+			.BuildAsync( );
+
+		// Assert
+		response.Should( ).NotBeNull( );
+		response.StatusCode.Should( ).Be( HttpStatusCode.OK );
+		response.Method.Should( ).Be( HttpMethod.Post );
+		response.IsSuccessStatusCode( ).Should( ).BeTrue( );
+	}
+
+	[Fact]
+	public async Task Upload_should_upload_a_file_if_he_is_a_content( ) {
+		// Arrange
+
+		// Mock file
+		var content = "This is a test file";
+		var fileName = "Test5.txt";
+		var stream = new MemoryStream( );
+		var writer = new StreamWriter( stream );
+		writer.Write( content );
+		writer.Flush( );
+		stream.Position = 0;
+
+		// Mock form file
+		var file = new FormFile( stream, 0, stream.Length, "file", fileName ) {
+			Headers = new HeaderDictionary( ),
+			ContentType = "text/plain"
+		};
+
+		// Act
+		var response = await _restUploadClient
+			.DoUpload( "test?do=test&subdo=file_upload", file.ToMultiPartFormData() )
 			.OnError( error => error
 				.ThrowForNonSuccess( ) )
 			.BuildAsync( );
