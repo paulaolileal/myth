@@ -25,7 +25,7 @@ public static class StatusCodeExtensions {
 	/// Will be evaluated if the status code is greater or equal than 200
 	/// and lower or equals a 299
 	/// </remarks>
-	public static bool IsSuccess( this int statusCode ) => 
+	public static bool IsSuccess( this int statusCode ) =>
 		statusCode >= 200 &&
 		statusCode <= 299;
 }

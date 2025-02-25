@@ -8,7 +8,7 @@ public class ResultBuilder {
 	private readonly ResultMappingList _resultMapping;
 
 	public ResultBuilder( ) {
-		_resultMapping = [];
+		_resultMapping = [ ];
 	}
 
 	/// <summary>
@@ -108,9 +108,9 @@ public class ResultBuilder {
 	/// <param name="condition">A condition to check before the mapping</param>
 	/// <returns>This object</returns>
 	public ResultBuilder UseTypeFor( IEnumerable<HttpStatusCode> statusCodes, Type type, Func<dynamic, bool>? condition = null ) {
-		foreach ( var statusCode in statusCodes ) 
+		foreach ( var statusCode in statusCodes )
 			_resultMapping.Add( statusCode, type, condition );
-		
+
 		return this;
 	}
 
@@ -140,9 +140,9 @@ public class ResultBuilder {
 	/// <param name="condition">A condition to check before the mapping</param>
 	/// <returns>This object</returns>
 	public ResultBuilder UseTypeForAll( Type type, Func<dynamic, bool>? condition = null ) {
-		foreach ( var statusCode in Enum.GetValues<HttpStatusCode>( ) ) 
+		foreach ( var statusCode in Enum.GetValues<HttpStatusCode>( ) )
 			_resultMapping.Add( statusCode, type, condition );
-		
+
 		return this;
 	}
 }

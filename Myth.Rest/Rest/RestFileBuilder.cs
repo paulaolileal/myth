@@ -47,20 +47,24 @@ public class RestFileBuilder : RestBuilderBase {
 	/// <param name="contentType">The content type</param>
 	/// <param name="settings">Other settngs</param>
 	/// <returns>This object</returns>
-	public RestFileBuilder DoUpload( string url, byte[ ] body, string contentType, Action<RestUploadSettings>? settings = null ) {
+	public RestFileBuilder DoUpload<T>( string url, T body, string contentType, Action<RestUploadSettings>? settings = null ) {
 		try {
 			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
 			PreRequestSettings( );
 
-			var request = new ByteArrayContent( body ) {
-				Headers = {
-					ContentType = new MediaTypeHeaderValue(contentType)
-				}
-			};
+			HttpContent? request = null;
+			if ( body is HttpContent httpContent ) {
+				request = httpContent;
+			} else if ( body is byte[ ] content ) {
+				request = new ByteArrayContent( content ) {
+					Headers = {
+						ContentType = new MediaTypeHeaderValue(contentType)
+					}
+				};
+			}
 
 			var uploadSettings = new RestUploadSettings( );
-			if ( settings is not null )
-				settings.Invoke( uploadSettings );
+			settings?.Invoke( uploadSettings );
 
 			_request = async ( CancellationToken cancellationToken ) => {
 				return uploadSettings.Method switch {
@@ -118,6 +122,29 @@ public class RestFileBuilder : RestBuilderBase {
 			var body = memoryStream.ToArray( );
 
 			return DoUpload( url, body, file.ContentType, settings );
+		} catch ( Exception exception ) {
+			_exception = exception;
+		}
+		return this;
+	}
+
+	/// <summary>
+	/// Upload a file
+	/// </summary>
+	/// <param name="url">The url</param>
+	/// <param name="file">The file</param>
+	/// <param name="settings">Other settings</param>
+	/// <returns>This object</returns>
+	public RestFileBuilder DoUpload( string url, HttpContent content, Action<RestUploadSettings>? settings = null ) {
+		try {
+			ArgumentNullException.ThrowIfNull( content, nameof( content ) );
+			ArgumentNullException.ThrowIfNull( content.Headers.ContentType, "content-type" );
+			ArgumentNullException.ThrowIfNull( content.Headers.ContentLength, "content-length" );
+			ArgumentOutOfRangeException.ThrowIfZero( content.Headers.ContentLength.Value, "content-length" );
+
+			PreRequestSettings( );
+
+			return DoUpload( url, content, content.Headers.ContentType.ToString( ), settings );
 		} catch ( Exception exception ) {
 			_exception = exception;
 		}

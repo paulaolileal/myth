@@ -120,7 +120,7 @@ public class ConfigurationBuilder {
 	/// <param name="key">Header key</param>
 	/// <param name="value">Header value</param>
 	/// <returns>This object</returns>
-	public ConfigurationBuilder AddHeader( string key, string value) {
+	public ConfigurationBuilder AddHeader( string key, string value ) {
 		if ( _customHeaders.ContainsKey( key ) )
 			_customHeaders.Remove( key );
 

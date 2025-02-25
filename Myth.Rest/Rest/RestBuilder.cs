@@ -126,7 +126,7 @@ public partial class RestBuilder : RestBuilderBase {
 			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
 			PreRequestSettings( );
 
-			var request = ToHttpContent( body ) ?? null;
+			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
 
 			_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.PostAsync( url, request, cancellationToken );
 		} catch ( System.Exception exception ) {
@@ -147,7 +147,7 @@ public partial class RestBuilder : RestBuilderBase {
 			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
 			PreRequestSettings( );
 
-			var request = ToHttpContent( body ) ?? null;
+			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
 
 			_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.PutAsync( url, request, cancellationToken );
 		} catch ( System.Exception exception ) {
@@ -184,7 +184,7 @@ public partial class RestBuilder : RestBuilderBase {
 			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
 			PreRequestSettings( );
 
-			var request = ToHttpContent( body ) ?? null;
+			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
 
 			_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.PatchAsync( url, request, cancellationToken );
 		} catch ( System.Exception exception ) {
@@ -194,17 +194,4 @@ public partial class RestBuilder : RestBuilderBase {
 	}
 
 	#endregion [ Actions ]
-
-	#region [ Utils ]
-
-	private HttpContent ToHttpContent<TBody>( TBody body ) {
-		HttpContent request;
-		if ( body is HttpContent content )
-			request = content;
-		else
-			request = body!.ToHttpContent( _configBuilder._serializationCaseStrategy );
-		return request;
-	}
-
-	#endregion [ Utils ]
 }
