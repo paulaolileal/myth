@@ -7,7 +7,6 @@ using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
@@ -279,7 +278,7 @@ public class RestFileTests : IDisposable {
 
 		// Act
 		var response = await _restUploadClient
-			.DoUpload( "test?do=test&subdo=file_upload", file.ToMultiPartFormData() )
+			.DoUpload( "test?do=test&subdo=file_upload", file.ToMultiPartFormData( ) )
 			.OnError( error => error
 				.ThrowForNonSuccess( ) )
 			.BuildAsync( );
