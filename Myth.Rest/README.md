@@ -23,7 +23,7 @@ To use it is very simple. Just chain actions to build your request.
 
 This library is prepared to handle requests for text content or files. Each will be seen below.
 
-## 📄 Requisições de conteúdo
+## 📄 Content Requests
 
 A text content request is a request that sends and/or receives text files. It works with various formats.
 
