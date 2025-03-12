@@ -82,7 +82,7 @@ public partial class RestBuilder : RestBuilderBase {
 			if ( !_resultBuilder.ShouldMap )
 				return restResponse;
 			else if ( !mappedTypeExists || type is null )
-				throw new NotMappedResultTypeException( message.StatusCode );
+				throw new NotMappedResultTypeException( message.StatusCode, content );
 			else if ( !string.IsNullOrEmpty( content ) ) {
 				try {
 					var typedResponse = content.FromJson( type!, conf => conf.UseCaseStrategy( _configBuilder._deserializationCaseStrategy ) );
