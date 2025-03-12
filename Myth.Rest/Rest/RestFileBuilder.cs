@@ -167,8 +167,8 @@ public class RestFileBuilder : RestBuilderBase {
 	protected async Task<RestFileResponse> BuildAsync( Type? responseType = null, CancellationToken cancellationToken = default ) {
 		try {
 			if ( responseType is not null ) {
-				_statusBuilder.Clear( );
-				_statusBuilder.UseTypeForAll( responseType );
+				_resultBuilder.Clear( );
+				_resultBuilder.UseTypeForAll( responseType );
 			}
 
 			return await ProcessRequestAsync( cancellationToken );

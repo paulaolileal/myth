@@ -6,6 +6,8 @@ namespace Myth.Rest;
 
 public class ResultBuilder {
 	private readonly ResultMappingList _resultMapping;
+	private bool _shouldMap = true;
+	public bool ShouldMap => _shouldMap;
 
 	public ResultBuilder( ) {
 		_resultMapping = [ ];
@@ -18,6 +20,15 @@ public class ResultBuilder {
 
 	internal dynamic TryGet( HttpStatusCode statusCode, dynamic content, out Type? type ) =>
 		_resultMapping.TryGet( statusCode, content, out type );
+
+	/// <summary>
+	/// Set to ignore mapping types
+	/// </summary>
+	/// <returns></returns>
+	public ResultBuilder DoNotMap( ) {
+		_shouldMap = false;
+		return this;
+	}
 
 	/// <summary>
 	/// Set the same type for all success status codes

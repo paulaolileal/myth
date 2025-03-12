@@ -14,7 +14,7 @@ public partial class RestBuilder : RestBuilderBase {
 
 	public RestBuilder OnResult( Action<ResultBuilder> resultSettings ) {
 		_exceptionBuilder.Clear( );
-		resultSettings.Invoke( _statusBuilder );
+		resultSettings.Invoke( _resultBuilder );
 		return this;
 	}
 
@@ -45,8 +45,8 @@ public partial class RestBuilder : RestBuilderBase {
 	protected async Task<RestResponse> BuildAsync( Type? responseType = null, CancellationToken cancellationToken = default ) {
 		try {
 			if ( responseType is not null ) {
-				_statusBuilder.Clear( );
-				_statusBuilder.UseTypeForAll( responseType );
+				_resultBuilder.Clear( );
+				_resultBuilder.UseTypeForAll( responseType );
 			}
 
 			return await ProcessRequestAsync( cancellationToken );
@@ -77,9 +77,11 @@ public partial class RestBuilder : RestBuilderBase {
 		if ( _exceptionBuilder.TryGet( message.StatusCode, dynamicContent ) )
 			throw new NonSuccessException( restResponse );
 
-		var mappedTypeExists = _statusBuilder.TryGet( message.StatusCode, dynamicContent, out Type? type );
+		var mappedTypeExists = _resultBuilder.TryGet( message.StatusCode, dynamicContent, out Type? type );
 		if ( _exceptionBuilder._throwForNonMappedResult ) {
-			if ( !mappedTypeExists || type is null )
+			if ( !_resultBuilder.ShouldMap )
+				return restResponse;
+			else if ( !mappedTypeExists || type is null )
 				throw new NotMappedResultTypeException( message.StatusCode );
 			else if ( !string.IsNullOrEmpty( content ) ) {
 				try {

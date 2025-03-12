@@ -6,7 +6,7 @@ namespace Myth.Rest;
 
 public abstract class RestBuilderBase : IDisposable {
 	protected readonly ErrorBuilder _exceptionBuilder;
-	protected readonly ResultBuilder _statusBuilder;
+	protected readonly ResultBuilder _resultBuilder;
 	protected Exception? _exception;
 	protected Func<CancellationToken, Task<HttpResponseMessage>>? _request;
 
@@ -15,7 +15,7 @@ public abstract class RestBuilderBase : IDisposable {
 
 	protected RestBuilderBase( ) {
 		_exceptionBuilder = new( );
-		_statusBuilder = new( );
+		_resultBuilder = new( );
 		_configBuilder = new( );
 	}
 
