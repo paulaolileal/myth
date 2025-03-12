@@ -14,7 +14,7 @@ public partial class RestBuilder : RestBuilderBase {
 
 	public RestBuilder OnResult( Action<ResultBuilder> resultSettings ) {
 		_exceptionBuilder.Clear( );
-		resultSettings.Invoke( _statusBuilder );
+		resultSettings.Invoke( _resultBuilder );
 		return this;
 	}
 
@@ -45,8 +45,8 @@ public partial class RestBuilder : RestBuilderBase {
 	protected async Task<RestResponse> BuildAsync( Type? responseType = null, CancellationToken cancellationToken = default ) {
 		try {
 			if ( responseType is not null ) {
-				_statusBuilder.Clear( );
-				_statusBuilder.UseTypeForAll( responseType );
+				_resultBuilder.Clear( );
+				_resultBuilder.UseTypeForAll( responseType );
 			}
 
 			return await ProcessRequestAsync( cancellationToken );
@@ -77,10 +77,12 @@ public partial class RestBuilder : RestBuilderBase {
 		if ( _exceptionBuilder.TryGet( message.StatusCode, dynamicContent ) )
 			throw new NonSuccessException( restResponse );
 
-		var mappedTypeExists = _statusBuilder.TryGet( message.StatusCode, dynamicContent, out Type? type );
+		var mappedTypeExists = _resultBuilder.TryGet( message.StatusCode, dynamicContent, out Type? type );
 		if ( _exceptionBuilder._throwForNonMappedResult ) {
-			if ( !mappedTypeExists || type is null )
-				throw new NotMappedResultTypeException( message.StatusCode );
+			if ( !_resultBuilder.ShouldMap )
+				return restResponse;
+			else if ( !mappedTypeExists || type is null )
+				throw new NotMappedResultTypeException( message.StatusCode, content );
 			else if ( !string.IsNullOrEmpty( content ) ) {
 				try {
 					var typedResponse = content.FromJson( type!, conf => conf.UseCaseStrategy( _configBuilder._deserializationCaseStrategy ) );
@@ -126,7 +128,7 @@ public partial class RestBuilder : RestBuilderBase {
 			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
 			PreRequestSettings( );
 
-			var request = ToHttpContent( body ) ?? null;
+			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
 
 			_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.PostAsync( url, request, cancellationToken );
 		} catch ( System.Exception exception ) {
@@ -147,7 +149,7 @@ public partial class RestBuilder : RestBuilderBase {
 			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
 			PreRequestSettings( );
 
-			var request = ToHttpContent( body ) ?? null;
+			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
 
 			_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.PutAsync( url, request, cancellationToken );
 		} catch ( System.Exception exception ) {
@@ -184,7 +186,7 @@ public partial class RestBuilder : RestBuilderBase {
 			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
 			PreRequestSettings( );
 
-			var request = ToHttpContent( body ) ?? null;
+			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
 
 			_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.PatchAsync( url, request, cancellationToken );
 		} catch ( System.Exception exception ) {
@@ -194,17 +196,4 @@ public partial class RestBuilder : RestBuilderBase {
 	}
 
 	#endregion [ Actions ]
-
-	#region [ Utils ]
-
-	private HttpContent ToHttpContent<TBody>( TBody body ) {
-		HttpContent request;
-		if ( body is HttpContent content )
-			request = content;
-		else
-			request = body!.ToHttpContent( _configBuilder._serializationCaseStrategy );
-		return request;
-	}
-
-	#endregion [ Utils ]
 }

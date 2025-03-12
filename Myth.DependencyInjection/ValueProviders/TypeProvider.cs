@@ -22,8 +22,7 @@ public static class TypeProvider {
 
 			var loadedAssembies = AppDomain.CurrentDomain
 				.GetAssemblies( )
-				.Where( x => !x.IsDynamic &&
-							  x.GetName( ).Name!.Contains( baseApplicationNamespace! ) );
+				.Where( x => !x.IsDynamic );
 
 			var localFiles = Directory.GetFiles(
 				AppDomain.CurrentDomain.BaseDirectory,
@@ -37,8 +36,7 @@ public static class TypeProvider {
 			foreach ( var item in files ) {
 				try {
 					var assembly = Assembly.LoadFrom( item );
-					if ( !assembly.IsDynamic &&
-						 assembly.GetName( ).Name!.Contains( baseApplicationNamespace! ) )
+					if ( !assembly.IsDynamic)
 						assembliesFromFile.Add( assembly );
 				} catch ( Exception ) { continue; }
 			}

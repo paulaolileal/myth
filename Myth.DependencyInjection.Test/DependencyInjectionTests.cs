@@ -25,7 +25,6 @@ public class DependencyInjectionTests {
 
 		// Assert
 		assemblies.Should( ).NotBeEmpty( );
-		;
 	}
 
 	[Fact]

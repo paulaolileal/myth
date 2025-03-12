@@ -40,6 +40,43 @@ public class RestContentTests : IDisposable {
 	}
 
 	[Fact]
+	public async Task Get_should_be_success_if_status_code_is_success_and_body_doesnt_care( ) {
+		// Arrange
+		_server
+			.Given(
+				Request
+					.Create( )
+					.WithPath( "/get-success" )
+					.UsingGet( ) )
+			.RespondWith(
+				Response
+					.Create( )
+					.WithBodyAsJson( new[ ] {
+						new { id = _faker.UniqueIndex,title = _faker.Lorem.Lines(1), body = _faker.Lorem.Text(), userId = _faker.Random.Guid()},
+						new { id = _faker.UniqueIndex,title = _faker.Lorem.Lines(1), body = _faker.Lorem.Text(), userId = _faker.Random.Guid()},
+						new { id = _faker.UniqueIndex,title = _faker.Lorem.Lines(1), body = _faker.Lorem.Text(), userId = _faker.Random.Guid()},
+						new { id = _faker.UniqueIndex,title = _faker.Lorem.Lines(1), body = _faker.Lorem.Text(), userId = _faker.Random.Guid()},
+						new { id = _faker.UniqueIndex,title = _faker.Lorem.Lines(1), body = _faker.Lorem.Text(), userId = _faker.Random.Guid()},
+					} )
+					.WithStatusCode( HttpStatusCode.OK ) );
+
+		// Act
+		var response = await _restClient
+			.DoGet( "get-success" )
+			.OnResult( res => res
+				.DoNotMap( ) )
+			.BuildAsync( );
+
+		// Assert
+		response.Should( ).NotBeNull( );
+		response.StatusCode.Should( ).Be( HttpStatusCode.OK );
+		response.Method.Should( ).Be( HttpMethod.Get );
+		response.ElapsedTime.Should( ).BeGreaterThan( TimeSpan.MinValue );
+		response.ResultType.Should( ).Be( null );
+		response.IsSuccessStatusCode( ).Should( ).BeTrue( );
+	}
+
+	[Fact]
 	public async Task Get_should_return_list_of_items( ) {
 		// Arrange
 		_server

@@ -1,5 +1,6 @@
 ﻿using Myth.Exceptions;
 using System.Net;
+using System.Text;
 
 namespace Myth.Models.Rest;
 
@@ -38,4 +39,10 @@ public class RestFileResponse(
 	/// </summary>
 	/// <returns>A stream</returns>
 	public Stream ToStream( ) => new MemoryStream( Content );
+
+	/// <summary>
+	/// Get the content as string
+	/// </summary>
+	/// <returns>Content encoded as string</returns>
+	public override string ToString( ) => Encoding.Default.GetString( Content );
 }
