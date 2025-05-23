@@ -49,7 +49,11 @@ public partial class RestBuilder : RestBuilderBase {
 				_resultBuilder.UseTypeForAll( responseType );
 			}
 
-			return await ProcessRequestAsync( cancellationToken );
+			var response = await ProcessRequestAsync( cancellationToken );
+
+			PostProcessing( );
+
+			return response;
 		} catch ( Exception exception ) {
 			_exception = exception;
 			throw _exception;
@@ -122,7 +126,6 @@ public partial class RestBuilder : RestBuilderBase {
 			await timer.WaitForNextTickAsync( cancellationToken ) );
 
 		_configBuilder._retryPolicy.SetRetriesMade( retries );
-
 		return content;
 	}
 

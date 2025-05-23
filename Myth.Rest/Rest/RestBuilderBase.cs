@@ -7,10 +7,10 @@ namespace Myth.Rest;
 public abstract class RestBuilderBase : IDisposable {
 	protected readonly ErrorBuilder _exceptionBuilder;
 	protected readonly ResultBuilder _resultBuilder;
-	protected Exception? _exception;
-	protected Func<CancellationToken, Task<HttpResponseMessage>>? _request;
-
 	protected ConfigurationBuilder _configBuilder;
+
+	protected Func<CancellationToken, Task<HttpResponseMessage>>? _request;
+	protected Exception? _exception;
 	protected Task<HttpResponseMessage>? _responseMessage;
 
 	protected RestBuilderBase( ) {
@@ -49,6 +49,12 @@ public abstract class RestBuilderBase : IDisposable {
 		GC.SuppressFinalize( this );
 	}
 
+	/// <summary>
+	/// Make the request
+	/// </summary>
+	/// <param name="cancellationToken"></param>
+	/// <returns>The response message and the time required</returns>
+	/// <exception cref="NoActionMadeException">Throw it when no http method was made</exception>
 	protected async Task<(HttpResponseMessage, TimeSpan)> ProcessAsync( CancellationToken cancellationToken = default ) {
 		if ( _request is null )
 			throw new NoActionMadeException( );
@@ -64,6 +70,9 @@ public abstract class RestBuilderBase : IDisposable {
 		return (message, requestTime.Elapsed);
 	}
 
+	/// <summary>
+	/// Set the parameters setted on configuration
+	/// </summary>
 	protected void PreRequestSettings( ) {
 		var baseAddress = _configBuilder._baseUrl;
 		if ( !string.IsNullOrEmpty( baseAddress ) )
@@ -92,5 +101,17 @@ public abstract class RestBuilderBase : IDisposable {
 
 				_configBuilder._httpClient.DefaultRequestHeaders.Add( header.Key, header.Value );
 			}
+	}
+
+	/// <summary>
+	/// Remove and clean resources for next request
+	/// </summary>
+	public void PostProcessing( ) {
+		_request = null;
+		_responseMessage = null;
+		_exception = null;
+		_configBuilder._httpClient.CancelPendingRequests( );
+		_configBuilder._httpClient.DefaultRequestHeaders.Clear( );
+		_configBuilder._httpClient.DefaultRequestHeaders.Accept.Clear( );
 	}
 }
