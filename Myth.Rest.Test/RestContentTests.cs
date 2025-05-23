@@ -32,7 +32,8 @@ public class RestContentTests : IDisposable {
 				.WithBaseUrl( "https://localhost:5001/" )
 				.WithContentType( "application/json" )
 				.WithBodySerialization( CaseStrategy.CamelCase )
-				.WithRetry( 3, TimeSpan.FromSeconds( 10 ), HttpStatusCode.InternalServerError ) );
+				.WithRetry( 3, TimeSpan.FromSeconds( 10 ), HttpStatusCode.InternalServerError )
+				.WithTypeConverter<IPost, Post>( ) );
 	}
 
 	public void Dispose( ) {
@@ -1036,5 +1037,49 @@ public class RestContentTests : IDisposable {
 		response.Method.Should( ).Be( HttpMethod.Get );
 		response.RetriesMade.Should( ).Be( 3 );
 		response.IsSuccessStatusCode( ).Should( ).BeFalse( );
+	}
+
+	[Fact]
+	public async Task When_map_interface_to_concrete_the_result_should_be_mapped( ) {
+		// Arrange
+		var mockedPost = new {
+			id = _faker.UniqueIndex,
+			title = _faker.Lorem.Lines( 1 ),
+			body = _faker.Lorem.Text( ),
+			userId = _faker.Random.Guid( )
+		};
+
+		_server
+			.Given(
+				Request
+					.Create( )
+					.WithPath( "/get-interface" )
+					.UsingGet( ) )
+			.RespondWith(
+				Response
+					.Create( )
+					.WithBodyAsJson(
+						mockedPost
+					 )
+					.WithStatusCode( HttpStatusCode.OK ) );
+
+		// Act
+		var response = await _restClient
+			.DoGet( "get-interface" )
+			.OnResult( resp => resp
+				.UseTypeForSuccess<IPost>( ) )
+			.BuildAsync( );
+
+		// Assert
+		response.Should( ).NotBeNull( );
+		response.StatusCode.Should( ).Be( HttpStatusCode.OK );
+		response.Method.Should( ).Be( HttpMethod.Get );
+		response.IsSuccessStatusCode( ).Should( ).BeTrue( );
+
+		var result = response.GetAs<IPost>( );
+		result.Id.Should( ).Be( mockedPost.id );
+		result.Title.Should( ).Be( mockedPost.title );
+		result.Body.Should( ).Be( mockedPost.body );
+		result.UserId.Should( ).Be( mockedPost.userId );
 	}
 }

@@ -18,7 +18,7 @@ namespace Myth.Rest.Test {
 		private readonly WireMockServer _server;
 
 		public RestDependencyInjectionTests( ) {
-			_server = WireMockServer.Start( 5001, true );
+			_server = WireMockServer.Start( 8001, true );
 		}
 
 		public void Dispose( ) {
@@ -47,7 +47,7 @@ namespace Myth.Rest.Test {
 
 			// Act
 			services.AddRestContent( conf => conf
-				.WithBaseUrl( "https://localhost:5001/" )
+				.WithBaseUrl( "https://localhost:8001/" )
 				.WithContentType( "application/json" )
 				.WithBodySerialization( CaseStrategy.CamelCase )
 				.WithBodyDeserialization( CaseStrategy.CamelCase ),
@@ -97,7 +97,7 @@ namespace Myth.Rest.Test {
 
 			// Act
 			services.AddRestFile( conf => conf
-				.WithBaseUrl( "https://localhost:5001/" ),
+				.WithBaseUrl( "https://localhost:8001/" ),
 				lifetime );
 
 			var serviceProvider = services.BuildServiceProvider( );

@@ -13,6 +13,7 @@ public class ConfigurationBuilder {
 	protected internal string? _acceptableContentType;
 	protected internal CaseStrategy _serializationCaseStrategy;
 	protected internal CaseStrategy _deserializationCaseStrategy;
+	protected internal IDictionary<Type, Type> _jsonConverters;
 	protected internal IDictionary<string, string> _customHeaders;
 	protected internal RetryPolicy _retryPolicy;
 	protected internal HttpClient _httpClient;
@@ -23,6 +24,7 @@ public class ConfigurationBuilder {
 		_retryPolicy = new RetryPolicy( );
 		_serializationCaseStrategy = CaseStrategy.CamelCase;
 		_deserializationCaseStrategy = CaseStrategy.CamelCase;
+		_jsonConverters = new Dictionary<Type, Type>( );
 	}
 
 	/// <summary>
@@ -163,6 +165,18 @@ public class ConfigurationBuilder {
 	/// <returns></returns>
 	public ConfigurationBuilder WithRetry( int amount, TimeSpan timeBetweenRetries, params HttpStatusCode[ ] statusCodes ) {
 		_retryPolicy.Set( amount, timeBetweenRetries, statusCodes );
+		return this;
+	}
+
+	/// <summary>
+	/// Add a custom converter for type on deserialization of response
+	/// </summary>
+	/// <typeparam name="TInterface"></typeparam>
+	/// <typeparam name="TType"></typeparam>
+	/// <returns></returns>
+	public ConfigurationBuilder WithTypeConverter<TInterface, TType>( ) {
+		_jsonConverters.Add( new KeyValuePair<Type, Type>( typeof( TInterface ), typeof( TType ) ) );
+
 		return this;
 	}
 }

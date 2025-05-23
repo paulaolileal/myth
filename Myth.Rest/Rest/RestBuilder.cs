@@ -86,7 +86,11 @@ public partial class RestBuilder : RestBuilderBase {
 				throw new NotMappedResultTypeException( message.StatusCode, content );
 			else if ( !string.IsNullOrEmpty( content ) ) {
 				try {
-					var typedResponse = content.FromJson( type!, conf => conf.UseCaseStrategy( _configBuilder._deserializationCaseStrategy ) );
+					var typedResponse = content.FromJson( type!, conf => {
+						conf.UseCaseStrategy( _configBuilder._deserializationCaseStrategy );
+						foreach ( var (interfaceType, concreteType) in _configBuilder._jsonConverters )
+							conf.UseInterfaceConverter( interfaceType, concreteType );
+					} );
 					restResponse.SetTypedResult( type!, typedResponse! );
 				} catch ( Exception exception ) {
 					throw new ParsingTypeException( message.StatusCode, type!, content, exception );
