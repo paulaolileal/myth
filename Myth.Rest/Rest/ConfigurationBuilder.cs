@@ -1,4 +1,6 @@
 ﻿using Myth.Constants;
+using Myth.Models.Rest;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -12,11 +14,13 @@ public class ConfigurationBuilder {
 	protected internal CaseStrategy _serializationCaseStrategy;
 	protected internal CaseStrategy _deserializationCaseStrategy;
 	protected internal IDictionary<string, string> _customHeaders;
+	protected internal RetryPolicy _retryPolicy;
 	protected internal HttpClient _httpClient;
 
 	public ConfigurationBuilder( ) {
 		_httpClient = new HttpClient( );
 		_customHeaders = new Dictionary<string, string>( );
+		_retryPolicy = new RetryPolicy( );
 		_serializationCaseStrategy = CaseStrategy.CamelCase;
 		_deserializationCaseStrategy = CaseStrategy.CamelCase;
 	}
@@ -145,6 +149,20 @@ public class ConfigurationBuilder {
 	/// <returns>This object</returns>
 	public ConfigurationBuilder WithBodyDeserialization( CaseStrategy deserializationCaseStrategy ) {
 		_deserializationCaseStrategy = deserializationCaseStrategy;
+		return this;
+	}
+
+	/// <summary>
+	/// Set the retry policy in case of failed request
+	/// </summary>
+	/// <remarks>
+	/// You can set only for some status codes. If not setted, all failure will retried
+	/// </remarks>
+	/// <param name="amount"></param>
+	/// <param name="timeBetweenRetries"></param>
+	/// <returns></returns>
+	public ConfigurationBuilder WithRetry( int amount, TimeSpan timeBetweenRetries, params HttpStatusCode[ ] statusCodes ) {
+		_retryPolicy.Set( amount, timeBetweenRetries, statusCodes );
 		return this;
 	}
 }

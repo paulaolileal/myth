@@ -9,7 +9,9 @@ public class RestFileResponse(
 	Uri url,
 	HttpMethod method,
 	TimeSpan elapsedTime,
-	byte[ ] content ) : RestResponseBase( statusCode, url, method, elapsedTime ) {
+	int retriesMade,
+	byte[ ] content )
+	: RestResponseBase( statusCode, url, method, elapsedTime, retriesMade ) {
 	public byte[ ] Content { get; set; } = content;
 
 	/// <summary>

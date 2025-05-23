@@ -29,12 +29,14 @@ public class RestFileTests : IDisposable {
 		_restDownloadClient = Rest
 			.File( )
 			.Configure( conf => conf
-				.WithBaseUrl( "https://localhost:4001" ) );
+				.WithBaseUrl( "https://localhost:4001" )
+				.WithRetry( 3, TimeSpan.FromSeconds( 10 ) ) );
 
 		_restUploadClient = Rest
 			.File( )
 			.Configure( conf => conf
-				.WithBaseUrl( "https://www.csm-testcenter.org" ) );
+				.WithBaseUrl( "https://www.csm-testcenter.org" )
+				.WithRetry( 3, TimeSpan.FromSeconds( 10 ) ) );
 	}
 
 	public void Dispose( ) {

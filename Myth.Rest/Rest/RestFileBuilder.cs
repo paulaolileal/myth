@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Myth.Exceptions;
+using Myth.Extensions;
 using Myth.Models.Rest;
 using System.Dynamic;
 using System.Net.Http.Headers;
@@ -185,19 +186,45 @@ public class RestFileBuilder : RestBuilderBase {
 	private async Task<RestFileResponse> ProcessRequestAsync( CancellationToken cancellationToken ) {
 		var (message, elapsedTime) = await ProcessAsync( cancellationToken );
 
-		var content = await message.Content.ReadAsByteArrayAsync( cancellationToken );
+		var content = await RetringAsync( message, cancellationToken );
 
 		var restResponse = new RestFileResponse(
 			message.StatusCode,
 			message.RequestMessage!.RequestUri!,
 			message.RequestMessage.Method,
 			elapsedTime,
+			_configBuilder._retryPolicy.AmountRetriesMade,
 			content );
 
 		if ( _exceptionBuilder.TryGet( message.StatusCode, new ExpandoObject( ) ) )
 			throw new NonSuccessException( restResponse );
 
 		return restResponse;
+	}
+
+	/// <summary>
+	/// Applying retrying policy
+	/// </summary>
+	/// <param name="message"></param>
+	/// <param name="cancellationToken"></param>
+	/// <returns></returns>
+	private async Task<byte[ ]?> RetringAsync( HttpResponseMessage message, CancellationToken cancellationToken ) {
+		var retries = 0;
+		byte[ ]? content;
+		var timer = new PeriodicTimer( _configBuilder._retryPolicy.TimeBetweenRetry );
+
+		do {
+			content = await message.Content.ReadAsByteArrayAsync( cancellationToken );
+			retries++;
+		} while (
+			!message.StatusCode.IsSuccess( ) &&
+			_configBuilder._retryPolicy.IsRetryStatusCode( message.StatusCode ) &&
+			retries < _configBuilder._retryPolicy.AmountRetries &&
+			await timer.WaitForNextTickAsync( cancellationToken ) );
+
+		_configBuilder._retryPolicy.SetRetriesMade( retries );
+
+		return content;
 	}
 
 	#endregion [ Processing ]

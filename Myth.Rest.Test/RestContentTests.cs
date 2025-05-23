@@ -31,7 +31,8 @@ public class RestContentTests : IDisposable {
 			.Configure( config => config
 				.WithBaseUrl( "https://localhost:5001/" )
 				.WithContentType( "application/json" )
-				.WithBodySerialization( CaseStrategy.CamelCase ) );
+				.WithBodySerialization( CaseStrategy.CamelCase )
+				.WithRetry( 3, TimeSpan.FromSeconds( 10 ), HttpStatusCode.InternalServerError ) );
 	}
 
 	public void Dispose( ) {
@@ -1006,5 +1007,34 @@ public class RestContentTests : IDisposable {
 		response.StatusCode.Should( ).Be( HttpStatusCode.NoContent );
 		response.Method.Should( ).Be( HttpMethod.Delete );
 		response.IsSuccessStatusCode( ).Should( ).BeTrue( );
+	}
+
+	[Fact]
+	public async Task Retry_should_retry_before_error( ) {
+		// Arrange
+		_server
+			.Given(
+				Request
+					.Create( )
+					.WithPath( "/get-retry" )
+					.UsingGet( ) )
+			.RespondWith(
+				Response
+					.Create( )
+					.WithStatusCode( HttpStatusCode.InternalServerError ) );
+
+		// Act
+		var response = await _restClient
+			.DoGet( "get-retry" )
+			.OnResult( resp => resp
+				.UseEmptyFor( HttpStatusCode.InternalServerError ) )
+			.BuildAsync( );
+
+		// Assert
+		response.Should( ).NotBeNull( );
+		response.StatusCode.Should( ).Be( HttpStatusCode.InternalServerError );
+		response.Method.Should( ).Be( HttpMethod.Get );
+		response.RetriesMade.Should( ).Be( 3 );
+		response.IsSuccessStatusCode( ).Should( ).BeFalse( );
 	}
 }

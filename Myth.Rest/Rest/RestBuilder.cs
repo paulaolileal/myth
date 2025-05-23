@@ -63,14 +63,15 @@ public partial class RestBuilder : RestBuilderBase {
 	private async Task<RestResponse> ProcessRequestAsync( CancellationToken cancellationToken ) {
 		var (message, elapsedTime) = await ProcessAsync( cancellationToken );
 
-		var content = await message.Content.ReadAsStringAsync( cancellationToken );
+		var content = await RetringAsync( message, cancellationToken );
 
 		var restResponse = new RestResponse(
 			message.StatusCode,
 			message.RequestMessage!.RequestUri!,
 			message.RequestMessage.Method,
 			content,
-			elapsedTime );
+			elapsedTime,
+			_configBuilder._retryPolicy.AmountRetriesMade );
 
 		var dynamicContent = JsonConvert.DeserializeObject<dynamic>( content );
 
@@ -94,6 +95,31 @@ public partial class RestBuilder : RestBuilderBase {
 		}
 
 		return restResponse;
+	}
+
+	/// <summary>
+	/// Applying retrying policy
+	/// </summary>
+	/// <param name="message"></param>
+	/// <param name="cancellationToken"></param>
+	/// <returns></returns>
+	private async Task<string?> RetringAsync( HttpResponseMessage message, CancellationToken cancellationToken ) {
+		var retries = 0;
+		string? content;
+		var timer = new PeriodicTimer( _configBuilder._retryPolicy.TimeBetweenRetry );
+
+		do {
+			content = await message.Content.ReadAsStringAsync( cancellationToken );
+			retries++;
+		} while (
+			!message.StatusCode.IsSuccess( ) &&
+			_configBuilder._retryPolicy.IsRetryStatusCode( message.StatusCode ) &&
+			retries < _configBuilder._retryPolicy.AmountRetries &&
+			await timer.WaitForNextTickAsync( cancellationToken ) );
+
+		_configBuilder._retryPolicy.SetRetriesMade( retries );
+
+		return content;
 	}
 
 	#endregion [ Processing ]
@@ -131,7 +157,7 @@ public partial class RestBuilder : RestBuilderBase {
 			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
 
 			_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.PostAsync( url, request, cancellationToken );
-		} catch ( System.Exception exception ) {
+		} catch ( Exception exception ) {
 			_exception = exception;
 		}
 		return this;
@@ -152,7 +178,7 @@ public partial class RestBuilder : RestBuilderBase {
 			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
 
 			_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.PutAsync( url, request, cancellationToken );
-		} catch ( System.Exception exception ) {
+		} catch ( Exception exception ) {
 			_exception = exception;
 		}
 		return this;
@@ -168,7 +194,7 @@ public partial class RestBuilder : RestBuilderBase {
 			PreRequestSettings( );
 
 			_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.DeleteAsync( url, cancellationToken );
-		} catch ( System.Exception exception ) {
+		} catch ( Exception exception ) {
 			_exception = exception;
 		}
 		return this;
@@ -189,7 +215,7 @@ public partial class RestBuilder : RestBuilderBase {
 			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
 
 			_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.PatchAsync( url, request, cancellationToken );
-		} catch ( System.Exception exception ) {
+		} catch ( Exception exception ) {
 			_exception = exception;
 		}
 		return this;

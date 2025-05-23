@@ -9,7 +9,8 @@ public class RestResponse(
 	Uri url,
 	HttpMethod method,
 	string rawMessage,
-	TimeSpan elapsedTime ) : RestResponseBase( statusCode, url, method, elapsedTime ) {
+	TimeSpan elapsedTime,
+	int retriesMade ) : RestResponseBase( statusCode, url, method, elapsedTime, retriesMade ) {
 	public string RawMessage { get; private set; } = rawMessage;
 	public Type? ResultType { get; private set; }
 	public object? Result { get; private set; }
