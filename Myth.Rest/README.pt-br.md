@@ -42,7 +42,9 @@ var response = await Rest
 		.WithBaseUrl( "https://localhost:5001/" )				// Define a url base
 		.WithContentType( "application/json" )					// Define o tipo de conteúdo
 		.WithBodySerialization( CaseStrategy.CamelCase )		// Define o tipo de serialização do corpo da requisição
-		.WithBodyDeserialization( CaseStrategy.SnakeCase ) )	// Define o tipo de serialização do corpo da resposta
+		.WithBodyDeserialization( CaseStrategy.SnakeCase )		// Define o tipo de serialização do corpo da resposta
+		.WithRetry( 3, TimeSpan.FromSeconds(30) ) 				// Define uma politica de re-tentativas caso a requisição falhe
+		.WithTypeConverter<Interface, Type>						// Define uma conversão da interface para o tipo ao deserializar responstas
   	.DoGet( "get-success" )										// Define a ação a ser realizada `get`, `post`, `put`, `patch`, `delete`
   	.OnResult( config => config									// Define o que deve acontecer em caso de sucesso
     	.UseTypeForSuccess<IEnumerable<Post>>( ) )				// ... nesse caso: sempre que for sucesso, status code >= 200 && < 299, usar o tipo `IEnumerable<Post>`
@@ -65,6 +67,8 @@ O `.Configure( ... )` é a porta de entrada para a configuração da requisiçã
 - `.WithBasicAuthorization( param: string, param: string)`: Adiciona um header de autorização do tipo Basic a partir do usuário e senha informados.
 - `.AddHeader( param: string, param string, param: bool )`: Adiciona outros headers necessários para requisição a partir de chave e valor.
 - `.WithClient( param: HttpClient)`: Adiciona um cliente http previamente configurado.
+- `.WithRetry( param: int, param: TimeSpan )`: Define uma politica de re-tentativas caso a requisição falhe
+- `.WithTypeConverter<Interface, Type>`: Define uma conversão da interface para o tipo ao deserializar responstas
 
 ### 🔮 Realizando ações
 

@@ -43,6 +43,8 @@ var response = await Rest
 		.WithContentType( "application/json" )					// Sets the content type
 		.WithBodySerialization( CaseStrategy.CamelCase )		// Sets the request body serialization type
 		.WithBodyDeserialization( CaseStrategy.SnakeCase ) )	// Sets the response body serialization type
+		.WithRetry( 3, TimeSpan.FromSeconds(30) ) 				// Defines a policy for retrying in case of the request failed 
+		.WithTypeConverter<Interface, Type>						// Defines a conversion between the interface and the concrete type on deserialize responses
   	.DoGet( "get-success" )										// Defines the action to be performed `get`, `post`, `put`, `patch`, `delete`
   	.OnResult( config => config									// Defines what should happen in case of success
     	.UseTypeForSuccess<IEnumerable<Post>>( ) )				// ... in this case: whenever it's successful, status code >= 200 && < 299, use the type `IEnumerable<Post>`
@@ -65,6 +67,8 @@ The `.Configure(...)` is the entry point for request configuration. Many things 
 - `.WithBasicAuthorization(param: string, param: string)`: Adds a Basic type authorization header from the informed user and password.
 - `.AddHeader(param: string, param string, param: bool)`: Adds other necessary headers for the request from key and value.
 - `.WithClient(param: HttpClient)`: Adds a previously configured http client.
+- `.WithRetry( param: int, param: TimeSpan )`: Defines a policy for retrying in case of the request failed 
+- `.WithTypeConverter<Interface, Type>`: Defines a conversion between the interface and the concrete type on deserialize responses
 
 ### 🔮 Performing actions
 
