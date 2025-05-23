@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Myth.Commons.Test.Models;
 using Myth.Constants;
 using Myth.Exceptions;
 using Myth.Extensions;
@@ -71,5 +72,28 @@ public class JsonTests {
 
 		// Assert
 		action.Should( ).Throw<JsonParsingException>( );
+	}
+
+	[Fact]
+	public void Json_should_use_global_settings( ) {
+		// Arrange
+		JsonExtensions.Configure( conf => conf
+			.Minify( )
+			.UseInterfaceConverter<ITestModel, TestModel>( ) );
+
+		var testObject = new TestModel {
+			Id = 1,
+			Name = "test",
+		};
+
+		var jsonObject = testObject.ToJson( );
+
+		// Act
+		var result = jsonObject.FromJson<ITestModel>( );
+
+		// Assert
+		result.Should( ).NotBeNull( );
+		result!.Id.Should( ).Be( testObject.Id );
+		result.Name.Should( ).Be( testObject.Name );
 	}
 }

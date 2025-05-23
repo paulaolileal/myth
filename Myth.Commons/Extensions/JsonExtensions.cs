@@ -7,9 +7,10 @@ using Newtonsoft.Json.Serialization;
 namespace Myth.Extensions;
 
 public static class JsonExtensions {
+	private static JsonSettings _globalSettings = new( );
 
 	private static JsonSerializerSettings BaseSerializer( Action<JsonSettings>? settings = null ) {
-		var jsonSettings = new JsonSettings( );
+		var jsonSettings = _globalSettings.Copy( );
 
 		settings?.Invoke( jsonSettings );
 
@@ -21,7 +22,8 @@ public static class JsonExtensions {
 			Formatting = jsonSettings.MinifyResult ? Formatting.None : Formatting.Indented,
 			NullValueHandling = jsonSettings.IgnoreNullValues ? NullValueHandling.Ignore : NullValueHandling.Include,
 			ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-			ContractResolver = contractResolver
+			ContractResolver = contractResolver,
+			Converters = jsonSettings.Converters,
 		};
 
 		jsonSettings.OtherSettings?.Invoke( serializerSettings );
@@ -79,4 +81,10 @@ public static class JsonExtensions {
 			CaseStrategy.SnakeCase => new SnakeCaseNamingStrategy( ),
 			_ => new CamelCaseNamingStrategy( )
 		};
+
+	/// <summary>
+	/// Set configurations of json in a globally form
+	/// </summary>
+	/// <param name="settings"></param>
+	public static void Configure( Action<JsonSettings>? settings ) => settings?.Invoke( _globalSettings );
 }

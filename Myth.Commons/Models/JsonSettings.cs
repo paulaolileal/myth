@@ -1,10 +1,26 @@
 ﻿using Myth.Constants;
+using Myth.ValueProviders;
 using Newtonsoft.Json;
 
 namespace Myth.Models;
 
-public class JsonSettings {
+public class JsonSettings : ICloneable {
+	internal bool MinifyResult { get; set; } = false;
 	internal bool IgnoreNullValues { get; set; } = false;
+	internal IList<JsonConverter> Converters { get; set; } = [ ];
+	internal CaseStrategy CaseStrategy { get; set; } = CaseStrategy.CamelCase;
+	public Action<JsonSerializerSettings>? OtherSettings { get; }
+
+	public JsonSettings( ) {
+	}
+
+	internal JsonSettings( JsonSettings settings ) {
+		MinifyResult = settings.MinifyResult;
+		IgnoreNullValues = settings.IgnoreNullValues;
+		Converters = settings.Converters;
+		CaseStrategy = settings.CaseStrategy;
+		OtherSettings = settings.OtherSettings;
+	}
 
 	/// <summary>
 	/// Should ignore null values on object
@@ -15,8 +31,6 @@ public class JsonSettings {
 		return this;
 	}
 
-	internal CaseStrategy CaseStrategy { get; set; } = CaseStrategy.CamelCase;
-
 	/// <summary>
 	/// The case strategy to be used in serialization
 	/// </summary>
@@ -25,8 +39,6 @@ public class JsonSettings {
 
 		return this;
 	}
-
-	internal bool MinifyResult { get; set; } = false;
 
 	/// <summary>
 	/// If the result should be minified
@@ -38,7 +50,40 @@ public class JsonSettings {
 	}
 
 	/// <summary>
+	/// Add a interface converter to concrete type for serialization/deserialization
+	/// </summary>
+	/// <typeparam name="TInterface">The interface of type</typeparam>
+	/// <typeparam name="TConcrete">The type of concrete</typeparam>
+	public JsonSettings UseInterfaceConverter<TInterface, TConcrete>( ) where TConcrete : TInterface {
+		Converters.Add( new InterfaceToConcreteConverter<TInterface, TConcrete>( ) );
+
+		return this;
+	}
+
+	/// <summary>
+	/// Add a interface converter to concrete type for serialization/deserialization
+	/// </summary>
+	/// <typeparam name="TInterface">The interface of type</typeparam>
+	/// <typeparam name="TConcrete">The type of concrete</typeparam>
+	public JsonSettings UseInterfaceConverter( Type interfaceType, Type concreteType ) {
+		Converters.Add( new InterfaceToConcreteConverter( interfaceType, concreteType ) );
+
+		return this;
+	}
+
+	/// Add a custom converter to concrete type for serialization/deserialization
+	/// <param name="converter">The converter of type</typeparam>
+	public JsonSettings UseCustomConverter( JsonConverter converter ) {
+		Converters.Add( converter );
+
+		return this;
+	}
+
+	public object Clone( ) => new JsonSettings( this );
+
+	public JsonSettings Copy( ) => ( JsonSettings )Clone( );
+
+	/// <summary>
 	/// Other settings on base serializer settings
 	/// </summary>
-	public Action<JsonSerializerSettings>? OtherSettings { get; }
 }
