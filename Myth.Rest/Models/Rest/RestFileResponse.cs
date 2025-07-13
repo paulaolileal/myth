@@ -10,8 +10,9 @@ public class RestFileResponse(
 	HttpMethod method,
 	TimeSpan elapsedTime,
 	int retriesMade,
-	byte[ ] content )
-	: RestResponseBase( statusCode, url, method, elapsedTime, retriesMade ) {
+	byte[ ] content,
+	bool fallbackUsed )
+	: RestResponseBase( statusCode, url, method, elapsedTime, retriesMade, fallbackUsed ) {
 	public byte[ ] Content { get; set; } = content;
 
 	/// <summary>

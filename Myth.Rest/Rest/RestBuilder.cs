@@ -13,7 +13,7 @@ public partial class RestBuilder : RestBuilderBase {
 		( base.Configure( configurationBuilder ) as RestBuilder )!;
 
 	public RestBuilder OnResult( Action<ResultBuilder> resultSettings ) {
-		_exceptionBuilder.Clear( );
+		_errorBuilder.Clear( );
 		resultSettings.Invoke( _resultBuilder );
 		return this;
 	}
@@ -67,7 +67,14 @@ public partial class RestBuilder : RestBuilderBase {
 	private async Task<RestResponse> ProcessRequestAsync( CancellationToken cancellationToken ) {
 		var (message, elapsedTime) = await ProcessAsync( cancellationToken );
 
+		// Retry logic
 		var content = await RetringAsync( message, cancellationToken );
+
+		// Fallback logic
+		if ( !message.StatusCode.IsSuccess( ) && _errorBuilder._useFallback ) {
+			message.StatusCode = _errorBuilder._fallbackStatusCode!.Value;
+			content = _errorBuilder._fallbackResponse;
+		}
 
 		var restResponse = new RestResponse(
 			message.StatusCode,
@@ -75,30 +82,31 @@ public partial class RestBuilder : RestBuilderBase {
 			message.RequestMessage.Method,
 			content,
 			elapsedTime,
-			_configBuilder._retryPolicy.AmountRetriesMade );
+			_configBuilder._retryPolicy.AmountRetriesMade,
+			_errorBuilder._useFallback );
 
 		var dynamicContent = JsonConvert.DeserializeObject<dynamic>( content );
 
-		if ( _exceptionBuilder.TryGet( message.StatusCode, dynamicContent ) )
+		// If the response is not success and there is no fallback, throw an exception
+		if ( _errorBuilder.TryGet( message.StatusCode, dynamicContent ) )
 			throw new NonSuccessException( restResponse );
 
 		var mappedTypeExists = _resultBuilder.TryGet( message.StatusCode, dynamicContent, out Type? type );
-		if ( _exceptionBuilder._throwForNonMappedResult ) {
-			if ( !_resultBuilder.ShouldMap )
-				return restResponse;
-			else if ( !mappedTypeExists || type is null )
-				throw new NotMappedResultTypeException( message.StatusCode, content );
-			else if ( !string.IsNullOrEmpty( content ) ) {
-				try {
-					var typedResponse = content.FromJson( type!, conf => {
-						conf.UseCaseStrategy( _configBuilder._deserializationCaseStrategy );
-						foreach ( var (interfaceType, concreteType) in _configBuilder._jsonConverters )
-							conf.UseInterfaceConverter( interfaceType, concreteType );
-					} );
-					restResponse.SetTypedResult( type!, typedResponse! );
-				} catch ( Exception exception ) {
-					throw new ParsingTypeException( message.StatusCode, type!, content, exception );
-				}
+
+		if ( !_resultBuilder.ShouldMap )
+			return restResponse;
+		else if ( _errorBuilder._throwForNonMappedResult && ( !mappedTypeExists || type is null ) )
+			throw new NotMappedResultTypeException( message.StatusCode, content );
+		else if ( !string.IsNullOrEmpty( content ) ) {
+			try {
+				var typedResponse = content.FromJson( type!, conf => {
+					conf.UseCaseStrategy( _configBuilder._deserializationCaseStrategy );
+					foreach ( var (interfaceType, concreteType) in _configBuilder._jsonConverters )
+						conf.UseInterfaceConverter( interfaceType, concreteType );
+				} );
+				restResponse.SetTypedResult( type!, typedResponse! );
+			} catch ( Exception exception ) {
+				throw new ParsingTypeException( message.StatusCode, type!, content, exception );
 			}
 		}
 

@@ -103,6 +103,7 @@ It is possible to define which status code should throw exceptions. The exceptio
 - `.ThrowForAll( param: Func<dynamic, bool>? )`: Throws an exception for all status codes
 - `.NotThrowForNonMappedResult()`: Does not throw an exception if there is no type for the received status code
 - `.NotThrowFor( param: HttpStatusCode, param: Func<dynamic, bool>? )`: Does not throw an exception for a defined status code.
+- `.UseFallback<T>(param: HttpStatusCode, param: T)`: Uses a fallback value for a specific status code. This is useful when you want to return a default value instead of throwing an exception.
 
 ## 📁 File Requests
 

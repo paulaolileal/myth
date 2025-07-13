@@ -2,6 +2,7 @@ using Bogus;
 using FluentAssertions;
 using Myth.Constants;
 using Myth.Exceptions;
+using Myth.Extensions;
 using Myth.Rest.Test.Models;
 using System;
 using System.Collections.Generic;
@@ -1081,5 +1082,116 @@ public class RestContentTests : IDisposable {
 		result.Title.Should( ).Be( mockedPost.title );
 		result.Body.Should( ).Be( mockedPost.body );
 		result.UserId.Should( ).Be( mockedPost.userId );
+	}
+
+	[Fact]
+	public async Task Fallback_value_should_should_be_used_in_case_of_errors( ) {
+		// Arrange
+		_server
+			.Given(
+				Request
+					.Create( )
+					.WithPath( "/fallback" )
+					.UsingGet( ) )
+			.RespondWith(
+				Response
+					.Create( )
+					.WithStatusCode( HttpStatusCode.InternalServerError ) );
+
+		// Act
+		var response = await _restClient
+			.DoGet( "fallback" )
+			.OnResult( resp => resp
+				.UseTypeForSuccess<Post>( ) )
+			.OnError( error => error
+				.UseFallback(
+					HttpStatusCode.OK,
+					new Post {
+						Id = -1,
+						Title = "Fallback Title",
+						Body = "Fallback Body",
+						UserId = Guid.Empty
+					} ) )
+			.BuildAsync( );
+
+		// Assert
+		response.Should( ).NotBeNull( );
+		response.StatusCode.Should( ).Be( HttpStatusCode.OK );
+		response.Method.Should( ).Be( HttpMethod.Get );
+		response.FallbackUsed.Should( ).BeTrue( );
+		response.IsSuccessStatusCode( ).Should( ).BeTrue( );
+	}
+
+	[Fact]
+	public async Task Not_throw_for_non_mapped_should_continue_map_if_the_response_is_mapped( ) {
+		// Arrange
+		_server
+			.Given(
+				Request
+					.Create( )
+					.WithPath( "/notmapped" )
+					.UsingGet( ) )
+			.RespondWith(
+				Response
+					.Create( )
+					.WithBody(
+						new { 
+							id = _faker.UniqueIndex, 
+							title = _faker.Lorem.Lines( 1 ),
+							body = _faker.Lorem.Text( ), 
+							userId = _faker.Random.Guid( ) 
+						}.ToJson( ) )
+					.WithStatusCode( HttpStatusCode.OK ) );
+
+		// Act
+		var response = await _restClient
+			.DoGet( "notmapped" )
+			.OnResult( resp => resp
+				.UseTypeForSuccess<Post>( ) )
+			.OnError( error => error
+				.NotThrowForNonMappedResult( ) )
+			.BuildAsync( );
+
+		// Assert
+		response.Should( ).NotBeNull( );
+		response.ResultType.Should( ).NotBeNull( );
+		response.Result.Should( ).NotBeNull( );
+		response.StatusCode.Should( ).Be( HttpStatusCode.OK );
+		response.Method.Should( ).Be( HttpMethod.Get );
+		response.IsSuccessStatusCode( ).Should( ).BeTrue( );
+	}
+
+	[Fact]
+	public async Task Not_throw_for_non_mapped_should_continue_map_if_the_response_is_not_mapped( ) {
+		// Arrange
+		_server
+			.Given(
+				Request
+					.Create( )
+					.WithPath( "/notmapped" )
+					.UsingGet( ) )
+			.RespondWith(
+				Response
+					.Create( )
+					.WithBody(
+						new {
+							message = "Error"
+						}.ToJson( ) )
+					.WithStatusCode( HttpStatusCode.InternalServerError ) );
+
+		// Act
+		var response = await _restClient
+			.DoGet( "notmapped" )
+			.OnResult( resp => resp
+				.UseTypeForSuccess<Post>( ) )
+			.OnError( error => error
+				.NotThrowForNonMappedResult( ) )
+			.BuildAsync( );
+
+		// Assert
+		response.Should( ).NotBeNull( );
+		response.StatusCode.Should( ).Be( HttpStatusCode.InternalServerError );
+		response.Method.Should( ).Be( HttpMethod.Get );
+		response.IsSuccessStatusCode( ).Should( ).BeFalse( );
 	}
 }

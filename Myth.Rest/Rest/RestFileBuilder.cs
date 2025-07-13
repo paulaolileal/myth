@@ -198,9 +198,10 @@ public class RestFileBuilder : RestBuilderBase {
 			message.RequestMessage.Method,
 			elapsedTime,
 			_configBuilder._retryPolicy.AmountRetriesMade,
-			content );
+			content,
+			false );
 
-		if ( _exceptionBuilder.TryGet( message.StatusCode, new ExpandoObject( ) ) )
+		if ( _errorBuilder.TryGet( message.StatusCode, new ExpandoObject( ) ) )
 			throw new NonSuccessException( restResponse );
 
 		return restResponse;

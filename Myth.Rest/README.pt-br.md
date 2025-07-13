@@ -103,7 +103,7 @@ Podem ser realizados todos os tipos de ações esperadas pelo REST.
 - `.ThrowForAll( param: Func<dynamic, bool>? )`: Lança exceção para todos os status codes.
 - `.NotThrowForNonMappedResult()`: Não lança exceção se não existir um tipo para o status code recebido
 - `.NotThrowFor( param: HttpStatusCode, param: Func<dynamic, bool>? )`: Não lança exceção para um status code definido. 
-
+- `.UseFallback<T>(param: HttpStatusCode, param: T)`: Usa um valor padrão para um status code específico. Isso é útil quando você deseja retornar um valor padrão ao invés de lançar uma exceção.
 ## 📁 Requisições de arquivos
 
 Essa biblioteca também permite e facilita trabalhar com arquivos, fazendo _download_ e _upload_.

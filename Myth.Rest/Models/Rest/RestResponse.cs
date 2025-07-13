@@ -5,12 +5,14 @@ using System.Net;
 namespace Myth.Models.Rest;
 
 public class RestResponse(
-	HttpStatusCode statusCode,
-	Uri url,
-	HttpMethod method,
-	string rawMessage,
-	TimeSpan elapsedTime,
-	int retriesMade ) : RestResponseBase( statusCode, url, method, elapsedTime, retriesMade ) {
+		HttpStatusCode statusCode,
+		Uri url,
+		HttpMethod method,
+		string rawMessage,
+		TimeSpan elapsedTime,
+		int retriesMade,
+		bool fallbackUsed )
+	: RestResponseBase( statusCode, url, method, elapsedTime, retriesMade, fallbackUsed ) {
 	public string RawMessage { get; private set; } = rawMessage;
 	public Type? ResultType { get; private set; }
 	public object? Result { get; private set; }

@@ -8,7 +8,8 @@ public abstract class RestResponseBase(
 	Uri url,
 	HttpMethod method,
 	TimeSpan elapsedTime,
-	int retriesMade ) {
+	int retriesMade,
+	bool fallbackUsed ) {
 
 	/// <summary>
 	/// The response status code
@@ -34,6 +35,8 @@ public abstract class RestResponseBase(
 	/// The amount of retries was made before the final result
 	/// </summary>
 	public int RetriesMade { get; private set; } = retriesMade;
+
+	public bool FallbackUsed { get; private set; } = fallbackUsed;
 
 	/// <summary>
 	/// Checks if the result is a success

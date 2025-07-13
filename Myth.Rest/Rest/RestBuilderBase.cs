@@ -5,7 +5,7 @@ using System.Net.Http.Headers;
 namespace Myth.Rest;
 
 public abstract class RestBuilderBase : IDisposable {
-	protected readonly ErrorBuilder _exceptionBuilder;
+	protected readonly ErrorBuilder _errorBuilder;
 	protected readonly ResultBuilder _resultBuilder;
 	protected ConfigurationBuilder _configBuilder;
 
@@ -14,7 +14,7 @@ public abstract class RestBuilderBase : IDisposable {
 	protected Task<HttpResponseMessage>? _responseMessage;
 
 	protected RestBuilderBase( ) {
-		_exceptionBuilder = new( );
+		_errorBuilder = new( );
 		_resultBuilder = new( );
 		_configBuilder = new( );
 	}
@@ -36,8 +36,8 @@ public abstract class RestBuilderBase : IDisposable {
 	/// <param name="exceptionSettings">Errors treatment</param>
 	/// <returns>This object</returns>
 	public virtual RestBuilderBase OnError( Action<ErrorBuilder> exceptionSettings ) {
-		_exceptionBuilder.Clear( );
-		exceptionSettings.Invoke( _exceptionBuilder );
+		_errorBuilder.Clear( );
+		exceptionSettings.Invoke( _errorBuilder );
 		return this;
 	}
 
