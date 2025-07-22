@@ -1,30 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Myth.Mapper {
+
 	public class MappingBuilder<TSource, TDestination> {
-		private readonly List<Action<TSource, TDestination, IServiceProvider>> _mappings = new( );
-		private readonly HashSet<string> _manuallyMappedDestProps = new( );
-		private bool _autoMapRemaining = false;
+		private readonly List<Action<TSource, TDestination, IServiceProvider>> _mappings = [];
+		private readonly HashSet<string> _manuallyMappedDestProps = [];
+		private readonly HashSet<string> _ignoredProperties = [];
 
 		public MappingBuilder<TSource, TDestination> ForMember<TMember>(
-			Expression<Func<TSource, TMember>> source,
 			Expression<Func<TDestination, TMember>> destination,
 			Func<TSource, IServiceProvider, TMember> resolver ) {
 			var destProp = ( PropertyInfo )( ( MemberExpression )destination.Body ).Member;
 
-			_manuallyMappedDestProps.Add( destProp.Name ); 
+			_manuallyMappedDestProps.Add( destProp.Name );
 			_mappings.Add( ( src, dest, sp ) => destProp.SetValue( dest, resolver( src, sp ) ) );
-			return this;
-		}
-
-		public MappingBuilder<TSource, TDestination> AutoMapRemaining( ) {
-			_autoMapRemaining = true;
 			return this;
 		}
 
@@ -32,8 +22,16 @@ namespace Myth.Mapper {
 			foreach ( var map in _mappings )
 				map( src, dest, sp );
 
-			if ( _autoMapRemaining )
-				AutoMap( src, dest );
+			AutoMap( src, dest );
+		}
+
+		public MappingBuilder<TSource, TDestination> Ignore<TValue>( Expression<Func<TDestination, TValue>> destSelector ) {
+			var member = ( destSelector.Body as MemberExpression )?.Member;
+
+			if ( member != null )
+				_ignoredProperties.Add( member.Name );
+
+			return this;
 		}
 
 		private void AutoMap( TSource src, TDestination dest ) {
@@ -44,7 +42,8 @@ namespace Myth.Mapper {
 				var destProp = destProps.FirstOrDefault( p =>
 					p.Name == srcProp.Name &&
 					p.PropertyType == srcProp.PropertyType &&
-					!_manuallyMappedDestProps.Contains( p.Name )
+					!_manuallyMappedDestProps.Contains( p.Name ) &&
+					!_ignoredProperties.Contains( p.Name )
 				);
 
 				if ( destProp != null && destProp.CanWrite ) {
@@ -54,5 +53,4 @@ namespace Myth.Mapper {
 			}
 		}
 	}
-
 }

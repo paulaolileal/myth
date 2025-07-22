@@ -4,13 +4,14 @@ using Myth.Mapper;
 using System.Reflection;
 
 namespace Myth.Extensions {
+
 	public static class ServiceCollectionExtensions {
+
 		public static IServiceCollection AddMapper( this IServiceCollection services, params Assembly[ ] assemblies ) {
 			if ( assemblies == null || assemblies.Length == 0 )
 				assemblies = AppDomain.CurrentDomain.GetAssemblies( );
 
-			services.AddSingleton<MapRegistry>( sp =>
-			{
+			services.AddSingleton<MapRegistry>( sp => {
 				var registry = new MapRegistry( sp );
 
 				var allTypes = assemblies.SelectMany( x => x.GetTypes( ) )
@@ -28,14 +29,14 @@ namespace Myth.Extensions {
 							var instance = Activator.CreateInstance( type )!;
 
 							var wrapperDelegate = typeof( ServiceCollectionExtensions )
-								.GetMethod( nameof( ServiceCollectionExtensions.BuildProfileWrapper ), BindingFlags.NonPublic | BindingFlags.Static )!
+								.GetMethod( nameof( BuildProfileWrapper ), BindingFlags.NonPublic | BindingFlags.Static )!
 								.MakeGenericMethod( source, dest )
-								.Invoke( null, new object[ ] { instance } )!;
+								.Invoke( null, [ instance ] )!;
 
 							var registerMethod = typeof( MapRegistry ).GetMethod( nameof( MapRegistry.Register ) )!
 								.MakeGenericMethod( source, dest );
 
-							registerMethod.Invoke( registry, new[ ] { wrapperDelegate } );
+							registerMethod.Invoke( registry, [ wrapperDelegate ] );
 						}
 					}
 				}
@@ -47,14 +48,10 @@ namespace Myth.Extensions {
 			return services;
 		}
 
-		private static Action<MappingBuilder<TSource, TDestination>> BuildProfileWrapper<TSource, TDestination>(IMapTo<TSource, TDestination> profile ) {
-			return builder => profile.MapTo( builder );
-		}
+		private static Action<MappingBuilder<TSource, TDestination>> BuildProfileWrapper<TSource, TDestination>( IMapTo<TSource, TDestination> profile ) => profile.MapTo;
 	}
-
 
 	internal static class DefaultProvider {
 		public static IServiceProvider? ServiceProvider;
 	}
-
 }

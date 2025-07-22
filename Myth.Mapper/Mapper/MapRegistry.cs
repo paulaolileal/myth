@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Myth.Mapper {
 
-namespace Myth.Mapper {
 	public interface IMappingProfile {
+
 		void Apply( IServiceProvider sp );
 	}
 
@@ -28,10 +24,12 @@ namespace Myth.Mapper {
 				throw new InvalidOperationException( $"No mapping registered from {typeof( TSource )} to {typeof( TDestination )}" );
 
 			var builder = ( MappingBuilder<TSource, TDestination> )builderObj;
+
 			var dest = Activator.CreateInstance<TDestination>( );
+
 			builder.Apply( source, dest, _sp );
+
 			return dest;
 		}
 	}
-
 }
