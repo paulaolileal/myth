@@ -16,6 +16,7 @@ namespace Myth.Extensions {
 				assemblies = AppDomain.CurrentDomain.GetAssemblies( ).ToList( );
 
 			services.AddSingleton<MapRegistry>( sp => {
+
 				var registry = new MapRegistry( sp );
 
 				// 1️⃣ Registra mapeamentos genéricos definidos manualmente
@@ -23,34 +24,7 @@ namespace Myth.Extensions {
 					registry.RegisterGenericMapping( iface, concrete );
 
 				// 2️⃣ Registra perfis IMapTo<TSrc, TDest>
-				var allTypes = assemblies
-					.SelectMany( x => x.GetTypes( ) )
-					.Where( x => !x.IsAbstract && !x.IsInterface );
-
-				foreach ( var type in allTypes ) {
-					foreach ( var iface in type.GetInterfaces( ) ) {
-						if ( !type.IsClass || !iface.IsGenericType )
-							continue;
-
-						if ( iface.GetGenericTypeDefinition( ) == typeof( IMapTo<,> ) ) {
-							var source = iface.GenericTypeArguments[ 0 ];
-							var dest = iface.GenericTypeArguments[ 1 ];
-
-							var instance = Activator.CreateInstance( type )!;
-
-							var wrapperDelegate = typeof( ServiceCollectionExtensions )
-								.GetMethod( nameof( BuildProfileWrapper ), BindingFlags.NonPublic | BindingFlags.Static )!
-								.MakeGenericMethod( source, dest )
-								.Invoke( null, new[ ] { instance } )!;
-
-							var registerMethod = typeof( MapRegistry )
-								.GetMethod( nameof( MapRegistry.Register ) )!
-								.MakeGenericMethod( source, dest );
-
-							registerMethod.Invoke( registry, new[ ] { wrapperDelegate } );
-						}
-					}
-				}
+				RegisterMapToProfiles( registry, assemblies );
 
 				// 3️⃣ Registra o mapeamento automático para tipos genéricos iguais
 				registry.RegisterGenericEqualTypesMapping( );
@@ -58,19 +32,102 @@ namespace Myth.Extensions {
 				return registry;
 			} );
 
-			// 4️⃣ Garante que o DefaultProvider está apontando para o container atual
-			DefaultProvider.ServiceProvider = services.BuildServiceProvider( );
+			// Garante que o DefaultProvider está configurado
+			DefaultProvider.EnsureProvider( services.BuildServiceProvider( ) );
 
 			return services;
 		}
 
-		private static Action<MappingBuilder<TSource, TDest>> BuildProfileWrapper<TSource, TDest>( IMapTo<TSource, TDest> profile ) {
-			return builder => profile.MapTo( builder );
+		private static void RegisterMapToProfiles( MapRegistry registry, List<Assembly> assemblies ) {
+			var allTypes = assemblies
+				.SelectMany( assembly => {
+					try {
+						return assembly.GetTypes( );
+					} catch ( ReflectionTypeLoadException ex ) {
+						// Se algum tipo não pode ser carregado, pega apenas os que conseguiram
+						return ex.Types.Where( t => t != null ).ToArray( )!;
+					} catch {
+						return Array.Empty<Type>( );
+					}
+				} )
+				.Where( x => x != null && !x.IsAbstract && !x.IsInterface );
+
+			foreach ( var type in allTypes ) {
+				try {
+					RegisterTypeProfiles( type, registry );
+				} catch ( Exception ex ) {
+					System.Diagnostics.Debug.WriteLine( $"[Mapper] Erro ao registrar profiles do tipo {type.Name}: {ex.Message}" );
+				}
+			}
+		}
+
+		private static void RegisterTypeProfiles( Type type, MapRegistry registry ) {
+			foreach ( var iface in type.GetInterfaces( ) ) {
+				if ( !type.IsClass || !iface.IsGenericType )
+					continue;
+
+				var genericDef = iface.GetGenericTypeDefinition( );
+				if ( genericDef != typeof( IMapTo<,> ) )
+					continue;
+
+				var source = iface.GenericTypeArguments[ 0 ];
+				var dest = iface.GenericTypeArguments[ 1 ];
+
+				try {
+					// Cria instância do profile
+					var instance = Activator.CreateInstance( type );
+					if ( instance == null )
+						continue;
+
+					// Cria o delegate usando o método específico
+					var wrapperDelegate = typeof( ServiceCollectionExtensions )
+						.GetMethod( nameof( BuildProfileWrapper ), BindingFlags.NonPublic | BindingFlags.Static )!
+						.MakeGenericMethod( source, dest )
+						.Invoke( null, new[ ] { instance } );
+
+					if ( wrapperDelegate == null )
+						continue;
+
+					// Registra no registry
+					var registerMethod = typeof( MapRegistry )
+						.GetMethod( nameof( MapRegistry.Register ) )!
+						.MakeGenericMethod( source, dest );
+
+					registerMethod.Invoke( registry, new[ ] { wrapperDelegate } );
+
+					System.Diagnostics.Debug.WriteLine( $"[Mapper] Profile registrado: {source.Name} -> {dest.Name}" );
+				} catch ( Exception ex ) {
+					System.Diagnostics.Debug.WriteLine( $"[Mapper] Erro ao registrar profile {type.Name}: {ex.Message}" );
+				}
+			}
+		}
+
+		private static Action<MappingBuilder<TSource, TDest>> BuildProfileWrapper<TSource, TDest>( object profileInstance ) {
+			return builder => {
+				var profile = ( IMapTo<TSource, TDest> )profileInstance;
+				profile.MapTo( builder );
+			};
+		}
+
+		// Método melhorado para resolver o ServiceProvider
+		internal static void SetDefaultProvider( IServiceProvider serviceProvider ) {
+			DefaultProvider.ServiceProvider = serviceProvider;
 		}
 	}
 
 	internal static class DefaultProvider {
-		public static IServiceProvider? ServiceProvider;
+		private static IServiceProvider? _serviceProvider;
+
+		public static IServiceProvider? ServiceProvider {
+			get => _serviceProvider;
+			set => _serviceProvider = value;
+		}
+
+		public static void EnsureProvider( IServiceProvider? sp ) {
+			if ( _serviceProvider == null && sp != null ) {
+				ServiceProvider = sp;
+			}
+		}
 	}
 
 	public class MapperSettings {
@@ -99,6 +156,24 @@ namespace Myth.Extensions {
 		/// </summary>
 		public MapperSettings AddGenericMapping( Type ifaceGeneric, Type concreteGeneric ) {
 			GenericMappings.Add( (ifaceGeneric, concreteGeneric) );
+			return this;
+		}
+
+		/// <summary>
+		/// Adiciona mapeamento genérico de forma type-safe
+		/// </summary>
+		public MapperSettings AddGenericMapping<TInterface, TConcrete>( )
+			where TInterface : class
+			where TConcrete : class, TInterface {
+			var ifaceType = typeof( TInterface );
+			var concreteType = typeof( TConcrete );
+
+			// Verifica se são tipos genéricos
+			if ( !ifaceType.IsGenericTypeDefinition || !concreteType.IsGenericTypeDefinition ) {
+				throw new ArgumentException( "Ambos os tipos devem ser definições de tipos genéricos (ex: typeof(IList<>))" );
+			}
+
+			GenericMappings.Add( (ifaceType, concreteType) );
 			return this;
 		}
 	}
