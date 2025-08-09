@@ -2,13 +2,18 @@
 
 namespace Myth.Mapper.Test.Models {
 
-	internal class Dto : IMapTo<Dto, Entity>, IMapTo<Dto, ViewModel> {
+	internal class Dto : IMapTo<Dto, EntityA>, IMapTo<Dto, ViewModel> {
 		public int DtoId { get; set; }
 		public string Name { get; set; }
 		public bool Enabled { get; set; }
+		public int TestId { get; set; }
+		public string TestDescription { get; set; }
+		public DtoItem Item { get; set; }
+		public IEnumerable<DtoItem> ItemsField = [ ];
+		public IEnumerable<DtoItem> ItemsProp { get; set; } = [ ];
 		public string Description { get; set; } = "No description";
 
-		public void MapTo( MappingBuilder<Dto, Entity> builder ) {
+		public void MapTo( MappingBuilder<Dto, EntityA> builder ) {
 			builder
 				.ForMember(
 					dest => dest.Enabled,
@@ -24,5 +29,10 @@ namespace Myth.Mapper.Test.Models {
 					dest => dest.ViewModelId,
 					( src, sp ) => src.DtoId );
 		}
+	}
+
+	internal class DtoItem {
+		public int ItemId { get; set; }
+		public string Name { get; set; }
 	}
 }
