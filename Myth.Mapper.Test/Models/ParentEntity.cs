@@ -3,15 +3,15 @@ using Myth.Interfaces;
 
 namespace Myth.Mapper.Test.Models {
 
-	public class ParentEntity : IMapTo<ParentEntity, ParentDto> {
+	public class ParentEntity : IMapTo<ParentDto> {
 		public int Id { get; set; }
 		public ChildEntity? Child { get; set; }
 
-		public void MapTo( MappingBuilder<ParentEntity, ParentDto> builder ) {
+		public void MapTo( MappingBuilder<ParentDto> builder ) {
 			builder
 				.ForMember(
 					dest => dest.Child,
-					src => src.Child.MapTo<ChildDto>( ) );
+					( ) => Child.MapTo<ChildDto>( ) );
 		}
 	}
 }

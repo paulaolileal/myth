@@ -16,15 +16,14 @@ namespace Myth.Extensions {
 				assemblies = AppDomain.CurrentDomain.GetAssemblies( ).ToList( );
 
 			services.AddSingleton<MapRegistry>( sp => {
-
 				var registry = new MapRegistry( sp );
 
 				// 1️⃣ Registra mapeamentos genéricos definidos manualmente
 				foreach ( var (iface, concrete) in mapperSettings.GenericMappings )
 					registry.RegisterGenericMapping( iface, concrete );
 
-				// 2️⃣ Registra perfis IMapTo<TSrc, TDest>
-				RegisterMapToProfiles( registry, assemblies );
+				// 2️⃣ Registra perfis com nova interface IMapTo<TDestination>
+				RegisterInstanceBasedMapToProfiles( registry, assemblies );
 
 				// 3️⃣ Registra o mapeamento automático para tipos genéricos iguais
 				registry.RegisterGenericEqualTypesMapping( );
@@ -32,19 +31,16 @@ namespace Myth.Extensions {
 				return registry;
 			} );
 
-			// Garante que o DefaultProvider está configurado
 			DefaultProvider.EnsureProvider( services.BuildServiceProvider( ) );
-
 			return services;
 		}
 
-		private static void RegisterMapToProfiles( MapRegistry registry, List<Assembly> assemblies ) {
+		private static void RegisterInstanceBasedMapToProfiles( MapRegistry registry, List<Assembly> assemblies ) {
 			var allTypes = assemblies
 				.SelectMany( assembly => {
 					try {
 						return assembly.GetTypes( );
 					} catch ( ReflectionTypeLoadException ex ) {
-						// Se algum tipo não pode ser carregado, pega apenas os que conseguiram
 						return ex.Types.Where( t => t != null ).ToArray( )!;
 					} catch {
 						return Array.Empty<Type>( );
@@ -54,64 +50,33 @@ namespace Myth.Extensions {
 
 			foreach ( var type in allTypes ) {
 				try {
-					RegisterTypeProfiles( type, registry );
+					RegisterInstanceBasedProfiles( type, registry );
 				} catch ( Exception ex ) {
 					System.Diagnostics.Debug.WriteLine( $"[Mapper] Erro ao registrar profiles do tipo {type.Name}: {ex.Message}" );
 				}
 			}
 		}
 
-		private static void RegisterTypeProfiles( Type type, MapRegistry registry ) {
-			foreach ( var iface in type.GetInterfaces( ) ) {
-				if ( !type.IsClass || !iface.IsGenericType )
+		private static void RegisterInstanceBasedProfiles( Type sourceType, MapRegistry registry ) {
+			foreach ( var iface in sourceType.GetInterfaces( ) ) {
+				if ( !iface.IsGenericType )
 					continue;
 
 				var genericDef = iface.GetGenericTypeDefinition( );
-				if ( genericDef != typeof( IMapTo<,> ) )
+				if ( genericDef != typeof( IMapTo<> ) )
 					continue;
 
-				var source = iface.GenericTypeArguments[ 0 ];
-				var dest = iface.GenericTypeArguments[ 1 ];
+				var destinationType = iface.GenericTypeArguments[ 0 ];
 
 				try {
-					// Cria instância do profile
-					var instance = Activator.CreateInstance( type );
-					if ( instance == null )
-						continue;
+					// Registra um mapeamento especial para tipos que implementam IMapTo<TDestination>
+					registry.RegisterInstanceBasedMapping( sourceType, destinationType );
 
-					// Cria o delegate usando o método específico
-					var wrapperDelegate = typeof( ServiceCollectionExtensions )
-						.GetMethod( nameof( BuildProfileWrapper ), BindingFlags.NonPublic | BindingFlags.Static )!
-						.MakeGenericMethod( source, dest )
-						.Invoke( null, new[ ] { instance } );
-
-					if ( wrapperDelegate == null )
-						continue;
-
-					// Registra no registry
-					var registerMethod = typeof( MapRegistry )
-						.GetMethod( nameof( MapRegistry.Register ) )!
-						.MakeGenericMethod( source, dest );
-
-					registerMethod.Invoke( registry, new[ ] { wrapperDelegate } );
-
-					System.Diagnostics.Debug.WriteLine( $"[Mapper] Profile registrado: {source.Name} -> {dest.Name}" );
+					System.Diagnostics.Debug.WriteLine( $"[Mapper] Instance-based Profile registrado: {sourceType.Name} -> {destinationType.Name}" );
 				} catch ( Exception ex ) {
-					System.Diagnostics.Debug.WriteLine( $"[Mapper] Erro ao registrar profile {type.Name}: {ex.Message}" );
+					System.Diagnostics.Debug.WriteLine( $"[Mapper] Erro ao registrar instance-based profile {sourceType.Name}: {ex.Message}" );
 				}
 			}
-		}
-
-		private static Action<MappingBuilder<TSource, TDest>> BuildProfileWrapper<TSource, TDest>( object profileInstance ) {
-			return builder => {
-				var profile = ( IMapTo<TSource, TDest> )profileInstance;
-				profile.MapTo( builder );
-			};
-		}
-
-		// Método melhorado para resolver o ServiceProvider
-		internal static void SetDefaultProvider( IServiceProvider serviceProvider ) {
-			DefaultProvider.ServiceProvider = serviceProvider;
 		}
 	}
 

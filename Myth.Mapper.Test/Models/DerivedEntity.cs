@@ -2,10 +2,10 @@
 
 namespace Myth.Mapper.Test.Models {
 
-	public class DerivedEntity : BaseEntity, IMapTo<DerivedEntity, DerivedDto> {
+	public class DerivedEntity : BaseEntity, IMapTo<DerivedDto> {
 		public string DerivedProperty { get; set; } = "";
 
-		public void MapTo( MappingBuilder<DerivedEntity, DerivedDto> builder ) {
+		public void MapTo( MappingBuilder<DerivedDto> builder ) {
 		}
 	}
 }

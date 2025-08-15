@@ -1,4 +1,5 @@
 ﻿using Myth.Extensions;
+using Myth.Interfaces;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -14,6 +15,7 @@ namespace Myth.Mapper {
 		private readonly Dictionary<(Type, Type), object> _builders = new( );
 		private readonly Dictionary<Type, Type> _genericInterfaceToConcrete = new( );
 		private readonly List<Action<Type, Type>> _genericRegistrars = new( );
+		private readonly HashSet<(Type, Type)> _instanceBasedMappings = new( );
 
 		public MapRegistry( IServiceProvider sp ) {
 			_sp = sp;
@@ -23,6 +25,10 @@ namespace Myth.Mapper {
 			var builder = new MappingBuilder<TSource, TDestination>( );
 			config( builder );
 			_builders[ (typeof( TSource ), typeof( TDestination )) ] = builder;
+		}
+
+		public void RegisterInstanceBasedMapping( Type sourceType, Type destinationType ) {
+			_instanceBasedMappings.Add( (sourceType, destinationType) );
 		}
 
 		public TDestination Map<TSource, TDestination>( TSource source ) {
@@ -35,6 +41,11 @@ namespace Myth.Mapper {
 
 			// Usa o tipo real do objeto se for diferente do tipo genérico
 			var actualSourceType = source.GetType( );
+
+			// Verifica se é um mapeamento baseado em instância
+			if ( _instanceBasedMappings.Contains( (actualSourceType, destinationType) ) && source is IMapTo<TDestination> mapToInstance ) {
+				return MapFromInstance( mapToInstance, destinationType );
+			}
 
 			// Determina o tipo concreto de destino ANTES de procurar builder
 			var concreteDestinationType = ResolveConcreteDestinationType( destinationType );
@@ -70,6 +81,29 @@ namespace Myth.Mapper {
 			var builder = ( MappingBuilder<TSource, TDestination> )builderObj;
 			builder.ApplyAsync( source, ( TDestination )dest, _sp ).GetAwaiter( ).GetResult( );
 			return ( TDestination )dest;
+		}
+
+		private TDestination MapFromInstance<TDestination>( IMapTo<TDestination> source, Type destinationType ) {
+			// Cria a instância de destino
+			var dest = ( TDestination )CreateInstance( destinationType );
+
+			// Cria o builder específico para instâncias
+			var instanceBuilder = new MappingBuilder<TDestination>( );
+
+			// Chama o MapTo da instância para configurar o builder
+			source.MapTo( instanceBuilder );
+
+			// Aplica o mapeamento
+			var applyMethod = typeof( MappingBuilder<TDestination> )
+				.GetMethod( "ApplyFromInstanceAsync", BindingFlags.Instance | BindingFlags.NonPublic );
+
+			if ( applyMethod != null ) {
+				var genericApplyMethod = applyMethod.MakeGenericMethod( source.GetType( ) );
+				var task = ( Task )genericApplyMethod.Invoke( instanceBuilder, new object[ ] { source, dest, _sp } )!;
+				task.GetAwaiter( ).GetResult( );
+			}
+
+			return dest;
 		}
 
 		private bool TryGetBuilder( Type sourceType, Type destinationType, out object? builderObj ) {
@@ -129,7 +163,6 @@ namespace Myth.Mapper {
 			object dest,
 			Type concreteDestType,
 			Type destinationType ) {
-
 			// Encontra ou cria um builder compatível
 			var compatibleBuilder = GetOrCreateCompatibleBuilder( actualSourceType, concreteDestType );
 
@@ -141,7 +174,7 @@ namespace Myth.Mapper {
 			if ( compatibleBuilder != null ) {
 				// Invoca ApplyAsync dinamicamente
 				var applyMethod = compatibleBuilder.GetType( ).GetMethod( "ApplyAsync" );
-				var applyTask = ( Task )applyMethod!.Invoke( compatibleBuilder, [source, dest, _sp] )!;
+				var applyTask = ( Task )applyMethod!.Invoke( compatibleBuilder, [ source, dest, _sp ] )!;
 				applyTask.GetAwaiter( ).GetResult( );
 			}
 
@@ -226,6 +259,10 @@ namespace Myth.Mapper {
 		}
 
 		public bool HasMapping( Type sourceType, Type destinationType ) {
+			// Verifica se é um mapeamento baseado em instância
+			if ( _instanceBasedMappings.Contains( (sourceType, destinationType) ) )
+				return true;
+
 			// Verifica mapeamento direto
 			if ( _builders.ContainsKey( (sourceType, destinationType) ) )
 				return true;
