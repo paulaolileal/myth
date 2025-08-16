@@ -8,6 +8,7 @@ public abstract class RestBuilderBase : IDisposable {
 	protected readonly ErrorBuilder _errorBuilder;
 	protected readonly ResultBuilder _resultBuilder;
 	protected ConfigurationBuilder _configBuilder;
+	protected bool _isFileOperation;
 
 	protected Func<CancellationToken, Task<HttpResponseMessage>>? _request;
 	protected Exception? _exception;
@@ -17,6 +18,7 @@ public abstract class RestBuilderBase : IDisposable {
 		_errorBuilder = new( );
 		_resultBuilder = new( );
 		_configBuilder = new( );
+		_isFileOperation = false;
 	}
 
 	/// <summary>
@@ -110,6 +112,7 @@ public abstract class RestBuilderBase : IDisposable {
 		_request = null;
 		_responseMessage = null;
 		_exception = null;
+		_isFileOperation = false;
 		_configBuilder._httpClient.CancelPendingRequests( );
 		_configBuilder._httpClient.DefaultRequestHeaders.Clear( );
 		_configBuilder._httpClient.DefaultRequestHeaders.Accept.Clear( );

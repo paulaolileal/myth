@@ -3,14 +3,8 @@
 public static class Rest {
 
 	/// <summary>
-	/// Init a content request
+	/// Init a unified REST request builder
 	/// </summary>
-	/// <returns>Content request builder</returns>
+	/// <returns>Unified REST request builder</returns>
 	public static RestBuilder Create( ) => new( );
-
-	/// <summary>
-	/// Init a file request
-	/// </summary>
-	/// <returns>File request builder</returns>
-	public static RestFileBuilder File( ) => new( );
 }

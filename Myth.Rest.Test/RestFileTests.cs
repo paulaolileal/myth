@@ -16,8 +16,8 @@ using Xunit;
 namespace Myth.Rest.Test;
 
 public class RestFileTests : IDisposable {
-	private readonly RestFileBuilder _restDownloadClient;
-	private readonly RestFileBuilder _restUploadClient;
+	private readonly RestBuilder _restDownloadClient;
+	private readonly RestBuilder _restUploadClient;
 	private readonly WireMockServer _server;
 	private readonly Faker _faker;
 
@@ -27,13 +27,13 @@ public class RestFileTests : IDisposable {
 		_faker = new Faker( "pt_BR" );
 
 		_restDownloadClient = Rest
-			.File( )
+			.Create( )
 			.Configure( conf => conf
 				.WithBaseUrl( "https://localhost:4001" )
 				.WithRetry( 3, TimeSpan.FromSeconds( 10 ) ) );
 
 		_restUploadClient = Rest
-			.File( )
+			.Create( )
 			.Configure( conf => conf
 				.WithBaseUrl( "https://www.csm-testcenter.org" )
 				.WithRetry( 3, TimeSpan.FromSeconds( 10 ) ) );

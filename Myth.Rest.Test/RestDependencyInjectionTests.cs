@@ -46,7 +46,7 @@ namespace Myth.Rest.Test {
 						.WithStatusCode( HttpStatusCode.NoContent ) );
 
 			// Act
-			services.AddRestContent( conf => conf
+			services.AddRest( conf => conf
 				.WithBaseUrl( "https://localhost:8001/" )
 				.WithContentType( "application/json" )
 				.WithBodySerialization( CaseStrategy.CamelCase )
@@ -96,13 +96,13 @@ namespace Myth.Rest.Test {
 						.WithStatusCode( HttpStatusCode.OK ) );
 
 			// Act
-			services.AddRestFile( conf => conf
+			services.AddRest( conf => conf
 				.WithBaseUrl( "https://localhost:8001/" ),
 				lifetime );
 
 			var serviceProvider = services.BuildServiceProvider( );
-			var result = serviceProvider.GetService<RestFileBuilder>( );
-			var service = services.First( x => x.ServiceType == typeof( RestFileBuilder ) );
+			var result = serviceProvider.GetService<RestBuilder>( );
+			var service = services.First( x => x.ServiceType == typeof( RestBuilder ) );
 
 			var response = await result!
 				.DoDownload( "test" )
@@ -110,7 +110,7 @@ namespace Myth.Rest.Test {
 
 			// Assert
 			result.Should( ).NotBeNull( );
-			result.Should( ).BeOfType<RestFileBuilder>( );
+			result.Should( ).BeOfType<RestBuilder>( );
 			service.Lifetime.Should( ).Be( lifetime );
 			response.IsSuccessStatusCode( ).Should( ).BeTrue( );
 		}

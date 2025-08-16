@@ -26,13 +26,4 @@ public class NonSuccessException(
 		response.RetriesMade,
 		response.RawMessage,
 		response.Result ) { }
-
-	public NonSuccessException( RestFileResponse response )
-		: this(
-		response.StatusCode,
-		response.Url,
-		response.Method,
-		response.RetriesMade,
-		"File",
-		null ) { }
 }
