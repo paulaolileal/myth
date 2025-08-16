@@ -53,9 +53,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.DependencyInjection.Pr
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Morph", "Morph", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myth.Morph", "Myth.Mapper\Myth.Morph.csproj", "{DD1788A1-A687-47EC-9FFC-9D3DCAA39556}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myth.Morph", "Myth.Morph\Myth.Morph.csproj", "{DD1788A1-A687-47EC-9FFC-9D3DCAA39556}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myth.Morph.Test", "Myth.Mapper.Test\Myth.Morph.Test.csproj", "{55F035D6-6CCA-40D8-BEB0-B136D7D3046F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myth.Morph.Test", "Myth.Morph.Test\Myth.Morph.Test.csproj", "{55F035D6-6CCA-40D8-BEB0-B136D7D3046F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
