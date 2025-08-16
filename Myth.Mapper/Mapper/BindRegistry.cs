@@ -5,21 +5,15 @@ using System.Reflection;
 
 namespace Myth.Morph {
 
-	public class MorphRegistry {
+	public class BindRegistry {
 		private readonly IServiceProvider _sp;
-		private readonly Dictionary<(Type, Type), object> _builders = [];
-		private readonly Dictionary<Type, Type> _genericInterfaceToConcrete = [];
-		private readonly List<Action<Type, Type>> _genericRegisters = [];
-		private readonly HashSet<(Type, Type)> _instanceBasedMappings = [];
+		private readonly Dictionary<(Type, Type), object> _builders = [ ];
+		private readonly Dictionary<Type, Type> _genericInterfaceToConcrete = [ ];
+		private readonly List<Action<Type, Type>> _genericRegisters = [ ];
+		private readonly HashSet<(Type, Type)> _instanceBasedMappings = [ ];
 
-		public MorphRegistry( IServiceProvider sp ) {
+		public BindRegistry( IServiceProvider sp ) {
 			_sp = sp;
-		}
-
-		public void Register<TSource, TDestination>( Action<BinderBuilder<TSource, TDestination>> config ) {
-			var builder = new BinderBuilder<TSource, TDestination>( );
-			config( builder );
-			_builders[ (typeof( TSource ), typeof( TDestination )) ] = builder;
 		}
 
 		public void RegisterInstanceBasedMapping( Type sourceType, Type destinationType ) {
@@ -42,7 +36,7 @@ namespace Myth.Morph {
 			var actualSourceType = source.GetType( );
 
 			// Verifica se é um mapeamento baseado em instância
-			if ( _instanceBasedMappings.Contains( (actualSourceType, destinationType) ) && 
+			if ( _instanceBasedMappings.Contains( (actualSourceType, destinationType) ) &&
 				 source is IMorphTo<TDestination> mapToInstance ) {
 				return MapFromInstance( mapToInstance, destinationType );
 			}
@@ -78,13 +72,14 @@ namespace Myth.Morph {
 			var dest = CreateInstance( concreteDestinationType );
 
 			// Aplica o mapeamento usando reflection se necessário
-			if ( actualSourceType != sourceType || concreteDestinationType != destinationType ) {
-				return ApplyMappingDynamically<TDestination>( source, actualSourceType, dest, concreteDestinationType, destinationType );
-			}
+			if ( actualSourceType != sourceType || concreteDestinationType != destinationType )
+				return ApplyMappingDynamically<TDestination>(
+					source,
+					actualSourceType,
+					dest,
+					concreteDestinationType,
+					destinationType );
 
-			// Caso padrão - tipos coincidem
-			var builder = ( BinderBuilder<TSource, TDestination> )builderObj;
-			builder.ApplyAsync( source, ( TDestination )dest, _sp ).GetAwaiter( ).GetResult( );
 			return ( TDestination )dest;
 		}
 
@@ -155,7 +150,7 @@ namespace Myth.Morph {
 			// Tenta usar o sistema de mapeamento padrão
 			try {
 				var mapToMethod = typeof( MorphExtensions )
-					.GetMethod( nameof(MorphExtensions.To), [typeof( object ), typeof( IServiceProvider )] )?
+					.GetMethod( nameof( MorphExtensions.To ), [ typeof( object ), typeof( IServiceProvider ) ] )?
 					.MakeGenericMethod( destType );
 
 				return mapToMethod?.Invoke( null, new object[ ] { value, _sp } );
@@ -213,9 +208,9 @@ namespace Myth.Morph {
 			if ( collectionType.IsArray ) {
 				var array = Array.CreateInstance( elementType, items.Count );
 
-				for ( int i = 0; i < items.Count; i++ ) 
+				for ( int i = 0; i < items.Count; i++ )
 					array.SetValue( items[ i ], i );
-				
+
 				return array;
 			}
 
@@ -223,10 +218,10 @@ namespace Myth.Morph {
 			if ( collectionType.IsInterface && collectionType.IsGenericType ) {
 				var listType = typeof( List<> ).MakeGenericType( elementType );
 				var list = ( System.Collections.IList )Activator.CreateInstance( listType )!;
-				
-				foreach ( var item in items ) 
+
+				foreach ( var item in items )
 					list.Add( item );
-				
+
 				return list;
 			}
 
@@ -234,19 +229,19 @@ namespace Myth.Morph {
 			try {
 				var instance = CreateInstance( collectionType );
 				if ( instance is System.Collections.IList list ) {
-					foreach ( var item in items ) 
+					foreach ( var item in items )
 						list.Add( item );
-					
+
 					return instance;
 				}
 			} catch {
 				// Se falhar, retorna uma List<T>
 				var listType = typeof( List<> ).MakeGenericType( elementType );
 				var list = ( System.Collections.IList )Activator.CreateInstance( listType )!;
-				
-				foreach ( var item in items ) 
+
+				foreach ( var item in items )
 					list.Add( item );
-				
+
 				return list;
 			}
 
@@ -272,7 +267,7 @@ namespace Myth.Morph {
 
 			if ( applyMethod != null ) {
 				var genericApplyMethod = applyMethod.MakeGenericMethod( source.GetType( ) );
-				var task = ( Task )genericApplyMethod.Invoke( instanceBuilder, [source, dest, _sp] )!;
+				var task = ( Task )genericApplyMethod.Invoke( instanceBuilder, [ source, dest, _sp ] )!;
 				task
 					.GetAwaiter( )
 					.GetResult( );
@@ -283,9 +278,8 @@ namespace Myth.Morph {
 
 		private Type ResolveConcreteDestinationType( Type destinationType ) {
 			// Se é interface genérica, tenta resolver para concreto
-			if ( destinationType.IsInterface && TryResolveGenericConcrete( destinationType, out var concrete ) ) 
+			if ( destinationType.IsInterface && TryResolveGenericConcrete( destinationType, out var concrete ) )
 				return concrete;
-			
 
 			// Se é interface não-genérica, procura implementação registrada no DI
 			if ( destinationType.IsInterface ) {
@@ -379,7 +373,7 @@ namespace Myth.Morph {
 			var concreteDestType = ResolveConcreteDestinationType( destType );
 
 			// Cria um builder genérico dinamicamente
-			var builderType = typeof( BinderBuilder<,> ).MakeGenericType( sourceType, concreteDestType );
+			var builderType = typeof( BinderBuilder<> ).MakeGenericType( sourceType, concreteDestType );
 			var builder = Activator.CreateInstance( builderType )!;
 
 			// Adiciona mapeamento automático básico (será feito pelo AutoMap)
@@ -427,7 +421,7 @@ namespace Myth.Morph {
 					return;
 
 				// Cria builder dinamicamente via reflection
-				var builderType = typeof( BinderBuilder<,> ).MakeGenericType( sourceType, concreteDestType );
+				var builderType = typeof( BinderBuilder<> ).MakeGenericType( sourceType, concreteDestType );
 				var builder = Activator.CreateInstance( builderType )!;
 
 				// Registra para ambos os tipos (interface e concreto)
@@ -496,9 +490,9 @@ namespace Myth.Morph {
 			return ctorWithParams.Invoke( args );
 		}
 
-		private static object? GetDefault( Type type ) => 
-			type.IsValueType 
-			? Activator.CreateInstance( type ) 
+		private static object? GetDefault( Type type ) =>
+			type.IsValueType
+			? Activator.CreateInstance( type )
 			: null;
 	}
 }

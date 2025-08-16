@@ -7,7 +7,6 @@ using System.Reflection;
 
 namespace Myth.Morph {
 
-
 	/// <summary>
 	/// Builder de mapeamento baseado em instância (apenas TDestination)
 	/// </summary>
@@ -127,7 +126,7 @@ namespace Myth.Morph {
 					// Define valor padrão se possível
 					if ( destMemberType.IsValueType && Nullable.GetUnderlyingType( destMemberType ) == null )
 						SetValue( dest, destMember, Activator.CreateInstance( destMemberType ) );
-					
+
 					continue;
 				}
 
@@ -153,7 +152,7 @@ namespace Myth.Morph {
 			try {
 				using ( var scope = sp.CreateScope( ) ) {
 					var method = typeof( MorphExtensions )
-						.GetMethod( "MapTo", [typeof( object ), typeof( IServiceProvider )] )
+						.GetMethod( "MapTo", [ typeof( object ), typeof( IServiceProvider ) ] )
 						?.MakeGenericMethod( destType );
 					return method?.Invoke( null, [ srcValue, scope.ServiceProvider ] );
 				}
@@ -186,8 +185,8 @@ namespace Myth.Morph {
 				}
 
 				// Try Convert.ChangeType for basic types
-				if ( targetType.IsPrimitive || 
-					 targetType == typeof( string ) || 
+				if ( targetType.IsPrimitive ||
+					 targetType == typeof( string ) ||
 					 targetType == typeof( DateTime ) ||
 					 targetType == typeof( decimal ) ) {
 					result = Convert.ChangeType( value, targetType );
@@ -200,34 +199,34 @@ namespace Myth.Morph {
 			}
 		}
 
-		private bool CanWriteMember( MemberInfo member ) => 
+		private bool CanWriteMember( MemberInfo member ) =>
 			member switch {
 				PropertyInfo p => p.CanWrite,
 				FieldInfo f => !f.IsInitOnly && !f.IsLiteral,
 				_ => false
-		};
+			};
 
-		private static Type? GetMemberType( MemberInfo member ) => 
+		private static Type? GetMemberType( MemberInfo member ) =>
 			member switch {
 				PropertyInfo p => p.PropertyType,
 				FieldInfo f => f.FieldType,
 				_ => null
-		};
+			};
 
 		private static void SetValue( object target, MemberInfo member, object? value ) {
 			try {
 				switch ( member ) {
 					case PropertyInfo p when p.CanWrite:
-						p.SetValue( target, value );
-						break;
+					p.SetValue( target, value );
+					break;
 
 					case FieldInfo f when !f.IsInitOnly && !f.IsLiteral:
-						f.SetValue( target, value );
-						break;
+					f.SetValue( target, value );
+					break;
 
 					default:
-						Debug.WriteLine( $"[Bind] Membro '{member.Name}' não é atribuível." );
-						break;
+					Debug.WriteLine( $"[Bind] Membro '{member.Name}' não é atribuível." );
+					break;
 				}
 			} catch ( Exception ex ) {
 				Debug.WriteLine( $"[Bind] Falha ao atribuir '{member.Name}': {ex.Message}" );

@@ -2,6 +2,7 @@
 using System.Reflection;
 
 namespace Myth.Settings {
+
 	public class MorphSettings {
 
 		/// <summary>
@@ -31,7 +32,6 @@ namespace Myth.Settings {
 			return this;
 		}
 
-
 		/// <summary>
 		/// Adiciona multipplos assemblies para procurar perfis de mapeamento
 		/// </summary>
@@ -47,7 +47,7 @@ namespace Myth.Settings {
 		/// </summary>
 		public MorphSettings AddGenericMorph( Type ifaceGeneric, Type concreteGeneric ) {
 			GenericMappings.Add( (ifaceGeneric, concreteGeneric) );
-			
+
 			return this;
 		}
 
@@ -61,11 +61,11 @@ namespace Myth.Settings {
 			var concreteType = typeof( TConcrete );
 
 			// Verifica se são tipos genéricos
-			if ( !ifaceType.IsGenericTypeDefinition || !concreteType.IsGenericTypeDefinition ) 				
+			if ( !ifaceType.IsGenericTypeDefinition || !concreteType.IsGenericTypeDefinition )
 				throw new ArgumentException( "Ambos os tipos devem ser definições de tipos genéricos (ex: typeof(IList<>))" );
 
 			GenericMappings.Add( (ifaceType, concreteType) );
-			
+
 			return this;
 		}
 	}

@@ -13,17 +13,17 @@ namespace Myth.Extensions {
 
 			var serviceProvider = sp ?? DefaultProvider.ServiceProvider;
 			if ( serviceProvider is null )
-				throw new InvalidOperationException( $"ServiceProvider não configurado. Chame {nameof(ServiceCollectionExtensions.AddMorph)}() na configuração do DI ou passe o ServiceProvider como parâmetro." );
+				throw new InvalidOperationException( $"ServiceProvider não configurado. Chame {nameof( ServiceCollectionExtensions.AddMorph )}() na configuração do DI ou passe o ServiceProvider como parâmetro." );
 
 			// Garante que o DefaultProvider está configurado
 			DefaultProvider.EnsureProvider( serviceProvider );
 
-			var registry = ( MorphRegistry? )serviceProvider.GetService( typeof( MorphRegistry ) );
+			var registry = ( BindRegistry? )serviceProvider.GetService( typeof( BindRegistry ) );
 			if ( registry is null )
-				throw new InvalidOperationException( $"{nameof(MorphRegistry)} não encontrado no DI. Verifique se {nameof(ServiceCollectionExtensions.AddMorph)}() foi chamado corretamente." );
+				throw new InvalidOperationException( $"{nameof( BindRegistry )} não encontrado no DI. Verifique se {nameof( ServiceCollectionExtensions.AddMorph )}() foi chamado corretamente." );
 
-			var method = typeof( MorphRegistry )
-				.GetMethod( nameof( MorphRegistry.Morph ) )!
+			var method = typeof( BindRegistry )
+				.GetMethod( nameof( BindRegistry.Morph ) )!
 				.MakeGenericMethod( srcType, destType );
 
 			return ( TDestination )method.Invoke( registry, [ source ] )!;
@@ -31,7 +31,7 @@ namespace Myth.Extensions {
 
 		public static List<TDestination> To<TDestination>( this IEnumerable<object> sourceList, IServiceProvider? sp = null ) {
 			if ( sourceList is null )
-				return [];
+				return [ ];
 
 			return sourceList
 				.Where( s => s != null )
@@ -42,15 +42,15 @@ namespace Myth.Extensions {
 		// Extensão específica para tipos genéricos conhecidos
 		public static List<TDestination> To<TSource, TDestination>( this IEnumerable<TSource> sourceList, IServiceProvider? sp = null ) {
 			if ( sourceList is null )
-				return [];
+				return [ ];
 
 			var serviceProvider = sp ?? DefaultProvider.ServiceProvider;
 			if ( serviceProvider is null )
 				throw new InvalidOperationException( "ServiceProvider não configurado." );
 
-			var registry = ( MorphRegistry )serviceProvider.GetService( typeof( MorphRegistry ) )!;
+			var registry = ( BindRegistry )serviceProvider.GetService( typeof( BindRegistry ) )!;
 			if ( registry is null )
-				throw new InvalidOperationException( $"{nameof( MorphRegistry )} não encontrado no DI." );
+				throw new InvalidOperationException( $"{nameof( BindRegistry )} não encontrado no DI." );
 
 			var result = new List<TDestination>( );
 			foreach ( var item in sourceList ) {
@@ -86,7 +86,7 @@ namespace Myth.Extensions {
 				if ( serviceProvider is null )
 					return false;
 
-				var registry = ( MorphRegistry? )serviceProvider.GetService( typeof( MorphRegistry ) );
+				var registry = ( BindRegistry? )serviceProvider.GetService( typeof( BindRegistry ) );
 				if ( registry is null )
 					return false;
 
@@ -105,7 +105,7 @@ namespace Myth.Extensions {
 				if ( serviceProvider is null )
 					return false;
 
-				var registry = ( MorphRegistry? )serviceProvider.GetService( typeof( MorphRegistry ) );
+				var registry = ( BindRegistry? )serviceProvider.GetService( typeof( BindRegistry ) );
 				if ( registry is null )
 					return false;
 

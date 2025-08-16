@@ -17,8 +17,8 @@ namespace Myth.Extensions {
 			if ( assemblies == null || assemblies.Count == 0 )
 				assemblies = AppDomain.CurrentDomain.GetAssemblies( ).ToList( );
 
-			services.AddSingleton<MorphRegistry>( sp => {
-				var registry = new MorphRegistry( sp );
+			services.AddSingleton<BindRegistry>( sp => {
+				var registry = new BindRegistry( sp );
 
 				// Registra mapeamentos genéricos definidos manualmente
 				foreach ( var (iface, concrete) in morphSettings.GenericMappings )
@@ -37,13 +37,13 @@ namespace Myth.Extensions {
 			return services;
 		}
 
-		private static void RegisterInstanceBasedMapToProfiles( MorphRegistry registry, List<Assembly> assemblies ) {
+		private static void RegisterInstanceBasedMapToProfiles( BindRegistry registry, List<Assembly> assemblies ) {
 			var allTypes = assemblies
 				.SelectMany( assembly => {
 					try {
 						return assembly.GetTypes( );
 					} catch ( ReflectionTypeLoadException ex ) {
-						return 
+						return
 							ex.Types
 								.Where( t => t != null )
 								.ToArray( )!;
@@ -51,9 +51,9 @@ namespace Myth.Extensions {
 						return [ ];
 					}
 				} )
-				.Where( x => 
-					x != null && 
-					!x.IsAbstract && 
+				.Where( x =>
+					x != null &&
+					!x.IsAbstract &&
 					!x.IsInterface );
 
 			foreach ( var type in allTypes ) {
@@ -65,7 +65,7 @@ namespace Myth.Extensions {
 			}
 		}
 
-		private static void RegisterInstanceBasedProfiles( Type sourceType, MorphRegistry registry ) {
+		private static void RegisterInstanceBasedProfiles( Type sourceType, BindRegistry registry ) {
 			foreach ( var iface in sourceType.GetInterfaces( ) ) {
 				if ( !iface.IsGenericType )
 					continue;
