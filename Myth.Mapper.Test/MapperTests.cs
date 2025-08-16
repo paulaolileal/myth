@@ -106,10 +106,32 @@ namespace Myth.Mapper.Test {
 			entities.Add( entity2 );
 
 			// Act
-			var result = entities.AsPaginated( ).MapTo<IPaginated<BasicDto>>( );
+			// Act
+			var paginatedEntities = entities.AsPaginated( );
+			var result = paginatedEntities.MapTo<IPaginated<BasicDto>>( _serviceProvider );
 
 			// Assert
 			result.Should( ).NotBeNull( );
+			result.Items.Should( ).HaveCount( 2 );
+			result.PageNumber.Should( ).Be( 1 );
+			result.PageSize.Should( ).Be( 2 );
+			result.TotalItems.Should( ).Be( 2 );
+			result.TotalPages.Should( ).Be( 1 );
+
+			// Verifica se os itens foram mapeados corretamente
+			var firstItem = result.Items.First( );
+			firstItem.Should( ).NotBeNull( );
+			firstItem.DtoId.Should( ).Be( entity.EntityId );
+			firstItem.Name.Should( ).Be( entity.Name );
+			firstItem.Description.Should( ).Be( entity.Description );
+			firstItem.Enabled.Should( ).Be( !entity.Enabled );
+
+			var secondItem = result.Items.Skip( 1 ).First( );
+			secondItem.Should( ).NotBeNull( );
+			secondItem.DtoId.Should( ).Be( entity2.EntityId );
+			secondItem.Name.Should( ).Be( entity2.Name );
+			secondItem.Description.Should( ).Be( entity2.Description );
+			secondItem.Enabled.Should( ).Be( !entity2.Enabled);
 		}
 
 		[Fact]

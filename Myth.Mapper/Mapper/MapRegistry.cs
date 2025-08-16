@@ -1,14 +1,8 @@
 ﻿using Myth.Extensions;
 using Myth.Interfaces;
-using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Myth.Mapper {
-
-	public interface IMappingProfile {
-
-		void Apply( IServiceProvider sp );
-	}
 
 	public class MapRegistry {
 		private readonly IServiceProvider _sp;
@@ -31,6 +25,10 @@ namespace Myth.Mapper {
 			_instanceBasedMappings.Add( (sourceType, destinationType) );
 		}
 
+		public void RegisterGenericMapping( Type ifaceGeneric, Type concreteGeneric ) {
+			_genericInterfaceToConcrete[ ifaceGeneric ] = concreteGeneric;
+		}
+
 		public TDestination Map<TSource, TDestination>( TSource source ) {
 			var sourceType = typeof( TSource );
 			var destinationType = typeof( TDestination );
@@ -47,8 +45,13 @@ namespace Myth.Mapper {
 				return MapFromInstance( mapToInstance, destinationType );
 			}
 
-			// Determina o tipo concreto de destino ANTES de procurar builder
+			// Determina o tipo concreto de destino
 			var concreteDestinationType = ResolveConcreteDestinationType( destinationType );
+
+			// Verifica se é um mapeamento de tipos genéricos
+			if ( IsGenericMapping( actualSourceType, destinationType ) ) {
+				return MapGenericTypes<TSource, TDestination>( source, actualSourceType, destinationType, concreteDestinationType );
+			}
 
 			// Primeiro tenta encontrar um builder direto para os tipos originais
 			if ( !TryGetBuilder( actualSourceType, destinationType, out var builderObj ) ) {
@@ -83,9 +86,174 @@ namespace Myth.Mapper {
 			return ( TDestination )dest;
 		}
 
+		private bool IsGenericMapping( Type sourceType, Type destinationType ) {
+			// Verifica se ambos são tipos genéricos
+			if ( !sourceType.IsGenericType || !destinationType.IsGenericType )
+				return false;
+
+			var srcGenericDef = sourceType.GetGenericTypeDefinition( );
+			var dstGenericDef = destinationType.GetGenericTypeDefinition( );
+
+			// Verifica se temos um mapeamento genérico registrado
+			return _genericInterfaceToConcrete.ContainsKey( dstGenericDef );
+		}
+
+		private TDestination MapGenericTypes<TSource, TDestination>(
+			TSource source,
+			Type actualSourceType,
+			Type destinationType,
+			Type concreteDestinationType ) {
+			// Cria uma instância do tipo concreto
+			var dest = CreateInstance( concreteDestinationType );
+
+			// Mapeia as propriedades usando reflection
+			MapPropertiesGeneric( source, dest, actualSourceType, concreteDestinationType );
+
+			return ( TDestination )dest;
+		}
+
+		private void MapPropertiesGeneric( object source, object dest, Type sourceType, Type destType ) {
+			var srcProperties = sourceType.GetProperties( BindingFlags.Public | BindingFlags.Instance )
+				.Where( p => p.CanRead )
+				.ToArray( );
+
+			var destProperties = destType.GetProperties( BindingFlags.Public | BindingFlags.Instance )
+				.Where( p => p.CanWrite )
+				.ToArray( );
+
+			foreach ( var destProp in destProperties ) {
+				var srcProp = srcProperties.FirstOrDefault( p => p.Name == destProp.Name );
+				if ( srcProp == null )
+					continue;
+
+				try {
+					var srcValue = srcProp.GetValue( source );
+					if ( srcValue == null )
+						continue;
+
+					var mappedValue = MapPropertyValue( srcValue, srcProp.PropertyType, destProp.PropertyType );
+					destProp.SetValue( dest, mappedValue );
+				} catch ( Exception ex ) {
+					System.Diagnostics.Debug.WriteLine( $"[Mapper] Erro ao mapear propriedade {destProp.Name}: {ex.Message}" );
+				}
+			}
+		}
+
+		private object? MapPropertyValue( object value, Type sourceType, Type destType ) {
+			// Se os tipos são iguais ou compatíveis, retorna direto
+			if ( destType.IsAssignableFrom( sourceType ) ) {
+				return value;
+			}
+
+			// Se é uma coleção genérica, mapeia os elementos
+			if ( IsGenericCollection( sourceType ) && IsGenericCollection( destType ) ) {
+				return MapGenericCollection( value, sourceType, destType );
+			}
+
+			// Tenta usar o sistema de mapeamento padrão
+			try {
+				var mapToMethod = typeof( MapExtensions )
+					.GetMethod( "MapTo", new[ ] { typeof( object ), typeof( IServiceProvider ) } )
+					?.MakeGenericMethod( destType );
+
+				return mapToMethod?.Invoke( null, new object[ ] { value, _sp } );
+			} catch {
+				// Se falhar, retorna o valor original se for compatível
+				return destType.IsAssignableFrom( value.GetType( ) ) ? value : null;
+			}
+		}
+
+		private bool IsGenericCollection( Type type ) {
+			return type.IsGenericType &&
+				   ( type.GetGenericTypeDefinition( ) == typeof( IEnumerable<> ) ||
+					type.GetInterfaces( ).Any( i => i.IsGenericType && i.GetGenericTypeDefinition( ) == typeof( IEnumerable<> ) ) );
+		}
+
+		private object? MapGenericCollection( object sourceCollection, Type sourceType, Type destType ) {
+			var sourceElementType = GetGenericArgumentType( sourceType );
+			var destElementType = GetGenericArgumentType( destType );
+
+			if ( sourceElementType == null || destElementType == null )
+				return null;
+
+			var enumerable = ( System.Collections.IEnumerable )sourceCollection;
+			var mappedItems = new List<object?>( );
+
+			foreach ( var item in enumerable ) {
+				if ( item == null ) {
+					mappedItems.Add( null );
+					continue;
+				}
+
+				var mappedItem = MapPropertyValue( item, sourceElementType, destElementType );
+				mappedItems.Add( mappedItem );
+			}
+
+			// Cria a coleção de destino apropriada
+			return CreateGenericCollection( destType, destElementType, mappedItems );
+		}
+
+		private Type? GetGenericArgumentType( Type type ) {
+			if ( type.IsGenericType ) {
+				var args = type.GetGenericArguments( );
+				return args.Length > 0 ? args[ 0 ] : null;
+			}
+
+			// Procura em interfaces implementadas
+			var genericInterface = type.GetInterfaces( )
+				.FirstOrDefault( i => i.IsGenericType && i.GetGenericTypeDefinition( ) == typeof( IEnumerable<> ) );
+
+			return genericInterface?.GetGenericArguments( ).FirstOrDefault( );
+		}
+
+		private object? CreateGenericCollection( Type collectionType, Type elementType, List<object?> items ) {
+			// Se é um array
+			if ( collectionType.IsArray ) {
+				var array = Array.CreateInstance( elementType, items.Count );
+				for ( int i = 0; i < items.Count; i++ ) {
+					array.SetValue( items[ i ], i );
+				}
+				return array;
+			}
+
+			// Se é uma interface genérica (IEnumerable<T>, ICollection<T>, etc.), cria uma List<T>
+			if ( collectionType.IsInterface && collectionType.IsGenericType ) {
+				var listType = typeof( List<> ).MakeGenericType( elementType );
+				var list = ( System.Collections.IList )Activator.CreateInstance( listType )!;
+				foreach ( var item in items ) {
+					list.Add( item );
+				}
+				return list;
+			}
+
+			// Para tipos concretos, tenta criar instância direta
+			try {
+				var instance = CreateInstance( collectionType );
+				if ( instance is System.Collections.IList list ) {
+					foreach ( var item in items ) {
+						list.Add( item );
+					}
+					return instance;
+				}
+			} catch {
+				// Se falhar, retorna uma List<T>
+				var listType = typeof( List<> ).MakeGenericType( elementType );
+				var list = ( System.Collections.IList )Activator.CreateInstance( listType )!;
+				foreach ( var item in items ) {
+					list.Add( item );
+				}
+				return list;
+			}
+
+			return null;
+		}
+
 		private TDestination MapFromInstance<TDestination>( IMapTo<TDestination> source, Type destinationType ) {
+			// Resolve o tipo concreto se necessário
+			var concreteDestinationType = ResolveConcreteDestinationType( destinationType );
+
 			// Cria a instância de destino
-			var dest = ( TDestination )CreateInstance( destinationType );
+			var dest = ( TDestination )CreateInstance( concreteDestinationType );
 
 			// Cria o builder específico para instâncias
 			var instanceBuilder = new MappingBuilder<TDestination>( );
@@ -106,41 +274,6 @@ namespace Myth.Mapper {
 			return dest;
 		}
 
-		private bool TryGetBuilder( Type sourceType, Type destinationType, out object? builderObj ) {
-			// Procura mapeamento exato
-			if ( _builders.TryGetValue( (sourceType, destinationType), out builderObj ) )
-				return true;
-
-			// Procura mapeamentos compatíveis (herança/implementação)
-			foreach ( var ((src, dst), builder) in _builders ) {
-				if ( src.IsAssignableFrom( sourceType ) && dst.IsAssignableFrom( destinationType ) ) {
-					builderObj = builder;
-					return true;
-				}
-			}
-
-			// Procura por mapeamentos genéricos compatíveis
-			if ( sourceType.IsGenericType && destinationType.IsGenericType ) {
-				var srcGenericDef = sourceType.GetGenericTypeDefinition( );
-				var dstGenericDef = destinationType.GetGenericTypeDefinition( );
-
-				foreach ( var ((src, dst), builder) in _builders ) {
-					if ( src.IsGenericType && dst.IsGenericType ) {
-						var builderSrcGeneric = src.GetGenericTypeDefinition( );
-						var builderDstGeneric = dst.GetGenericTypeDefinition( );
-
-						if ( builderSrcGeneric == srcGenericDef && builderDstGeneric == dstGenericDef ) {
-							builderObj = builder;
-							return true;
-						}
-					}
-				}
-			}
-
-			builderObj = null;
-			return false;
-		}
-
 		private Type ResolveConcreteDestinationType( Type destinationType ) {
 			// Se é interface genérica, tenta resolver para concreto
 			if ( destinationType.IsInterface && TryResolveGenericConcrete( destinationType, out var concrete ) ) {
@@ -157,6 +290,36 @@ namespace Myth.Mapper {
 			return destinationType;
 		}
 
+		public bool TryResolveGenericConcrete( Type iface, out Type concrete ) {
+			if ( iface.IsGenericType ) {
+				var genericDef = iface.GetGenericTypeDefinition( );
+				if ( _genericInterfaceToConcrete.TryGetValue( genericDef, out var concreteDef ) ) {
+					var args = iface.GetGenericArguments( );
+					concrete = concreteDef.MakeGenericType( args );
+					return true;
+				}
+			}
+			concrete = null!;
+			return false;
+		}
+
+		private bool TryGetBuilder( Type sourceType, Type destinationType, out object? builderObj ) {
+			// Procura mapeamento exato
+			if ( _builders.TryGetValue( (sourceType, destinationType), out builderObj ) )
+				return true;
+
+			// Procura mapeamentos compatíveis (herança/implementação)
+			foreach ( var ((src, dst), builder) in _builders ) {
+				if ( src.IsAssignableFrom( sourceType ) && dst.IsAssignableFrom( destinationType ) ) {
+					builderObj = builder;
+					return true;
+				}
+			}
+
+			builderObj = null;
+			return false;
+		}
+
 		private TDestination ApplyMappingDynamically<TDestination>(
 			object source,
 			Type actualSourceType,
@@ -165,11 +328,6 @@ namespace Myth.Mapper {
 			Type destinationType ) {
 			// Encontra ou cria um builder compatível
 			var compatibleBuilder = GetOrCreateCompatibleBuilder( actualSourceType, concreteDestType );
-
-			// Se não conseguiu com o tipo concreto, tenta com o tipo interface
-			if ( compatibleBuilder == null && concreteDestType != destinationType ) {
-				compatibleBuilder = GetOrCreateCompatibleBuilder( actualSourceType, destinationType );
-			}
 
 			if ( compatibleBuilder != null ) {
 				// Invoca ApplyAsync dinamicamente
@@ -192,15 +350,13 @@ namespace Myth.Mapper {
 				return _builders.GetValueOrDefault( (sourceType, destType) );
 			}
 
-			// Procura builders compatíveis
-			return GetBuilderForCompatibleTypes( sourceType, destType );
+			return null;
 		}
 
 		private bool CanCreateDynamicMapping( Type sourceType, Type destType ) {
 			// Pode criar mapeamento automático se:
 			// 1. Ambos são classes ou structs (não interfaces)
 			// 2. Ou se conseguir resolver o tipo concreto de destino
-
 			if ( !sourceType.IsInterface && !destType.IsInterface )
 				return true;
 
@@ -227,37 +383,6 @@ namespace Myth.Mapper {
 			}
 		}
 
-		public void RegisterGenericMapping( Type ifaceGeneric, Type concreteGeneric ) {
-			_genericInterfaceToConcrete[ ifaceGeneric ] = concreteGeneric;
-		}
-
-		public bool TryResolveGenericConcrete( Type iface, out Type concrete ) {
-			if ( iface.IsGenericType ) {
-				var genericDef = iface.GetGenericTypeDefinition( );
-				if ( _genericInterfaceToConcrete.TryGetValue( genericDef, out var concreteDef ) ) {
-					var args = iface.GetGenericArguments( );
-					concrete = concreteDef.MakeGenericType( args );
-					return true;
-				}
-			}
-			concrete = null!;
-			return false;
-		}
-
-		public object? GetBuilderForCompatibleTypes( Type sourceType, Type destinationType ) {
-			// Procura mapeamento exato
-			if ( _builders.TryGetValue( (sourceType, destinationType), out var builder ) )
-				return builder;
-
-			// Procura mapeamentos compatíveis
-			foreach ( var ((src, dst), b) in _builders ) {
-				if ( src.IsAssignableFrom( sourceType ) && dst.IsAssignableFrom( destinationType ) )
-					return b;
-			}
-
-			return null;
-		}
-
 		public bool HasMapping( Type sourceType, Type destinationType ) {
 			// Verifica se é um mapeamento baseado em instância
 			if ( _instanceBasedMappings.Contains( (sourceType, destinationType) ) )
@@ -267,14 +392,16 @@ namespace Myth.Mapper {
 			if ( _builders.ContainsKey( (sourceType, destinationType) ) )
 				return true;
 
+			// Verifica se é um mapeamento genérico
+			if ( IsGenericMapping( sourceType, destinationType ) )
+				return true;
+
 			// Verifica se consegue resolver o tipo concreto e tem mapeamento para ele
 			var concreteDestType = ResolveConcreteDestinationType( destinationType );
 			if ( concreteDestType != destinationType && _builders.ContainsKey( (sourceType, concreteDestType) ) )
 				return true;
 
-			// Verifica compatibilidade
-			return GetBuilderForCompatibleTypes( sourceType, destinationType ) != null ||
-				   GetBuilderForCompatibleTypes( sourceType, concreteDestType ) != null;
+			return false;
 		}
 
 		public void RegisterGenericEqualTypesMapping( Func<string, string, bool>? memberMatchRule = null ) {
@@ -284,7 +411,7 @@ namespace Myth.Mapper {
 
 				// Se já existe mapeamento, não registra novamente
 				if ( _builders.ContainsKey( (sourceType, destType) ) ||
-					 _builders.ContainsKey( (sourceType, concreteDestType) ) )
+					_builders.ContainsKey( (sourceType, concreteDestType) ) )
 					return;
 
 				// Verifica se são tipos genéricos compatíveis
@@ -294,8 +421,6 @@ namespace Myth.Mapper {
 				// Cria builder dinamicamente via reflection
 				var builderType = typeof( MappingBuilder<,> ).MakeGenericType( sourceType, concreteDestType );
 				var builder = Activator.CreateInstance( builderType )!;
-
-				ConfigureGenericBuilder( builder, builderType, sourceType, concreteDestType, memberMatchRule );
 
 				// Registra para ambos os tipos (interface e concreto)
 				_builders[ (sourceType, destType) ] = builder;
@@ -322,79 +447,6 @@ namespace Myth.Mapper {
 
 			// Devem ter o mesmo número de argumentos genéricos
 			return srcArgs.Length == dstArgs.Length;
-		}
-
-		private void ConfigureGenericBuilder( object builder, Type builderType, Type sourceType, Type destType, Func<string, string, bool>? memberMatchRule ) {
-			var srcProps = sourceType.GetProperties( BindingFlags.Public | BindingFlags.Instance );
-			var dstProps = destType.GetProperties( BindingFlags.Public | BindingFlags.Instance );
-
-			foreach ( var destProp in dstProps ) {
-				if ( !destProp.CanWrite )
-					continue;
-
-				var srcProp = srcProps.FirstOrDefault( p =>
-					( memberMatchRule?.Invoke( p.Name, destProp.Name ) ?? p.Name == destProp.Name )
-					&& p.PropertyType != null
-					&& destProp.PropertyType != null
-					&& p.CanRead
-				);
-
-				if ( srcProp == null )
-					continue;
-
-				try {
-					ConfigurePropertyMapping( builder, builderType, sourceType, destType, srcProp, destProp );
-				} catch ( Exception ex ) {
-					System.Diagnostics.Debug.WriteLine( $"[Mapper] Erro ao configurar mapeamento para propriedade {destProp.Name}: {ex.Message}" );
-				}
-			}
-		}
-
-		private void ConfigurePropertyMapping( object builder, Type builderType, Type sourceType, Type destType, PropertyInfo srcProp, PropertyInfo destProp ) {
-			// Cria expressão lambda para a propriedade de destino
-			var destParam = Expression.Parameter( destType, "d" );
-			var memberAccess = Expression.MakeMemberAccess( destParam, destProp );
-			var destLambda = Expression.Lambda( memberAccess, destParam );
-
-			// Cria o resolver de valor
-			var valueResolver = CreateGenericValueResolver( srcProp, sourceType, destProp.PropertyType );
-
-			// Usa o método interno específico para evitar ambiguidade
-			var forMemberMethod = builderType.GetMethod( "ForMemberInternal", BindingFlags.Instance | BindingFlags.NonPublic );
-
-			if ( forMemberMethod != null ) {
-				var genericForMember = forMemberMethod.MakeGenericMethod( destProp.PropertyType );
-				genericForMember.Invoke( builder, new object[ ] { destLambda, valueResolver } );
-			} else {
-				System.Diagnostics.Debug.WriteLine( $"[Mapper] Método ForMemberInternal não encontrado em {builderType.Name}" );
-			}
-		}
-
-		private Delegate CreateGenericValueResolver( PropertyInfo srcProp, Type srcType, Type destPropType ) {
-			var srcParam = Expression.Parameter( srcType, "src" );
-			var spParam = Expression.Parameter( typeof( IServiceProvider ), "sp" );
-
-			var srcAccess = Expression.Property( srcParam, srcProp );
-			Expression body = srcAccess;
-
-			// Verifica se precisa mapear valor interno
-			if ( srcProp.PropertyType != destPropType ) {
-				// Verifica se pode fazer conversão direta
-				if ( destPropType.IsAssignableFrom( srcProp.PropertyType ) ) {
-					// Conversão direta
-					body = Expression.Convert( srcAccess, destPropType );
-				} else {
-					// Precisa usar MapTo
-					var mapToMethod = typeof( MapExtensions ).GetMethod( "MapTo", new[ ] { typeof( object ), typeof( IServiceProvider ) } )!
-						.MakeGenericMethod( destPropType );
-					body = Expression.Call( mapToMethod, Expression.Convert( srcAccess, typeof( object ) ), spParam );
-				}
-			}
-
-			// Cria o tipo de Func correto: Func<TSource, IServiceProvider, TMember>
-			var funcType = typeof( Func<,,> ).MakeGenericType( srcType, typeof( IServiceProvider ), destPropType );
-			var lambda = Expression.Lambda( funcType, body, srcParam, spParam );
-			return lambda.Compile( );
 		}
 
 		/// <summary>
