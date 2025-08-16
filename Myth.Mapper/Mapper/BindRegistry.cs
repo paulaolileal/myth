@@ -1,5 +1,7 @@
-﻿using Myth.Extensions;
+﻿using Myth.Exceptions;
+using Myth.Extensions;
 using Myth.Interfaces;
+using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -37,17 +39,15 @@ namespace Myth.Morph {
 
 			// Verifica se é um mapeamento baseado em instância
 			if ( _instanceBasedMappings.Contains( (actualSourceType, destinationType) ) &&
-				 source is IMorphTo<TDestination> mapToInstance ) {
+				 source is IMorphTo<TDestination> mapToInstance )
 				return MapFromInstance( mapToInstance, destinationType );
-			}
 
 			// Determina o tipo concreto de destino
 			var concreteDestinationType = ResolveConcreteDestinationType( destinationType );
 
 			// Verifica se é um mapeamento de tipos genéricos
-			if ( IsGenericMapping( actualSourceType, destinationType ) ) {
+			if ( IsGenericMapping( actualSourceType, destinationType ) )
 				return MapGenericTypes<TSource, TDestination>( source, actualSourceType, destinationType, concreteDestinationType );
-			}
 
 			// Primeiro tenta encontrar um builder direto para os tipos originais
 			if ( !TryGetBuilder( actualSourceType, destinationType, out var builderObj ) ) {
@@ -56,15 +56,14 @@ namespace Myth.Morph {
 					// Tenta registrar dinamicamente
 					foreach ( var register in _genericRegisters ) {
 						register( actualSourceType, destinationType );
+
 						register( actualSourceType, concreteDestinationType );
 					}
 
 					// Tenta novamente após registrar
 					if ( !TryGetBuilder( actualSourceType, destinationType, out builderObj ) &&
-						!TryGetBuilder( actualSourceType, concreteDestinationType, out builderObj ) ) {
-						throw new InvalidOperationException(
-							$"No mapping registered from {actualSourceType} to {destinationType}" );
-					}
+						!TryGetBuilder( actualSourceType, concreteDestinationType, out builderObj ) )
+						throw new BinderNotFoundException( $"No mapping registered from {actualSourceType} to {destinationType}" );
 				}
 			}
 
@@ -110,25 +109,30 @@ namespace Myth.Morph {
 		}
 
 		private void MapPropertiesGeneric( object source, object dest, Type sourceType, Type destType ) {
-			var srcProperties = sourceType.GetProperties( BindingFlags.Public | BindingFlags.Instance )
+			var srcProperties = sourceType
+				.GetProperties( BindingFlags.Public | BindingFlags.Instance )
 				.Where( p => p.CanRead )
 				.ToArray( );
 
-			var destProperties = destType.GetProperties( BindingFlags.Public | BindingFlags.Instance )
+			var destProperties = destType
+				.GetProperties( BindingFlags.Public | BindingFlags.Instance )
 				.Where( p => p.CanWrite )
 				.ToArray( );
 
 			foreach ( var destProp in destProperties ) {
 				var srcProp = srcProperties.FirstOrDefault( p => p.Name == destProp.Name );
+
 				if ( srcProp == null )
 					continue;
 
 				try {
 					var srcValue = srcProp.GetValue( source );
+
 					if ( srcValue == null )
 						continue;
 
 					var mappedValue = MapPropertyValue( srcValue, srcProp.PropertyType, destProp.PropertyType );
+
 					destProp.SetValue( dest, mappedValue );
 				} catch ( Exception ex ) {
 					Debug.WriteLine( $"[Morph] Erro ao mapear propriedade {destProp.Name}: {ex.Message}" );
@@ -138,14 +142,12 @@ namespace Myth.Morph {
 
 		private object? MapPropertyValue( object value, Type sourceType, Type destType ) {
 			// Se os tipos são iguais ou compatíveis, retorna direto
-			if ( destType.IsAssignableFrom( sourceType ) ) {
+			if ( destType.IsAssignableFrom( sourceType ) )
 				return value;
-			}
 
 			// Se é uma coleção genérica, mapeia os elementos
-			if ( IsGenericCollection( sourceType ) && IsGenericCollection( destType ) ) {
+			if ( IsGenericCollection( sourceType ) && IsGenericCollection( destType ) )
 				return MapGenericCollection( value, sourceType, destType );
-			}
 
 			// Tenta usar o sistema de mapeamento padrão
 			try {
@@ -153,14 +155,14 @@ namespace Myth.Morph {
 					.GetMethod( nameof( MorphExtensions.To ), [ typeof( object ), typeof( IServiceProvider ) ] )?
 					.MakeGenericMethod( destType );
 
-				return mapToMethod?.Invoke( null, new object[ ] { value, _sp } );
+				return mapToMethod?.Invoke( null, [ value, _sp ] );
 			} catch {
 				// Se falhar, retorna o valor original se for compatível
 				return destType.IsAssignableFrom( value.GetType( ) ) ? value : null;
 			}
 		}
 
-		private bool IsGenericCollection( Type type ) {
+		private static bool IsGenericCollection( Type type ) {
 			return type.IsGenericType &&
 				   ( type.GetGenericTypeDefinition( ) == typeof( IEnumerable<> ) ||
 					type.GetInterfaces( ).Any( i => i.IsGenericType && i.GetGenericTypeDefinition( ) == typeof( IEnumerable<> ) ) );
@@ -179,6 +181,7 @@ namespace Myth.Morph {
 			foreach ( var item in enumerable ) {
 				if ( item == null ) {
 					mappedItems.Add( null );
+
 					continue;
 				}
 
@@ -193,12 +196,16 @@ namespace Myth.Morph {
 		private Type? GetGenericArgumentType( Type type ) {
 			if ( type.IsGenericType ) {
 				var args = type.GetGenericArguments( );
+
 				return args.Length > 0 ? args[ 0 ] : null;
 			}
 
 			// Procura em interfaces implementadas
-			var genericInterface = type.GetInterfaces( )
-				.FirstOrDefault( i => i.IsGenericType && i.GetGenericTypeDefinition( ) == typeof( IEnumerable<> ) );
+			var genericInterface = type
+				.GetInterfaces( )
+				.FirstOrDefault( i =>
+					i.IsGenericType &&
+					i.GetGenericTypeDefinition( ) == typeof( IEnumerable<> ) );
 
 			return genericInterface?.GetGenericArguments( ).FirstOrDefault( );
 		}
@@ -217,7 +224,7 @@ namespace Myth.Morph {
 			// Se é uma interface genérica (IEnumerable<T>, ICollection<T>, etc.), cria uma List<T>
 			if ( collectionType.IsInterface && collectionType.IsGenericType ) {
 				var listType = typeof( List<> ).MakeGenericType( elementType );
-				var list = ( System.Collections.IList )Activator.CreateInstance( listType )!;
+				var list = ( IList )Activator.CreateInstance( listType )!;
 
 				foreach ( var item in items )
 					list.Add( item );
@@ -228,7 +235,7 @@ namespace Myth.Morph {
 			// Para tipos concretos, tenta criar instância direta
 			try {
 				var instance = CreateInstance( collectionType );
-				if ( instance is System.Collections.IList list ) {
+				if ( instance is IList list ) {
 					foreach ( var item in items )
 						list.Add( item );
 
@@ -237,7 +244,7 @@ namespace Myth.Morph {
 			} catch {
 				// Se falhar, retorna uma List<T>
 				var listType = typeof( List<> ).MakeGenericType( elementType );
-				var list = ( System.Collections.IList )Activator.CreateInstance( listType )!;
+				var list = ( IList )Activator.CreateInstance( listType )!;
 
 				foreach ( var item in items )
 					list.Add( item );
@@ -267,7 +274,9 @@ namespace Myth.Morph {
 
 			if ( applyMethod != null ) {
 				var genericApplyMethod = applyMethod.MakeGenericMethod( source.GetType( ) );
+
 				var task = ( Task )genericApplyMethod.Invoke( instanceBuilder, [ source, dest, _sp ] )!;
+
 				task
 					.GetAwaiter( )
 					.GetResult( );
@@ -278,12 +287,14 @@ namespace Myth.Morph {
 
 		private Type ResolveConcreteDestinationType( Type destinationType ) {
 			// Se é interface genérica, tenta resolver para concreto
-			if ( destinationType.IsInterface && TryResolveGenericConcrete( destinationType, out var concrete ) )
+			if ( destinationType.IsInterface &&
+				 TryResolveGenericConcrete( destinationType, out var concrete ) )
 				return concrete;
 
 			// Se é interface não-genérica, procura implementação registrada no DI
 			if ( destinationType.IsInterface ) {
 				var serviceImpl = _sp.GetService( destinationType );
+
 				if ( serviceImpl != null )
 					return serviceImpl.GetType( );
 			}
@@ -294,9 +305,12 @@ namespace Myth.Morph {
 		public bool TryResolveGenericConcrete( Type iface, out Type concrete ) {
 			if ( iface.IsGenericType ) {
 				var genericDef = iface.GetGenericTypeDefinition( );
+
 				if ( _genericInterfaceToConcrete.TryGetValue( genericDef, out var concreteDef ) ) {
 					var args = iface.GetGenericArguments( );
+
 					concrete = concreteDef.MakeGenericType( args );
+
 					return true;
 				}
 			}
@@ -314,11 +328,13 @@ namespace Myth.Morph {
 			foreach ( var ((src, dst), builder) in _builders ) {
 				if ( src.IsAssignableFrom( sourceType ) && dst.IsAssignableFrom( destinationType ) ) {
 					builderObj = builder;
+
 					return true;
 				}
 			}
 
 			builderObj = null;
+
 			return false;
 		}
 
@@ -334,7 +350,9 @@ namespace Myth.Morph {
 			if ( compatibleBuilder != null ) {
 				// Invoca ApplyAsync dinamicamente
 				var applyMethod = compatibleBuilder.GetType( ).GetMethod( "ApplyAsync" );
+
 				var applyTask = ( Task )applyMethod!.Invoke( compatibleBuilder, [ source, dest, _sp ] )!;
+
 				applyTask.GetAwaiter( ).GetResult( );
 			}
 
@@ -349,6 +367,7 @@ namespace Myth.Morph {
 			// Tenta criar um builder dinamicamente se os tipos são compatíveis
 			if ( CanCreateDynamicMapping( sourceType, destType ) ) {
 				CreateDynamicMapping( sourceType, destType );
+
 				return _builders.GetValueOrDefault( (sourceType, destType) );
 			}
 
@@ -472,7 +491,7 @@ namespace Myth.Morph {
 				.FirstOrDefault( );
 
 			if ( ctorWithParams is null )
-				throw new InvalidOperationException( $"Tipo {type} não possui construtor acessível." );
+				throw new BindException( $"Tipo {type} não possui construtor acessível." );
 
 			var args = ctorWithParams
 				.GetParameters( )

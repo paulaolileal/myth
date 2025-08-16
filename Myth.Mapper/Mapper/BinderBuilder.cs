@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Myth.Exceptions;
 using Myth.Extensions;
 using Myth.Interfaces;
 using System.Diagnostics;
@@ -16,59 +17,60 @@ namespace Myth.Morph {
 		private readonly HashSet<string> _ignoredProperties = [ ];
 		private readonly List<Func<TDestination, IServiceProvider, Task>> _asyncMappings = [ ];
 
-		public BinderBuilder<TDestination> Bind<TMember>(
-			Expression<Func<TDestination, TMember>> destination,
-			Func<IServiceProvider, TMember> resolver ) {
+		public BinderBuilder<TDestination> Bind<TMember>( Expression<Func<TDestination, TMember>> destination, Func<IServiceProvider, TMember> resolver ) {
 			if ( destination.Body is not MemberExpression memberExp || memberExp.Member is not MemberInfo member )
-				throw new ArgumentException( "Expressão inválida para destino." );
+				throw new BindException( "Expressão inválida para destino." );
 
 			_manuallyMappedDestProps.Add( member.Name );
+
 			_mappings.Add( ( dest, sp ) => SetValue( dest, member, resolver( sp ) ) );
+
 			return this;
 		}
 
-		public BinderBuilder<TDestination> Bind<TMember>(
-			Expression<Func<TDestination, TMember>> destination,
-			Func<TMember> resolver ) {
+		public BinderBuilder<TDestination> Bind<TMember>( Expression<Func<TDestination, TMember>> destination, Func<TMember> resolver ) {
 			if ( destination.Body is not MemberExpression memberExp || memberExp.Member is not MemberInfo member )
-				throw new ArgumentException( "Expressão inválida para destino." );
+				throw new BindException( "Expressão inválida para destino." );
 
 			_manuallyMappedDestProps.Add( member.Name );
+
 			_mappings.Add( ( dest, sp ) => SetValue( dest, member, resolver( ) ) );
+
 			return this;
 		}
 
-		public BinderBuilder<TDestination> BindAsync<TMember>(
-			Expression<Func<TDestination, TMember>> destination,
-			Func<IServiceProvider, Task<TMember>> resolver ) {
+		public BinderBuilder<TDestination> BindAsync<TMember>( Expression<Func<TDestination, TMember>> destination, Func<IServiceProvider, Task<TMember>> resolver ) {
 			if ( destination.Body is not MemberExpression memberExp || memberExp.Member is not MemberInfo member )
-				throw new ArgumentException( "Expressão inválida para destino." );
+				throw new BindException( "Expressão inválida para destino." );
 
 			_manuallyMappedDestProps.Add( member.Name );
+
 			_asyncMappings.Add( async ( dest, sp ) => {
 				var value = await resolver( sp );
 				SetValue( dest, member, value );
 			} );
+
 			return this;
 		}
 
-		public BinderBuilder<TDestination> BindAsync<TMember>(
-			Expression<Func<TDestination, TMember>> destination,
-			Func<Task<TMember>> resolver ) {
+		public BinderBuilder<TDestination> BindAsync<TMember>( Expression<Func<TDestination, TMember>> destination, Func<Task<TMember>> resolver ) {
 			if ( destination.Body is not MemberExpression memberExp || memberExp.Member is not MemberInfo member )
-				throw new ArgumentException( "Expressão inválida para destino." );
+				throw new BindException( "Expressão inválida para destino." );
 
 			_manuallyMappedDestProps.Add( member.Name );
+
 			_asyncMappings.Add( async ( dest, sp ) => {
 				var value = await resolver( );
 				SetValue( dest, member, value );
 			} );
+
 			return this;
 		}
 
 		public BinderBuilder<TDestination> Ignore<TValue>( Expression<Func<TDestination, TValue>> destSelector ) {
 			if ( destSelector.Body is MemberExpression member )
 				_ignoredProperties.Add( member.Member.Name );
+
 			return this;
 		}
 
@@ -119,6 +121,7 @@ namespace Myth.Morph {
 					};
 				} catch ( Exception ex ) {
 					Debug.WriteLine( $"[Morph] Erro ao ler '{srcMember.Name}': {ex.Message}" );
+
 					continue;
 				}
 
@@ -132,6 +135,7 @@ namespace Myth.Morph {
 
 				try {
 					var mappedValue = MapValue( srcValue, srcMemberType, destMemberType, sp );
+
 					SetValue( dest, destMember, mappedValue );
 				} catch ( Exception ex ) {
 					Debug.WriteLine( $"[Morph] Erro ao mapear '{srcMember.Name}' -> '{destMember.Name}': {ex.Message}" );
@@ -150,17 +154,19 @@ namespace Myth.Morph {
 
 			// Tenta mapear usando extensões
 			try {
-				using ( var scope = sp.CreateScope( ) ) {
-					var method = typeof( MorphExtensions )
-						.GetMethod( "MapTo", [ typeof( object ), typeof( IServiceProvider ) ] )
-						?.MakeGenericMethod( destType );
-					return method?.Invoke( null, [ srcValue, scope.ServiceProvider ] );
-				}
+				using var scope = sp.CreateScope( );
+
+				var method = typeof( MorphExtensions )
+					.GetMethod( "MapTo", [ typeof( object ), typeof( IServiceProvider ) ] )?
+					.MakeGenericMethod( destType );
+
+				return method?.Invoke( null, [ srcValue, scope.ServiceProvider ] );
 			} catch ( Exception ex ) {
 				Debug.WriteLine( $"[Morph] Falha no mapeamento de {srcType.Name} para {destType.Name}: {ex.Message}" );
 			}
 
 			Debug.WriteLine( $"[Morph] Não foi possível mapear {srcType.Name} para {destType.Name}" );
+
 			return null;
 		}
 
@@ -175,12 +181,14 @@ namespace Myth.Morph {
 						result = null;
 						return true;
 					}
+
 					targetType = underlyingType;
 				}
 
 				// Try direct conversion
 				if ( targetType.IsAssignableFrom( value.GetType( ) ) ) {
 					result = value;
+
 					return true;
 				}
 
@@ -190,6 +198,7 @@ namespace Myth.Morph {
 					 targetType == typeof( DateTime ) ||
 					 targetType == typeof( decimal ) ) {
 					result = Convert.ChangeType( value, targetType );
+
 					return true;
 				}
 

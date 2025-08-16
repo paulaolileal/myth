@@ -1,4 +1,5 @@
-﻿using Myth.Morph;
+﻿using Myth.Exceptions;
+using Myth.Morph;
 
 namespace Myth.Extensions {
 
@@ -13,14 +14,14 @@ namespace Myth.Extensions {
 
 			var serviceProvider = sp ?? DefaultProvider.ServiceProvider;
 			if ( serviceProvider is null )
-				throw new InvalidOperationException( $"ServiceProvider não configurado. Chame {nameof( ServiceCollectionExtensions.AddMorph )}() na configuração do DI ou passe o ServiceProvider como parâmetro." );
+				throw new InvalidMorphConfigurationException( $"ServiceProvider não configurado. Chame {nameof( ServiceCollectionExtensions.AddMorph )}() na configuração do DI ou passe o ServiceProvider como parâmetro." );
 
 			// Garante que o DefaultProvider está configurado
 			DefaultProvider.EnsureProvider( serviceProvider );
 
 			var registry = ( BindRegistry? )serviceProvider.GetService( typeof( BindRegistry ) );
 			if ( registry is null )
-				throw new InvalidOperationException( $"{nameof( BindRegistry )} não encontrado no DI. Verifique se {nameof( ServiceCollectionExtensions.AddMorph )}() foi chamado corretamente." );
+				throw new InvalidMorphConfigurationException( $"{nameof( BindRegistry )} não encontrado no DI. Verifique se {nameof( ServiceCollectionExtensions.AddMorph )}() foi chamado corretamente." );
 
 			var method = typeof( BindRegistry )
 				.GetMethod( nameof( BindRegistry.Morph ) )!
@@ -46,11 +47,11 @@ namespace Myth.Extensions {
 
 			var serviceProvider = sp ?? DefaultProvider.ServiceProvider;
 			if ( serviceProvider is null )
-				throw new InvalidOperationException( "ServiceProvider não configurado." );
+				throw new InvalidMorphConfigurationException( "ServiceProvider não configurado." );
 
 			var registry = ( BindRegistry )serviceProvider.GetService( typeof( BindRegistry ) )!;
 			if ( registry is null )
-				throw new InvalidOperationException( $"{nameof( BindRegistry )} não encontrado no DI." );
+				throw new InvalidMorphConfigurationException( $"{nameof( BindRegistry )} não encontrado no DI." );
 
 			var result = new List<TDestination>( );
 			foreach ( var item in sourceList ) {

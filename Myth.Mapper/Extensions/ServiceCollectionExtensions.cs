@@ -17,7 +17,7 @@ namespace Myth.Extensions {
 			if ( assemblies == null || assemblies.Count == 0 )
 				assemblies = AppDomain.CurrentDomain.GetAssemblies( ).ToList( );
 
-			services.AddSingleton<BindRegistry>( sp => {
+			services.AddSingleton( sp => {
 				var registry = new BindRegistry( sp );
 
 				// Registra mapeamentos genéricos definidos manualmente
