@@ -1,12 +1,13 @@
 ﻿using Myth.Interfaces;
+using Myth.Morph.Test.Models.Dtos;
 
 namespace Myth.Morph.Test.Models {
 
 	public class EntityWithNested : IMorphable<DtoWithNested> {
 		public int Id { get; set; }
-		public List<NestedItem> Items { get; set; } = new( );
+		public List<NestedItem> Items { get; set; } = [];
 
-		public void MorphTo( Schema<DtoWithNested> builder ) {
+		public void MorphTo( Schema<DtoWithNested> schema ) {
 		}
 	}
 }

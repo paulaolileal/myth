@@ -15,14 +15,14 @@ namespace Myth.Interfaces {
 		/// </summary>
 		/// <remarks>
 		/// Use this method to specify how properties or fields from the source object should be mapped to
-		/// the destination type. The <paramref name="builder"/> parameter provides methods and options for customizing the
+		/// the destination type. The <paramref name="schema"/> parameter provides methods and options for customizing the
 		/// mapping behavior, including property binding, async binding, and property ignoring.
 		///
 		/// This method is called by the Morph system during the transformation process to configure
 		/// the mapping rules specific to this source type.
 		/// </remarks>
-		/// <param name="builder">A <see cref="Schema{TDestination}"/> instance used to define the mapping rules and bindings for the
+		/// <param name="schema">A <see cref="Schema{TDestination}"/> instance used to define the mapping rules and bindings for the
 		/// destination type.</param>
-		void MorphTo( Schema<TDestination> builder );
+		void MorphTo( Schema<TDestination> schema );
 	}
 }

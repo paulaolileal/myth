@@ -1,4 +1,5 @@
 ﻿using Myth.Interfaces;
+using Myth.Morph.Test.Models.Dtos;
 
 namespace Myth.Morph.Test.Models {
 
@@ -8,8 +9,8 @@ namespace Myth.Morph.Test.Models {
 		public bool Enabled { get; set; }
 		public string Description { get; set; }
 
-		public void MorphTo( Schema<BasicDto> builder ) {
-			builder
+		public void MorphTo( Schema<BasicDto> schema ) {
+			schema
 				.Bind(
 					dest => dest.Enabled,
 					( ) => !Enabled )

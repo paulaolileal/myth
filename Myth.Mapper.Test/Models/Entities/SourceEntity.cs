@@ -7,8 +7,8 @@ namespace Myth.Morph.Test.Models {
 		public string Name { get; set; } = "";
 		public string IgnoredValue { get; set; } = "";
 
-		public void MorphTo( Schema<DestEntity> builder ) {
-			builder.Ignore( dest => dest.IgnoredProperty );
+		public void MorphTo( Schema<DestEntity> schema ) {
+			schema.Ignore( dest => dest.IgnoredProperty );
 		}
 	}
 }

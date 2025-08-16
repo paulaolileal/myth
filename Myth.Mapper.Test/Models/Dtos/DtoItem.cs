@@ -1,4 +1,4 @@
-namespace Myth.Morph.Test.Models {
+namespace Myth.Morph.Test.Models.Dtos {
 
 	internal class DtoItem {
 		public int Id { get; set; }

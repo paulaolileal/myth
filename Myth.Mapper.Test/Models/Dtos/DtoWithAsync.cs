@@ -1,4 +1,4 @@
-﻿namespace Myth.Morph.Test.Models {
+﻿namespace Myth.Morph.Test.Models.Dtos {
 
 	public class DtoWithAsync {
 		public int Id { get; set; }

@@ -1,4 +1,5 @@
 ﻿using Myth.Interfaces;
+using Myth.Morph.Test.Models.Dtos;
 
 namespace Myth.Morph.Test.Models {
 
@@ -6,8 +7,8 @@ namespace Myth.Morph.Test.Models {
 		public int Id { get; set; }
 		public Task<string> AsyncValue { get; set; } = Task.FromResult( "" );
 
-		public void MorphTo( Schema<DtoWithAsync> builder ) {
-			builder.BindAsync(
+		public void MorphTo( Schema<DtoWithAsync> schema ) {
+			schema.BindAsync(
 				dest => dest.Value,
 				( ) => AsyncValue );
 		}

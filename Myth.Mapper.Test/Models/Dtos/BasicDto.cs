@@ -1,6 +1,6 @@
 ﻿using Myth.Interfaces;
 
-namespace Myth.Morph.Test.Models {
+namespace Myth.Morph.Test.Models.Dtos {
 
 	internal class BasicDto : IMorphable<BasicEntity>, IMorphable<ViewModel> {
 		public int DtoId { get; set; }
@@ -13,8 +13,8 @@ namespace Myth.Morph.Test.Models {
 		public IEnumerable<DtoItem> ItemsProp { get; set; } = [ ];
 		public string Description { get; set; } = "No description";
 
-		public void MorphTo( Schema<BasicEntity> builder ) {
-			builder
+		public void MorphTo( Schema<BasicEntity> schema ) {
+			schema
 				.Bind(
 					dest => dest.Enabled,
 					( ) => !Enabled )
@@ -23,8 +23,8 @@ namespace Myth.Morph.Test.Models {
 					( ) => DtoId );
 		}
 
-		public void MorphTo( Schema<ViewModel> builder ) {
-			builder
+		public void MorphTo( Schema<ViewModel> schema ) {
+			schema
 				.Bind(
 					dest => dest.ViewModelId,
 					( ) => DtoId );

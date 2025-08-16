@@ -1,4 +1,4 @@
-﻿namespace Myth.Morph.Test.Models {
+﻿namespace Myth.Morph.Test.Models.Dtos {
 
 	public class ParentDto {
 		public int Id { get; set; }

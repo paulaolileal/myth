@@ -1,4 +1,5 @@
 ﻿using Myth.Interfaces;
+using Myth.Morph.Test.Models.Dtos;
 
 namespace Myth.Morph.Test.Models {
 
@@ -6,8 +7,8 @@ namespace Myth.Morph.Test.Models {
 		public int Id { get; set; }
 		public ParentEntity? Parent { get; set; }
 
-		public void MorphTo( Schema<ChildDto> builder ) {
-			builder.Bind(
+		public void MorphTo( Schema<ChildDto> schema ) {
+			schema.Bind(
 				dest => dest.ParentId,
 				( ) => Parent != null ? Parent.Id : 0 );
 		}
