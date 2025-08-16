@@ -15,6 +15,7 @@ namespace Myth.Morph.Test {
 
 		public MorphTests( ) {
 			_services = new ServiceCollection( );
+			_services.AddLogging( );
 			_services.AddSingleton<IDescriptionResolver, DescriptionResolver>( );
 			_services.AddMorph( config => {
 				config.AddGenericMorph( typeof( IPaginated<> ), typeof( Paginated<> ) );
@@ -162,7 +163,6 @@ namespace Myth.Morph.Test {
 					Name = "EntityB"
 				}
 			};
-
 
 			// Act
 			// Act

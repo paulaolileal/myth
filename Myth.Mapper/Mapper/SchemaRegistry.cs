@@ -1,113 +1,197 @@
-﻿using Myth.Exceptions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Myth.Exceptions;
 using Myth.Extensions;
 using Myth.Interfaces;
 using System.Collections;
-using System.Diagnostics;
 using System.Reflection;
 
 namespace Myth.Morph {
 
+	/// <summary>
+	/// Central registry for managing object transformation schemas and mappings.
+	/// This class handles the registration and execution of type mappings, supporting both
+	/// generic mappings and instance-based mappings through the IMorphable interface.
+	/// </summary>
 	public class SchemaRegistry {
 		private readonly IServiceProvider _sp;
+		private readonly ILogger<SchemaRegistry>? _logger;
 		private readonly Dictionary<(Type, Type), object> _builders = [ ];
 		private readonly Dictionary<Type, Type> _genericInterfaceToConcrete = [ ];
 		private readonly List<Action<Type, Type>> _genericRegisters = [ ];
 		private readonly HashSet<(Type, Type)> _instanceBasedMappings = [ ];
 
+		/// <summary>
+		/// Initializes a new instance of the SchemaRegistry with the specified service provider.
+		/// </summary>
+		/// <param name="sp">The service provider for dependency injection and logger resolution.</param>
 		public SchemaRegistry( IServiceProvider sp ) {
 			_sp = sp;
+			_logger = sp.GetService<ILogger<SchemaRegistry>>( );
+			_logger?.LogDebug( "SchemaRegistry initialized" );
 		}
 
+		/// <summary>
+		/// Registers an instance-based mapping between source and destination types.
+		/// This type of mapping uses the IMorphable interface implemented by the source type
+		/// to define custom transformation logic.
+		/// </summary>
+		/// <param name="sourceType">The source type that implements IMorphable&lt;TDestination&gt;.</param>
+		/// <param name="destinationType">The destination type to map to.</param>
 		public void RegisterInstanceBasedMapping( Type sourceType, Type destinationType ) {
 			_instanceBasedMappings.Add( (sourceType, destinationType) );
+			_logger?.LogTrace( "Registered instance-based mapping: {SourceType} -> {DestinationType}", sourceType.Name, destinationType.Name );
 		}
 
+		/// <summary>
+		/// Registers a generic type mapping between an interface and its concrete implementation.
+		/// This enables automatic resolution of interface types to concrete types during mapping.
+		/// </summary>
+		/// <param name="ifaceGeneric">The generic interface type definition.</param>
+		/// <param name="concreteGeneric">The concrete type definition that implements the interface.</param>
 		public void RegisterGenericMapping( Type ifaceGeneric, Type concreteGeneric ) {
 			_genericInterfaceToConcrete[ ifaceGeneric ] = concreteGeneric;
+			_logger?.LogTrace( "Registered generic mapping: {Interface} -> {Concrete}", ifaceGeneric.Name, concreteGeneric.Name );
 		}
 
+		/// <summary>
+		/// Transforms a source object to the specified destination type using registered mappings.
+		/// </summary>
+		/// <typeparam name="TSource">The type of the source object.</typeparam>
+		/// <typeparam name="TDestination">The type of the destination object.</typeparam>
+		/// <param name="source">The source object to transform.</param>
+		/// <returns>The transformed destination object.</returns>
+		/// <exception cref="BinderNotFoundException">Thrown when no mapping is found for the specified types.</exception>
 		public TDestination Morph<TSource, TDestination>( TSource source ) {
 			var sourceType = typeof( TSource );
 			var destinationType = typeof( TDestination );
 
-			// Se o source é null, retorna default
-			if ( source == null )
+			_logger?.LogDebug( "Starting transformation from {SourceType} to {DestinationType}", sourceType.Name, destinationType.Name );
+
+			// If source is null, return default
+			if ( source == null ) {
+				_logger?.LogDebug( "Source is null, returning default value for {DestinationType}", destinationType.Name );
 				return default!;
+			}
 
-			// Usa o tipo real do objeto se for diferente do tipo genérico
+			// Use the actual type of the object if different from the generic type
 			var actualSourceType = source.GetType( );
+			if ( actualSourceType != sourceType ) {
+				_logger?.LogTrace( "Using actual source type {ActualType} instead of generic type {GenericType}", actualSourceType.Name, sourceType.Name );
+			}
 
-			// Verifica se é um mapeamento baseado em instância
+			// Check if it's an instance-based mapping
 			if ( _instanceBasedMappings.Contains( (actualSourceType, destinationType) ) &&
-				 source is IMorphable<TDestination> mapToInstance )
+				 source is IMorphable<TDestination> mapToInstance ) {
+				_logger?.LogDebug( "Using instance-based mapping for {SourceType} -> {DestinationType}", actualSourceType.Name, destinationType.Name );
 				return MapFromInstance( mapToInstance, destinationType );
+			}
 
-			// Determina o tipo concreto de destino
+			// Determine the concrete destination type
 			var concreteDestinationType = ResolveConcreteDestinationType( destinationType );
+			if ( concreteDestinationType != destinationType ) {
+				_logger?.LogTrace( "Resolved concrete destination type {ConcreteType} for interface {InterfaceType}", concreteDestinationType.Name, destinationType.Name );
+			}
 
-			// Verifica se é um mapeamento de tipos genéricos
-			if ( IsGenericMapping( actualSourceType, destinationType ) )
+			// Check if it's a generic type mapping
+			if ( IsGenericMapping( actualSourceType, destinationType ) ) {
+				_logger?.LogDebug( "Using generic type mapping for {SourceType} -> {DestinationType}", actualSourceType.Name, destinationType.Name );
 				return MapGenericTypes<TSource, TDestination>( source, actualSourceType, destinationType, concreteDestinationType );
+			}
 
-			// Primeiro tenta encontrar um builder direto para os tipos originais
+			// First try to find a direct builder for the original types
 			if ( !TryGetBuilder( actualSourceType, destinationType, out var builderObj ) ) {
-				// Se não encontrou, tenta com o tipo concreto
+				// If not found, try with the concrete type
 				if ( !TryGetBuilder( actualSourceType, concreteDestinationType, out builderObj ) ) {
-					// Tenta registrar dinamicamente
+					// Try to register dynamically
+					_logger?.LogTrace( "No existing builder found, attempting dynamic registration" );
 					foreach ( var register in _genericRegisters ) {
 						register( actualSourceType, destinationType );
-
 						register( actualSourceType, concreteDestinationType );
 					}
 
-					// Tenta novamente após registrar
+					// Try again after registering
 					if ( !TryGetBuilder( actualSourceType, destinationType, out builderObj ) &&
-						!TryGetBuilder( actualSourceType, concreteDestinationType, out builderObj ) )
-						throw new BinderNotFoundException( $"No mapping registered from {actualSourceType} to {destinationType}" );
+						!TryGetBuilder( actualSourceType, concreteDestinationType, out builderObj ) ) {
+						var errorMessage = $"No mapping registered from {actualSourceType} to {destinationType}";
+						_logger?.LogError( errorMessage );
+						throw new BinderNotFoundException( errorMessage );
+					}
 				}
 			}
 
-			// Cria a instância do destino usando o tipo concreto
+			// Create destination instance using the concrete type
 			var dest = CreateInstance( concreteDestinationType );
+			_logger?.LogTrace( "Created destination instance of type {Type}", concreteDestinationType.Name );
 
-			// Aplica o mapeamento usando reflection se necessário
-			if ( actualSourceType != sourceType || concreteDestinationType != destinationType )
+			// Apply mapping using reflection if necessary
+			if ( actualSourceType != sourceType || concreteDestinationType != destinationType ) {
+				_logger?.LogTrace( "Applying dynamic mapping due to type differences" );
 				return ApplyMappingDynamically<TDestination>(
 					source,
 					actualSourceType,
 					dest,
 					concreteDestinationType,
 					destinationType );
+			}
 
+			_logger?.LogDebug( "Transformation completed successfully from {SourceType} to {DestinationType}", sourceType.Name, destinationType.Name );
 			return ( TDestination )dest;
 		}
 
+		/// <summary>
+		/// Determines if the mapping between source and destination types should use generic mapping logic.
+		/// </summary>
+		/// <param name="sourceType">The source type to check.</param>
+		/// <param name="destinationType">The destination type to check.</param>
+		/// <returns>True if generic mapping should be used, false otherwise.</returns>
 		private bool IsGenericMapping( Type sourceType, Type destinationType ) {
-			// Verifica se ambos são tipos genéricos
+			// Check if both are generic types
 			if ( !sourceType.IsGenericType || !destinationType.IsGenericType )
 				return false;
 
 			var srcGenericDef = sourceType.GetGenericTypeDefinition( );
 			var dstGenericDef = destinationType.GetGenericTypeDefinition( );
 
-			// Verifica se temos um mapeamento genérico registrado
-			return _genericInterfaceToConcrete.ContainsKey( dstGenericDef );
+			// Check if we have a registered generic mapping
+			var hasMapping = _genericInterfaceToConcrete.ContainsKey( dstGenericDef );
+			_logger?.LogTrace( "Generic mapping check for {SourceType} -> {DestinationType}: {HasMapping}", srcGenericDef.Name, dstGenericDef.Name, hasMapping );
+			return hasMapping;
 		}
 
+		/// <summary>
+		/// Performs generic type mapping between compatible generic types.
+		/// </summary>
+		/// <typeparam name="TSource">The source generic type.</typeparam>
+		/// <typeparam name="TDestination">The destination generic type.</typeparam>
+		/// <param name="source">The source object instance.</param>
+		/// <param name="actualSourceType">The actual runtime type of the source.</param>
+		/// <param name="destinationType">The destination type.</param>
+		/// <param name="concreteDestinationType">The concrete implementation type of the destination.</param>
+		/// <returns>The mapped destination object.</returns>
 		private TDestination MapGenericTypes<TSource, TDestination>(
 			TSource source,
 			Type actualSourceType,
 			Type destinationType,
 			Type concreteDestinationType ) {
-			// Cria uma instância do tipo concreto
+			_logger?.LogDebug( "Performing generic type mapping from {SourceType} to {ConcreteDestType}", actualSourceType.Name, concreteDestinationType.Name );
+
+			// Create an instance of the concrete type
 			var dest = CreateInstance( concreteDestinationType );
 
-			// Mapeia as propriedades usando reflection
+			// Map properties using reflection
 			MapPropertiesGeneric( source, dest, actualSourceType, concreteDestinationType );
 
 			return ( TDestination )dest;
 		}
 
+		/// <summary>
+		/// Maps properties between generic types using reflection-based property matching.
+		/// </summary>
+		/// <param name="source">The source object.</param>
+		/// <param name="dest">The destination object.</param>
+		/// <param name="sourceType">The source type.</param>
+		/// <param name="destType">The destination type.</param>
 		private void MapPropertiesGeneric( object source, object dest, Type sourceType, Type destType ) {
 			var srcProperties = sourceType
 				.GetProperties( BindingFlags.Public | BindingFlags.Instance )
@@ -119,88 +203,146 @@ namespace Myth.Morph {
 				.Where( p => p.CanWrite )
 				.ToArray( );
 
+			_logger?.LogTrace( "Mapping properties: {SourceCount} source properties, {DestCount} destination properties", srcProperties.Length, destProperties.Length );
+
+			var mappedCount = 0;
+			var errorCount = 0;
+
 			foreach ( var destProp in destProperties ) {
 				var srcProp = srcProperties.FirstOrDefault( p => p.Name == destProp.Name );
 
-				if ( srcProp == null )
+				if ( srcProp == null ) {
 					continue;
+				}
 
 				try {
 					var srcValue = srcProp.GetValue( source );
 
-					if ( srcValue == null )
+					if ( srcValue == null ) {
 						continue;
+					}
 
 					var mappedValue = MapPropertyValue( srcValue, srcProp.PropertyType, destProp.PropertyType );
-
 					destProp.SetValue( dest, mappedValue );
+					mappedCount++;
+
+					_logger?.LogTrace( "Mapped property {PropertyName}: {SourceType} -> {DestType}", destProp.Name, srcProp.PropertyType.Name, destProp.PropertyType.Name );
 				} catch ( Exception ex ) {
-					Debug.WriteLine( $"[Morph] Erro ao mapear propriedade {destProp.Name}: {ex.Message}" );
+					errorCount++;
+					_logger?.LogWarning( ex, "Error mapping property {PropertyName}", destProp.Name );
 				}
 			}
+
+			_logger?.LogDebug( "Property mapping completed. Successful: {MappedCount}, Errors: {ErrorCount}", mappedCount, errorCount );
 		}
 
+		/// <summary>
+		/// Maps a single property value from source type to destination type, handling type conversions and collections.
+		/// </summary>
+		/// <param name="value">The value to map.</param>
+		/// <param name="sourceType">The source property type.</param>
+		/// <param name="destType">The destination property type.</param>
+		/// <returns>The mapped value.</returns>
 		private object? MapPropertyValue( object value, Type sourceType, Type destType ) {
-			// Se os tipos são iguais ou compatíveis, retorna direto
-			if ( destType.IsAssignableFrom( sourceType ) )
+			// If types are equal or compatible, return directly
+			if ( destType.IsAssignableFrom( sourceType ) ) {
+				_logger?.LogTrace( "Direct assignment for compatible types {SourceType} -> {DestType}", sourceType.Name, destType.Name );
 				return value;
+			}
 
-			// Se é uma coleção genérica, mapeia os elementos
-			if ( IsGenericCollection( sourceType ) && IsGenericCollection( destType ) )
+			// If it's a generic collection, map the elements
+			if ( IsGenericCollection( sourceType ) && IsGenericCollection( destType ) ) {
+				_logger?.LogTrace( "Mapping generic collection from {SourceType} to {DestType}", sourceType.Name, destType.Name );
 				return MapGenericCollection( value, sourceType, destType );
+			}
 
-			// Tenta usar o sistema de mapeamento padrão
+			// Try using the default mapping system
 			try {
 				var mapToMethod = typeof( MorphExtensions )
 					.GetMethod( nameof( MorphExtensions.To ), [ typeof( object ), typeof( IServiceProvider ) ] )?
 					.MakeGenericMethod( destType );
 
-				return mapToMethod?.Invoke( null, [ value, _sp ] );
-			} catch {
-				// Se falhar, retorna o valor original se for compatível
+				var result = mapToMethod?.Invoke( null, [ value, _sp ] );
+				_logger?.LogTrace( "Successfully mapped {SourceType} to {DestType} using MorphExtensions", sourceType.Name, destType.Name );
+				return result;
+			} catch ( Exception ex ) {
+				_logger?.LogDebug( ex, "Failed to map {SourceType} to {DestType}, attempting fallback", sourceType.Name, destType.Name );
+				// If it fails, return the original value if compatible
 				return destType.IsAssignableFrom( value.GetType( ) ) ? value : null;
 			}
 		}
 
+		/// <summary>
+		/// Determines if a type represents a generic collection.
+		/// </summary>
+		/// <param name="type">The type to check.</param>
+		/// <returns>True if the type is a generic collection, false otherwise.</returns>
 		private static bool IsGenericCollection( Type type ) {
 			return type.IsGenericType &&
 				   ( type.GetGenericTypeDefinition( ) == typeof( IEnumerable<> ) ||
 					type.GetInterfaces( ).Any( i => i.IsGenericType && i.GetGenericTypeDefinition( ) == typeof( IEnumerable<> ) ) );
 		}
 
+		/// <summary>
+		/// Maps elements from a source generic collection to a destination generic collection.
+		/// </summary>
+		/// <param name="sourceCollection">The source collection to map from.</param>
+		/// <param name="sourceType">The type of the source collection.</param>
+		/// <param name="destType">The type of the destination collection.</param>
+		/// <returns>The mapped destination collection.</returns>
 		private object? MapGenericCollection( object sourceCollection, Type sourceType, Type destType ) {
 			var sourceElementType = GetGenericArgumentType( sourceType );
 			var destElementType = GetGenericArgumentType( destType );
 
-			if ( sourceElementType == null || destElementType == null )
+			if ( sourceElementType == null || destElementType == null ) {
+				_logger?.LogWarning( "Unable to determine element types for collection mapping from {SourceType} to {DestType}", sourceType.Name, destType.Name );
 				return null;
+			}
+
+			_logger?.LogTrace( "Mapping collection elements from {SourceElementType} to {DestElementType}", sourceElementType.Name, destElementType.Name );
 
 			var enumerable = ( System.Collections.IEnumerable )sourceCollection;
 			var mappedItems = new List<object?>( );
 
+			var itemCount = 0;
+			var errorCount = 0;
+
 			foreach ( var item in enumerable ) {
+				itemCount++;
+
 				if ( item == null ) {
 					mappedItems.Add( null );
-
 					continue;
 				}
 
-				var mappedItem = MapPropertyValue( item, sourceElementType, destElementType );
-				mappedItems.Add( mappedItem );
+				try {
+					var mappedItem = MapPropertyValue( item, sourceElementType, destElementType );
+					mappedItems.Add( mappedItem );
+				} catch ( Exception ex ) {
+					errorCount++;
+					_logger?.LogWarning( ex, "Error mapping collection item {ItemIndex}", itemCount - 1 );
+					mappedItems.Add( null );
+				}
 			}
 
-			// Cria a coleção de destino apropriada
+			_logger?.LogTrace( "Collection mapping completed. Items: {ItemCount}, Errors: {ErrorCount}", itemCount, errorCount );
+
+			// Create the appropriate destination collection
 			return CreateGenericCollection( destType, destElementType, mappedItems );
 		}
 
+		/// <summary>
+		/// Extracts the generic argument type from a generic type.
+		/// </summary>
+		/// <param name="type">The generic type to extract from.</param>
+		/// <returns>The first generic argument type, or null if not found.</returns>
 		private Type? GetGenericArgumentType( Type type ) {
 			if ( type.IsGenericType ) {
 				var args = type.GetGenericArguments( );
-
 				return args.Length > 0 ? args[ 0 ] : null;
 			}
 
-			// Procura em interfaces implementadas
+			// Search in implemented interfaces
 			var genericInterface = type
 				.GetInterfaces( )
 				.FirstOrDefault( i =>
@@ -210,174 +352,227 @@ namespace Myth.Morph {
 			return genericInterface?.GetGenericArguments( ).FirstOrDefault( );
 		}
 
+		/// <summary>
+		/// Creates a generic collection of the specified type with the provided items.
+		/// </summary>
+		/// <param name="collectionType">The type of collection to create.</param>
+		/// <param name="elementType">The type of elements in the collection.</param>
+		/// <param name="items">The items to populate the collection with.</param>
+		/// <returns>The created collection instance.</returns>
 		private object? CreateGenericCollection( Type collectionType, Type elementType, List<object?> items ) {
-			// Se é um array
-			if ( collectionType.IsArray ) {
-				var array = Array.CreateInstance( elementType, items.Count );
-
-				for ( int i = 0; i < items.Count; i++ )
-					array.SetValue( items[ i ], i );
-
-				return array;
-			}
-
-			// Se é uma interface genérica (IEnumerable<T>, ICollection<T>, etc.), cria uma List<T>
-			if ( collectionType.IsInterface && collectionType.IsGenericType ) {
-				var listType = typeof( List<> ).MakeGenericType( elementType );
-				var list = ( IList )Activator.CreateInstance( listType )!;
-
-				foreach ( var item in items )
-					list.Add( item );
-
-				return list;
-			}
-
-			// Para tipos concretos, tenta criar instância direta
 			try {
-				var instance = CreateInstance( collectionType );
-				if ( instance is IList list ) {
+				// If it's an array
+				if ( collectionType.IsArray ) {
+					var array = Array.CreateInstance( elementType, items.Count );
+					for ( int i = 0; i < items.Count; i++ )
+						array.SetValue( items[ i ], i );
+					return array;
+				}
+
+				// If it's a generic interface (IEnumerable<T>, ICollection<T>, etc.), create a List<T>
+				if ( collectionType.IsInterface && collectionType.IsGenericType ) {
+					var listType = typeof( List<> ).MakeGenericType( elementType );
+					var list = ( IList )Activator.CreateInstance( listType )!;
 					foreach ( var item in items )
 						list.Add( item );
+					return list;
+				}
 
+				// For concrete types, try to create direct instance
+				var instance = CreateInstance( collectionType );
+				if ( instance is IList concreteList ) {
+					foreach ( var item in items )
+						concreteList.Add( item );
 					return instance;
 				}
-			} catch {
-				// Se falhar, retorna uma List<T>
-				var listType = typeof( List<> ).MakeGenericType( elementType );
-				var list = ( IList )Activator.CreateInstance( listType )!;
-
-				foreach ( var item in items )
-					list.Add( item );
-
-				return list;
+			} catch ( Exception ex ) {
+				_logger?.LogError( ex, "Error creating collection of type {CollectionType}", collectionType.Name );
 			}
 
-			return null;
+			// Fallback: return a List<T>
+			var fallbackListType = typeof( List<> ).MakeGenericType( elementType );
+			var fallbackList = ( IList )Activator.CreateInstance( fallbackListType )!;
+			foreach ( var item in items )
+				fallbackList.Add( item );
+			return fallbackList;
 		}
 
+		/// <summary>
+		/// Performs instance-based mapping using the IMorphable interface.
+		/// </summary>
+		/// <typeparam name="TDestination">The destination type.</typeparam>
+		/// <param name="source">The source object that implements IMorphable.</param>
+		/// <param name="destinationType">The destination type to map to.</param>
+		/// <returns>The mapped destination object.</returns>
 		private TDestination MapFromInstance<TDestination>( IMorphable<TDestination> source, Type destinationType ) {
-			// Resolve o tipo concreto se necessário
+			_logger?.LogDebug( "Starting instance-based mapping for {SourceType} -> {DestinationType}", source.GetType( ).Name, destinationType.Name );
+
+			// Resolve concrete type if necessary
 			var concreteDestinationType = ResolveConcreteDestinationType( destinationType );
 
-			// Cria a instância de destino
+			// Create destination instance
 			var dest = ( TDestination )CreateInstance( concreteDestinationType );
 
-			// Cria o builder específico para instâncias
+			// Create builder specific for instances
 			var instanceBuilder = new Schema<TDestination>( );
 
-			// Chama o MapTo da instância para configurar o builder
+			// Call the instance's MorphTo method to configure the builder
 			source.MorphTo( instanceBuilder );
 
-			// Aplica o mapeamento
+			// Apply the mapping
 			var applyMethod = typeof( Schema<TDestination> )
 				.GetMethod( "ApplyFromInstanceAsync", BindingFlags.Instance | BindingFlags.NonPublic );
 
 			if ( applyMethod != null ) {
 				var genericApplyMethod = applyMethod.MakeGenericMethod( source.GetType( ) );
-
 				var task = ( Task )genericApplyMethod.Invoke( instanceBuilder, [ source, dest, _sp ] )!;
-
-				task
-					.GetAwaiter( )
-					.GetResult( );
+				task.GetAwaiter( ).GetResult( );
 			}
 
+			_logger?.LogDebug( "Instance-based mapping completed for {SourceType} -> {DestinationType}", source.GetType( ).Name, destinationType.Name );
 			return dest;
 		}
 
+		/// <summary>
+		/// Resolves the concrete implementation type for a given destination type.
+		/// If the destination is an interface, attempts to find a concrete implementation.
+		/// </summary>
+		/// <param name="destinationType">The destination type to resolve.</param>
+		/// <returns>The concrete type to use for instantiation.</returns>
 		private Type ResolveConcreteDestinationType( Type destinationType ) {
-			// Se é interface genérica, tenta resolver para concreto
+			// If it's a generic interface, try to resolve to concrete
 			if ( destinationType.IsInterface &&
-				 TryResolveGenericConcrete( destinationType, out var concrete ) )
+				 TryResolveGenericConcrete( destinationType, out var concrete ) ) {
+				_logger?.LogTrace( "Resolved generic interface {Interface} to concrete type {Concrete}", destinationType.Name, concrete.Name );
 				return concrete;
+			}
 
-			// Se é interface não-genérica, procura implementação registrada no DI
+			// If it's a non-generic interface, look for registered implementation in DI
 			if ( destinationType.IsInterface ) {
 				var serviceImpl = _sp.GetService( destinationType );
-
-				if ( serviceImpl != null )
+				if ( serviceImpl != null ) {
+					_logger?.LogTrace( "Resolved interface {Interface} to service implementation {Implementation}", destinationType.Name, serviceImpl.GetType( ).Name );
 					return serviceImpl.GetType( );
+				}
 			}
 
 			return destinationType;
 		}
 
+		/// <summary>
+		/// Attempts to resolve a generic interface to its concrete implementation.
+		/// </summary>
+		/// <param name="iface">The generic interface type.</param>
+		/// <param name="concrete">The resolved concrete type, if successful.</param>
+		/// <returns>True if resolution was successful, false otherwise.</returns>
 		public bool TryResolveGenericConcrete( Type iface, out Type concrete ) {
 			if ( iface.IsGenericType ) {
 				var genericDef = iface.GetGenericTypeDefinition( );
 
 				if ( _genericInterfaceToConcrete.TryGetValue( genericDef, out var concreteDef ) ) {
 					var args = iface.GetGenericArguments( );
-
 					concrete = concreteDef.MakeGenericType( args );
-
 					return true;
 				}
 			}
 			concrete = null!;
-
 			return false;
 		}
 
+		/// <summary>
+		/// Attempts to find an existing builder for the specified source and destination types.
+		/// </summary>
+		/// <param name="sourceType">The source type.</param>
+		/// <param name="destinationType">The destination type.</param>
+		/// <param name="builderObj">The found builder object, if successful.</param>
+		/// <returns>True if a builder was found, false otherwise.</returns>
 		private bool TryGetBuilder( Type sourceType, Type destinationType, out object? builderObj ) {
-			// Procura mapeamento exato
-			if ( _builders.TryGetValue( (sourceType, destinationType), out builderObj ) )
+			// Look for exact mapping
+			if ( _builders.TryGetValue( (sourceType, destinationType), out builderObj ) ) {
+				_logger?.LogTrace( "Found exact builder for {SourceType} -> {DestinationType}", sourceType.Name, destinationType.Name );
 				return true;
+			}
 
-			// Procura mapeamentos compatíveis (herança/implementação)
+			// Look for compatible mappings (inheritance/implementation)
 			foreach ( var ((src, dst), builder) in _builders ) {
 				if ( src.IsAssignableFrom( sourceType ) && dst.IsAssignableFrom( destinationType ) ) {
 					builderObj = builder;
-
+					_logger?.LogTrace( "Found compatible builder for {SourceType} -> {DestinationType} (via {BuilderSource} -> {BuilderDest})",
+						sourceType.Name, destinationType.Name, src.Name, dst.Name );
 					return true;
 				}
 			}
 
 			builderObj = null;
-
 			return false;
 		}
 
+		/// <summary>
+		/// Applies mapping dynamically when types don't match exactly, using reflection.
+		/// </summary>
+		/// <typeparam name="TDestination">The expected destination type.</typeparam>
+		/// <param name="source">The source object.</param>
+		/// <param name="actualSourceType">The actual source type.</param>
+		/// <param name="dest">The destination object.</param>
+		/// <param name="concreteDestType">The concrete destination type.</param>
+		/// <param name="destinationType">The interface destination type.</param>
+		/// <returns>The mapped destination object.</returns>
 		private TDestination ApplyMappingDynamically<TDestination>(
 			object source,
 			Type actualSourceType,
 			object dest,
 			Type concreteDestType,
 			Type destinationType ) {
-			// Encontra ou cria um builder compatível
+			_logger?.LogDebug( "Applying dynamic mapping from {ActualSourceType} to {ConcreteDestType}", actualSourceType.Name, concreteDestType.Name );
+
+			// Find or create a compatible builder
 			var compatibleBuilder = GetOrCreateCompatibleBuilder( actualSourceType, concreteDestType );
 
 			if ( compatibleBuilder != null ) {
-				// Invoca ApplyAsync dinamicamente
+				// Invoke ApplyAsync dynamically
 				var applyMethod = compatibleBuilder.GetType( ).GetMethod( "ApplyAsync" );
-
-				var applyTask = ( Task )applyMethod!.Invoke( compatibleBuilder, [ source, dest, _sp ] )!;
-
-				applyTask.GetAwaiter( ).GetResult( );
+				if ( applyMethod != null ) {
+					var applyTask = ( Task )applyMethod.Invoke( compatibleBuilder, [ source, dest, _sp ] )!;
+					applyTask.GetAwaiter( ).GetResult( );
+				}
 			}
 
+			_logger?.LogDebug( "Dynamic mapping completed" );
 			return ( TDestination )dest;
 		}
 
+		/// <summary>
+		/// Gets an existing compatible builder or creates a new one dynamically.
+		/// </summary>
+		/// <param name="sourceType">The source type.</param>
+		/// <param name="destType">The destination type.</param>
+		/// <returns>A compatible builder object, or null if none can be created.</returns>
 		private object? GetOrCreateCompatibleBuilder( Type sourceType, Type destType ) {
-			// Primeiro verifica se já existe
-			if ( _builders.TryGetValue( (sourceType, destType), out var existing ) )
+			// First check if one already exists
+			if ( _builders.TryGetValue( (sourceType, destType), out var existing ) ) {
 				return existing;
+			}
 
-			// Tenta criar um builder dinamicamente se os tipos são compatíveis
+			// Try to create a dynamic mapping if types are compatible
 			if ( CanCreateDynamicMapping( sourceType, destType ) ) {
+				_logger?.LogTrace( "Creating dynamic mapping for {SourceType} -> {DestType}", sourceType.Name, destType.Name );
 				CreateDynamicMapping( sourceType, destType );
-
 				return _builders.GetValueOrDefault( (sourceType, destType) );
 			}
 
 			return null;
 		}
 
+		/// <summary>
+		/// Determines if a dynamic mapping can be created between the specified types.
+		/// </summary>
+		/// <param name="sourceType">The source type.</param>
+		/// <param name="destType">The destination type.</param>
+		/// <returns>True if dynamic mapping is possible, false otherwise.</returns>
 		private bool CanCreateDynamicMapping( Type sourceType, Type destType ) {
-			// Pode criar mapeamento automático se:
-			// 1. Ambos são classes ou structs (não interfaces)
-			// 2. Ou se conseguir resolver o tipo concreto de destino
+			// Can create automatic mapping if:
+			// 1. Both are classes or structs (not interfaces)
+			// 2. Or if we can resolve the concrete destination type
 			if ( !sourceType.IsInterface && !destType.IsInterface )
 				return true;
 
@@ -387,63 +582,94 @@ namespace Myth.Morph {
 			return false;
 		}
 
+		/// <summary>
+		/// Creates a dynamic mapping between the specified types.
+		/// </summary>
+		/// <param name="sourceType">The source type.</param>
+		/// <param name="destType">The destination type.</param>
 		private void CreateDynamicMapping( Type sourceType, Type destType ) {
-			// Resolve o tipo concreto se necessário
+			// Resolve concrete type if necessary
 			var concreteDestType = ResolveConcreteDestinationType( destType );
 
-			// Cria um builder genérico dinamicamente
+			// Create a generic builder dynamically
 			var builderType = typeof( Schema<> ).MakeGenericType( sourceType, concreteDestType );
 			var builder = Activator.CreateInstance( builderType )!;
 
-			// Adiciona mapeamento automático básico (será feito pelo AutoMap)
+			// Add basic automatic mapping (will be done by AutoMap)
 			_builders[ (sourceType, destType) ] = builder;
 
-			// Se o tipo concreto é diferente do tipo interface, registra ambos
+			// If the concrete type is different from the interface type, register both
 			if ( concreteDestType != destType ) {
 				_builders[ (sourceType, concreteDestType) ] = builder;
 			}
+
+			_logger?.LogTrace( "Created dynamic builder for {SourceType} -> {DestType}", sourceType.Name, destType.Name );
 		}
 
+		/// <summary>
+		/// Checks if a mapping exists between the specified source and destination types.
+		/// </summary>
+		/// <param name="sourceType">The source type to check.</param>
+		/// <param name="destinationType">The destination type to check.</param>
+		/// <returns>True if a mapping exists, false otherwise.</returns>
 		public bool HasMapping( Type sourceType, Type destinationType ) {
-			// Verifica se é um mapeamento baseado em instância
-			if ( _instanceBasedMappings.Contains( (sourceType, destinationType) ) )
+			// Check if it's an instance-based mapping
+			if ( _instanceBasedMappings.Contains( (sourceType, destinationType) ) ) {
+				_logger?.LogTrace( "Found instance-based mapping for {SourceType} -> {DestType}", sourceType.Name, destinationType.Name );
 				return true;
+			}
 
-			// Verifica mapeamento direto
-			if ( _builders.ContainsKey( (sourceType, destinationType) ) )
+			// Check direct mapping
+			if ( _builders.ContainsKey( (sourceType, destinationType) ) ) {
+				_logger?.LogTrace( "Found direct mapping for {SourceType} -> {DestType}", sourceType.Name, destinationType.Name );
 				return true;
+			}
 
-			// Verifica se é um mapeamento genérico
-			if ( IsGenericMapping( sourceType, destinationType ) )
+			// Check if it's a generic mapping
+			if ( IsGenericMapping( sourceType, destinationType ) ) {
+				_logger?.LogTrace( "Found generic mapping for {SourceType} -> {DestType}", sourceType.Name, destinationType.Name );
 				return true;
+			}
 
-			// Verifica se consegue resolver o tipo concreto e tem mapeamento para ele
+			// Check if we can resolve the concrete type and have mapping for it
 			var concreteDestType = ResolveConcreteDestinationType( destinationType );
-			if ( concreteDestType != destinationType && _builders.ContainsKey( (sourceType, concreteDestType) ) )
+			if ( concreteDestType != destinationType && _builders.ContainsKey( (sourceType, concreteDestType) ) ) {
+				_logger?.LogTrace( "Found concrete type mapping for {SourceType} -> {ConcreteDestType}", sourceType.Name, concreteDestType.Name );
 				return true;
+			}
 
+			_logger?.LogTrace( "No mapping found for {SourceType} -> {DestType}", sourceType.Name, destinationType.Name );
 			return false;
 		}
 
+		/// <summary>
+		/// Registers automatic mappings for generic types with identical definitions.
+		/// This enables automatic mapping between generic types like List&lt;SourceItem&gt; to List&lt;DestItem&gt;.
+		/// </summary>
+		/// <param name="memberMatchRule">Optional rule for matching members between types.</param>
 		public void RegisterGenericEqualTypesMapping( Func<string, string, bool>? memberMatchRule = null ) {
+			_logger?.LogDebug( "Registering generic equal types mapping" );
+
 			_genericRegisters.Add( ( sourceType, destType ) => {
-				// Resolve tipos concretos se necessário
+				// Resolve concrete types if necessary
 				var concreteDestType = ResolveConcreteDestinationType( destType );
 
-				// Se já existe mapeamento, não registra novamente
+				// If mapping already exists, don't register again
 				if ( _builders.ContainsKey( (sourceType, destType) ) ||
 					_builders.ContainsKey( (sourceType, concreteDestType) ) )
 					return;
 
-				// Verifica se são tipos genéricos compatíveis
+				// Check if they are compatible generic types
 				if ( !IsCompatibleGenericMapping( sourceType, concreteDestType ) )
 					return;
 
-				// Cria builder dinamicamente via reflection
+				_logger?.LogTrace( "Creating generic equal types mapping for {SourceType} -> {ConcreteDestType}", sourceType.Name, concreteDestType.Name );
+
+				// Create builder dynamically via reflection
 				var builderType = typeof( Schema<> ).MakeGenericType( sourceType, concreteDestType );
 				var builder = Activator.CreateInstance( builderType )!;
 
-				// Registra para ambos os tipos (interface e concreto)
+				// Register for both types (interface and concrete)
 				_builders[ (sourceType, destType) ] = builder;
 				if ( destType != concreteDestType ) {
 					_builders[ (sourceType, concreteDestType) ] = builder;
@@ -451,64 +677,99 @@ namespace Myth.Morph {
 			} );
 		}
 
+		/// <summary>
+		/// Determines if two generic types are compatible for automatic mapping.
+		/// </summary>
+		/// <param name="sourceType">The source generic type.</param>
+		/// <param name="destType">The destination generic type.</param>
+		/// <returns>True if the types are compatible, false otherwise.</returns>
 		private bool IsCompatibleGenericMapping( Type sourceType, Type destType ) {
-			// Ambos devem ser genéricos
+			// Both must be generic
 			if ( !sourceType.IsGenericType || !destType.IsGenericType )
 				return false;
 
 			var srcGenericDef = sourceType.GetGenericTypeDefinition( );
 			var dstGenericDef = destType.GetGenericTypeDefinition( );
 
-			// Devem ter a mesma definição genérica
+			// Must have the same generic definition
 			if ( srcGenericDef != dstGenericDef )
 				return false;
 
 			var srcArgs = sourceType.GetGenericArguments( );
 			var dstArgs = destType.GetGenericArguments( );
 
-			// Devem ter o mesmo número de argumentos genéricos
-			return srcArgs.Length == dstArgs.Length;
+			// Must have the same number of generic arguments
+			var isCompatible = srcArgs.Length == dstArgs.Length;
+
+			_logger?.LogTrace( "Generic compatibility check for {SourceGeneric} vs {DestGeneric}: {IsCompatible}", srcGenericDef.Name, dstGenericDef.Name, isCompatible );
+			return isCompatible;
 		}
 
 		/// <summary>
-		/// Cria instância de um tipo mesmo que não tenha construtor padrão.
+		/// Creates an instance of the specified type, handling dependency injection and fallback scenarios.
 		/// </summary>
+		/// <param name="type">The type to create an instance of.</param>
+		/// <returns>An instance of the specified type.</returns>
+		/// <exception cref="BindException">Thrown when the type cannot be instantiated.</exception>
 		private object CreateInstance( Type type ) {
-			// 1 - Tenta via DI primeiro
+			_logger?.LogTrace( "Creating instance of type {TypeName}", type.Name );
+
+			// 1 - Try via DI first
 			var fromSp = _sp.GetService( type );
-			if ( fromSp != null )
+			if ( fromSp != null ) {
+				_logger?.LogTrace( "Created instance via service provider for {TypeName}", type.Name );
 				return fromSp;
+			}
 
-			// 2 - Tenta construtor sem parâmetros
+			// 2 - Try parameterless constructor
 			var ctor = type.GetConstructor( Type.EmptyTypes );
-			if ( ctor != null )
-				return ctor.Invoke( null );
+			if ( ctor != null ) {
+				var instance = ctor.Invoke( null );
+				_logger?.LogTrace( "Created instance via parameterless constructor for {TypeName}", type.Name );
+				return instance;
+			}
 
-			// 3 - Pega construtor com menos parâmetros e tenta resolver via DI
+			// 3 - Get constructor with fewest parameters and try to resolve via DI
 			var ctorWithParams = type
 				.GetConstructors( )
 				.OrderBy( c => c.GetParameters( ).Length )
 				.FirstOrDefault( );
 
-			if ( ctorWithParams is null )
-				throw new BindException( $"Tipo {type} não possui construtor acessível." );
+			if ( ctorWithParams is null ) {
+				var errorMessage = $"Type {type} has no accessible constructor.";
+				_logger?.LogError( errorMessage );
+				throw new BindException( errorMessage );
+			}
 
-			var args = ctorWithParams
-				.GetParameters( )
+			var parameters = ctorWithParams.GetParameters( );
+			_logger?.LogTrace( "Attempting to create instance with {ParameterCount} constructor parameters", parameters.Length );
+
+			var args = parameters
 				.Select( p => {
-					// Tenta resolver via DI primeiro
+					// Try to resolve via DI first
 					var serviceValue = _sp.GetService( p.ParameterType );
-					if ( serviceValue != null )
+					if ( serviceValue != null ) {
+						_logger?.LogTrace( "Resolved parameter {ParameterName} of type {ParameterType} via DI", p.Name, p.ParameterType.Name );
 						return serviceValue;
+					}
 
-					// Senão usa valor padrão
-					return p.HasDefaultValue ? p.DefaultValue : GetDefault( p.ParameterType );
+					// Otherwise use default value
+					var defaultValue = p.HasDefaultValue ? p.DefaultValue : GetDefault( p.ParameterType );
+					_logger?.LogTrace( "Using default value for parameter {ParameterName} of type {ParameterType}", p.Name, p.ParameterType.Name );
+					return defaultValue;
 				} )
 				.ToArray( );
 
-			return ctorWithParams.Invoke( args );
+			var result = ctorWithParams.Invoke( args );
+			_logger?.LogTrace( "Successfully created instance of {TypeName} with constructor parameters", type.Name );
+			return result;
 		}
 
+		/// <summary>
+		/// Gets the default value for a given type.
+		/// </summary>
+		/// <param name="type">The type to get the default value for.</param>
+		/// <returns>The default value for the type.</returns>
 		private static object? GetDefault( Type type ) =>
 			type.IsValueType
 			? Activator.CreateInstance( type )

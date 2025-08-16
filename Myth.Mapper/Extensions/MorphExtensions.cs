@@ -1,8 +1,13 @@
-﻿using Myth.Exceptions;
+﻿using Microsoft.Extensions.Logging;
+using Myth.Exceptions;
 using Myth.Morph;
 
 namespace Myth.Extensions {
 
+	/// <summary>
+	/// Provides extension methods for object transformation and mapping using the Morph system.
+	/// These extensions enable seamless conversion between different types through a configured binding registry.
+	/// </summary>
 	public static class MorphExtensions {
 
 		/// <summary>
@@ -22,28 +27,49 @@ namespace Myth.Extensions {
 		/// <exception cref="InvalidMorphConfigurationException">Thrown if the <see cref="IServiceProvider"/> is not configured or if the required <see cref="SchemaRegistry"/> is
 		/// not registered in the dependency injection container.</exception>
 		public static TDestination To<TDestination>( this object source, IServiceProvider? sp = null ) {
-			if ( source is null )
+			var logger = GetLogger( sp );
+
+			if ( source is null ) {
+				logger?.LogDebug( "Source object is null, returning default value for type {DestinationType}", typeof( TDestination ).Name );
 				return default!;
+			}
 
 			var srcType = source.GetType( );
 			var destType = typeof( TDestination );
 
-			var serviceProvider = sp ?? DefaultProvider.ServiceProvider;
-			if ( serviceProvider is null )
-				throw new InvalidMorphConfigurationException( $"ServiceProvider não configurado. Chame {nameof( ServiceCollectionExtensions.AddMorph )}() na configuração do DI ou passe o ServiceProvider como parâmetro." );
+			logger?.LogDebug( "Converting object from {SourceType} to {DestinationType}", srcType.Name, destType.Name );
 
-			// Garante que o DefaultProvider está configurado
+			var serviceProvider = sp ?? DefaultProvider.ServiceProvider;
+			if ( serviceProvider is null ) {
+				var errorMessage = $"ServiceProvider not configured. Call {nameof( ServiceCollectionExtensions.AddMorph )}() in DI configuration or pass ServiceProvider as parameter.";
+				logger?.LogError( errorMessage );
+				throw new InvalidMorphConfigurationException( errorMessage );
+			}
+
+			// Ensures that the DefaultProvider is configured
 			DefaultProvider.EnsureProvider( serviceProvider );
 
 			var registry = ( SchemaRegistry? )serviceProvider.GetService( typeof( SchemaRegistry ) );
-			if ( registry is null )
-				throw new InvalidMorphConfigurationException( $"{nameof( SchemaRegistry )} não encontrado no DI. Verifique se {nameof( ServiceCollectionExtensions.AddMorph )}() foi chamado corretamente." );
+			if ( registry is null ) {
+				var errorMessage = $"{nameof( SchemaRegistry )} not found in DI. Verify that {nameof( ServiceCollectionExtensions.AddMorph )}() was called correctly.";
+				logger?.LogError( errorMessage );
+				throw new InvalidMorphConfigurationException( errorMessage );
+			}
+
+			logger?.LogTrace( "Retrieved SchemaRegistry from service provider" );
 
 			var method = typeof( SchemaRegistry )
 				.GetMethod( nameof( SchemaRegistry.Morph ) )!
 				.MakeGenericMethod( srcType, destType );
 
-			return ( TDestination )method.Invoke( registry, [ source ] )!;
+			try {
+				var result = ( TDestination )method.Invoke( registry, [ source ] )!;
+				logger?.LogDebug( "Successfully converted {SourceType} to {DestinationType}", srcType.Name, destType.Name );
+				return result;
+			} catch ( Exception ex ) {
+				logger?.LogError( ex, "Failed to convert {SourceType} to {DestinationType}", srcType.Name, destType.Name );
+				throw;
+			}
 		}
 
 		/// <summary>
@@ -56,11 +82,17 @@ namespace Myth.Extensions {
 		/// <returns>A list of objects of type <typeparamref name="TDestination"/>. Returns an empty list if <paramref
 		/// name="sourceList"/> is null or contains no convertible elements.</returns>
 		public static IEnumerable<TDestination> To<TDestination>( this IEnumerable<object> sourceList, IServiceProvider? sp = null ) {
-			if ( sourceList is null )
-				return [ ];
+			var logger = GetLogger( sp );
 
-			return sourceList
-				.Where( s => s != null )
+			if ( sourceList is null ) {
+				logger?.LogDebug( "Source list is null, returning empty collection" );
+				return [ ];
+			}
+
+			var sourceArray = sourceList.Where( s => s != null ).ToArray( );
+			logger?.LogDebug( "Converting {Count} items to {DestinationType}", sourceArray.Length, typeof( TDestination ).Name );
+
+			return sourceArray
 				.Select( s => s.To<TDestination>( sp ) )
 				.AsEnumerable( );
 		}
@@ -81,26 +113,42 @@ namespace Myth.Extensions {
 		/// <exception cref="InvalidMorphConfigurationException">Thrown if the <see cref="IServiceProvider"/> is not configured or if the required <see cref="SchemaRegistry"/> is
 		/// not found in the dependency injection container.</exception>
 		public static IEnumerable<TDestination> To<TSource, TDestination>( this IEnumerable<TSource> sourceList, IServiceProvider? sp = null ) {
-			if ( sourceList is null )
+			var logger = GetLogger( sp );
+
+			if ( sourceList is null ) {
+				logger?.LogDebug( "Source list is null, returning empty collection" );
 				return [ ];
+			}
 
 			var serviceProvider = sp ?? DefaultProvider.ServiceProvider;
-			if ( serviceProvider is null )
-				throw new InvalidMorphConfigurationException( "ServiceProvider not configured." );
+			if ( serviceProvider is null ) {
+				var errorMessage = "ServiceProvider not configured.";
+				logger?.LogError( errorMessage );
+				throw new InvalidMorphConfigurationException( errorMessage );
+			}
 
 			var registry = ( SchemaRegistry )serviceProvider.GetService( typeof( SchemaRegistry ) )!;
-			if ( registry is null )
-				throw new InvalidMorphConfigurationException( $"{nameof( SchemaRegistry )} can't be found in the DI." );
+			if ( registry is null ) {
+				var errorMessage = $"{nameof( SchemaRegistry )} can't be found in the DI.";
+				logger?.LogError( errorMessage );
+				throw new InvalidMorphConfigurationException( errorMessage );
+			}
+
+			var sourceArray = sourceList.Where( item => item != null ).ToArray( );
+			logger?.LogDebug( "Converting {Count} items from {SourceType} to {DestinationType}", sourceArray.Length, typeof( TSource ).Name, typeof( TDestination ).Name );
 
 			var result = new List<TDestination>( );
-			foreach ( var item in sourceList ) {
-				if ( item != null ) {
+			foreach ( var item in sourceArray ) {
+				try {
 					var mapped = registry.Morph<TSource, TDestination>( item );
 					result.Add( mapped );
+				} catch ( Exception ex ) {
+					logger?.LogWarning( ex, "Failed to map item of type {SourceType} to {DestinationType}, skipping", typeof( TSource ).Name, typeof( TDestination ).Name );
 				}
 			}
 
-			return result.AsEnumerable();
+			logger?.LogDebug( "Successfully converted {ProcessedCount} out of {TotalCount} items", result.Count, sourceArray.Length );
+			return result.AsEnumerable( );
 		}
 
 		/// <summary>
@@ -116,6 +164,9 @@ namespace Myth.Extensions {
 		/// <returns>A task representing the asynchronous operation. The result contains the converted object of type <typeparamref
 		/// name="TDestination"/>.</returns>
 		public static async Task<TDestination> ToAsync<TDestination>( this object source, IServiceProvider? sp = null ) {
+			var logger = GetLogger( sp );
+			logger?.LogTrace( "Starting async conversion from {SourceType} to {DestinationType}", source?.GetType( ).Name ?? "null", typeof( TDestination ).Name );
+
 			return await Task.FromResult( source.To<TDestination>( sp ) );
 		}
 
@@ -132,12 +183,20 @@ namespace Myth.Extensions {
 		/// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref
 		/// name="TDestination"/> objects.</returns>
 		public static async Task<IEnumerable<TDestination>> ToAsync<TDestination>( this IEnumerable<object> sourceList, IServiceProvider? sp = null ) {
-			var tasks = sourceList
-				.Where( s => s != null )
-				.Select( s => s.ToAsync<TDestination>( sp ) );
+			var logger = GetLogger( sp );
 
+			if ( sourceList is null ) {
+				logger?.LogDebug( "Source list is null, returning empty collection" );
+				return [ ];
+			}
+
+			var validItems = sourceList.Where( s => s != null ).ToArray( );
+			logger?.LogDebug( "Starting async conversion of {Count} items to {DestinationType}", validItems.Length, typeof( TDestination ).Name );
+
+			var tasks = validItems.Select( s => s.ToAsync<TDestination>( sp ) );
 			var result = await Task.WhenAll( tasks );
 
+			logger?.LogDebug( "Completed async conversion of {Count} items", result.Length );
 			return result.AsEnumerable( );
 		}
 
@@ -155,20 +214,31 @@ namespace Myth.Extensions {
 		/// <returns><see langword="true"/> if the source object can be bound to the specified destination type; otherwise, <see
 		/// langword="false"/>.</returns>
 		public static bool CanBindTo<TDestination>( this object source, IServiceProvider? sp = null ) {
-			if ( source is null )
+			var logger = GetLogger( sp );
+
+			if ( source is null ) {
+				logger?.LogTrace( "Source object is null, cannot bind to {DestinationType}", typeof( TDestination ).Name );
 				return false;
+			}
 
 			try {
 				var serviceProvider = sp ?? DefaultProvider.ServiceProvider;
-				if ( serviceProvider is null )
+				if ( serviceProvider is null ) {
+					logger?.LogTrace( "ServiceProvider not available, cannot check binding for {SourceType} to {DestinationType}", source.GetType( ).Name, typeof( TDestination ).Name );
 					return false;
+				}
 
 				var registry = ( SchemaRegistry? )serviceProvider.GetService( typeof( SchemaRegistry ) );
-				if ( registry is null )
+				if ( registry is null ) {
+					logger?.LogTrace( "SchemaRegistry not available, cannot check binding for {SourceType} to {DestinationType}", source.GetType( ).Name, typeof( TDestination ).Name );
 					return false;
+				}
 
-				return registry.HasMapping( source.GetType( ), typeof( TDestination ) );
-			} catch {
+				var canBind = registry.HasMapping( source.GetType( ), typeof( TDestination ) );
+				logger?.LogTrace( "Binding check for {SourceType} to {DestinationType}: {CanBind}", source.GetType( ).Name, typeof( TDestination ).Name, canBind );
+				return canBind;
+			} catch ( Exception ex ) {
+				logger?.LogWarning( ex, "Error checking binding for {SourceType} to {DestinationType}", source.GetType( ).Name, typeof( TDestination ).Name );
 				return false;
 			}
 		}
@@ -188,21 +258,46 @@ namespace Myth.Extensions {
 		/// <returns><see langword="true"/> if the source object can be bound to the destination type; otherwise, <see
 		/// langword="false"/>.</returns>
 		public static bool CanBindTo<TSource, TDestination>( this TSource source, IServiceProvider? sp = null ) {
-			if ( source is null )
+			var logger = GetLogger( sp );
+
+			if ( source is null ) {
+				logger?.LogTrace( "Source object is null, cannot bind {SourceType} to {DestinationType}", typeof( TSource ).Name, typeof( TDestination ).Name );
 				return false;
+			}
 
 			try {
 				var serviceProvider = sp ?? DefaultProvider.ServiceProvider;
-				if ( serviceProvider is null )
+				if ( serviceProvider is null ) {
+					logger?.LogTrace( "ServiceProvider not available, cannot check binding for {SourceType} to {DestinationType}", typeof( TSource ).Name, typeof( TDestination ).Name );
 					return false;
+				}
 
 				var registry = ( SchemaRegistry? )serviceProvider.GetService( typeof( SchemaRegistry ) );
-				if ( registry is null )
+				if ( registry is null ) {
+					logger?.LogTrace( "SchemaRegistry not available, cannot check binding for {SourceType} to {DestinationType}", typeof( TSource ).Name, typeof( TDestination ).Name );
 					return false;
+				}
 
-				return registry.HasMapping( typeof( TSource ), typeof( TDestination ) );
-			} catch {
+				var canBind = registry.HasMapping( typeof( TSource ), typeof( TDestination ) );
+				logger?.LogTrace( "Binding check for {SourceType} to {DestinationType}: {CanBind}", typeof( TSource ).Name, typeof( TDestination ).Name, canBind );
+				return canBind;
+			} catch ( Exception ex ) {
+				logger?.LogWarning( ex, "Error checking binding for {SourceType} to {DestinationType}", typeof( TSource ).Name, typeof( TDestination ).Name );
 				return false;
+			}
+		}
+
+		/// <summary>
+		/// Gets a logger instance from the service provider if available.
+		/// </summary>
+		/// <param name="sp">The service provider to resolve the logger from.</param>
+		/// <returns>An ILogger instance or null if not available.</returns>
+		private static ILogger? GetLogger( IServiceProvider? sp = null ) {
+			try {
+				var serviceProvider = sp ?? DefaultProvider.ServiceProvider;
+				return serviceProvider?.GetService( typeof( ILogger<> ).MakeGenericType( typeof( MorphExtensions ) ) ) as ILogger;
+			} catch {
+				return null;
 			}
 		}
 	}
