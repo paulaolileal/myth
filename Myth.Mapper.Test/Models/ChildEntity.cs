@@ -2,11 +2,11 @@
 
 namespace Myth.Morph.Test.Models {
 
-	public class ChildEntity : IMorphTo<ChildDto> {
+	public class ChildEntity : IMorphable<ChildDto> {
 		public int Id { get; set; }
 		public ParentEntity? Parent { get; set; }
 
-		public void Binder( BinderBuilder<ChildDto> builder ) {
+		public void MorphTo( Schema<ChildDto> builder ) {
 			builder.Bind(
 				dest => dest.ParentId,
 				( ) => Parent != null ? Parent.Id : 0 );

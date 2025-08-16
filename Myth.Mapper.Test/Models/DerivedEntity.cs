@@ -2,10 +2,10 @@
 
 namespace Myth.Morph.Test.Models {
 
-	public class DerivedEntity : BaseEntity, IMorphTo<DerivedDto> {
+	public class DerivedEntity : BaseEntity, IMorphable<DerivedDto> {
 		public string DerivedProperty { get; set; } = "";
 
-		public void Binder( BinderBuilder<DerivedDto> builder ) {
+		public void MorphTo( Schema<DerivedDto> builder ) {
 		}
 	}
 }

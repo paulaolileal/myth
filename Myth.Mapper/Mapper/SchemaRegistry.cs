@@ -7,14 +7,14 @@ using System.Reflection;
 
 namespace Myth.Morph {
 
-	public class BindRegistry {
+	public class SchemaRegistry {
 		private readonly IServiceProvider _sp;
 		private readonly Dictionary<(Type, Type), object> _builders = [ ];
 		private readonly Dictionary<Type, Type> _genericInterfaceToConcrete = [ ];
 		private readonly List<Action<Type, Type>> _genericRegisters = [ ];
 		private readonly HashSet<(Type, Type)> _instanceBasedMappings = [ ];
 
-		public BindRegistry( IServiceProvider sp ) {
+		public SchemaRegistry( IServiceProvider sp ) {
 			_sp = sp;
 		}
 
@@ -39,7 +39,7 @@ namespace Myth.Morph {
 
 			// Verifica se é um mapeamento baseado em instância
 			if ( _instanceBasedMappings.Contains( (actualSourceType, destinationType) ) &&
-				 source is IMorphTo<TDestination> mapToInstance )
+				 source is IMorphable<TDestination> mapToInstance )
 				return MapFromInstance( mapToInstance, destinationType );
 
 			// Determina o tipo concreto de destino
@@ -255,7 +255,7 @@ namespace Myth.Morph {
 			return null;
 		}
 
-		private TDestination MapFromInstance<TDestination>( IMorphTo<TDestination> source, Type destinationType ) {
+		private TDestination MapFromInstance<TDestination>( IMorphable<TDestination> source, Type destinationType ) {
 			// Resolve o tipo concreto se necessário
 			var concreteDestinationType = ResolveConcreteDestinationType( destinationType );
 
@@ -263,13 +263,13 @@ namespace Myth.Morph {
 			var dest = ( TDestination )CreateInstance( concreteDestinationType );
 
 			// Cria o builder específico para instâncias
-			var instanceBuilder = new BinderBuilder<TDestination>( );
+			var instanceBuilder = new Schema<TDestination>( );
 
 			// Chama o MapTo da instância para configurar o builder
-			source.Binder( instanceBuilder );
+			source.MorphTo( instanceBuilder );
 
 			// Aplica o mapeamento
-			var applyMethod = typeof( BinderBuilder<TDestination> )
+			var applyMethod = typeof( Schema<TDestination> )
 				.GetMethod( "ApplyFromInstanceAsync", BindingFlags.Instance | BindingFlags.NonPublic );
 
 			if ( applyMethod != null ) {
@@ -392,7 +392,7 @@ namespace Myth.Morph {
 			var concreteDestType = ResolveConcreteDestinationType( destType );
 
 			// Cria um builder genérico dinamicamente
-			var builderType = typeof( BinderBuilder<> ).MakeGenericType( sourceType, concreteDestType );
+			var builderType = typeof( Schema<> ).MakeGenericType( sourceType, concreteDestType );
 			var builder = Activator.CreateInstance( builderType )!;
 
 			// Adiciona mapeamento automático básico (será feito pelo AutoMap)
@@ -440,7 +440,7 @@ namespace Myth.Morph {
 					return;
 
 				// Cria builder dinamicamente via reflection
-				var builderType = typeof( BinderBuilder<> ).MakeGenericType( sourceType, concreteDestType );
+				var builderType = typeof( Schema<> ).MakeGenericType( sourceType, concreteDestType );
 				var builder = Activator.CreateInstance( builderType )!;
 
 				// Registra para ambos os tipos (interface e concreto)

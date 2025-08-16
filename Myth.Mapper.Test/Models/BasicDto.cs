@@ -2,7 +2,7 @@
 
 namespace Myth.Morph.Test.Models {
 
-	internal class BasicDto : IMorphTo<BasicEntity>, IMorphTo<ViewModel> {
+	internal class BasicDto : IMorphable<BasicEntity>, IMorphable<ViewModel> {
 		public int DtoId { get; set; }
 		public string Name { get; set; }
 		public bool Enabled { get; set; }
@@ -13,7 +13,7 @@ namespace Myth.Morph.Test.Models {
 		public IEnumerable<DtoItem> ItemsProp { get; set; } = [ ];
 		public string Description { get; set; } = "No description";
 
-		public void Binder( BinderBuilder<BasicEntity> builder ) {
+		public void MorphTo( Schema<BasicEntity> builder ) {
 			builder
 				.Bind(
 					dest => dest.Enabled,
@@ -23,7 +23,7 @@ namespace Myth.Morph.Test.Models {
 					( ) => DtoId );
 		}
 
-		public void Binder( BinderBuilder<ViewModel> builder ) {
+		public void MorphTo( Schema<ViewModel> builder ) {
 			builder
 				.Bind(
 					dest => dest.ViewModelId,

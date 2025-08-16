@@ -25,7 +25,7 @@ namespace Myth.Morph.Test {
 		[Fact]
 		public void AddMorph_Should_RegisterBindRegistry( ) {
 			// Act
-			var registry = _serviceProvider.GetService<BindRegistry>( );
+			var registry = _serviceProvider.GetService<SchemaRegistry>( );
 
 			// Assert
 			registry.Should( ).NotBeNull( );
@@ -34,7 +34,7 @@ namespace Myth.Morph.Test {
 		[Fact]
 		public void BindRegistry_Should_RegisterGenericMorphpingList( ) {
 			// Arrange
-			var registry = _serviceProvider.GetRequiredService<BindRegistry>( );
+			var registry = _serviceProvider.GetRequiredService<SchemaRegistry>( );
 
 			// Assert
 			var hasMorphping = registry.TryResolveGenericConcrete( typeof( IList<string> ), out var concrete );
@@ -45,7 +45,7 @@ namespace Myth.Morph.Test {
 		[Fact]
 		public void BindRegistry_Should_RegisterGenericMorphpingCollection( ) {
 			// Arrange
-			var registry = _serviceProvider.GetRequiredService<BindRegistry>( );
+			var registry = _serviceProvider.GetRequiredService<SchemaRegistry>( );
 
 			// Assert
 			var hasMorphping = registry.TryResolveGenericConcrete( typeof( ICollection<string> ), out var concrete );
@@ -56,7 +56,7 @@ namespace Myth.Morph.Test {
 		[Fact]
 		public void BindRegistry_Should_RegisterGenericMorphpingDictionary( ) {
 			// Arrange
-			var registry = _serviceProvider.GetRequiredService<BindRegistry>( );
+			var registry = _serviceProvider.GetRequiredService<SchemaRegistry>( );
 
 			// Assert
 			var hasMorphping = registry.TryResolveGenericConcrete( typeof( IDictionary<string, string> ), out var concrete );
@@ -67,7 +67,7 @@ namespace Myth.Morph.Test {
 		[Fact]
 		public void BindRegistry_Should_RegisterGenericMorphpingSet( ) {
 			// Arrange
-			var registry = _serviceProvider.GetRequiredService<BindRegistry>( );
+			var registry = _serviceProvider.GetRequiredService<SchemaRegistry>( );
 
 			// Assert
 			var hasMorphping = registry.TryResolveGenericConcrete( typeof( ISet<string> ), out var concrete );
@@ -78,7 +78,7 @@ namespace Myth.Morph.Test {
 		[Fact]
 		public void BindRegistry_Should_RegisterGenericMorphpingReadOnlyCollection( ) {
 			// Arrange
-			var registry = _serviceProvider.GetRequiredService<BindRegistry>( );
+			var registry = _serviceProvider.GetRequiredService<SchemaRegistry>( );
 
 			// Assert
 			var hasMorphping = registry.TryResolveGenericConcrete( typeof( IReadOnlyCollection<string> ), out var concrete );
@@ -89,7 +89,7 @@ namespace Myth.Morph.Test {
 		[Fact]
 		public void BindRegistry_Should_RegisterGenericMorphpingReadOnlyList( ) {
 			// Arrange
-			var registry = _serviceProvider.GetRequiredService<BindRegistry>( );
+			var registry = _serviceProvider.GetRequiredService<SchemaRegistry>( );
 
 			// Assert
 			var hasMorphping = registry.TryResolveGenericConcrete( typeof( IReadOnlyList<string> ), out var concrete );
@@ -100,7 +100,7 @@ namespace Myth.Morph.Test {
 		[Fact]
 		public void BindRegistry_Should_RegisterGenericMorphpingReadOnlySet( ) {
 			// Arrange
-			var registry = _serviceProvider.GetRequiredService<BindRegistry>( );
+			var registry = _serviceProvider.GetRequiredService<SchemaRegistry>( );
 
 			// Assert
 			var hasMorphping = registry.TryResolveGenericConcrete( typeof( IReadOnlySet<string> ), out var concrete );
