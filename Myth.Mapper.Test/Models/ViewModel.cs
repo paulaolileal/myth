@@ -1,4 +1,4 @@
-﻿namespace Myth.Mapper.Test.Models {
+﻿namespace Myth.Morph.Test.Models {
 
 	internal class ViewModel {
 		public int ViewModelId { get; set; }

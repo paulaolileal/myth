@@ -2,21 +2,23 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Myth.Extensions;
 using Myth.Interfaces.Repositories.Results;
-using Myth.Mapper.Test.Models;
-using Myth.Mapper.Test.Service;
+using Myth.Morph;
+using Myth.Morph.Test.Models;
+using Myth.Morph.Test.Service;
 using Myth.Repositories.Results;
+using System.Collections.ObjectModel;
 
-namespace Myth.Mapper.Test {
+namespace Myth.Morph.Test {
 
-	public class MapperTests {
+	public class MorphTests {
 		private readonly IServiceCollection _services;
 		private IServiceProvider _serviceProvider;
 
-		public MapperTests( ) {
+		public MorphTests( ) {
 			_services = new ServiceCollection( );
 			_services.AddSingleton<IDescriptionResolver, DescriptionResolver>( );
-			_services.AddMapper( config => {
-				config.AddGenericMapping( typeof( IPaginated<> ), typeof( Paginated<> ) );
+			_services.AddMorph( config => {
+				config.AddGenericMorph( typeof( IPaginated<> ), typeof( Paginated<> ) );
 			} );
 			_serviceProvider = _services.BuildServiceProvider( );
 		}
@@ -24,19 +26,16 @@ namespace Myth.Mapper.Test {
 		[Fact]
 		public void AddMapper_Should_RegisterMapRegistry( ) {
 			// Act
-			var registry = _serviceProvider.GetService<MapRegistry>( );
+			var registry = _serviceProvider.GetService<MorphRegistry>( );
 
 			// Assert
 			registry.Should( ).NotBeNull( );
 		}
 
 		[Fact]
-		public void MapRegistry_Should_RegisterGenericMapping( ) {
+		public void MapRegistry_Should_RegisterGenericMappingList( ) {
 			// Arrange
-			var registry = new MapRegistry( _serviceProvider );
-
-			// Act
-			registry.RegisterGenericMapping( typeof( IList<> ), typeof( List<> ) );
+			var registry = _serviceProvider.GetRequiredService<MorphRegistry>( );
 
 			// Assert
 			var hasMapping = registry.TryResolveGenericConcrete( typeof( IList<string> ), out var concrete );
@@ -45,12 +44,81 @@ namespace Myth.Mapper.Test {
 		}
 
 		[Fact]
+		public void MapRegistry_Should_RegisterGenericMappingCollection( ) {
+			// Arrange
+			var registry = _serviceProvider.GetRequiredService<MorphRegistry>( );
+
+			// Assert
+			var hasMapping = registry.TryResolveGenericConcrete( typeof( ICollection<string> ), out var concrete );
+			hasMapping.Should( ).BeTrue( );
+			concrete.Should( ).Be( typeof( List<string> ) );
+		}
+
+
+		[Fact]
+		public void MapRegistry_Should_RegisterGenericMappingDictionary( ) {
+			// Arrange
+			var registry = _serviceProvider.GetRequiredService<MorphRegistry>( );
+
+			// Assert
+			var hasMapping = registry.TryResolveGenericConcrete( typeof( IDictionary<string, string> ), out var concrete );
+			hasMapping.Should( ).BeTrue( );
+			concrete.Should( ).Be( typeof( Dictionary<string, string> ) );
+		}
+
+
+		[Fact]
+		public void MapRegistry_Should_RegisterGenericMappingSet( ) {
+			// Arrange
+			var registry = _serviceProvider.GetRequiredService<MorphRegistry>( );
+
+			// Assert
+			var hasMapping = registry.TryResolveGenericConcrete( typeof( ISet<string> ), out var concrete );
+			hasMapping.Should( ).BeTrue( );
+			concrete.Should( ).Be( typeof( HashSet<string> ) );
+		}
+
+
+		[Fact]
+		public void MapRegistry_Should_RegisterGenericMappingReadOnlyCollection( ) {
+			// Arrange
+			var registry = _serviceProvider.GetRequiredService<MorphRegistry>( );
+
+			// Assert
+			var hasMapping = registry.TryResolveGenericConcrete( typeof( IReadOnlyCollection<string> ), out var concrete );
+			hasMapping.Should( ).BeTrue( );
+			concrete.Should( ).Be( typeof( ReadOnlyCollection<string> ) );
+		}
+
+		[Fact]
+		public void MapRegistry_Should_RegisterGenericMappingReadOnlyList( ) {
+			// Arrange
+			var registry = _serviceProvider.GetRequiredService<MorphRegistry>( );
+
+			// Assert
+			var hasMapping = registry.TryResolveGenericConcrete( typeof( IReadOnlyList<string> ), out var concrete );
+			hasMapping.Should( ).BeTrue( );
+			concrete.Should( ).Be( typeof( List<string> ) );
+		}
+
+		[Fact]
+		public void MapRegistry_Should_RegisterGenericMappingReadOnlySet( ) {
+			// Arrange
+			var registry = _serviceProvider.GetRequiredService<MorphRegistry>( );
+
+			// Assert
+			var hasMapping = registry.TryResolveGenericConcrete( typeof( IReadOnlySet<string> ), out var concrete );
+			hasMapping.Should( ).BeTrue( );
+			concrete.Should( ).Be( typeof( HashSet<string> ) );
+		}
+
+		[Fact]
 		public void MapTo_Should_HandleNullValues( ) {
 			// Arrange
 			BasicEntity? entity = null;
 
 			// Act
-			var result = entity.MapTo<BasicDto>( );
+			var result = entity.To<BasicDto>( );
 
 			// Assert
 			result.Should( ).BeNull( );
@@ -60,14 +128,14 @@ namespace Myth.Mapper.Test {
 		public void MapTo_Should_HandleCollections( ) {
 			// Arrange
 			var entities = new List<BasicEntity>( );
-			BasicEntity? entity = new BasicEntity {
+			var entity = new BasicEntity {
 				Description = "Test",
 				Enabled = true,
 				EntityId = 1,
 				Name = "EntityA"
 			};
 
-			BasicEntity? entity2 = new BasicEntity {
+			var entity2 = new BasicEntity {
 				Description = "Test",
 				Enabled = true,
 				EntityId = 1,
@@ -78,7 +146,7 @@ namespace Myth.Mapper.Test {
 			entities.Add( entity2 );
 
 			// Act
-			var result = entities.MapTo<BasicDto>( );
+			var result = entities.To<BasicDto>( );
 
 			// Assert
 			result.Should( ).NotBeNull( );
@@ -88,14 +156,14 @@ namespace Myth.Mapper.Test {
 		public void MapTo_Should_HandleGenerics( ) {
 			// Arrange
 			var entities = new List<BasicEntity>( );
-			BasicEntity? entity = new BasicEntity {
+			var entity = new BasicEntity {
 				Description = "Test",
 				Enabled = true,
 				EntityId = 1,
 				Name = "EntityA"
 			};
 
-			BasicEntity? entity2 = new BasicEntity {
+			var entity2 = new BasicEntity {
 				Description = "Test",
 				Enabled = true,
 				EntityId = 1,
@@ -108,7 +176,7 @@ namespace Myth.Mapper.Test {
 			// Act
 			// Act
 			var paginatedEntities = entities.AsPaginated( );
-			var result = paginatedEntities.MapTo<IPaginated<BasicDto>>( _serviceProvider );
+			var result = paginatedEntities.To<IPaginated<BasicDto>>( _serviceProvider );
 
 			// Assert
 			result.Should( ).NotBeNull( );
@@ -131,7 +199,7 @@ namespace Myth.Mapper.Test {
 			secondItem.DtoId.Should( ).Be( entity2.EntityId );
 			secondItem.Name.Should( ).Be( entity2.Name );
 			secondItem.Description.Should( ).Be( entity2.Description );
-			secondItem.Enabled.Should( ).Be( !entity2.Enabled);
+			secondItem.Enabled.Should( ).Be( !entity2.Enabled );
 		}
 
 		[Fact]
@@ -146,7 +214,7 @@ namespace Myth.Mapper.Test {
 			};
 
 			// Act
-			var dto = entity.MapTo<DtoWithNested>( _serviceProvider );
+			var dto = entity.To<DtoWithNested>( _serviceProvider );
 
 			// Assert
 			dto.Items.Should( ).HaveCount( 2 );
@@ -163,7 +231,7 @@ namespace Myth.Mapper.Test {
 			};
 
 			// Act
-			var dto = derived.MapTo<DerivedDto>( );
+			var dto = derived.To<DerivedDto>( );
 
 			// Assert
 			dto.BaseProperty.Should( ).Be( "Base" );
@@ -180,7 +248,7 @@ namespace Myth.Mapper.Test {
 			};
 
 			// Act
-			var result = source.MapTo<DestEntity>( );
+			var result = source.To<DestEntity>( );
 
 			// Assert
 			result.Id.Should( ).Be( 1 );
@@ -197,7 +265,7 @@ namespace Myth.Mapper.Test {
 			};
 
 			// Act
-			var dto = entity.MapToAsync<DtoWithAsync>( _serviceProvider ).Result;
+			var dto = entity.ToAsync<DtoWithAsync>( _serviceProvider ).Result;
 
 			// Assert
 			dto.Id.Should( ).Be( 1 );
@@ -210,8 +278,8 @@ namespace Myth.Mapper.Test {
 			var entity = new BasicEntity { EntityId = 1 };
 
 			// Act
-			var canMap = entity.CanMapTo<BasicDto>( _serviceProvider );
-			var cannotMap = entity.CanMapTo<NonMappableDto>( _serviceProvider );
+			var canMap = entity.CanBindTo<BasicDto>( _serviceProvider );
+			var cannotMap = entity.CanBindTo<NonMappableDto>( _serviceProvider );
 
 			// Assert
 			canMap.Should( ).BeTrue( );
@@ -226,7 +294,7 @@ namespace Myth.Mapper.Test {
 			parent.Child = child;
 
 			// Act
-			var dto = parent.MapTo<ParentDto>( _serviceProvider );
+			var dto = parent.To<ParentDto>( _serviceProvider );
 
 			// Assert
 			dto.Id.Should( ).Be( 1 );

@@ -1,17 +1,18 @@
 ﻿using Myth.Extensions;
 using Myth.Interfaces;
+using Myth.Morph;
 
-namespace Myth.Mapper.Test.Models {
+namespace Myth.Morph.Test.Models {
 
-	public class ParentEntity : IMapTo<ParentDto> {
+	public class ParentEntity : IMorphTo<ParentDto> {
 		public int Id { get; set; }
 		public ChildEntity? Child { get; set; }
 
-		public void MapTo( MappingBuilder<ParentDto> builder ) {
+		public void Binder( BinderBuilder<ParentDto> builder ) {
 			builder
-				.ForMember(
+				.Bind(
 					dest => dest.Child,
-					( ) => Child.MapTo<ChildDto>( ) );
+					( ) => Child.To<ChildDto>( ) );
 		}
 	}
 }

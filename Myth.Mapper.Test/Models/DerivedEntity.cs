@@ -1,11 +1,12 @@
 ﻿using Myth.Interfaces;
+using Myth.Morph;
 
-namespace Myth.Mapper.Test.Models {
+namespace Myth.Morph.Test.Models {
 
-	public class DerivedEntity : BaseEntity, IMapTo<DerivedDto> {
+	public class DerivedEntity : BaseEntity, IMorphTo<DerivedDto> {
 		public string DerivedProperty { get; set; } = "";
 
-		public void MapTo( MappingBuilder<DerivedDto> builder ) {
+		public void Binder( BinderBuilder<DerivedDto> builder ) {
 		}
 	}
 }

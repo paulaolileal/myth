@@ -1,4 +1,4 @@
-﻿namespace Myth.Mapper.Test.Service {
+﻿namespace Myth.Morph.Test.Service {
 
 	internal interface IDescriptionResolver {
 

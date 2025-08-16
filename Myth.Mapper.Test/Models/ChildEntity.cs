@@ -1,13 +1,14 @@
 ﻿using Myth.Interfaces;
+using Myth.Morph;
 
-namespace Myth.Mapper.Test.Models {
+namespace Myth.Morph.Test.Models {
 
-	public class ChildEntity : IMapTo<ChildDto> {
+	public class ChildEntity : IMorphTo<ChildDto> {
 		public int Id { get; set; }
 		public ParentEntity? Parent { get; set; }
 
-		public void MapTo( MappingBuilder<ChildDto> builder ) {
-			builder.ForMember(
+		public void Binder( BinderBuilder<ChildDto> builder ) {
+			builder.Bind(
 				dest => dest.ParentId,
 				( ) => Parent != null ? Parent.Id : 0 );
 		}

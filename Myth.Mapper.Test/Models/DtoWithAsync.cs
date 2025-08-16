@@ -1,4 +1,4 @@
-﻿namespace Myth.Mapper.Test.Models {
+﻿namespace Myth.Morph.Test.Models {
 
 	public class DtoWithAsync {
 		public int Id { get; set; }

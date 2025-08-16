@@ -1,19 +1,20 @@
 ﻿using Myth.Interfaces;
+using Myth.Morph;
 
-namespace Myth.Mapper.Test.Models {
+namespace Myth.Morph.Test.Models {
 
-	internal class BasicEntity : IMapTo<BasicDto> {
+	internal class BasicEntity : IMorphTo<BasicDto> {
 		public int EntityId { get; set; }
 		public string Name { get; set; }
 		public bool Enabled { get; set; }
 		public string Description { get; set; }
 
-		public void MapTo( MappingBuilder<BasicDto> builder ) {
+		public void Binder( BinderBuilder<BasicDto> builder ) {
 			builder
-				.ForMember(
+				.Bind(
 					dest => dest.Enabled,
 					( ) => !Enabled )
-				.ForMember(
+				.Bind(
 					dest => dest.DtoId,
 					( ) => EntityId );
 		}

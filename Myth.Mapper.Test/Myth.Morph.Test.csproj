@@ -18,7 +18,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Myth.Mapper\Myth.Mapper.csproj" />
+		<ProjectReference Include="..\Myth.Mapper\Myth.Morph.csproj" />
 		<ProjectReference Include="..\Myth.Repository\Myth.Repository.csproj" />
 	</ItemGroup>
 

@@ -1,12 +1,13 @@
 ﻿using Myth.Interfaces;
+using Myth.Morph;
 
-namespace Myth.Mapper.Test.Models {
+namespace Myth.Morph.Test.Models {
 
-	public class EntityWithNested : IMapTo<DtoWithNested> {
+	public class EntityWithNested : IMorphTo<DtoWithNested> {
 		public int Id { get; set; }
 		public List<NestedItem> Items { get; set; } = new( );
 
-		public void MapTo( MappingBuilder<DtoWithNested> builder ) {
+		public void Binder( BinderBuilder<DtoWithNested> builder ) {
 		}
 	}
 }

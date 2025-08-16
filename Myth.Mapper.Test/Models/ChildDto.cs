@@ -1,4 +1,4 @@
-﻿namespace Myth.Mapper.Test.Models {
+﻿namespace Myth.Morph.Test.Models {
 
 	public class ChildDto {
 		public int Id { get; set; }

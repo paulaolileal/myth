@@ -1,4 +1,4 @@
-﻿namespace Myth.Mapper.Test.Models {
+﻿namespace Myth.Morph.Test.Models {
 
 	public class NonMappableDto {
 		public Guid NonMappableId { get; set; }

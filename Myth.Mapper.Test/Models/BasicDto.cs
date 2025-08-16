@@ -1,8 +1,9 @@
 ﻿using Myth.Interfaces;
+using Myth.Morph;
 
-namespace Myth.Mapper.Test.Models {
+namespace Myth.Morph.Test.Models {
 
-	internal class BasicDto : IMapTo<BasicEntity>, IMapTo<ViewModel> {
+	internal class BasicDto : IMorphTo<BasicEntity>, IMorphTo<ViewModel> {
 		public int DtoId { get; set; }
 		public string Name { get; set; }
 		public bool Enabled { get; set; }
@@ -13,26 +14,21 @@ namespace Myth.Mapper.Test.Models {
 		public IEnumerable<DtoItem> ItemsProp { get; set; } = [ ];
 		public string Description { get; set; } = "No description";
 
-		public void MapTo( MappingBuilder<BasicEntity> builder ) {
+		public void Binder( BinderBuilder<BasicEntity> builder ) {
 			builder
-				.ForMember(
+				.Bind(
 					dest => dest.Enabled,
 					( ) => !Enabled )
-				.ForMember(
+				.Bind(
 					dest => dest.EntityId,
 					( ) => DtoId );
 		}
 
-		public void MapTo( MappingBuilder<ViewModel> builder ) {
+		public void Binder( BinderBuilder<ViewModel> builder ) {
 			builder
-				.ForMember(
+				.Bind(
 					dest => dest.ViewModelId,
 					( ) => DtoId );
 		}
-	}
-
-	internal class DtoItem {
-		public int ItemId { get; set; }
-		public string Name { get; set; }
 	}
 }

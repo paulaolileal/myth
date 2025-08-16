@@ -1,22 +1,23 @@
 ﻿using Myth.Extensions;
 using Myth.Interfaces;
+using System.Diagnostics;
 using System.Reflection;
 
-namespace Myth.Mapper {
+namespace Myth.Morph {
 
-	public class MapRegistry {
+	public class MorphRegistry {
 		private readonly IServiceProvider _sp;
-		private readonly Dictionary<(Type, Type), object> _builders = new( );
-		private readonly Dictionary<Type, Type> _genericInterfaceToConcrete = new( );
-		private readonly List<Action<Type, Type>> _genericRegistrars = new( );
-		private readonly HashSet<(Type, Type)> _instanceBasedMappings = new( );
+		private readonly Dictionary<(Type, Type), object> _builders = [];
+		private readonly Dictionary<Type, Type> _genericInterfaceToConcrete = [];
+		private readonly List<Action<Type, Type>> _genericRegisters = [];
+		private readonly HashSet<(Type, Type)> _instanceBasedMappings = [];
 
-		public MapRegistry( IServiceProvider sp ) {
+		public MorphRegistry( IServiceProvider sp ) {
 			_sp = sp;
 		}
 
-		public void Register<TSource, TDestination>( Action<MappingBuilder<TSource, TDestination>> config ) {
-			var builder = new MappingBuilder<TSource, TDestination>( );
+		public void Register<TSource, TDestination>( Action<BinderBuilder<TSource, TDestination>> config ) {
+			var builder = new BinderBuilder<TSource, TDestination>( );
 			config( builder );
 			_builders[ (typeof( TSource ), typeof( TDestination )) ] = builder;
 		}
@@ -29,19 +30,20 @@ namespace Myth.Mapper {
 			_genericInterfaceToConcrete[ ifaceGeneric ] = concreteGeneric;
 		}
 
-		public TDestination Map<TSource, TDestination>( TSource source ) {
+		public TDestination Morph<TSource, TDestination>( TSource source ) {
 			var sourceType = typeof( TSource );
 			var destinationType = typeof( TDestination );
 
 			// Se o source é null, retorna default
 			if ( source == null )
-				return default( TDestination )!;
+				return default!;
 
 			// Usa o tipo real do objeto se for diferente do tipo genérico
 			var actualSourceType = source.GetType( );
 
 			// Verifica se é um mapeamento baseado em instância
-			if ( _instanceBasedMappings.Contains( (actualSourceType, destinationType) ) && source is IMapTo<TDestination> mapToInstance ) {
+			if ( _instanceBasedMappings.Contains( (actualSourceType, destinationType) ) && 
+				 source is IMorphTo<TDestination> mapToInstance ) {
 				return MapFromInstance( mapToInstance, destinationType );
 			}
 
@@ -58,9 +60,9 @@ namespace Myth.Mapper {
 				// Se não encontrou, tenta com o tipo concreto
 				if ( !TryGetBuilder( actualSourceType, concreteDestinationType, out builderObj ) ) {
 					// Tenta registrar dinamicamente
-					foreach ( var registrar in _genericRegistrars ) {
-						registrar( actualSourceType, destinationType );
-						registrar( actualSourceType, concreteDestinationType );
+					foreach ( var register in _genericRegisters ) {
+						register( actualSourceType, destinationType );
+						register( actualSourceType, concreteDestinationType );
 					}
 
 					// Tenta novamente após registrar
@@ -81,7 +83,7 @@ namespace Myth.Mapper {
 			}
 
 			// Caso padrão - tipos coincidem
-			var builder = ( MappingBuilder<TSource, TDestination> )builderObj;
+			var builder = ( BinderBuilder<TSource, TDestination> )builderObj;
 			builder.ApplyAsync( source, ( TDestination )dest, _sp ).GetAwaiter( ).GetResult( );
 			return ( TDestination )dest;
 		}
@@ -134,7 +136,7 @@ namespace Myth.Mapper {
 					var mappedValue = MapPropertyValue( srcValue, srcProp.PropertyType, destProp.PropertyType );
 					destProp.SetValue( dest, mappedValue );
 				} catch ( Exception ex ) {
-					System.Diagnostics.Debug.WriteLine( $"[Mapper] Erro ao mapear propriedade {destProp.Name}: {ex.Message}" );
+					Debug.WriteLine( $"[Morph] Erro ao mapear propriedade {destProp.Name}: {ex.Message}" );
 				}
 			}
 		}
@@ -152,9 +154,9 @@ namespace Myth.Mapper {
 
 			// Tenta usar o sistema de mapeamento padrão
 			try {
-				var mapToMethod = typeof( MapExtensions )
-					.GetMethod( "MapTo", new[ ] { typeof( object ), typeof( IServiceProvider ) } )
-					?.MakeGenericMethod( destType );
+				var mapToMethod = typeof( MorphExtensions )
+					.GetMethod( nameof(MorphExtensions.To), [typeof( object ), typeof( IServiceProvider )] )?
+					.MakeGenericMethod( destType );
 
 				return mapToMethod?.Invoke( null, new object[ ] { value, _sp } );
 			} catch {
@@ -210,9 +212,10 @@ namespace Myth.Mapper {
 			// Se é um array
 			if ( collectionType.IsArray ) {
 				var array = Array.CreateInstance( elementType, items.Count );
-				for ( int i = 0; i < items.Count; i++ ) {
+
+				for ( int i = 0; i < items.Count; i++ ) 
 					array.SetValue( items[ i ], i );
-				}
+				
 				return array;
 			}
 
@@ -220,9 +223,10 @@ namespace Myth.Mapper {
 			if ( collectionType.IsInterface && collectionType.IsGenericType ) {
 				var listType = typeof( List<> ).MakeGenericType( elementType );
 				var list = ( System.Collections.IList )Activator.CreateInstance( listType )!;
-				foreach ( var item in items ) {
+				
+				foreach ( var item in items ) 
 					list.Add( item );
-				}
+				
 				return list;
 			}
 
@@ -230,25 +234,26 @@ namespace Myth.Mapper {
 			try {
 				var instance = CreateInstance( collectionType );
 				if ( instance is System.Collections.IList list ) {
-					foreach ( var item in items ) {
+					foreach ( var item in items ) 
 						list.Add( item );
-					}
+					
 					return instance;
 				}
 			} catch {
 				// Se falhar, retorna uma List<T>
 				var listType = typeof( List<> ).MakeGenericType( elementType );
 				var list = ( System.Collections.IList )Activator.CreateInstance( listType )!;
-				foreach ( var item in items ) {
+				
+				foreach ( var item in items ) 
 					list.Add( item );
-				}
+				
 				return list;
 			}
 
 			return null;
 		}
 
-		private TDestination MapFromInstance<TDestination>( IMapTo<TDestination> source, Type destinationType ) {
+		private TDestination MapFromInstance<TDestination>( IMorphTo<TDestination> source, Type destinationType ) {
 			// Resolve o tipo concreto se necessário
 			var concreteDestinationType = ResolveConcreteDestinationType( destinationType );
 
@@ -256,19 +261,21 @@ namespace Myth.Mapper {
 			var dest = ( TDestination )CreateInstance( concreteDestinationType );
 
 			// Cria o builder específico para instâncias
-			var instanceBuilder = new MappingBuilder<TDestination>( );
+			var instanceBuilder = new BinderBuilder<TDestination>( );
 
 			// Chama o MapTo da instância para configurar o builder
-			source.MapTo( instanceBuilder );
+			source.Binder( instanceBuilder );
 
 			// Aplica o mapeamento
-			var applyMethod = typeof( MappingBuilder<TDestination> )
+			var applyMethod = typeof( BinderBuilder<TDestination> )
 				.GetMethod( "ApplyFromInstanceAsync", BindingFlags.Instance | BindingFlags.NonPublic );
 
 			if ( applyMethod != null ) {
 				var genericApplyMethod = applyMethod.MakeGenericMethod( source.GetType( ) );
-				var task = ( Task )genericApplyMethod.Invoke( instanceBuilder, new object[ ] { source, dest, _sp } )!;
-				task.GetAwaiter( ).GetResult( );
+				var task = ( Task )genericApplyMethod.Invoke( instanceBuilder, [source, dest, _sp] )!;
+				task
+					.GetAwaiter( )
+					.GetResult( );
 			}
 
 			return dest;
@@ -276,9 +283,9 @@ namespace Myth.Mapper {
 
 		private Type ResolveConcreteDestinationType( Type destinationType ) {
 			// Se é interface genérica, tenta resolver para concreto
-			if ( destinationType.IsInterface && TryResolveGenericConcrete( destinationType, out var concrete ) ) {
+			if ( destinationType.IsInterface && TryResolveGenericConcrete( destinationType, out var concrete ) ) 
 				return concrete;
-			}
+			
 
 			// Se é interface não-genérica, procura implementação registrada no DI
 			if ( destinationType.IsInterface ) {
@@ -300,6 +307,7 @@ namespace Myth.Mapper {
 				}
 			}
 			concrete = null!;
+
 			return false;
 		}
 
@@ -371,7 +379,7 @@ namespace Myth.Mapper {
 			var concreteDestType = ResolveConcreteDestinationType( destType );
 
 			// Cria um builder genérico dinamicamente
-			var builderType = typeof( MappingBuilder<,> ).MakeGenericType( sourceType, concreteDestType );
+			var builderType = typeof( BinderBuilder<,> ).MakeGenericType( sourceType, concreteDestType );
 			var builder = Activator.CreateInstance( builderType )!;
 
 			// Adiciona mapeamento automático básico (será feito pelo AutoMap)
@@ -405,7 +413,7 @@ namespace Myth.Mapper {
 		}
 
 		public void RegisterGenericEqualTypesMapping( Func<string, string, bool>? memberMatchRule = null ) {
-			_genericRegistrars.Add( ( sourceType, destType ) => {
+			_genericRegisters.Add( ( sourceType, destType ) => {
 				// Resolve tipos concretos se necessário
 				var concreteDestType = ResolveConcreteDestinationType( destType );
 
@@ -419,7 +427,7 @@ namespace Myth.Mapper {
 					return;
 
 				// Cria builder dinamicamente via reflection
-				var builderType = typeof( MappingBuilder<,> ).MakeGenericType( sourceType, concreteDestType );
+				var builderType = typeof( BinderBuilder<,> ).MakeGenericType( sourceType, concreteDestType );
 				var builder = Activator.CreateInstance( builderType )!;
 
 				// Registra para ambos os tipos (interface e concreto)
@@ -469,7 +477,7 @@ namespace Myth.Mapper {
 				.OrderBy( c => c.GetParameters( ).Length )
 				.FirstOrDefault( );
 
-			if ( ctorWithParams == null )
+			if ( ctorWithParams is null )
 				throw new InvalidOperationException( $"Tipo {type} não possui construtor acessível." );
 
 			var args = ctorWithParams
@@ -488,7 +496,9 @@ namespace Myth.Mapper {
 			return ctorWithParams.Invoke( args );
 		}
 
-		private static object? GetDefault( Type type )
-			=> type.IsValueType ? Activator.CreateInstance( type ) : null;
+		private static object? GetDefault( Type type ) => 
+			type.IsValueType 
+			? Activator.CreateInstance( type ) 
+			: null;
 	}
 }
