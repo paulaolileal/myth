@@ -1,4 +1,5 @@
 ﻿using Myth.Exceptions;
+using Myth.Extensions;
 using Newtonsoft.Json;
 using System.Net;
 using System.Text;
@@ -14,8 +15,41 @@ public class RestResponse(
 		TimeSpan elapsedTime,
 		int retriesMade,
 		bool fallbackUsed,
-		bool isFileResponse = false )
-	: RestResponseBase( statusCode, url, method, elapsedTime, retriesMade, fallbackUsed ) {
+		bool isFileResponse = false ) {
+
+	/// <summary>
+	/// The response status code
+	/// </summary>
+	public HttpStatusCode StatusCode { get; private set; } = statusCode;
+
+	/// <summary>
+	/// The url called
+	/// </summary>
+	public Uri Url { get; private set; } = url;
+
+	/// <summary>
+	/// The http method used
+	/// </summary>
+	public HttpMethod Method { get; private set; } = method;
+
+	/// <summary>
+	/// The elapsed time during the call
+	/// </summary>
+	public TimeSpan ElapsedTime { get; private set; } = elapsedTime;
+
+	/// <summary>
+	/// The amount of retries was made before the final result
+	/// </summary>
+	public int RetriesMade { get; private set; } = retriesMade;
+
+	public bool FallbackUsed { get; private set; } = fallbackUsed;
+
+	/// <summary>
+	/// Checks if the result is a success
+	/// </summary>
+	/// <returns>A value that represents the answer</returns>
+	public bool IsSuccessStatusCode( ) => StatusCode.IsSuccess( );
+
 	public string RawMessage { get; private set; } = rawMessage;
 	public byte[ ] RawBytes { get; private set; } = rawBytes;
 	public bool IsFileResponse { get; private set; } = isFileResponse;

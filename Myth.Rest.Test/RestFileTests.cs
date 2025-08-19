@@ -3,6 +3,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Myth.Exceptions;
 using Myth.Extensions;
+using Myth.Rest.Interfaces;
 using System;
 using System.IO;
 using System.Net;
@@ -16,8 +17,8 @@ using Xunit;
 namespace Myth.Rest.Test;
 
 public class RestFileTests : IDisposable {
-	private readonly RestBuilder _restDownloadClient;
-	private readonly RestBuilder _restUploadClient;
+	private readonly IRestRequest _restDownloadClient;
+	private readonly IRestRequest _restUploadClient;
 	private readonly WireMockServer _server;
 	private readonly Faker _faker;
 

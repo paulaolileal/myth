@@ -2,49 +2,275 @@
 using Myth.Exceptions;
 using Myth.Extensions;
 using Myth.Models.Rest;
+using Myth.Rest.Interfaces;
 using Newtonsoft.Json;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Net.Http.Headers;
 using System.Text;
 
 namespace Myth.Rest;
 
-public partial class RestBuilder : RestBuilderBase {
+/// <summary>
+/// Unified REST builder that implements all fluent interfaces
+/// </summary>
+public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
+	IRestErrorHandler, IRestResultHandler, IRestResult, IDisposable {
 
-	#region [ Pre-Request ]
+	#region [ Fields ]
 
-	public override RestBuilder Configure( Action<ConfigurationBuilder>? configurationBuilder ) =>
-		( base.Configure( configurationBuilder ) as RestBuilder )!;
+	protected readonly ErrorBuilder _errorBuilder;
+	protected readonly ResultBuilder _resultBuilder;
+	protected ConfigurationBuilder _configBuilder;
+	protected bool _isFileOperation;
 
-	public RestBuilder OnResult( Action<ResultBuilder> resultSettings ) {
+	protected Func<CancellationToken, Task<HttpResponseMessage>>? _request;
+	protected Exception? _exception;
+	protected Task<HttpResponseMessage>? _responseMessage;
+
+	#endregion [ Fields ]
+
+	#region [ Constructor ]
+
+	public RestBuilder( ) {
+		_errorBuilder = new( );
+		_resultBuilder = new( );
+		_configBuilder = new( );
+		_isFileOperation = false;
+	}
+
+	#endregion [ Constructor ]
+
+	#region [ IRestConfiguration Implementation ]
+
+	public IRestRequest Configure( Action<ConfigurationBuilder> configurationBuilder ) {
+		configurationBuilder?.Invoke( _configBuilder );
+		return this;
+	}
+
+	#endregion [ IRestConfiguration Implementation ]
+
+	#region [ IRestActions Implementation ]
+
+	public IRestPostProcessing DoGet( string url ) {
+		try {
+			_isFileOperation = false;
+			PreRequestSettings( );
+
+			_request = async ( CancellationToken cancellationToken ) =>
+				await _configBuilder._httpClient.GetAsync( url, cancellationToken );
+		} catch ( Exception exception ) {
+			_exception = exception;
+		}
+		return this;
+	}
+
+	public IRestPostProcessing DoPost<TBody>( string url, TBody? body = default ) {
+		try {
+			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
+			_isFileOperation = false;
+			PreRequestSettings( );
+
+			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
+
+			_request = async ( CancellationToken cancellationToken ) =>
+				await _configBuilder._httpClient.PostAsync( url, request, cancellationToken );
+		} catch ( Exception exception ) {
+			_exception = exception;
+		}
+		return this;
+	}
+
+	public IRestPostProcessing DoPut<TBody>( string url, TBody? body = default ) {
+		try {
+			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
+			_isFileOperation = false;
+			PreRequestSettings( );
+
+			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
+
+			_request = async ( CancellationToken cancellationToken ) =>
+				await _configBuilder._httpClient.PutAsync( url, request, cancellationToken );
+		} catch ( Exception exception ) {
+			_exception = exception;
+		}
+		return this;
+	}
+
+	public IRestPostProcessing DoDelete( string url ) {
+		try {
+			_isFileOperation = false;
+			PreRequestSettings( );
+
+			_request = async ( CancellationToken cancellationToken ) =>
+				await _configBuilder._httpClient.DeleteAsync( url, cancellationToken );
+		} catch ( Exception exception ) {
+			_exception = exception;
+		}
+		return this;
+	}
+
+	public IRestPostProcessing DoPatch<TBody>( string url, TBody? body = default ) {
+		try {
+			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
+			_isFileOperation = false;
+			PreRequestSettings( );
+
+			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
+
+			_request = async ( CancellationToken cancellationToken ) =>
+				await _configBuilder._httpClient.PatchAsync( url, request, cancellationToken );
+		} catch ( Exception exception ) {
+			_exception = exception;
+		}
+		return this;
+	}
+
+	public IRestPostProcessing DoDownload( string url ) {
+		try {
+			_isFileOperation = true;
+			PreRequestSettings( );
+
+			_request = async ( CancellationToken cancellationToken ) =>
+				await _configBuilder._httpClient.GetAsync( url, cancellationToken: cancellationToken );
+		} catch ( Exception exception ) {
+			_exception = exception;
+		}
+
+		return this;
+	}
+
+	public IRestPostProcessing DoUpload<T>( string url, T body, string contentType, Action<RestUploadSettings>? settings = null ) {
+		try {
+			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
+			_isFileOperation = true;
+			PreRequestSettings( );
+
+			HttpContent? request = null;
+			if ( body is HttpContent httpContent ) {
+				request = httpContent;
+			} else if ( body is byte[ ] content ) {
+				request = new ByteArrayContent( content ) {
+					Headers = {
+						ContentType = new MediaTypeHeaderValue(contentType)
+					}
+				};
+			}
+
+			var uploadSettings = new RestUploadSettings( );
+			settings?.Invoke( uploadSettings );
+
+			_request = async ( CancellationToken cancellationToken ) => {
+				return uploadSettings.Method switch {
+					RestUploadSettings.UploadMethod.PUT => await _configBuilder._httpClient.PutAsync( url, request, cancellationToken ),
+					RestUploadSettings.UploadMethod.PATCH => await _configBuilder._httpClient.PatchAsync( url, request, cancellationToken ),
+					_ => await _configBuilder._httpClient.PostAsync( url, request, cancellationToken )
+				};
+			};
+		} catch ( Exception exception ) {
+			_exception = exception;
+		}
+		return this;
+	}
+
+	public IRestPostProcessing DoUpload( string url, Stream stream, string contentType, Action<RestUploadSettings>? settings = null ) {
+		try {
+			ArgumentNullException.ThrowIfNull( stream, nameof( stream ) );
+			_isFileOperation = true;
+			PreRequestSettings( );
+
+			using var memoryStream = new MemoryStream( );
+			stream.CopyTo( memoryStream );
+			memoryStream.Position = 0;
+			var body = memoryStream.ToArray( );
+
+			return DoUpload( url, body, contentType, settings );
+		} catch ( Exception exception ) {
+			_exception = exception;
+		}
+		return this;
+	}
+
+	public IRestPostProcessing DoUpload( string url, IFormFile file, Action<RestUploadSettings>? settings = null ) {
+		try {
+			ArgumentNullException.ThrowIfNull( file, nameof( file ) );
+			_isFileOperation = true;
+			PreRequestSettings( );
+
+			using var memoryStream = new MemoryStream( );
+			file.CopyTo( memoryStream );
+			memoryStream.Position = 0;
+			var body = memoryStream.ToArray( );
+
+			return DoUpload( url, body, file.ContentType, settings );
+		} catch ( Exception exception ) {
+			_exception = exception;
+		}
+		return this;
+	}
+
+	public IRestPostProcessing DoUpload( string url, HttpContent content, Action<RestUploadSettings>? settings = null ) {
+		try {
+			ArgumentNullException.ThrowIfNull( content, nameof( content ) );
+			ArgumentNullException.ThrowIfNull( content.Headers.ContentType, "content-type" );
+			ArgumentNullException.ThrowIfNull( content.Headers.ContentLength, "content-length" );
+			ArgumentOutOfRangeException.ThrowIfZero( content.Headers.ContentLength.Value, "content-length" );
+
+			_isFileOperation = true;
+			PreRequestSettings( );
+
+			return DoUpload( url, content, content.Headers.ContentType.ToString( ), settings );
+		} catch ( Exception exception ) {
+			_exception = exception;
+		}
+		return this;
+	}
+
+	#endregion [ IRestActions Implementation ]
+
+	#region [ IRestPostProcessing Implementation ]
+
+	public IRestErrorHandler OnError( Action<ErrorBuilder> errorSettings ) {
 		_errorBuilder.Clear( );
+		errorSettings.Invoke( _errorBuilder );
+		return this;
+	}
+
+	public IRestResultHandler OnResult( Action<ResultBuilder> resultSettings ) {
+		_resultBuilder.Clear( );
 		resultSettings.Invoke( _resultBuilder );
 		return this;
 	}
 
-	public override RestBuilder OnError( Action<ErrorBuilder> exceptionSettings ) =>
-		( base.OnError( exceptionSettings ) as RestBuilder )!;
+	#endregion [ IRestPostProcessing Implementation ]
 
-	#endregion [ Pre-Request ]
+	#region [ IRestPostProcessingError Implementation ]
 
-	#region [ Building ]
+	IRestResult IRestErrorHandler.OnResult( Action<ResultBuilder> resultSettings ) {
+		_resultBuilder.Clear( );
+		resultSettings.Invoke( _resultBuilder );
+		return this;
+	}
 
-	/// <summary>
-	/// Runs the request and get the response
-	/// </summary>
-	/// <typeparam name="TResult">The result type</typeparam>
-	/// <param name="cancellationToken">Cancellation token</param>
-	/// <returns>A task with the result</returns>
-	public async Task<RestResponse> BuildAsync<TResult>( CancellationToken cancellationToken = default ) =>
-		await BuildAsync( typeof( TResult ), cancellationToken );
+	#endregion [ IRestPostProcessingError Implementation ]
 
-	/// <summary>
-	/// Runs the request and get the response
-	/// </summary>
-	/// <param name="cancellationToken">Cancellation token</param>
-	/// <returns>A task with the result</returns>
+	#region [ IRestPostProcessingResult Implementation ]
+
+	IRestResult IRestResultHandler.OnError( Action<ErrorBuilder> errorSettings ) {
+		_errorBuilder.Clear( );
+		errorSettings.Invoke( _errorBuilder );
+		return this;
+	}
+
+	#endregion [ IRestPostProcessingResult Implementation ]
+
+	#region [ Build Methods ]
+
 	public async Task<RestResponse> BuildAsync( CancellationToken cancellationToken = default ) =>
 		await BuildAsync( null, cancellationToken );
+
+	public async Task<RestResponse> BuildAsync<TResult>( CancellationToken cancellationToken = default ) =>
+		await BuildAsync( typeof( TResult ), cancellationToken );
 
 	protected async Task<RestResponse> BuildAsync( Type? responseType = null, CancellationToken cancellationToken = default ) {
 		try {
@@ -64,9 +290,9 @@ public partial class RestBuilder : RestBuilderBase {
 		}
 	}
 
-	#endregion [ Building ]
+	#endregion [ Build Methods ]
 
-	#region [ Processing ]
+	#region [ Processing Methods ]
 
 	private async Task<RestResponse> ProcessRequestAsync( CancellationToken cancellationToken ) {
 		var (message, elapsedTime) = await ProcessAsync( cancellationToken );
@@ -124,12 +350,6 @@ public partial class RestBuilder : RestBuilderBase {
 		return restResponse;
 	}
 
-	/// <summary>
-	/// Applying retrying policy
-	/// </summary>
-	/// <param name="message"></param>
-	/// <param name="cancellationToken"></param>
-	/// <returns></returns>
 	private async Task<(string stringContent, byte[ ] byteContent)> RetryingAsync( HttpResponseMessage message, CancellationToken cancellationToken ) {
 		var retries = 0;
 		string stringContent;
@@ -150,248 +370,70 @@ public partial class RestBuilder : RestBuilderBase {
 		return (stringContent, byteContent);
 	}
 
-	#endregion [ Processing ]
+	protected async Task<(HttpResponseMessage, TimeSpan)> ProcessAsync( CancellationToken cancellationToken = default ) {
+		if ( _request is null )
+			throw new NoActionMadeException( );
 
-	#region [ Content Actions ]
+		var requestTime = new Stopwatch( );
 
-	/// <summary>
-	/// Use a `GET` as method for request
-	/// </summary>
-	/// <param name="url">The url</param>
-	/// <returns>This object</returns>
-	public RestBuilder DoGet( string url ) {
-		try {
-			_isFileOperation = false;
-			PreRequestSettings( );
+		requestTime.Start( );
 
-			_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.GetAsync( url, cancellationToken );
-		} catch ( Exception exception ) {
-			_exception = exception;
-		}
-		return this;
+		var message = await _request.Invoke( cancellationToken );
+
+		requestTime.Stop( );
+
+		return (message, requestTime.Elapsed);
 	}
 
-	/// <summary>
-	/// Use a `POST` as method for request
-	/// </summary>
-	/// <typeparam name="TBody">The type of body</typeparam>
-	/// <param name="url">The url</param>
-	/// <param name="body">The body</param>
-	/// <returns>This object</returns>
-	public RestBuilder DoPost<TBody>( string url, TBody? body = default ) {
-		try {
-			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
-			_isFileOperation = false;
-			PreRequestSettings( );
+	protected void PreRequestSettings( ) {
+		var baseAddress = _configBuilder._baseUrl;
+		if ( !string.IsNullOrEmpty( baseAddress ) )
+			_configBuilder._httpClient.BaseAddress = new Uri( baseAddress );
 
-			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
+		var authorization = _configBuilder._authorizationHeader;
+		if ( authorization is not null )
+			_configBuilder._httpClient.DefaultRequestHeaders.Authorization = authorization;
 
-			_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.PostAsync( url, request, cancellationToken );
-		} catch ( Exception exception ) {
-			_exception = exception;
-		}
-		return this;
-	}
+		var timeout = _configBuilder._timeout;
+		if ( timeout is not null )
+			_configBuilder._httpClient.Timeout = timeout.Value;
 
-	/// <summary>
-	/// Use a `PUT` as method for request
-	/// </summary>
-	/// <typeparam name="TBody">The type of body</typeparam>
-	/// <param name="url">The url</param>
-	/// <param name="body">The body</param>
-	/// <returns>This object</returns>
-	public RestBuilder DoPut<TBody>( string url, TBody? body = default ) {
-		try {
-			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
-			_isFileOperation = false;
-			PreRequestSettings( );
+		var acceptableContentType = _configBuilder._acceptableContentType;
+		if ( !string.IsNullOrEmpty( acceptableContentType ) )
+			_configBuilder._httpClient
+				.DefaultRequestHeaders
+				.Accept
+				.Add( new MediaTypeWithQualityHeaderValue( acceptableContentType ) );
 
-			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
+		var customHeaders = _configBuilder._customHeaders;
+		if ( customHeaders.Any( ) )
+			foreach ( var header in customHeaders ) {
+				if ( _configBuilder._httpClient.DefaultRequestHeaders.Contains( header.Key ) )
+					_configBuilder._httpClient.DefaultRequestHeaders.Remove( header.Key );
 
-			_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.PutAsync( url, request, cancellationToken );
-		} catch ( Exception exception ) {
-			_exception = exception;
-		}
-		return this;
-	}
-
-	/// <summary>
-	/// Use a `DELETE` as method for request
-	/// </summary>
-	/// <param name="url">The url</param>
-	/// <returns>This object</returns>
-	public RestBuilder DoDelete( string url ) {
-		try {
-			_isFileOperation = false;
-			PreRequestSettings( );
-
-			_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.DeleteAsync( url, cancellationToken );
-		} catch ( Exception exception ) {
-			_exception = exception;
-		}
-		return this;
-	}
-
-	/// <summary>
-	/// Use a `PATCH` as method for request
-	/// </summary>
-	/// <typeparam name="TBody">The type of body</typeparam>
-	/// <param name="url">The url</param>
-	/// <param name="body">The body</param>
-	/// <returns>This object</returns>
-	public RestBuilder DoPatch<TBody>( string url, TBody? body = default ) {
-		try {
-			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
-			_isFileOperation = false;
-			PreRequestSettings( );
-
-			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
-
-			_request = async ( CancellationToken cancellationToken ) => await _configBuilder._httpClient.PatchAsync( url, request, cancellationToken );
-		} catch ( Exception exception ) {
-			_exception = exception;
-		}
-		return this;
-	}
-
-	#endregion [ Content Actions ]
-
-	#region [ File Actions ]
-
-	/// <summary>
-	/// Downloads a file
-	/// </summary>
-	/// <param name="url">The url</param>
-	/// <returns>This object</returns>
-	public RestBuilder DoDownload( string url ) {
-		try {
-			_isFileOperation = true;
-			PreRequestSettings( );
-
-			_request = async ( CancellationToken cancellationToken ) =>
-				await _configBuilder._httpClient.GetAsync( url, cancellationToken: cancellationToken );
-		} catch ( Exception exception ) {
-			_exception = exception;
-		}
-
-		return this;
-	}
-
-	/// <summary>
-	/// Upload a file
-	/// </summary>
-	/// <param name="url">The url</param>
-	/// <param name="body">The body</param>
-	/// <param name="contentType">The content type</param>
-	/// <param name="settings">Other settings</param>
-	/// <returns>This object</returns>
-	public RestBuilder DoUpload<T>( string url, T body, string contentType, Action<RestUploadSettings>? settings = null ) {
-		try {
-			ArgumentNullException.ThrowIfNull( body, nameof( body ) );
-			_isFileOperation = true;
-			PreRequestSettings( );
-
-			HttpContent? request = null;
-			if ( body is HttpContent httpContent ) {
-				request = httpContent;
-			} else if ( body is byte[ ] content ) {
-				request = new ByteArrayContent( content ) {
-					Headers = {
-						ContentType = new MediaTypeHeaderValue(contentType)
-					}
-				};
+				_configBuilder._httpClient.DefaultRequestHeaders.Add( header.Key, header.Value );
 			}
-
-			var uploadSettings = new RestUploadSettings( );
-			settings?.Invoke( uploadSettings );
-
-			_request = async ( CancellationToken cancellationToken ) => {
-				return uploadSettings.Method switch {
-					RestUploadSettings.UploadMethod.PUT => await _configBuilder._httpClient.PutAsync( url, request, cancellationToken ),
-					RestUploadSettings.UploadMethod.PATCH => await _configBuilder._httpClient.PatchAsync( url, request, cancellationToken ),
-					_ => await _configBuilder._httpClient.PostAsync( url, request, cancellationToken )
-				};
-			};
-		} catch ( Exception exception ) {
-			_exception = exception;
-		}
-		return this;
 	}
 
-	/// <summary>
-	/// Upload a file
-	/// </summary>
-	/// <param name="url">The url</param>
-	/// <param name="stream">The stream</param>
-	/// <param name="contentType">The content type</param>
-	/// <param name="settings">Other settings</param>
-	/// <returns>This object</returns>
-	public RestBuilder DoUpload( string url, Stream stream, string contentType, Action<RestUploadSettings>? settings = null ) {
-		try {
-			ArgumentNullException.ThrowIfNull( stream, nameof( stream ) );
-			_isFileOperation = true;
-			PreRequestSettings( );
-
-			using var memoryStream = new MemoryStream( );
-			stream.CopyTo( memoryStream );
-			memoryStream.Position = 0;
-			var body = memoryStream.ToArray( );
-
-			return DoUpload( url, body, contentType, settings );
-		} catch ( Exception exception ) {
-			_exception = exception;
-		}
-		return this;
+	public void PostProcessing( ) {
+		_request = null;
+		_responseMessage = null;
+		_exception = null;
+		_isFileOperation = false;
+		_configBuilder._httpClient.CancelPendingRequests( );
+		_configBuilder._httpClient.DefaultRequestHeaders.Clear( );
+		_configBuilder._httpClient.DefaultRequestHeaders.Accept.Clear( );
 	}
 
-	/// <summary>
-	/// Upload a file
-	/// </summary>
-	/// <param name="url">The url</param>
-	/// <param name="file">The file</param>
-	/// <param name="settings">Other settings</param>
-	/// <returns>This object</returns>
-	public RestBuilder DoUpload( string url, IFormFile file, Action<RestUploadSettings>? settings = null ) {
-		try {
-			ArgumentNullException.ThrowIfNull( file, nameof( file ) );
-			_isFileOperation = true;
-			PreRequestSettings( );
+	#endregion [ Processing Methods ]
 
-			using var memoryStream = new MemoryStream( );
-			file.CopyTo( memoryStream );
-			memoryStream.Position = 0;
-			var body = memoryStream.ToArray( );
+	#region [ IDisposable Implementation ]
 
-			return DoUpload( url, body, file.ContentType, settings );
-		} catch ( Exception exception ) {
-			_exception = exception;
-		}
-		return this;
+	public void Dispose( ) {
+		_configBuilder._httpClient?.Dispose( );
+		_responseMessage?.Dispose( );
+		GC.SuppressFinalize( this );
 	}
 
-	/// <summary>
-	/// Upload a file
-	/// </summary>
-	/// <param name="url">The url</param>
-	/// <param name="content">The HTTP content</param>
-	/// <param name="settings">Other settings</param>
-	/// <returns>This object</returns>
-	public RestBuilder DoUpload( string url, HttpContent content, Action<RestUploadSettings>? settings = null ) {
-		try {
-			ArgumentNullException.ThrowIfNull( content, nameof( content ) );
-			ArgumentNullException.ThrowIfNull( content.Headers.ContentType, "content-type" );
-			ArgumentNullException.ThrowIfNull( content.Headers.ContentLength, "content-length" );
-			ArgumentOutOfRangeException.ThrowIfZero( content.Headers.ContentLength.Value, "content-length" );
-
-			_isFileOperation = true;
-			PreRequestSettings( );
-
-			return DoUpload( url, content, content.Headers.ContentType.ToString( ), settings );
-		} catch ( Exception exception ) {
-			_exception = exception;
-		}
-		return this;
-	}
-
-	#endregion [ File Actions ]
+	#endregion [ IDisposable Implementation ]
 }
