@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Myth.Constants;
 using Myth.DependencyInjection;
+using Myth.Rest.Interfaces;
 using System;
 using System.IO;
 using System.Linq;
@@ -54,8 +55,8 @@ namespace Myth.Rest.Test {
 				lifetime );
 
 			var serviceProvider = services.BuildServiceProvider( );
-			var result = serviceProvider.GetService<RestBuilder>( );
-			var service = services.First( x => x.ServiceType == typeof( RestBuilder ) );
+			var result = serviceProvider.GetService<IRestRequest>( );
+			var service = services.First( x => x.ServiceType == typeof( IRestRequest ) );
 
 			var response = await result!
 				.DoGet( "test" )
@@ -101,8 +102,8 @@ namespace Myth.Rest.Test {
 				lifetime );
 
 			var serviceProvider = services.BuildServiceProvider( );
-			var result = serviceProvider.GetService<RestBuilder>( );
-			var service = services.First( x => x.ServiceType == typeof( RestBuilder ) );
+			var result = serviceProvider.GetService<IRestRequest>( );
+			var service = services.First( x => x.ServiceType == typeof( IRestRequest ) );
 
 			var response = await result!
 				.DoDownload( "test" )
