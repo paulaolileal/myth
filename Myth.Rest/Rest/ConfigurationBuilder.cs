@@ -155,14 +155,28 @@ public class ConfigurationBuilder {
 	}
 
 	/// <summary>
-	/// Set the retry policy in case of failed request
+	/// Set default retry (3 tries, backoff exponential with jitter)
 	/// </summary>
-	/// <remarks>
-	/// You can set only for some status codes. If not setted, all failure will retried
-	/// </remarks>
-	/// <param name="amount"></param>
-	/// <param name="timeBetweenRetries"></param>
-	/// <returns></returns>
+	public ConfigurationBuilder WithRetry( ) {
+		_retryPolicy = new RetryPolicy( )
+			.WithMaxAttempts( 3 )
+			.UseExponentialBackoffWithJitter( TimeSpan.FromSeconds( 1 ) )
+			.ForServerErrors( );
+
+		return this;
+	}
+
+	/// <summary>
+	/// Set custom retry police 
+	/// </summary>
+	public ConfigurationBuilder WithRetry( Action<RetryPolicy> configure ) {
+		configure( _retryPolicy );
+		return this;
+	}
+
+	/// <summary>
+	/// Set  basic retry
+	/// </summary>
 	public ConfigurationBuilder WithRetry( int amount, TimeSpan timeBetweenRetries, params HttpStatusCode[ ] statusCodes ) {
 		_retryPolicy.Set( amount, timeBetweenRetries, statusCodes );
 		return this;

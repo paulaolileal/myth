@@ -18,6 +18,7 @@ Para utilizar é muito simples. Basta fazer encadeamento de ações para montar 
 - Muito personalizável
 - Re-aproveitável para multiplas requisições
 - Orientado a exceções
+- **Políticas de retry avançadas com múltiplas estratégias**
 
 # 🕶️ Usando
 
@@ -37,20 +38,20 @@ Exemplo de uma requisição completa:
 
 ```csharp
 var response = await Rest
-	.Create( )													// Inicializa a requisição
-  	.Configure( config => config								// Configurações padrões
-		.WithBaseUrl( "https://localhost:5001/" )				// Define a url base
-		.WithContentType( "application/json" )					// Define o tipo de conteúdo
-		.WithBodySerialization( CaseStrategy.CamelCase )		// Define o tipo de serialização do corpo da requisição
-		.WithBodyDeserialization( CaseStrategy.SnakeCase )		// Define o tipo de serialização do corpo da resposta
-		.WithRetry( 3, TimeSpan.FromSeconds(30) ) 				// Define uma politica de re-tentativas caso a requisição falhe
-		.WithTypeConverter<Interface, Type>						// Define uma conversão da interface para o tipo ao deserializar responstas
-  	.DoGet( "get-success" )										// Define a ação a ser realizada `get`, `post`, `put`, `patch`, `delete`
-  	.OnResult( config => config									// Define o que deve acontecer em caso de sucesso
-    	.UseTypeForSuccess<IEnumerable<Post>>( ) )				// ... nesse caso: sempre que for sucesso, status code >= 200 && < 299, usar o tipo `IEnumerable<Post>`
-  	.OnError( error => error									// Define o que deve acontecer em caso de erro
-		.ThrowForNonSuccess( ) )								// ... nesse caso: sempre que for diferente de sucesso, lançar uma exceção
-  	.BuildAsync( );												// Executa a requisição
+	.Create( )							// Inicializa a requisição
+  	.Configure( config => config					// Configurações padrões
+		.WithBaseUrl( "https://localhost:5001/" )		// Define a url base
+		.WithContentType( "application/json" )			// Define o tipo de conteúdo
+		.WithBodySerialization( CaseStrategy.CamelCase )	// Define o tipo de serialização do corpo da requisição
+		.WithBodyDeserialization( CaseStrategy.SnakeCase )	// Define o tipo de serialização do corpo da resposta
+		.WithRetry( )						// Define política de retry inteligente (recomendado)
+		.WithTypeConverter<Interface, Type>			// Define uma conversão da interface para o tipo ao deserializar responstas
+  	.DoGet( "get-success" )						// Define a ação a ser realizada `get`, `post`, `put`, `patch`, `delete`
+  	.OnResult( config => config					// Define o que deve acontecer em caso de sucesso
+    	.UseTypeForSuccess<IEnumerable<Post>>( ) )			// ... nesse caso: sempre que for sucesso, status code >= 200 && < 299, usar o tipo `IEnumerable<Post>`
+  	.OnError( error => error					// Define o que deve acontecer em caso de erro
+		.ThrowForNonSuccess( ) )				// ... nesse caso: sempre que for diferente de sucesso, lançar uma exceção
+  	.BuildAsync( );							// Executa a requisição
 ```
 
 ### ⚙️ Pré-configurando a requisição
@@ -67,8 +68,88 @@ O `.Configure( ... )` é a porta de entrada para a configuração da requisiçã
 - `.WithBasicAuthorization( param: string, param: string)`: Adiciona um header de autorização do tipo Basic a partir do usuário e senha informados.
 - `.AddHeader( param: string, param string, param: bool )`: Adiciona outros headers necessários para requisição a partir de chave e valor.
 - `.WithClient( param: HttpClient)`: Adiciona um cliente http previamente configurado.
-- `.WithRetry( param: int, param: TimeSpan )`: Define uma politica de re-tentativas caso a requisição falhe
+- `.WithRetry( )` ou `.WithRetry( retry => retry... )`: Define políticas de retry para requisições falhas (veja seção detalhada abaixo)
 - `.WithTypeConverter<Interface, Type>`: Define uma conversão da interface para o tipo ao deserializar responstas
+
+#### 🔄 Políticas de Retry
+
+A biblioteca oferece mecanismos de retry sofisticados seguindo padrões da indústria como AWS SDK, Google Cloud SDK e Polly:
+
+##### Padrão Inteligente (Recomendado)
+```csharp
+.WithRetry() // 3 tentativas, backoff exponencial com jitter, apenas erros de servidor
+```
+
+##### Estratégias Personalizadas
+```csharp
+.WithRetry(retry => retry
+	.WithMaxAttempts(5)
+	.UseExponentialBackoffWithJitter(
+		baseDelay: TimeSpan.FromSeconds(1),
+		multiplier: 2.0,
+		maxDelay: TimeSpan.FromSeconds(30)
+	)
+	.ForServerErrors()
+	.ForExceptions(typeof(TaskCanceledException))
+)
+```
+
+##### Estratégias Disponíveis:
+
+**🎯 Backoff Exponencial com Jitter** (Recomendado)
+- **Quando usar**: Maioria dos cenários de produção
+- **Como funciona**: Delays aumentam exponencialmente (1s, 2s, 4s...) com jitter aleatório para evitar thundering herd
+- **Usado por**: AWS SDK, Google Cloud SDK
+
+```csharp
+.UseExponentialBackoffWithJitter(
+	baseDelay: TimeSpan.FromSeconds(1),
+	multiplier: 2.0,
+	maxDelay: TimeSpan.FromSeconds(30)
+)
+```
+
+##### **📈 Backoff Exponencial**
+- **Quando usar**: Quando você quer delays previsíveis sem aleatoriedade
+- **Como funciona**: Delays aumentam exponencialmente (1s, 2s, 4s, 8s...)
+
+```csharp
+.UseExponentialBackoff(
+	baseDelay: TimeSpan.FromSeconds(1),
+	multiplier: 2.0,
+	maxDelay: TimeSpan.FromSeconds(30)
+)
+```
+
+##### **🎲 Delay Aleatório**
+- **Quando usar**: Cenários de alto tráfego onde você quer distribuir a carga aleatoriamente
+- **Como funciona**: Cada retry usa um delay aleatório entre valores mínimo e máximo
+
+```csharp
+.UseRandom(
+	minDelay: TimeSpan.FromSeconds(1),
+	maxDelay: TimeSpan.FromSeconds(5)
+)
+```
+
+##### **⏱️ Delay Fixo**
+- **Quando usar**: Cenários simples ou quando você precisa de timing previsível
+- **Como funciona**: Mesmo delay entre todas as tentativas
+
+```csharp
+.UseFixedDelay(TimeSpan.FromSeconds(2))
+```
+
+#### Opções de Configuração:
+- `.WithMaxAttempts(n)`: Máximo de tentativas de retry
+- `.ForServerErrors()`: Retry para códigos de status 5xx e 429 Too Many Requests
+- `.ForStatusCodes(...)`: Retry para códigos de status HTTP específicos
+- `.ForExceptions(...)`: Retry para tipos de exceção específicos
+
+#### Compatibilidade com Versão Anterior:
+```csharp
+.WithRetry(3, TimeSpan.FromSeconds(2), HttpStatusCode.ServiceUnavailable) // Ainda funciona
+```
 
 ### 🔮 Realizando ações
 
@@ -104,15 +185,6 @@ Podem ser realizados todos os tipos de ações esperadas pelo REST.
 - `.NotThrowForNonMappedResult()`: Não lança exceção se não existir um tipo para o status code recebido
 - `.NotThrowFor( param: HttpStatusCode, param: Func<dynamic, bool>? )`: Não lança exceção para um status code definido. 
 - `.UseFallback<T>(param: HttpStatusCode, param: T)`: Usa um valor padrão para um status code específico. Isso é útil quando você deseja retornar um valor padrão ao invés de lançar uma exceção.
-## 📁 Requisições de arquivos
-
-Essa biblioteca também permite e facilita trabalhar com arquivos, fazendo _download_ e _upload_.
-
-Para iniciar uma requisição de arquivos utilize:
-
-```csharp
-Rest.File()
-```
 
 ### ⬇️ Realizando downloads
 
@@ -120,17 +192,18 @@ Para realizar um download basta utilizar o `.DoDownload( param: string )`. Todas
 
 ```csharp
 var response = await Rest								
-	.File( )													// Define como requisição de arquivo
-	.Configure( conf => conf									// Pré-configura a requisição
-		.WithBaseUrl( "https://localhost:5001" ) );				// Define qual a URL base a ser utilizada
-	.DoDownload( "download-success" )							// Define a ação de download com a URL a ser utilizada
-	.OnError( error => error									// Define o que fazer em caso de erros
-		.ThrowForNonSuccess( ) )								// Sempre que der erro, lance exceções
-	.BuildAsync( );												// Execute a requisição
+	.Create( )						// Define como requisição de arquivo
+	.Configure( conf => conf				// Pré-configura a requisição
+		.WithBaseUrl( "https://localhost:5001" )	// Define qual a URL base a ser utilizada
+		.WithRetry( ) );				// Retry inteligente para downloads
+	.DoDownload( "download-success"				// Define a ação de download com a URL a ser utilizada
+	.OnError( error => error				// Define o que fazer em caso de erros
+		.ThrowForNonSuccess( ) )			// Sempre que der erro, lance exceções
+	.BuildAsync( );						// Execute a requisição
 
 await response.SaveToFileAsync( directory, fileName, true );	// Salva o arquivo baixado em um diretório da máquina
 
-response.ToStream();											// Retorna um stream a ser utilizado posteriormente
+response.ToStream();						// Retorna um stream a ser utilizado posteriormente
 ```
 
 ### ⬆️ Realizando uploads
@@ -139,13 +212,17 @@ Os _uploads_ seguem o mesmo padrão do _download_. Muda somente a ação para `.
 
 ```csharp
 var response = await Rest
-	.File( )													// Define como requisição de arquivo
-	.Configure( conf => conf									// Pré-configura a requisição
-		.WithBaseUrl( "https://localhost:5001" ) )				// Define qual a URL base a ser utilizada
-	.DoUpload( "upload-success", file )							// Define a ação de download com a URL a ser utilizada
-	.OnError( error => error									// Define o que fazer em caso de erros
-		.ThrowForNonSuccess( ) )								// Sempre que der erro, lance exceções
-	.BuildAsync( );												// Execute a requisição
+	.Create( )							// Define como requisição de arquivo
+	.Configure( conf => conf					// Pré-configura a requisição
+		.WithBaseUrl( "https://localhost:5001" )		// Define qual a URL base a ser utilizada
+		.WithRetry( retry => retry				// Retry customizado para uploads
+			.WithMaxAttempts(2)				// Menos tentativas para uploads
+			.UseFixedDelay(TimeSpan.FromSeconds(5))		// Delays maiores para arquivos grandes
+		) )
+	.DoUpload( "upload-success", file )				// Define a ação de upload com a URL a ser utilizada
+	.OnError( error => error					// Define o que fazer em caso de erros
+		.ThrowForNonSuccess( ) )				// Sempre que der erro, lance exceções
+	.BuildAsync( );							// Execute a requisição
 ```
 
 Uploads podem utilizar ações diferentes e para isso basta seguir o exemplo:

@@ -354,19 +354,58 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 		var retries = 0;
 		string stringContent;
 		byte[ ] byteContent;
-		var timer = new PeriodicTimer( _configBuilder._retryPolicy.TimeBetweenRetry );
 
-		do {
-			byteContent = await message.Content.ReadAsByteArrayAsync( cancellationToken );
-			stringContent = _isFileOperation ? "" : Encoding.UTF8.GetString( byteContent );
-			retries++;
-		} while (
-			!message.StatusCode.IsSuccess( ) &&
-			_configBuilder._retryPolicy.IsRetryStatusCode( message.StatusCode ) &&
-			retries < _configBuilder._retryPolicy.AmountRetries &&
-			await timer.WaitForNextTickAsync( cancellationToken ) );
+		var shouldRetry = true;
+
+		while ( shouldRetry && retries <= _configBuilder._retryPolicy.AmountRetries ) {
+			try {
+				byteContent = await message.Content.ReadAsByteArrayAsync( cancellationToken );
+				stringContent = _isFileOperation ? "" : Encoding.UTF8.GetString( byteContent );
+
+				// If success, get off the loop
+				if ( message.StatusCode.IsSuccess( ) ) 
+					break;				
+
+				// Checks if must retry
+				shouldRetry = retries < _configBuilder._retryPolicy.AmountRetries &&
+							 _configBuilder._retryPolicy.IsRetryStatusCode( message.StatusCode );
+
+				if ( shouldRetry ) {
+					// Calculate delay based on strategy
+					var delay = _configBuilder._retryPolicy.CalculateDelay( retries + 1 );
+					await Task.Delay( delay, cancellationToken );
+
+					// Retry the request
+					message.Dispose( ); // Clean the previous answer
+					message = await _request!.Invoke( cancellationToken );
+					retries++;
+				}
+			} catch ( Exception ex ) 
+				when ( _configBuilder._retryPolicy.IsRetryException( ex ) && 
+					  retries < _configBuilder._retryPolicy.AmountRetries ) {
+
+				// Retry if is a setted exception
+				var delay = _configBuilder._retryPolicy.CalculateDelay( retries + 1 );
+
+				await Task.Delay( delay, cancellationToken );
+
+				try {
+					message = await _request!.Invoke( cancellationToken );
+					retries++;
+				} catch {
+					// If failed throws the exception
+					throw;
+				}
+			}
+		}
+
+		// Get the last answer
+		byteContent = await message.Content.ReadAsByteArrayAsync( cancellationToken );
+
+		stringContent = _isFileOperation ? "" : Encoding.UTF8.GetString( byteContent );
 
 		_configBuilder._retryPolicy.SetRetriesMade( retries );
+
 		return (stringContent, byteContent);
 	}
 

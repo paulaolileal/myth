@@ -18,14 +18,13 @@ To use it is very simple. Just chain actions to build your request.
 - Highly customizable
 - Reusable for multiple requests
 - Exception-oriented
+- **Advanced retry policies with multiple strategies**
 
 # 🕶️ Using
 
 This library is prepared to handle requests for text content or files. Each will be seen below.
 
-## 📄 Content Requests
-
-A text content request is a request that sends and/or receives text files. It works with various formats.
+## 📄 Requests
 
 To start a text content request, use:
 
@@ -37,20 +36,20 @@ Example of a complete request:
 
 ```csharp
 var response = await Rest
-	.Create( )													// Initializes the request
-  	.Configure( config => config								// Default configurations
-		.WithBaseUrl( "https://localhost:5001/" )				// Sets the base URL
-		.WithContentType( "application/json" )					// Sets the content type
-		.WithBodySerialization( CaseStrategy.CamelCase )		// Sets the request body serialization type
-		.WithBodyDeserialization( CaseStrategy.SnakeCase ) )	// Sets the response body serialization type
-		.WithRetry( 3, TimeSpan.FromSeconds(30) ) 				// Defines a policy for retrying in case of the request failed 
-		.WithTypeConverter<Interface, Type>						// Defines a conversion between the interface and the concrete type on deserialize responses
-  	.DoGet( "get-success" )										// Defines the action to be performed `get`, `post`, `put`, `patch`, `delete`
-  	.OnResult( config => config									// Defines what should happen in case of success
-    	.UseTypeForSuccess<IEnumerable<Post>>( ) )				// ... in this case: whenever it's successful, status code >= 200 && < 299, use the type `IEnumerable<Post>`
-  	.OnError( error => error									// Defines what should happen in case of error
-		.ThrowForNonSuccess( ) )								// ... in this case: whenever it's not successful, throw an exception
-  	.BuildAsync( );												// Executes the request
+	.Create( )							// Initializes the request
+  	.Configure( config => config					// Default configurations
+		.WithBaseUrl( "https://localhost:5001/" )		// Sets the base URL
+		.WithContentType( "application/json" )			// Sets the content type
+		.WithBodySerialization( CaseStrategy.CamelCase )	// Sets the request body serialization type
+		.WithBodyDeserialization( CaseStrategy.SnakeCase )	// Sets the response body serialization type
+		.WithRetry( )						// Defines intelligent retry policy (recommended)
+		.WithTypeConverter<Interface, Type>			// Defines a conversion between the interface and the concrete type on deserialize responses
+  	.DoGet( "get-success" )						// Defines the action to be performed `get`, `post`, `put`, `patch`, `delete`
+  	.OnResult( config => config					// Defines what should happen in case of success
+    	.UseTypeForSuccess<IEnumerable<Post>>( ) )			// ... in this case: whenever it's successful, status code >= 200 && < 299, use the type `IEnumerable<Post>`
+  	.OnError( error => error					// Defines what should happen in case of error
+		.ThrowForNonSuccess( ) )                                // Always throw exceptions when an error occurs
+  	.BuildAsync( );							// Executes the request
 ```
 
 ### ⚙️ Pre-configuring the request
@@ -67,8 +66,88 @@ The `.Configure(...)` is the entry point for request configuration. Many things 
 - `.WithBasicAuthorization(param: string, param: string)`: Adds a Basic type authorization header from the informed user and password.
 - `.AddHeader(param: string, param string, param: bool)`: Adds other necessary headers for the request from key and value.
 - `.WithClient(param: HttpClient)`: Adds a previously configured http client.
-- `.WithRetry( param: int, param: TimeSpan )`: Defines a policy for retrying in case of the request failed 
+- `.WithRetry( )` or `.WithRetry( retry => retry... )`: Defines retry policies for failed requests (see detailed section below)
 - `.WithTypeConverter<Interface, Type>`: Defines a conversion between the interface and the concrete type on deserialize responses
+
+#### 🔄 Retry Policies
+
+The library offers sophisticated retry mechanisms following industry standards like AWS SDK, Google Cloud SDK, and Polly:
+
+##### Smart Default (Recommended)
+```csharp
+.WithRetry() // 3 attempts, exponential backoff with jitter, server errors only
+```
+
+##### Custom Retry Strategies
+```csharp
+.WithRetry(retry => retry
+	.WithMaxAttempts(5)
+	.UseExponentialBackoffWithJitter(
+		baseDelay: TimeSpan.FromSeconds(1),
+		multiplier: 2.0,
+		maxDelay: TimeSpan.FromSeconds(30)
+	)
+	.ForServerErrors()
+	.ForExceptions(typeof(TaskCanceledException))
+)
+```
+
+##### Available Strategies:
+
+**🎯 Exponential Backoff with Jitter** (Recommended)
+- **When to use**: Most production scenarios
+- **How it works**: Delays increase exponentially (1s, 2s, 4s...) with random jitter to prevent thundering herd
+- **Used by**: AWS SDK, Google Cloud SDK
+
+```csharp
+.UseExponentialBackoffWithJitter(
+	baseDelay: TimeSpan.FromSeconds(1),
+	multiplier: 2.0,
+	maxDelay: TimeSpan.FromSeconds(30)
+)
+```
+
+**📈 Exponential Backoff**
+- **When to use**: When you want predictable delays without randomness
+- **How it works**: Delays increase exponentially (1s, 2s, 4s, 8s...)
+
+```csharp
+.UseExponentialBackoff(
+	baseDelay: TimeSpan.FromSeconds(1),
+	multiplier: 2.0,
+	maxDelay: TimeSpan.FromSeconds(30)
+)
+```
+
+**🎲 Random Delay**
+- **When to use**: High-traffic scenarios where you want to spread load randomly
+- **How it works**: Each retry uses a random delay between min and max values
+
+```csharp
+.UseRandom(
+	minDelay: TimeSpan.FromSeconds(1),
+	maxDelay: TimeSpan.FromSeconds(5)
+)
+```
+
+**⏱️ Fixed Delay**
+- **When to use**: Simple scenarios or when you need predictable timing
+- **How it works**: Same delay between all retries
+
+```csharp
+.UseFixedDelay(TimeSpan.FromSeconds(2))
+```
+
+##### Configuration Options:
+- `.WithMaxAttempts(n)`: Maximum retry attempts
+- `.ForServerErrors()`: Retry for 5xx status codes and 429 Too Many Requests
+- `.ForStatusCodes(...)`: Retry for specific HTTP status codes
+- `.ForExceptions(...)`: Retry for specific exception types
+
+##### Backward Compatibility:
+```csharp
+.WithRetry(3, TimeSpan.FromSeconds(2), HttpStatusCode.ServiceUnavailable) // Still works
+```
 
 ### 🔮 Performing actions
 
@@ -105,33 +184,24 @@ It is possible to define which status code should throw exceptions. The exceptio
 - `.NotThrowFor( param: HttpStatusCode, param: Func<dynamic, bool>? )`: Does not throw an exception for a defined status code.
 - `.UseFallback<T>(param: HttpStatusCode, param: T)`: Uses a fallback value for a specific status code. This is useful when you want to return a default value instead of throwing an exception.
 
-## 📁 File Requests
-
-This library also allows and facilitates working with files, performing _download_ and _upload_.
-
-To start a file request use:
-
-```csharp
-Rest.File()
-```
-
 ### ⬇️ Performing downloads
 
-To perform a download, simply use .DoDownload(param: string). All configurations and error handling remain the same as content requests. Here’s an example:
+To perform a download, simply use .DoDownload(param: string). All configurations and error handling remain the same as content requests. Here's an example:
 
 ```csharp
 var response = await Rest								
-	.File( )													// Defines as a file request
-	.Configure( conf => conf									// Pre-configures the request
-		.WithBaseUrl( "https://localhost:5001" ) );				// Sets the base URL to be used
-	.DoDownload( "download-success" )							// Sets the download action with the URL to be used
-	.OnError( error => error									// Defines what to do in case of errors
-		.ThrowForNonSuccess( ) )								// Always throw exceptions when an error occurs
-	.BuildAsync( );												// Executes the request
+	.Create( )													// Defines as a file request
+	.Configure( conf => conf					// Pre-configures the request
+		.WithBaseUrl( "https://localhost:5001" )		// Sets the base URL to be used
+		.WithRetry( ) )						// Smart retry for downloads
+	.DoDownload( "download-success" )				// Sets the download action with the URL to be used
+	.OnError( error => error					// Defines what to do in case of errors
+		.ThrowForNonSuccess( ) )				// Always throw exceptions when an error occurs
+	.BuildAsync( );							// Executes the request
 
-await response.SaveToFileAsync( directory, fileName, true );	// Saves the downloaded file to a directory on the machine
+await response.SaveToFileAsync( directory, fileName, true );	        // Saves the downloaded file to a directory on the machine
 
-response.ToStream();											// Returns a stream to be used later
+response.ToStream();							// Returns a stream to be used later
 ```
 
 ### ⬆️ Performing uploads
@@ -140,13 +210,17 @@ Uploads follow the same pattern as downloads. The only change is the action to `
 
 ```csharp
 var response = await Rest
-	.File( )													// Defines as a file request
-	.Configure( conf => conf									// Pre-configures the request
-		.WithBaseUrl( "https://localhost:5001" ) )				// Sets the base URL to be used
-	.DoUpload( "upload-success", file )							// Sets the upload action with the URL to be used
-	.OnError( error => error									// Defines what to do in case of errors
-		.ThrowForNonSuccess( ) )								// Always throw exceptions when an error occurs
-	.BuildAsync( );												// Executes the request
+	.Create( )													// Defines as a file request
+	.Configure( conf => conf			                // Pre-configures the request
+		.WithBaseUrl( "https://localhost:5001" )	        // Sets the base URL to be used
+		.WithRetry( retry => retry			        // Custom retry for uploads
+			.WithMaxAttempts(2)				// Fewer retries for uploads
+			.UseFixedDelay(TimeSpan.FromSeconds(5))		// Longer delays for large files
+		) )
+	.DoUpload( "upload-success", file )			        // Sets the upload action with the URL to be used
+	.OnError( error => error					// Defines what to do in case of errors
+		.ThrowForNonSuccess( ) )                                // Always throw exceptions when an error occurs
+	.BuildAsync( );                                                 // Executes the request
 ```
 
 Uploads can use different actions, and for that, just follow the example:
@@ -184,7 +258,11 @@ The request must evaluate the `success` property to know if it was really an err
 var response = await Rest
 	.Create( )													
   	.Configure( config => config								
-		.WithBaseUrl( "https://localhost:5001/" )				
+		.WithBaseUrl( "https://localhost:5001/" )
+		.WithRetry( retry => retry								// Even with 200 OK, retry on business logic errors
+			.WithMaxAttempts(2)
+			.UseFixedDelay(TimeSpan.FromSeconds(1))
+		) )				
   	.DoGet( "route" )										
   	.OnResult( config => config								
     	.UseTypeFor<ResponseType>( 
@@ -214,7 +292,12 @@ public class Test{
 				.UseBaseUrl("https://localhost:5001")
 				.WithContentType( "application/json" )					
 				.WithBodySerialization( CaseStrategy.CamelCase )		
-				.WithBodyDeserialization( CaseStrategy.SnakeCase ) );	
+				.WithBodyDeserialization( CaseStrategy.SnakeCase )
+				.WithRetry( retry => retry							// Centralized retry policy
+					.WithMaxAttempts(3)
+					.UseExponentialBackoffWithJitter(TimeSpan.FromSeconds(1))
+					.ForServerErrors()
+				) );	
 	}
 
 	public async Task<ResponseType> GetTestAsync(CancellationToken cancellationToken){
@@ -239,4 +322,33 @@ public class Test{
 			.BuildAsync( cancellationToken );
 	}
 }
+```
+
+## Advanced Retry Scenarios
+
+### E-commerce API with Different Strategies
+```csharp
+// Critical operations - Conservative retry
+var orderClient = Rest
+	.Create()
+	.Configure(config => config
+		.WithBaseUrl("https://api.shop.com")
+		.WithRetry(retry => retry
+			.WithMaxAttempts(2)
+			.UseExponentialBackoff(TimeSpan.FromSeconds(2))
+			.ForStatusCodes(HttpStatusCode.ServiceUnavailable, HttpStatusCode.TooManyRequests)
+		)
+	);
+
+// Read operations - Aggressive retry
+var catalogClient = Rest.Create()
+	.Configure(config => config
+		.WithBaseUrl("https://api.shop.com")
+		.WithRetry(retry => retry
+			.WithMaxAttempts(5)
+			.UseRandom(TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(3))
+			.ForServerErrors()
+			.ForExceptions(typeof(TaskCanceledException))
+		)
+	);
 ```
