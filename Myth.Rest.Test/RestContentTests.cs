@@ -3,6 +3,7 @@ using FluentAssertions;
 using Myth.Constants;
 using Myth.Exceptions;
 using Myth.Extensions;
+using Myth.Rest.Interfaces;
 using Myth.Rest.Test.Models;
 using System;
 using System.Collections.Generic;
@@ -18,7 +19,7 @@ using Xunit;
 namespace Myth.Rest.Test;
 
 public class RestContentTests : IDisposable {
-	private readonly RestBuilder _restClient;
+	private readonly IRestRequest _restClient;
 	private readonly WireMockServer _server;
 	private readonly Faker _faker;
 
@@ -34,7 +35,8 @@ public class RestContentTests : IDisposable {
 				.WithContentType( "application/json" )
 				.WithBodySerialization( CaseStrategy.CamelCase )
 				.WithRetry( 3, TimeSpan.FromSeconds( 10 ), HttpStatusCode.InternalServerError )
-				.WithTypeConverter<IPost, Post>( ) );
+				.WithTypeConverter<IPost, Post>( ) )
+			;
 	}
 
 	public void Dispose( ) {
@@ -245,38 +247,6 @@ public class RestContentTests : IDisposable {
 		var action = ( ) => response.GetAs<string>( );
 
 		action.Should( ).Throw<DifferentResponseTypeException>( );
-	}
-
-	[Fact]
-	public async Task Get_should_throw_exception_when_no_action_made( ) {
-		// Arrange
-		_server
-			.Given(
-				Request
-					.Create( )
-					.WithPath( "/get-success" )
-					.UsingGet( ) )
-			.RespondWith(
-				Response
-					.Create( )
-					.WithBodyAsJson( new[ ] {
-						new { id = _faker.UniqueIndex,title = _faker.Lorem.Lines(1), body = _faker.Lorem.Text(), userId = _faker.Random.Guid()},
-						new { id = _faker.UniqueIndex,title = _faker.Lorem.Lines(1), body = _faker.Lorem.Text(), userId = _faker.Random.Guid()},
-						new { id = _faker.UniqueIndex,title = _faker.Lorem.Lines(1), body = _faker.Lorem.Text(), userId = _faker.Random.Guid()},
-						new { id = _faker.UniqueIndex,title = _faker.Lorem.Lines(1), body = _faker.Lorem.Text(), userId = _faker.Random.Guid()},
-						new { id = _faker.UniqueIndex,title = _faker.Lorem.Lines(1), body = _faker.Lorem.Text(), userId = _faker.Random.Guid()},
-					} )
-					.WithStatusCode( HttpStatusCode.OK ) );
-
-		// Act
-		var action = async ( ) => await _restClient
-			.OnResult( config => config
-				.UseTypeForSuccess<IEnumerable<Post>>( ) )
-			.OnError( error => error
-				.ThrowForNonSuccess( ) )
-			.BuildAsync( );
-
-		await action.Should( ).ThrowAsync<NoActionMadeException>( );
 	}
 
 	[Fact]
@@ -705,8 +675,8 @@ public class RestContentTests : IDisposable {
 		// Act
 		var response = await _restClient
 			.Configure( conf => conf
-				.AddHeader( "X-API-Version", "1.0" )
-				.AddHeader( "X-API-Version", "1.0" ) )
+				.WithHeader( "X-API-Version", "1.0" )
+				.WithHeader( "X-API-Version", "1.0" ) )
 			.DoGet( "get-headers" )
 			.OnResult( resp => resp
 				.UseTypeForSuccess<Post>( ) )
@@ -1135,11 +1105,11 @@ public class RestContentTests : IDisposable {
 				Response
 					.Create( )
 					.WithBody(
-						new { 
-							id = _faker.UniqueIndex, 
+						new {
+							id = _faker.UniqueIndex,
 							title = _faker.Lorem.Lines( 1 ),
-							body = _faker.Lorem.Text( ), 
-							userId = _faker.Random.Guid( ) 
+							body = _faker.Lorem.Text( ),
+							userId = _faker.Random.Guid( )
 						}.ToJson( ) )
 					.WithStatusCode( HttpStatusCode.OK ) );
 
