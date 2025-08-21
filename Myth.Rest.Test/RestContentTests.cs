@@ -675,8 +675,8 @@ public class RestContentTests : IDisposable {
 		// Act
 		var response = await _restClient
 			.Configure( conf => conf
-				.AddHeader( "X-API-Version", "1.0" )
-				.AddHeader( "X-API-Version", "1.0" ) )
+				.WithHeader( "X-API-Version", "1.0" )
+				.WithHeader( "X-API-Version", "1.0" ) )
 			.DoGet( "get-headers" )
 			.OnResult( resp => resp
 				.UseTypeForSuccess<Post>( ) )
@@ -1105,11 +1105,11 @@ public class RestContentTests : IDisposable {
 				Response
 					.Create( )
 					.WithBody(
-						new { 
-							id = _faker.UniqueIndex, 
+						new {
+							id = _faker.UniqueIndex,
 							title = _faker.Lorem.Lines( 1 ),
-							body = _faker.Lorem.Text( ), 
-							userId = _faker.Random.Guid( ) 
+							body = _faker.Lorem.Text( ),
+							userId = _faker.Random.Guid( )
 						}.ToJson( ) )
 					.WithStatusCode( HttpStatusCode.OK ) );
 

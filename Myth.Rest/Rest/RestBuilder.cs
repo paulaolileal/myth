@@ -274,12 +274,19 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 
 	protected async Task<RestResponse> BuildAsync( Type? responseType = null, CancellationToken cancellationToken = default ) {
 		try {
+			using var timeoutCts = _configBuilder._timeout.HasValue
+			? CancellationTokenSource.CreateLinkedTokenSource( cancellationToken )
+			: null;
+
 			if ( responseType is not null ) {
 				_resultBuilder.Clear( );
 				_resultBuilder.UseTypeForAll( responseType );
 			}
 
-			var response = await ProcessRequestAsync( cancellationToken );
+			timeoutCts?.CancelAfter( _configBuilder._timeout.Value );
+			var effectiveToken = timeoutCts?.Token ?? cancellationToken;
+
+			var response = await ProcessRequestAsync( effectiveToken );
 
 			PostProcessing( );
 
@@ -290,11 +297,19 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 		}
 	}
 
+	public async Task<Stream> BuildAsStreamAsync( CancellationToken cancellationToken = default ) {
+		var response = await _request!.Invoke( cancellationToken );
+
+		return await response.Content.ReadAsStreamAsync( cancellationToken );
+	}
+
 	#endregion [ Build Methods ]
 
 	#region [ Processing Methods ]
 
 	private async Task<RestResponse> ProcessRequestAsync( CancellationToken cancellationToken ) {
+		RestDiagnostics.StartActivity( "RestReqeuest", method: nameof( ProcessRequestAsync ) );
+
 		var (message, elapsedTime) = await ProcessAsync( cancellationToken );
 
 		// Retry logic and content processing
@@ -363,8 +378,8 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 				stringContent = _isFileOperation ? "" : Encoding.UTF8.GetString( byteContent );
 
 				// If success, get off the loop
-				if ( message.StatusCode.IsSuccess( ) ) 
-					break;				
+				if ( message.StatusCode.IsSuccess( ) )
+					break;
 
 				// Checks if must retry
 				shouldRetry = retries < _configBuilder._retryPolicy.AmountRetries &&
@@ -373,17 +388,16 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 				if ( shouldRetry ) {
 					// Calculate delay based on strategy
 					var delay = _configBuilder._retryPolicy.CalculateDelay( retries + 1 );
+
 					await Task.Delay( delay, cancellationToken );
 
 					// Retry the request
-					message.Dispose( ); // Clean the previous answer
 					message = await _request!.Invoke( cancellationToken );
 					retries++;
 				}
-			} catch ( Exception ex ) 
-				when ( _configBuilder._retryPolicy.IsRetryException( ex ) && 
+			} catch ( Exception ex )
+				when ( _configBuilder._retryPolicy.IsRetryException( ex ) &&
 					  retries < _configBuilder._retryPolicy.AmountRetries ) {
-
 				// Retry if is a setted exception
 				var delay = _configBuilder._retryPolicy.CalculateDelay( retries + 1 );
 

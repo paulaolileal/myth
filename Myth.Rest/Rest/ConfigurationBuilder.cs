@@ -1,4 +1,6 @@
-﻿using Myth.Constants;
+﻿using Microsoft.Extensions.Logging;
+using Myth.Constants;
+using Myth.Interfaces.Rest;
 using Myth.Models.Rest;
 using System.Net;
 using System.Net.Http.Headers;
@@ -6,7 +8,7 @@ using System.Text;
 
 namespace Myth.Rest;
 
-public class ConfigurationBuilder {
+public class ConfigurationBuilder : IDisposable {
 	protected internal string? _baseUrl;
 	protected internal TimeSpan? _timeout;
 	protected internal AuthenticationHeaderValue? _authorizationHeader;
@@ -17,6 +19,16 @@ public class ConfigurationBuilder {
 	protected internal IDictionary<string, string> _customHeaders;
 	protected internal RetryPolicy _retryPolicy;
 	protected internal HttpClient _httpClient;
+	protected internal ILogger? _logger;
+	protected internal bool _enableRequestLogging = false;
+	protected internal bool _enableResponseLogging = false;
+	protected internal ICircuitBreaker? _circuitBreaker;
+
+	private bool _ownsHttpClient = true;
+
+	private static readonly HashSet<string> SensitiveHeaders = new( StringComparer.OrdinalIgnoreCase ) {
+		"Authorization", "X-API-Key", "Cookie", "X-Auth-Token"
+	};
 
 	public ConfigurationBuilder( ) {
 		_httpClient = new HttpClient( );
@@ -27,13 +39,23 @@ public class ConfigurationBuilder {
 		_jsonConverters = new Dictionary<Type, Type>( );
 	}
 
+	public void Dispose( ) {
+		if ( _ownsHttpClient ) {
+			_httpClient?.Dispose( );
+		}
+		GC.SuppressFinalize( this );
+	}
+
 	/// <summary>
 	/// Set a pre-built http client
 	/// </summary>
 	/// <param name="httpClient">Http client</param>
 	/// <returns>This object</returns>
 	public ConfigurationBuilder WithClient( HttpClient httpClient ) {
+		_httpClient?.Dispose( );
 		_httpClient = httpClient;
+		_ownsHttpClient = false; // Não deve fazer dispose de cliente externo
+
 		return this;
 	}
 
@@ -126,11 +148,18 @@ public class ConfigurationBuilder {
 	/// <param name="key">Header key</param>
 	/// <param name="value">Header value</param>
 	/// <returns>This object</returns>
-	public ConfigurationBuilder AddHeader( string key, string value ) {
+	public ConfigurationBuilder WithHeader( string key, string value ) {
+		ArgumentException.ThrowIfNullOrWhiteSpace( key, nameof( key ) );
+		ArgumentException.ThrowIfNullOrWhiteSpace( value, nameof( value ) );
+
 		if ( _customHeaders.ContainsKey( key ) )
 			_customHeaders.Remove( key );
 
+		if ( SensitiveHeaders.Contains( key ) )
+			_logger?.LogWarning( "Adding sensitive header {HeaderName}. Consider using specific authorization methods.", key );
+
 		_customHeaders.TryAdd( key, value );
+
 		return this;
 	}
 
@@ -167,7 +196,7 @@ public class ConfigurationBuilder {
 	}
 
 	/// <summary>
-	/// Set custom retry police 
+	/// Set custom retry police
 	/// </summary>
 	public ConfigurationBuilder WithRetry( Action<RetryPolicy> configure ) {
 		configure( _retryPolicy );
@@ -175,7 +204,7 @@ public class ConfigurationBuilder {
 	}
 
 	/// <summary>
-	/// Set  basic retry
+	/// Set basic retry
 	/// </summary>
 	public ConfigurationBuilder WithRetry( int amount, TimeSpan timeBetweenRetries, params HttpStatusCode[ ] statusCodes ) {
 		_retryPolicy.Set( amount, timeBetweenRetries, statusCodes );
@@ -191,6 +220,42 @@ public class ConfigurationBuilder {
 	public ConfigurationBuilder WithTypeConverter<TInterface, TType>( ) {
 		_jsonConverters.Add( new KeyValuePair<Type, Type>( typeof( TInterface ), typeof( TType ) ) );
 
+		return this;
+	}
+
+	/// <summary>
+	/// Add a client factory to create a new HttpClient
+	/// </summary>
+	/// <param name="factory"></param>
+	/// <param name="name"></param>
+	/// <returns></returns>
+	public ConfigurationBuilder WithHttpClientFactory( IHttpClientFactory factory, string name = "default" ) {
+		_httpClient?.Dispose( );
+		_httpClient = factory.CreateClient( name );
+		return this;
+	}
+
+	/// <summary>
+	/// Add a logger to log requests and responses
+	/// </summary>
+	/// <param name="logger"></param>
+	/// <param name="logRequests"></param>
+	/// <param name="logResponses"></param>
+	/// <returns></returns>
+	public ConfigurationBuilder WithLogging( ILogger logger, bool logRequests = true, bool logResponses = true ) {
+		_logger = logger;
+		_enableRequestLogging = logRequests;
+		_enableResponseLogging = logResponses;
+		return this;
+	}
+
+	/// <summary>
+	/// Configure circuit breaker
+	/// </summary>
+	/// <param name="circuitBreaker">Circuit breaker instance</param>
+	/// <returns>This object</returns>
+	public ConfigurationBuilder WithCircuitBreaker( ICircuitBreaker circuitBreaker ) {
+		_circuitBreaker = circuitBreaker ?? throw new ArgumentNullException( nameof( circuitBreaker ) );
 		return this;
 	}
 }
