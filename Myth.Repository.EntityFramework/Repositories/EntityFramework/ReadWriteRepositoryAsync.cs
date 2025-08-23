@@ -70,14 +70,14 @@ public abstract class ReadWriteRepositoryAsync<TEntity>( BaseContext context ) :
 	public virtual Task<IEnumerable<TEntity>> SearchAsync( ISpec<TEntity> spec, CancellationToken cancellationToken = default ) =>
 		_readRepository.SearchAsync( spec, cancellationToken );
 
-	public virtual Task<IEnumerable<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
-		_readRepository.SearchAsync( predicate, cancellationToken );
+	public virtual Task<IEnumerable<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> filterPredicate, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default ) =>
+		_readRepository.SearchAsync( filterPredicate, orderPredicate, cancellationToken );
 
 	public virtual Task<IPaginated<TEntity>> SearchPaginatedAsync( ISpec<TEntity> spec, CancellationToken cancellationToken = default ) =>
 		_readRepository.SearchPaginatedAsync( spec, cancellationToken );
 
-	public virtual Task<IPaginated<TEntity>> SearchPaginatedAsync( Expression<Func<TEntity, bool>> predicate, int take = 0, int skip = 0, CancellationToken cancellationToken = default ) =>
-		_readRepository.SearchPaginatedAsync( predicate, take, skip, cancellationToken );
+	public virtual Task<IPaginated<TEntity>> SearchPaginatedAsync( Expression<Func<TEntity, bool>> predicate, int take = 0, int skip = 0, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default ) =>
+		_readRepository.SearchPaginatedAsync( predicate, take, skip, orderPredicate, cancellationToken );
 
 	public virtual Task<IEnumerable<TEntity>> ToListAsync( CancellationToken cancellationToken = default ) =>
 		_readRepository.ToListAsync( cancellationToken );

@@ -8,22 +8,30 @@ namespace Myth.Repositories.EntityFramework;
 
 public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity> where TEntity : class {
 
-	public virtual async Task<IEnumerable<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) {
-		var result = await _context
-			.Set<TEntity>( )
-			.Where( predicate )
-			.AsQueryable( )
-			.ToListAsync( cancellationToken );
+	public virtual async Task<IEnumerable<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> filterPredicate, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default ) {
+		var query = _context
+			.Set<TEntity>()
+			.Where(filterPredicate)
+			.AsQueryable();
+
+		if (orderPredicate is not null)
+			query = query.OrderBy(orderPredicate);
+
+		var result = await query.ToListAsync( cancellationToken );
 
 		return result.AsEnumerable();
 	}
 
-	public virtual async Task<IPaginated<TEntity>> SearchPaginatedAsync( Expression<Func<TEntity, bool>> predicate, int take = 0, int skip = 0, CancellationToken cancellationToken = default ) {
-		var items = await _context
-			.Set<TEntity>( )
-			.Where( predicate )
-			.AsQueryable( )
-			.ToListAsync( cancellationToken );
+	public virtual async Task<IPaginated<TEntity>> SearchPaginatedAsync( Expression<Func<TEntity, bool>> filterPredicate, int take = 0, int skip = 0, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default ) {
+		var query = _context
+			.Set<TEntity>()
+			.Where(filterPredicate)
+			.AsQueryable();
+
+		if (orderPredicate is not null)
+			query = query.OrderBy(orderPredicate);
+
+		var items = await query.ToListAsync( cancellationToken );
 
 		var totalItems = await _context
 			.Set<TEntity>( )
