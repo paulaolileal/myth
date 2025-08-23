@@ -7,9 +7,15 @@ namespace Myth.Rest;
 public class ErrorBuilder {
 	private readonly ExceptionMappingList _exceptionMapping;
 	public bool _throwForNonMappedResult;
+	public string? _fallbackResponse;
+	public HttpStatusCode? _fallbackStatusCode;
+
+	public bool _useFallback =>
+		!string.IsNullOrEmpty( _fallbackResponse )
+		&& _fallbackStatusCode is not null;
 
 	public ErrorBuilder( ) {
-		_exceptionMapping = new( );
+		_exceptionMapping = [ ];
 		_throwForNonMappedResult = true;
 	}
 
@@ -87,6 +93,37 @@ public class ErrorBuilder {
 	/// <returns>This object</returns>
 	public ErrorBuilder NotThrowFor( HttpStatusCode statusCode ) {
 		_exceptionMapping.Remove( statusCode );
+		return this;
+	}
+
+	/// <summary>
+	/// Sets a fallback response for a specific status code using a generic object, serializing it to JSON.
+	/// </summary>
+	/// <typeparam name="T">The type of the fallback response object.</typeparam>
+	/// <param name="statusCode">The HTTP status code to associate with the fallback response.</param>
+	/// <param name="fallbackResponse">The fallback response object to use if the status code is returned.</param>
+	/// <returns>This object.</returns>
+	public ErrorBuilder UseFallback<T>( HttpStatusCode statusCode, T fallbackResponse ) {
+		if ( fallbackResponse is not null ) {
+			_fallbackStatusCode = statusCode;
+			_fallbackResponse = fallbackResponse.ToJson( );
+		}
+
+		return this;
+	}
+
+	/// <summary>
+	/// Sets a fallback response for a specific status code using a string response.
+	/// </summary>
+	/// <param name="statusCode">The HTTP status code to associate with the fallback response.</param>
+	/// <param name="fallbackResponse">The fallback response string to use if the status code is returned.</param>
+	/// <returns>This object.</returns>
+	public ErrorBuilder UseFallback( HttpStatusCode statusCode, string fallbackResponse ) {
+		if ( !string.IsNullOrEmpty( fallbackResponse ) ) {
+			_fallbackStatusCode = statusCode;
+			_fallbackResponse = fallbackResponse;
+		}
+
 		return this;
 	}
 }

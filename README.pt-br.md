@@ -11,16 +11,19 @@
 # ⭐ Pacotes
 
 ## 🔮 Funcionalidades gerais
-- [Myth.Commons](Myth.Commons/README.md)
+- [Myth.Commons](Myth.Commons/README.pt-br.md)
 
 ## 🛅 Manipualçao de assemblies e serviços
-- [Myth.DependecyInjection](Myth.DependencyInjection/README.md)
-- [Myth.DependecyInjection.Providers](Myth.DependencyInjection.Providers/README.md)
+- [Myth.DependecyInjection](Myth.DependencyInjection/README.pt-br.md)
+- [Myth.DependecyInjection.Providers](Myth.DependencyInjection.Providers/README.pt-br.md)
 
 ## 🎲 Acesso a bancos de dados
-- [Myth.Specification](Myth.Specification/README.md)
-- [Myth.Repository](Myth.Repository/README.md)
-- [Myth.Repository.EntityFramework](Myth.Repository.EntityFramework/README.md)
+- [Myth.Specification](Myth.Specification/README.pt-br.md)
+- [Myth.Repository](Myth.Repository/README.pt-br.md)
+- [Myth.Repository.EntityFramework](Myth.Repository.EntityFramework/README.pt-br.md)
 
 ## 🛜 Comunicação HTTP
-- [Myth.Rest](Myth.Rest/README.md)
+- [Myth.Rest](Myth.Rest/README.pt-br.md)
+
+## 💪 Empoderando tipos
+- [Myth.Morph](Myth.Morph/README.pt-br.md)

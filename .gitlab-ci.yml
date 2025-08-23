@@ -54,4 +54,4 @@ publish-job:
           --output nupkgs 
           /p:PackageVersion=${PACKAGE_VERSION};
       done
-    - dotnet nuget push "nupkgs/*.nupkg" --source $NUGET_API_URL --api-key $NUGET_API_KEY;
+    - dotnet nuget push "nupkgs/*.nupkg" --skip-duplicate --source $NUGET_API_URL --api-key $NUGET_API_KEY;

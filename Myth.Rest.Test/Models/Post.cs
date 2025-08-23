@@ -2,7 +2,7 @@
 
 namespace Myth.Rest.Test.Models;
 
-public class Post {
+public class Post : IPost {
 	public long Id { get; set; }
 	public string Title { get; set; } = null!;
 	public string Body { get; set; } = null!;
