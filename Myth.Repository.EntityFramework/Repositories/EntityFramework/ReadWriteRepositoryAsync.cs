@@ -22,13 +22,13 @@ public abstract class ReadWriteRepositoryAsync<TEntity>( BaseContext context ) :
 	public virtual Task<bool> AllAsync( ISpec<TEntity> spec, CancellationToken cancellationToken = default ) =>
 		_readRepository.AllAsync( spec, cancellationToken );
 
-	public Task<bool> AllAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
+	public virtual Task<bool> AllAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
 		_readRepository.AllAsync( predicate, cancellationToken );
 
 	public virtual Task<bool> AnyAsync( ISpec<TEntity> spec, CancellationToken cancellationToken = default ) =>
 		_readRepository.AnyAsync( spec, cancellationToken );
 
-	public Task<bool> AnyAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
+	public virtual Task<bool> AnyAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
 		_readRepository.AnyAsync( predicate, cancellationToken );
 
 	public virtual IQueryable<TEntity> AsQueryable( ) => _readRepository.AsQueryable( );
@@ -44,13 +44,13 @@ public abstract class ReadWriteRepositoryAsync<TEntity>( BaseContext context ) :
 	public virtual Task<int> CountAsync( ISpec<TEntity> spec, CancellationToken cancellationToken = default ) =>
 		_readRepository.CountAsync( spec, cancellationToken );
 
-	public Task<int> CountAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
+	public virtual Task<int> CountAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
 		_readRepository.CountAsync( predicate, cancellationToken );
 
 	public virtual Task<TEntity?> FirstOrDefaultAsync( ISpec<TEntity> spec, CancellationToken cancellationToken = default ) =>
 		_readRepository.FirstOrDefaultAsync( spec, cancellationToken );
 
-	public Task<TEntity?> FirstOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
+	public virtual Task<TEntity?> FirstOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
 		_readRepository.FirstOrDefaultAsync( predicate, cancellationToken );
 
 	public virtual string? GetProviderName( ) => _readRepository.GetProviderName( );
@@ -58,7 +58,7 @@ public abstract class ReadWriteRepositoryAsync<TEntity>( BaseContext context ) :
 	public virtual Task<TEntity?> LastOrDefaultAsync( ISpec<TEntity> spec, CancellationToken cancellationToken = default ) =>
 		_readRepository.LastOrDefaultAsync( spec, cancellationToken );
 
-	public Task<TEntity?> LastOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
+	public virtual Task<TEntity?> LastOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
 		_readRepository.LastOrDefaultAsync( predicate, cancellationToken );
 
 	public virtual Task RemoveAsync( TEntity entity, CancellationToken cancellationToken = default ) =>
@@ -70,13 +70,13 @@ public abstract class ReadWriteRepositoryAsync<TEntity>( BaseContext context ) :
 	public virtual Task<IEnumerable<TEntity>> SearchAsync( ISpec<TEntity> spec, CancellationToken cancellationToken = default ) =>
 		_readRepository.SearchAsync( spec, cancellationToken );
 
-	public Task<IEnumerable<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
+	public virtual Task<IEnumerable<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
 		_readRepository.SearchAsync( predicate, cancellationToken );
 
 	public virtual Task<IPaginated<TEntity>> SearchPaginatedAsync( ISpec<TEntity> spec, CancellationToken cancellationToken = default ) =>
 		_readRepository.SearchPaginatedAsync( spec, cancellationToken );
 
-	public Task<IPaginated<TEntity>> SearchPaginatedAsync( Expression<Func<TEntity, bool>> predicate, int take = 0, int skip = 0, CancellationToken cancellationToken = default ) =>
+	public virtual Task<IPaginated<TEntity>> SearchPaginatedAsync( Expression<Func<TEntity, bool>> predicate, int take = 0, int skip = 0, CancellationToken cancellationToken = default ) =>
 		_readRepository.SearchPaginatedAsync( predicate, take, skip, cancellationToken );
 
 	public virtual Task<IEnumerable<TEntity>> ToListAsync( CancellationToken cancellationToken = default ) =>
@@ -90,7 +90,7 @@ public abstract class ReadWriteRepositoryAsync<TEntity>( BaseContext context ) :
 
 	public virtual IQueryable<TEntity> Where( ISpec<TEntity> spec ) => _readRepository.Where( spec );
 
-	public IQueryable<TEntity> Where( Expression<Func<TEntity, bool>> predicate ) =>
+	public virtual IQueryable<TEntity> Where( Expression<Func<TEntity, bool>> predicate ) =>
 		_readRepository.Where( predicate );
 
 	public ValueTask DisposeAsync( ) => DisposeAsyncCore( );
