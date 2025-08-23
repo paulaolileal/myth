@@ -26,7 +26,7 @@ public partial class ReadRepositoryAsync<TEntity>( BaseContext context )
 		return result.AsEnumerable( );
 	}
 
-	public string? GetProviderName( ) => _context.Database.ProviderName;
+	public virtual string? GetProviderName( ) => _context.Database.ProviderName;
 
 	public ValueTask DisposeAsync( ) => DisposeAsyncCore( );
 
