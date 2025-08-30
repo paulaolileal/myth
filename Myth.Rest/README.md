@@ -1,6 +1,6 @@
 # Myth.Rest
 
-[![NuGet Version](https://img.shields.io/nuget/v/Myth.Rest?style=for-the-badge&logo=nuget)](https://www.nuget.org/packages/Myth.Rest/) [![NuGet Version](https://img.shields.io/nuget/vpre/Myth.Rest?style=for-the-badge&logo=nuget&color=rgb(255%2C%20185%2C%200))](https://www.nuget.org/packages/Myth.Rest/absoluteLatest)
+[![NuGet Version](https://img.shields.io/nuget/v/Myth.Rest?style=for-the-badge&logo=nuget)](https://www.nuget.org/packages/Myth.Rest/) [![NuGet Version](<https://img.shields.io/nuget/vpre/Myth.Rest?style=for-the-badge&logo=nuget&color=rgb(255%2C%20185%2C%200)>)](https://www.nuget.org/packages/Myth.Rest/absoluteLatest)
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge)](https://opensource.org/licenses/Apache-2.0)
 
@@ -51,6 +51,7 @@ var users = response.GetAs<List<User>>();
 ## Dependency Injection Setup
 
 ### Program.cs (Minimal API)
+
 ```csharp
 builder.Services.AddRest(config => config
     .WithBaseUrl("https://api.example.com")
@@ -68,6 +69,7 @@ builder.Services.AddRestFactory()
 ```
 
 ### Using in Controllers/Services
+
 ```csharp
 public class UserService
 {
@@ -87,7 +89,7 @@ public class UserService
             .OnResult(r => r.UseTypeForSuccess<List<User>>())
             .OnError(e => e.ThrowForNonSuccess())
             .BuildAsync();
-            
+
         return response.GetAs<List<User>>();
     }
 
@@ -98,7 +100,7 @@ public class UserService
             .DoGet("products")
             .OnResult(r => r.UseTypeForSuccess<Product[]>())
             .BuildAsync();
-            
+
         return response.GetAs<Product[]>();
     }
 }
@@ -122,6 +124,7 @@ public class UserService
 ## Advanced Configuration
 
 ### Custom HttpClient
+
 ```csharp
 .Configure(config => config
     .WithClient(customHttpClient)
@@ -130,12 +133,14 @@ public class UserService
 ```
 
 ### Type Converters
+
 ```csharp
 .Configure(config => config
     .WithTypeConverter<IUserRepository, UserRepository>()) // Interface to concrete type mapping
 ```
 
 ### Logging Integration
+
 ```csharp
 .Configure(config => config
     .WithLogging(logger, logRequests: true, logResponses: true))
@@ -153,6 +158,7 @@ public class UserService
 The library provides enterprise-grade retry mechanisms following industry standards.
 
 ## Smart Default (Recommended)
+
 ```csharp
 .WithRetry() // 3 attempts, exponential backoff with jitter, server errors only
 ```
@@ -160,6 +166,7 @@ The library provides enterprise-grade retry mechanisms following industry standa
 ## Custom Retry Strategies
 
 ### Exponential Backoff with Jitter (Recommended)
+
 ```csharp
 .WithRetry(retry => retry
     .WithMaxAttempts(5)
@@ -175,21 +182,25 @@ The library provides enterprise-grade retry mechanisms following industry standa
 ### Other Strategies
 
 **Exponential Backoff**
+
 ```csharp
 .UseExponentialBackoff(TimeSpan.FromSeconds(1), multiplier: 2.0)
 ```
 
 **Fixed Delay**
+
 ```csharp
 .UseFixedDelay(TimeSpan.FromSeconds(2))
 ```
 
 **Random Delay**
+
 ```csharp
 .UseRandom(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5))
 ```
 
 ### Retry Configuration Options
+
 ```csharp
 .WithRetry(retry => retry
     .WithMaxAttempts(3)
@@ -213,6 +224,7 @@ var circuitBreaker = new CircuitBreaker(
 ```
 
 The circuit breaker has three states:
+
 - **Closed**: Normal operation
 - **Open**: Failures exceeded threshold, requests are blocked
 - **Half-Open**: Testing if service recovered
@@ -220,12 +232,14 @@ The circuit breaker has three states:
 # 🎯 HTTP Operations
 
 ## GET Requests
+
 ```csharp
 .DoGet("users/{id}")
 .DoGet("products?category=electronics")
 ```
 
 ## POST/PUT/PATCH Requests
+
 ```csharp
 .DoPost("users", newUser)
 .DoPut("users/123", updatedUser)
@@ -233,6 +247,7 @@ The circuit breaker has three states:
 ```
 
 ## DELETE Requests
+
 ```csharp
 .DoDelete("users/123")
 ```
@@ -240,6 +255,7 @@ The circuit breaker has three states:
 # 📁 File Operations
 
 ## Downloads
+
 ```csharp
 var response = await Rest
     .Create()
@@ -260,21 +276,25 @@ var stream = response.ToStream();
 ## Uploads
 
 ### Upload from Stream
+
 ```csharp
 .DoUpload("files/upload", fileStream, "application/pdf")
 ```
 
 ### Upload from byte array
+
 ```csharp
 .DoUpload("files/upload", fileBytes, "image/jpeg")
 ```
 
 ### Upload from IFormFile (ASP.NET Core)
+
 ```csharp
 .DoUpload("files/upload", formFile)
 ```
 
 ### Upload with custom HTTP method
+
 ```csharp
 .DoUpload("files/upload", file, settings => settings.UsePutAsMethod())
 // Available: UsePostAsMethod(), UsePutAsMethod(), UsePatchAsMethod()
@@ -283,6 +303,7 @@ var stream = response.ToStream();
 # ✅ Result Handling
 
 ## Type Mapping by Status Code
+
 ```csharp
 .OnResult(result => result
     .UseTypeForSuccess<User>()                    // 2xx status codes
@@ -292,29 +313,32 @@ var stream = response.ToStream();
 ```
 
 ## Conditional Type Mapping
+
 ```csharp
 .OnResult(result => result
     .UseTypeFor<SuccessResponse>(
-        HttpStatusCode.OK, 
+        HttpStatusCode.OK,
         body => body.success == true)
     .UseTypeFor<ErrorResponse>(
-        HttpStatusCode.OK, 
+        HttpStatusCode.OK,
         body => body.success == false))
 ```
 
 ## Multiple Status Codes
+
 ```csharp
 .OnResult(result => result
-    .UseTypeFor<ErrorResponse>(new[] { 
-        HttpStatusCode.BadRequest, 
+    .UseTypeFor<ErrorResponse>(new[] {
+        HttpStatusCode.BadRequest,
         HttpStatusCode.Conflict,
-        HttpStatusCode.UnprocessableEntity 
+        HttpStatusCode.UnprocessableEntity
     }))
 ```
 
 # ❌ Error Handling
 
 ## Basic Error Handling
+
 ```csharp
 .OnError(error => error
     .ThrowForNonSuccess()                        // Throw for any non-2xx status
@@ -323,13 +347,15 @@ var stream = response.ToStream();
 ```
 
 ## Conditional Error Handling
+
 ```csharp
 .OnError(error => error
-    .ThrowFor(HttpStatusCode.BadRequest, 
+    .ThrowFor(HttpStatusCode.BadRequest,
         body => body.errorCode == "VALIDATION_ERROR"))
 ```
 
 ## Fallback Responses
+
 ```csharp
 .OnError(error => error
     .UseFallback(HttpStatusCode.ServiceUnavailable, new { message = "Service temporarily unavailable" })
@@ -339,6 +365,7 @@ var stream = response.ToStream();
 # 🏗️ Advanced Patterns
 
 ## Repository Pattern
+
 ```csharp
 public class UserRepository
 {
@@ -378,6 +405,7 @@ public class UserRepository
 ```
 
 ## Multi-API Factory Pattern
+
 ```csharp
 public class ApiService
 {
@@ -399,7 +427,7 @@ public class ApiService
 
         // Get preferences from API 2
         var preferencesResponse = await _restFactory
-            .Create("preferencesApi")  
+            .Create("preferencesApi")
             .DoGet($"preferences/{userId}")
             .OnResult(r => r.UseTypeForSuccess<UserPreferences>())
             .OnError(e => e.UseFallback(HttpStatusCode.NotFound, new UserPreferences()))
@@ -438,6 +466,7 @@ var response = await Rest
 # 🔧 Enterprise Scenarios
 
 ## E-commerce with Different Retry Strategies
+
 ```csharp
 // Critical operations - Conservative retry
 services.AddRestConfiguration("orders", config => config
@@ -458,6 +487,7 @@ services.AddRestConfiguration("catalog", config => config
 ```
 
 ## Microservices Communication
+
 ```csharp
 services.AddRestFactory()
     .AddRestConfiguration("userService", config => config
@@ -465,7 +495,7 @@ services.AddRestFactory()
         .WithCircuitBreaker(new CircuitBreaker(5, TimeSpan.FromMinutes(1)))
         .WithRetry())
     .AddRestConfiguration("orderService", config => config
-        .WithBaseUrl("https://order-service:8080") 
+        .WithBaseUrl("https://order-service:8080")
         .WithCircuitBreaker(new CircuitBreaker(3, TimeSpan.FromMinutes(2)))
         .WithRetry(retry => retry
             .WithMaxAttempts(2)
@@ -526,7 +556,7 @@ Integration with OpenTelemetry and other observability tools is seamless.
 1. **Use Dependency Injection**: Register REST clients as services for better testability
 2. **Configure Retry Policies**: Always use retry policies for production scenarios
 3. **Implement Circuit Breakers**: Prevent cascade failures in microservices
-4. **Handle Errors Gracefully**: Use fallbacks for non-critical operations  
+4. **Handle Errors Gracefully**: Use fallbacks for non-critical operations
 5. **Use Typed Responses**: Leverage strong typing for better code maintainability
 6. **Configure Timeouts**: Set appropriate timeouts for your scenarios
 7. **Log Requests/Responses**: Enable logging for debugging and monitoring

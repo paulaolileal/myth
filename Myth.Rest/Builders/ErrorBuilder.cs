@@ -11,31 +11,31 @@ public class ErrorBuilder {
 	public HttpStatusCode? _fallbackStatusCode;
 
 	public bool _useFallback =>
-		!string.IsNullOrEmpty( _fallbackResponse )
+		!string.IsNullOrEmpty(_fallbackResponse)
 		&& _fallbackStatusCode is not null;
 
-	public ErrorBuilder( ) {
-		_exceptionMapping = [ ];
+	public ErrorBuilder() {
+		_exceptionMapping = [];
 		_throwForNonMappedResult = true;
 	}
 
 	/// <summary>
 	/// Clear all maping exceptions
 	/// </summary>
-	public void Clear( ) => _exceptionMapping.Clear( );
+	public void Clear() => _exceptionMapping.Clear();
 
-	internal bool TryGet( HttpStatusCode statusCode, dynamic content ) =>
-		_exceptionMapping.TryGet( statusCode, content );
+	internal bool TryGet(HttpStatusCode statusCode, dynamic content) =>
+		_exceptionMapping.TryGet(statusCode, content);
 
 	/// <summary>
 	/// Throws a exception for all status that is not a success
 	/// </summary>
 	/// <param name="condition">A condition to check before the throw</param>
 	/// <returns>This object</returns>
-	public ErrorBuilder ThrowForNonSuccess( Func<dynamic, bool>? condition = null ) {
-		foreach ( var statusCode in Enum.GetValues<HttpStatusCode>( ) )
-			if ( !statusCode.IsSuccess( ) )
-				ThrowFor( statusCode, condition );
+	public ErrorBuilder ThrowForNonSuccess(Func<dynamic, bool>? condition = null) {
+		foreach (var statusCode in Enum.GetValues<HttpStatusCode>())
+			if (!statusCode.IsSuccess())
+				ThrowFor(statusCode, condition);
 
 		return this;
 	}
@@ -46,8 +46,8 @@ public class ErrorBuilder {
 	/// <param name="statusCode">The status code</param>
 	/// <param name="condition">A condition to check before the throw</param>
 	/// <returns>This object</returns>
-	public ErrorBuilder ThrowFor( HttpStatusCode statusCode, Func<dynamic, bool>? condition = null ) {
-		_exceptionMapping.Add( statusCode, condition );
+	public ErrorBuilder ThrowFor(HttpStatusCode statusCode, Func<dynamic, bool>? condition = null) {
+		_exceptionMapping.Add(statusCode, condition);
 		return this;
 	}
 
@@ -57,9 +57,9 @@ public class ErrorBuilder {
 	/// <param name="statusCodes"></param>
 	/// <param name="condition">A condition to check before the throw</param>
 	/// <returns>This object</returns>
-	public ErrorBuilder ThrowFor( List<HttpStatusCode> statusCodes, Func<dynamic, bool>? condition = null ) {
-		foreach ( var statusCode in statusCodes )
-			ThrowFor( statusCode, condition );
+	public ErrorBuilder ThrowFor(List<HttpStatusCode> statusCodes, Func<dynamic, bool>? condition = null) {
+		foreach (var statusCode in statusCodes)
+			ThrowFor(statusCode, condition);
 
 		return this;
 	}
@@ -69,9 +69,9 @@ public class ErrorBuilder {
 	/// </summary>
 	/// <param name="condition">A condition to check before the throw</param>
 	/// <returns>This object</returns>
-	public ErrorBuilder ThrowForAll( Func<dynamic, bool>? condition = null ) {
-		foreach ( var statusCode in Enum.GetValues<HttpStatusCode>( ) )
-			_exceptionMapping.Add( statusCode, condition );
+	public ErrorBuilder ThrowForAll(Func<dynamic, bool>? condition = null) {
+		foreach (var statusCode in Enum.GetValues<HttpStatusCode>())
+			_exceptionMapping.Add(statusCode, condition);
 
 		return this;
 	}
@@ -80,7 +80,7 @@ public class ErrorBuilder {
 	/// Defines that not throw a exception if a status code is not mapped
 	/// </summary>
 	/// <returns>This object</returns>
-	public ErrorBuilder NotThrowForNonMappedResult( ) {
+	public ErrorBuilder NotThrowForNonMappedResult() {
 		_throwForNonMappedResult = false;
 
 		return this;
@@ -91,8 +91,8 @@ public class ErrorBuilder {
 	/// </summary>
 	/// <param name="statusCode"></param>
 	/// <returns>This object</returns>
-	public ErrorBuilder NotThrowFor( HttpStatusCode statusCode ) {
-		_exceptionMapping.Remove( statusCode );
+	public ErrorBuilder NotThrowFor(HttpStatusCode statusCode) {
+		_exceptionMapping.Remove(statusCode);
 		return this;
 	}
 
@@ -103,10 +103,10 @@ public class ErrorBuilder {
 	/// <param name="statusCode">The HTTP status code to associate with the fallback response.</param>
 	/// <param name="fallbackResponse">The fallback response object to use if the status code is returned.</param>
 	/// <returns>This object.</returns>
-	public ErrorBuilder UseFallback<T>( HttpStatusCode statusCode, T fallbackResponse ) {
-		if ( fallbackResponse is not null ) {
+	public ErrorBuilder UseFallback<T>(HttpStatusCode statusCode, T fallbackResponse) {
+		if (fallbackResponse is not null) {
 			_fallbackStatusCode = statusCode;
-			_fallbackResponse = fallbackResponse.ToJson( );
+			_fallbackResponse = fallbackResponse.ToJson();
 		}
 
 		return this;
@@ -118,8 +118,8 @@ public class ErrorBuilder {
 	/// <param name="statusCode">The HTTP status code to associate with the fallback response.</param>
 	/// <param name="fallbackResponse">The fallback response string to use if the status code is returned.</param>
 	/// <returns>This object.</returns>
-	public ErrorBuilder UseFallback( HttpStatusCode statusCode, string fallbackResponse ) {
-		if ( !string.IsNullOrEmpty( fallbackResponse ) ) {
+	public ErrorBuilder UseFallback(HttpStatusCode statusCode, string fallbackResponse) {
+		if (!string.IsNullOrEmpty(fallbackResponse)) {
 			_fallbackStatusCode = statusCode;
 			_fallbackResponse = fallbackResponse;
 		}
