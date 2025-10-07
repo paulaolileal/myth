@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<!-- Patform -->
 		<TargetFramework>net8.0</TargetFramework>
-		<Platforms>x64</Platforms>
+		<Platforms>AnyCPU</Platforms>
 		<!-- Settings -->
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
