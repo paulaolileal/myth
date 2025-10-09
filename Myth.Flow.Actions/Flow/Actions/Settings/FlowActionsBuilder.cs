@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿namespace Myth.Flow.Actions.Settings;
+
+/// <summary>
 /// Fluent builder for Flow.Actions configuration
 /// </summary>
 public sealed class FlowActionsBuilder {

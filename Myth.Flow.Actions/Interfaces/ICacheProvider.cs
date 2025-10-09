@@ -1,4 +1,6 @@
-﻿namespace Myth.Flow.Interfaces;
+﻿using Myth.Models;
+
+namespace Myth.Interfaces;
 
 /// <summary>
 /// Abstraction for cache provider

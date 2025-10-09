@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace Myth.Flow.Interfaces;
+namespace Myth.Interfaces;
 
 /// <summary>
 /// Default event subscription manager implementation

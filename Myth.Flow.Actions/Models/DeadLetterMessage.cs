@@ -1,4 +1,4 @@
-﻿namespace Myth.Flow.Interfaces;
+﻿namespace Myth.Models;
 
 /// <summary>
 /// Represents a message in the dead letter queue

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using Myth.Flow.Interfaces;
+using Myth.Flow.Actions.Settings;
+using Myth.Interfaces;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;

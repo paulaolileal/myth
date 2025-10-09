@@ -1,4 +1,4 @@
-﻿namespace Myth.Flow.Interfaces;
+﻿namespace Myth.Interfaces;
 
 /// <summary>
 /// Event bus for publishing and subscribing to events

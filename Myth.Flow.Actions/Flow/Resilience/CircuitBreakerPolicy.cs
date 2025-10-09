@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 
+namespace Myth.Flow.Resilience;
+
 /// <summary>
 /// Circuit breaker policy for protecting resources
 /// </summary>

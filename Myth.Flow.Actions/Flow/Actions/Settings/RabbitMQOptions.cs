@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿namespace Myth.Flow.Actions.Settings;
+
+/// <summary>
 /// RabbitMQ configuration options
 /// </summary>
 public sealed class RabbitMQOptions {

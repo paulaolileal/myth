@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿namespace Myth.Flow.Actions.Settings;
+
+/// <summary>
 /// Kafka configuration options
 /// </summary>
 public sealed class KafkaOptions {

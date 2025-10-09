@@ -1,4 +1,4 @@
-﻿namespace Myth.Flow.Interfaces;
+﻿namespace Myth.Models;
 
 /// <summary>
 /// Cache configuration for queries

@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Myth.Flow.Interfaces;
+using Myth.Interfaces;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+
+namespace Myth.Flow.Actions;
 
 /// <summary>
 /// Default event bus implementation

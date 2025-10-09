@@ -1,7 +1,8 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Myth.Interfaces;
 
-namespace Myth.Flow.Interfaces;
+namespace Myth.Models;
 
 /// <summary>
 /// In-memory cache provider implementation

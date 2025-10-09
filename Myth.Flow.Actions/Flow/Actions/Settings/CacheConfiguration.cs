@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿namespace Myth.Flow.Actions.Settings;
+
+/// <summary>
 /// Cache configuration
 /// </summary>
 public sealed class CacheConfiguration {

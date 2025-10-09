@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿namespace Myth.Flow.Actions.Settings;
+
+/// <summary>
 /// Retry configuration
 /// </summary>
 public sealed class RetryConfiguration {

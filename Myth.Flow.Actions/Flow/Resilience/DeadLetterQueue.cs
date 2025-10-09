@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
-using Myth.Flow.Interfaces;
+using Myth.Models;
 using System.Collections.Concurrent;
+
+namespace Myth.Flow.Resilience;
 
 /// <summary>
 /// Dead letter queue for failed messages

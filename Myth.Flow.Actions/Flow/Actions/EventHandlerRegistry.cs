@@ -1,5 +1,7 @@
-﻿using Myth.Flow.Interfaces;
+﻿using Myth.Interfaces;
 using System.Collections.Concurrent;
+
+namespace Myth.Flow.Actions;
 
 /// <summary>
 /// Default event handler registry implementation

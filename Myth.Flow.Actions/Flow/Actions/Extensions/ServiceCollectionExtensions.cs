@@ -3,10 +3,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Myth.Builders;
-using Myth.Flow.Actions;
 using Myth.Flow.Actions.Brokers;
-using Myth.Flow.Interfaces;
+using Myth.Flow.Actions.Settings;
+using Myth.Interfaces;
+using Myth.Models;
 using System.Diagnostics;
+
+namespace Myth.Flow.Actions.Extensions;
 
 /// <summary>
 /// Dependency injection extensions for Flow.Actions
@@ -113,9 +116,8 @@ public static class ServiceCollectionExtensions {
 	}
 
 	private static void RegisterTelemetry( IServiceCollection services, FlowActionsConfiguration configuration ) {
-		if ( configuration.TelemetryEnabled ) {
+		if ( configuration.TelemetryEnabled )
 			services.TryAddSingleton( new ActivitySource( "Myth.Flow.Actions" ) );
-		}
 	}
 
 	private static void RegisterHandlers( IServiceCollection services, FlowActionsConfiguration configuration ) {
@@ -125,9 +127,8 @@ public static class ServiceCollectionExtensions {
 		var scanner = new AssemblyScanner( );
 		var handlerTypes = scanner.ScanForHandlers( configuration.AssembliesToScan.ToArray( ) );
 
-		foreach ( var (interfaceType, implementationType) in handlerTypes ) {
+		foreach ( var (interfaceType, implementationType) in handlerTypes )
 			services.AddTransient( interfaceType, implementationType );
-		}
 
 		var eventHandlers = scanner.ScanForEventHandlers( configuration.AssembliesToScan.ToArray( ) );
 
@@ -135,9 +136,8 @@ public static class ServiceCollectionExtensions {
 			var subscriptionManager = sp.GetRequiredService<IEventSubscriptionManager>( );
 			var registry = new EventHandlerRegistry( subscriptionManager );
 
-			foreach ( var (eventType, handlerType) in eventHandlers ) {
+			foreach ( var (eventType, handlerType) in eventHandlers )
 				registry.RegisterHandler( eventType, handlerType );
-			}
 
 			return registry;
 		} );

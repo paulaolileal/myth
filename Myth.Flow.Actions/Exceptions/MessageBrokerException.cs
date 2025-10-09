@@ -3,9 +3,9 @@
 /// </summary>
 public sealed class MessageBrokerException : Exception {
 
-    public MessageBrokerException( string message ) : base( message ) {
-    }
+	public MessageBrokerException( string message ) : base( message ) {
+	}
 
-    public MessageBrokerException( string message, Exception innerException )
+	public MessageBrokerException( string message, Exception innerException )
 		: base( message, innerException ) { }
 }

@@ -1,312 +1,563 @@
-﻿# Myth.Flow.Actions - Executive Summary
+﻿# Myth.Flow.Actions
 
-## 🎯 Project Overview
+CQRS extension library for **Myth.Flow** pipeline framework, adding support for Commands, Queries, and Events with multiple message broker backends.
 
-**Myth.Flow.Actions** is a comprehensive CQRS (Command Query Responsibility Segregation) extension library for the Myth.Flow pipeline framework. It provides a production-ready implementation of commands, queries, and events with support for multiple message brokers.
+## 🚀 Features
 
-## ✅ Implementation Status
+- ✅ **CQRS Pattern**: Command, Query, and Event abstractions
+- ✅ **Pipeline Integration**: Seamless integration with Myth.Flow
+- ✅ **Multiple Brokers**: InMemory, Kafka, RabbitMQ support
+- ✅ **Caching Layer**: Built-in query result caching
+- ✅ **Event System**: Complete event subscription and handling
+- ✅ **Resilience**: Retry policies, circuit breakers, dead letter queues
+- ✅ **Auto-Discovery**: Automatic handler registration via assembly scanning
+- ✅ **Telemetry**: Built-in OpenTelemetry support
+- ✅ **Type-Safe**: Fully typed APIs with strong compile-time safety
 
-### ✔️ Completed Components
+## 📦 Installation
 
-1. **Core Abstractions** ✅
-   - ICommand / ICommandHandler
-   - IQuery / IQueryHandler
-   - IEvent / IEventHandler
-   - Result types (CommandResult, QueryResult)
-
-2. **Dispatcher System** ✅
-   - Centralized message routing
-   - Type-safe dispatching
-   - Telemetry integration
-   - Error handling
-
-3. **Cache Layer** ✅
-   - ICacheProvider abstraction
-   - MemoryCache implementation
-   - Query result caching
-   - Configurable TTL
-
-4. **Message Brokers** ✅
-   - InMemory (testing/development)
-   - Kafka (production)
-   - RabbitMQ (production)
-   - Extensible architecture
-
-5. **Event System** ✅
-   - Event bus
-   - Subscription manager
-   - Multiple handlers per event
-   - Parallel execution
-
-6. **Pipeline Integration** ✅
-   - .Process() for commands
-   - .Query() for queries with caching
-   - .Publish() for events
-   - Fluent API
-
-7. **DI Configuration** ✅
-   - Fluent builder pattern
-   - Assembly scanning
-   - Automatic handler registration
-   - Service provider integration
-
-8. **Resilience** ✅
-   - Retry policies
-   - Circuit breakers
-   - Dead letter queue
-   - Exponential backoff
-
-## 📦 Project Structure
-
-```
-Myth.Flow.Actions/
-├── Abstractions/          # Core interfaces
-├── Models/                # Data structures
-├── Core/                  # Dispatcher & routing
-├── Cache/                 # Caching providers
-├── Messaging/             # Message brokers
-│   ├── InMemory/
-│   ├── Kafka/
-│   └── RabbitMQ/
-├── Events/                # Event bus & subscriptions
-├── Pipeline/              # Pipeline extensions
-├── Configuration/         # DI setup
-├── Scanning/              # Assembly scanning
-├── Resilience/            # Retry & circuit breaker
-└── Exceptions/            # Custom exceptions
+```bash
+dotnet add package Myth.Flow.Actions
 ```
 
-## 🔑 Key Features
+### Optional Dependencies
 
-### 1. Multiple Message Broker Support
-- **InMemory**: Fast, in-process messaging for development
-- **Kafka**: High-throughput, distributed messaging
-- **RabbitMQ**: Reliable message queuing with advanced routing
+```bash
+# For Kafka support
+dotnet add package Confluent.Kafka
 
-### 2. Intelligent Caching
-- Query result caching
-- Configurable TTL
-- Sliding expiration
-- Memory or distributed cache
+# For RabbitMQ support
+dotnet add package RabbitMQ.Client
 
-### 3. Full CQRS Pattern
-- Commands for writes
-- Queries for reads
-- Events for notifications
-- Clear separation of concerns
+# For distributed caching
+dotnet add package Microsoft.Extensions.Caching.StackExchangeRedis
+```
 
-### 4. Production-Ready
-- OpenTelemetry integration
-- Structured logging
-- Retry policies
-- Dead letter queue
-- Circuit breakers
+## 🎯 Quick Start
 
-### 5. Developer Experience
-- Fluent APIs
-- Strong typing
-- Automatic discovery
-- Minimal boilerplate
-- Easy testing
-
-## 💡 Usage Example
+### 1. Configure Services
 
 ```csharp
-// 1. Configure
+using Myth.Flow.Actions.Configuration;
+
 services.AddFlowActions(options =>
 {
-    options.UseKafka(kafka => kafka.BootstrapServers = "localhost:9092")
-           .EnableCaching()
-           .EnableRetry()
+    options.UseInMemory()                    // or UseKafka() / UseRabbitMQ()
+           .EnableTelemetry()
+           .EnableCaching(cache =>
+           {
+               cache.ProviderType = CacheProviderType.Memory;
+               cache.DefaultTtl = TimeSpan.FromMinutes(10);
+           })
+           .EnableRetry(retry =>
+           {
+               retry.MaxAttempts = 3;
+               retry.BackoffMs = 1000;
+               retry.ExponentialBackoff = true;
+           })
            .ScanAssemblies(typeof(Program).Assembly);
 });
+```
 
-// 2. Define
+### 2. Define Commands, Queries, and Events
+
+```csharp
+using Myth.Flow.Actions.Abstractions;
+using Myth.Flow.Actions.Models;
+
+// Command
 public record CreateUserCommand : ICommand<Guid>
 {
     public required string Email { get; init; }
+    public required string Name { get; init; }
 }
 
+// Command Handler
 public class CreateUserCommandHandler : ICommandHandler<CreateUserCommand, Guid>
 {
-    public async Task<CommandResult<Guid>> HandleAsync(
-        CreateUserCommand command, 
-        CancellationToken ct)
+    private readonly IUserRepository _repository;
+
+    public CreateUserCommandHandler(IUserRepository repository)
     {
-        // Implementation
-        return CommandResult<Guid>.Success(userId);
+        _repository = repository;
+    }
+
+    public async Task<CommandResult<Guid>> HandleAsync(
+        CreateUserCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = command.Email,
+            Name = command.Name
+        };
+
+        await _repository.AddAsync(user, cancellationToken);
+
+        return CommandResult<Guid>.Success(user.Id);
     }
 }
 
-// 3. Use in Pipeline
+// Query
+public record GetUserQuery : IQuery<UserDto>
+{
+    public required Guid UserId { get; init; }
+}
+
+// Query Handler
+public class GetUserQueryHandler : IQueryHandler<GetUserQuery, UserDto>
+{
+    private readonly IUserRepository _repository;
+
+    public GetUserQueryHandler(IUserRepository repository)
+    {
+        _repository = repository;
+    }
+
+    public async Task<QueryResult<UserDto>> HandleAsync(
+        GetUserQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _repository.GetByIdAsync(query.UserId, cancellationToken);
+
+        if (user == null)
+            return QueryResult<UserDto>.Failure("User not found");
+
+        var dto = new UserDto
+        {
+            Id = user.Id,
+            Email = user.Email,
+            Name = user.Name
+        };
+
+        return QueryResult<UserDto>.Success(dto);
+    }
+}
+
+// Event
+public record UserCreatedEvent : DomainEvent
+{
+    public required Guid UserId { get; init; }
+    public required string Email { get; init; }
+}
+
+// Event Handler
+public class UserCreatedEventHandler : IEventHandler<UserCreatedEvent>
+{
+    private readonly IEmailService _emailService;
+
+    public UserCreatedEventHandler(IEmailService emailService)
+    {
+        _emailService = emailService;
+    }
+
+    public async Task HandleAsync(
+        UserCreatedEvent @event,
+        CancellationToken cancellationToken = default)
+    {
+        await _emailService.SendWelcomeEmailAsync(@event.Email, cancellationToken);
+    }
+}
+```
+
+### 3. Use in Pipeline
+
+```csharp
+using Myth.Flow;
+using Myth.Flow.Actions.Pipeline;
+
+public class CreateUserRequest
+{
+    public required string Email { get; init; }
+    public required string Name { get; init; }
+    public Guid? UserId { get; set; }
+    public UserDto? User { get; set; }
+}
+
 var result = await Pipeline
-    .Start(new CreateUserRequest { Email = "user@example.com" })
+    .Start(new CreateUserRequest
+    {
+        Email = "user@example.com",
+        Name = "John Doe"
+    })
+    // Process command
     .Process<CreateUserRequest, CreateUserCommand, Guid>(
-        ctx => new CreateUserCommand { Email = ctx.Email },
+        ctx => new CreateUserCommand
+        {
+            Email = ctx.Email,
+            Name = ctx.Name
+        },
         (ctx, userId) => ctx.UserId = userId)
+    // Query with cache
     .QueryCached<CreateUserRequest, GetUserQuery, UserDto>(
-        ctx => new GetUserQuery { UserId = ctx.UserId.Value },
+        ctx => new GetUserQuery { UserId = ctx.UserId!.Value },
         (ctx, user) => ctx.User = user,
         cacheKey: $"user:{ctx.UserId}",
         ttl: TimeSpan.FromMinutes(10))
-    .Publish<CreateUserRequest, UserCreatedEvent>(
-        ctx => new UserCreatedEvent { UserId = ctx.UserId.Value })
+    // Publish event
+    .Publish<CreateUserRequest, UserCreatedEvent>(ctx => new UserCreatedEvent
+    {
+        UserId = ctx.UserId!.Value,
+        Email = ctx.Email
+    })
     .ExecuteAsync();
+
+if (result.IsSuccess)
+{
+    Console.WriteLine($"User created: {result.Value.User?.Name}");
+}
 ```
 
-## 🏗️ Architecture Decisions
+## 🔧 Configuration Options
 
-### Why These Choices?
-
-1. **Process vs Execute for Commands**
-   - `Process` is more semantic for CQRS
-   - Clearly indicates state change
-   - Distinguishes from `Execute` (pipeline)
-
-2. **Publish vs Notify for Events**
-   - `Publish` is standard CQRS terminology
-   - Matches event-driven architecture patterns
-   - Clear fire-and-forget semantics
-
-3. **Assembly Scanning**
-   - Reduces boilerplate registration
-   - Convention over configuration
-   - Automatic handler discovery
-
-4. **Provider Pattern for Brokers**
-   - Easy to extend
-   - Swap implementations
-   - Test with InMemory, deploy with Kafka
-
-5. **Decorator Pattern for Cache**
-   - Non-invasive caching
-   - Easy to enable/disable
-   - Transparent to handlers
-
-## 📊 Performance Considerations
-
-1. **Caching**: Dramatically reduces database load for queries
-2. **Kafka**: Handles millions of messages per second
-3. **RabbitMQ**: Reliable with moderate throughput
-4. **InMemory**: Zero overhead for testing
-5. **Parallel Handlers**: Events processed concurrently
-
-## 🧪 Testing Strategy
+### InMemory (Development/Testing)
 
 ```csharp
-// Unit tests: Use InMemory broker
-services.AddFlowActions(o => o.UseInMemory());
-
-// Integration tests: Use real brokers with Docker
-services.AddFlowActions(o => o.UseKafka(...));
-
-// End-to-end tests: Full pipeline with mocked services
+services.AddFlowActions(options =>
+{
+    options.UseInMemory()
+           .ScanAssemblies(typeof(Program).Assembly);
+});
 ```
 
-## 🚀 Deployment Checklist
+### Kafka (Production)
 
-- [ ] Configure Kafka/RabbitMQ connection strings
-- [ ] Enable distributed caching (Redis)
-- [ ] Configure retry policies
-- [ ] Enable dead letter queue
-- [ ] Set up telemetry exporter
-- [ ] Configure logging levels
-- [ ] Review handler registrations
-- [ ] Test event handlers
+```csharp
+services.AddFlowActions(options =>
+{
+    options.UseKafka(kafka =>
+           {
+               kafka.BootstrapServers = "localhost:9092";
+               kafka.GroupId = "my-service";
+               kafka.ClientId = "my-service-1";
+               kafka.EnableAutoCommit = false;
+               kafka.SessionTimeoutMs = 30000;
+               kafka.AutoOffsetReset = "earliest";
+               kafka.CompressionType = "snappy";
+           })
+           .EnableRetry(retry =>
+           {
+               retry.MaxAttempts = 3;
+               retry.BackoffMs = 1000;
+               retry.ExponentialBackoff = true;
+           })
+           .EnableDeadLetterQueue()
+           .ScanAssemblies(typeof(Program).Assembly);
+});
+```
 
-## 📈 Next Steps & Future Enhancements
+### RabbitMQ (Production)
 
-### Potential Additions
+```csharp
+services.AddFlowActions(options =>
+{
+    options.UseRabbitMQ(rabbit =>
+           {
+               rabbit.HostName = "localhost";
+               rabbit.Port = 5672;
+               rabbit.UserName = "guest";
+               rabbit.Password = "guest";
+               rabbit.VirtualHost = "/";
+               rabbit.ExchangeName = "my-service";
+               rabbit.ExchangeType = "topic";
+               rabbit.PrefetchCount = 10;
+           })
+           .EnableCaching(cache =>
+           {
+               cache.ProviderType = CacheProviderType.Distributed;
+               cache.ConnectionString = "localhost:6379";
+               cache.DefaultTtl = TimeSpan.FromMinutes(5);
+           })
+           .ScanAssemblies(AppDomain.CurrentDomain.GetAssemblies());
+});
+```
 
-1. **Sagas/Orchestration**: Long-running workflows
-2. **Outbox Pattern**: Guaranteed event publishing
-3. **Message Deduplication**: Idempotency support
-4. **Priority Queues**: Message prioritization
-5. **Request/Reply**: Synchronous command responses
-6. **Batch Processing**: Bulk operations
-7. **Monitoring Dashboard**: Visual event tracking
-8. **Schema Registry**: Event versioning
+## 📚 Pipeline Extensions
 
-### Integration Opportunities
+### Process (Commands)
 
-1. **MassTransit**: Alternative message bus
-2. **Dapr**: Service invocation
-3. **Azure Service Bus**: Cloud messaging
-4. **AWS SQS/SNS**: Cloud messaging
-5. **NATS**: High-performance messaging
+```csharp
+// Command without response
+.Process<TContext, TCommand>(ctx => new TCommand { ... })
 
-## 🎓 Learning Resources
+// Command with response
+.Process<TContext, TCommand, TResponse>(
+    ctx => new TCommand { ... },
+    (ctx, response) => ctx.Result = response)
+```
 
-### Concepts
-- **CQRS**: Martin Fowler's articles
-- **Event Sourcing**: Greg Young's presentations
-- **Message Brokers**: Enterprise Integration Patterns
+### Query (Read Operations)
 
-### Similar Libraries
-- **MediatR**: In-process messaging
-- **Wolverine**: Next-gen messaging
-- **Brighter**: Command dispatcher
-- **NServiceBus**: Enterprise service bus
+```csharp
+// Query without cache
+.Query<TContext, TQuery, TResponse>(
+    ctx => new TQuery { ... },
+    (ctx, result) => ctx.Data = result)
 
-## 🤔 Design Patterns Used
+// Query with cache
+.QueryCached<TContext, TQuery, TResponse>(
+    ctx => new TQuery { ... },
+    (ctx, result) => ctx.Data = result,
+    cacheKey: "my-key",
+    ttl: TimeSpan.FromMinutes(10))
 
-1. **CQRS**: Command Query Responsibility Segregation
-2. **Mediator**: Dispatcher pattern
-3. **Decorator**: Cache decorator for queries
-4. **Provider**: Message broker abstraction
-5. **Builder**: Fluent configuration
-6. **Strategy**: Event dispatch strategy
-7. **Repository**: Handler registry
-8. **Observer**: Event subscriptions
+// Query with dynamic cache key
+.Query<TContext, TQuery, TResponse>(
+    ctx => new TQuery { ... },
+    (ctx, result) => ctx.Data = result,
+    options =>
+    {
+        options.Enabled = true;
+        options.CacheKey = $"user:{ctx.UserId}";
+        options.Ttl = TimeSpan.FromMinutes(10);
+        options.SlidingExpiration = true;
+    })
+```
 
-## 📝 Code Quality Standards
+### Publish (Events)
 
-- ✅ SOLID principles
-- ✅ Clean Code practices
-- ✅ XML documentation (English)
-- ✅ Async/await throughout
-- ✅ CancellationToken support
-- ✅ Proper exception handling
-- ✅ Structured logging
-- ✅ Telemetry integration
+```csharp
+// Publish event
+.Publish<TContext, TEvent>(ctx => new TEvent { ... })
 
-## 🎯 Success Metrics
+// Publish event when context is the event itself
+.Publish<TEvent>()  // where TContext : IEvent
+```
 
-The library is successful when:
+## 🎭 Advanced Patterns
 
-1. **Easy to Use**: Minimal code to get started
-2. **Type Safe**: Compile-time guarantees
-3. **Performant**: Sub-millisecond dispatching
-4. **Reliable**: Zero message loss (with proper broker)
-5. **Observable**: Full telemetry coverage
-6. **Testable**: Easy unit and integration tests
-7. **Maintainable**: Clear separation of concerns
-8. **Extensible**: Easy to add new brokers/features
+### Conditional Processing
 
-## 🔐 Security Considerations
+```csharp
+.When(
+    ctx => ctx.Order?.Status == OrderStatus.Pending,
+    pipeline => pipeline
+        .Process<TContext, ProcessPaymentCommand>(...)
+        .Publish<TContext, OrderPaidEvent>(...))
+```
 
-1. **Message Encryption**: Configure at broker level
-2. **Authentication**: Kafka SASL, RabbitMQ credentials
-3. **Authorization**: Handler-level security
-4. **Audit Logging**: Track all commands
-5. **Input Validation**: Validate in handlers
-6. **Rate Limiting**: Prevent abuse
+### Transformation
 
-## 💰 Cost Optimization
+```csharp
+.Transform(ctx => new ShipmentContext
+{
+    ShipmentId = Guid.NewGuid(),
+    OrderId = ctx.OrderId
+})
+```
 
-1. **Caching**: Reduce database queries ($$)
-2. **InMemory**: Zero cost for dev/test
-3. **Kafka**: Cost-effective at scale
-4. **RabbitMQ**: Predictable costs
-5. **Batch Processing**: Reduce operations
+### Multiple Event Handlers
 
-## 🎉 Conclusion
+```csharp
+// Automatically all handlers for an event will be executed
+public class UserCreatedEmailHandler : IEventHandler<UserCreatedEvent> { ... }
+public class UserCreatedAnalyticsHandler : IEventHandler<UserCreatedEvent> { ... }
+public class UserCreatedNotificationHandler : IEventHandler<UserCreatedEvent> { ... }
 
-**Myth.Flow.Actions** provides a complete, production-ready CQRS implementation that seamlessly integrates with Myth.Flow pipelines. It's designed for:
+// All three handlers execute in parallel when UserCreatedEvent is published
+```
 
-- **Developers**: Easy to use, strongly typed
-- **Architects**: Clean separation, extensible
-- **DevOps**: Observable, resilient
-- **Business**: Fast, reliable, cost-effective
+## 🔍 Direct Dispatcher Usage
 
-The library follows modern .NET best practices and can scale from simple applications to enterprise-grade distributed systems.
+For scenarios where you don't need the full pipeline:
+
+```csharp
+public class UserService
+{
+    private readonly IDispatcher _dispatcher;
+
+    public UserService(IDispatcher dispatcher)
+    {
+        _dispatcher = dispatcher;
+    }
+
+    public async Task<Guid> CreateUserAsync(string email, string name)
+    {
+        // Process command
+        var command = new CreateUserCommand { Email = email, Name = name };
+        var result = await _dispatcher.DispatchCommandAsync<CreateUserCommand, Guid>(command);
+
+        if (result.IsFailure)
+            throw new Exception(result.ErrorMessage);
+
+        // Publish event
+        await _dispatcher.PublishEventAsync(new UserCreatedEvent
+        {
+            UserId = result.Data,
+            Email = email
+        });
+
+        return result.Data;
+    }
+
+    public async Task<UserDto?> GetUserAsync(Guid userId)
+    {
+        // Query with cache
+        var query = new GetUserQuery { UserId = userId };
+        var cacheOptions = new CacheOptions
+        {
+            Enabled = true,
+            CacheKey = $"user:{userId}",
+            Ttl = TimeSpan.FromMinutes(10)
+        };
+
+        var result = await _dispatcher.DispatchQueryAsync<GetUserQuery, UserDto>(
+            query, 
+            cacheOptions);
+
+        return result.IsSuccess ? result.Data : null;
+    }
+}
+```
+
+## 🧪 Testing
+
+```csharp
+public class UserServiceTests
+{
+    [Fact]
+    public async Task CreateUser_ShouldSucceed()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddFlow();
+        services.AddFlowActions(options =>
+        {
+            options.UseInMemory()
+                   .ScanAssemblies(typeof(CreateUserCommand).Assembly);
+        });
+
+        services.AddScoped<IUserRepository, InMemoryUserRepository>();
+        services.AddScoped<IEmailService, FakeEmailService>();
+
+        var provider = services.BuildServiceProvider();
+        var dispatcher = provider.GetRequiredService<IDispatcher>();
+
+        // Act
+        var command = new CreateUserCommand
+        {
+            Email = "test@example.com",
+            Name = "Test User"
+        };
+
+        var result = await dispatcher.DispatchCommandAsync<CreateUserCommand, Guid>(command);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotEqual(Guid.Empty, result.Data);
+    }
+}
+```
+
+## 📊 Telemetry
+
+Myth.Flow.Actions includes built-in OpenTelemetry support:
+
+```csharp
+services.AddFlowActions(options =>
+{
+    options.EnableTelemetry()
+           .UseInMemory()
+           .ScanAssemblies(typeof(Program).Assembly);
+});
+
+// Activities are automatically created for:
+// - Command.{CommandName}
+// - Query.{QueryName}
+// - Event.{EventName}
+// - EventHandler.{HandlerName}
+```
+
+## 🛡️ Resilience
+
+### Retry Policy
+
+```csharp
+options.EnableRetry(retry =>
+{
+    retry.MaxAttempts = 3;
+    retry.BackoffMs = 1000;
+    retry.ExponentialBackoff = true;
+});
+```
+
+### Dead Letter Queue
+
+```csharp
+options.EnableDeadLetterQueue();
+
+// Access DLQ
+public class MyService
+{
+    private readonly DeadLetterQueue _dlq;
+
+    public MyService(DeadLetterQueue dlq)
+    {
+        _dlq = dlq;
+    }
+
+    public IEnumerable<DeadLetterMessage> GetFailedMessages()
+    {
+        return _dlq.GetAll();
+    }
+}
+```
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Myth.Flow Pipeline                    │
+├─────────────────────────────────────────────────────────┤
+│  .Process()  │  .Query()  │  .Publish()  │  .Transform()│
+└──────────────┴────────────┴──────────────┴──────────────┘
+                        ▼
+┌─────────────────────────────────────────────────────────┐
+│                      Dispatcher                          │
+├─────────────────────────────────────────────────────────┤
+│  Commands  │  Queries (+ Cache)  │  Events              │
+└────────────┴─────────────────────┴──────────────────────┘
+                        ▼
+┌─────────────────────────────────────────────────────────┐
+│                    Message Broker                        │
+├─────────────────────────────────────────────────────────┤
+│  InMemory  │  Kafka  │  RabbitMQ  │  (Extensible)       │
+└────────────┴─────────┴────────────┴─────────────────────┘
+                        ▼
+┌─────────────────────────────────────────────────────────┐
+│                   Event Handlers                         │
+├─────────────────────────────────────────────────────────┤
+│  Multiple handlers per event, executed in parallel       │
+└─────────────────────────────────────────────────────────┘
+```
+
+## 🎯 Best Practices
+
+1. **Commands**: Use for write operations that change state
+2. **Queries**: Use for read operations, leverage caching
+3. **Events**: Use for decoupled communication, past tense naming
+4. **Handlers**: Keep them focused, single responsibility
+5. **Pipeline**: Chain operations logically, transform when needed
+6. **Testing**: Use InMemory broker for fast, isolated tests
+7. **Production**: Use Kafka/RabbitMQ with retry and DLQ enabled
+
+## 📝 Naming Conventions
+
+- **Commands**: Imperative verbs (CreateUser, UpdateOrder, DeleteProduct)
+- **Queries**: Get/Find prefix (GetUser, FindOrders, SearchProducts)
+- **Events**: Past tense (UserCreated, OrderUpdated, ProductDeleted)
+- **Handlers**: {Request}Handler (CreateUserCommandHandler, GetUserQueryHandler)
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow the existing code style and add tests for new features.
+
+## 📄 License
+
+MIT License - see LICENSE file for details
+
+## 🔗 Related Projects
+
+- [Myth.Flow](https://github.com/your-repo/myth-flow) - Core pipeline framework

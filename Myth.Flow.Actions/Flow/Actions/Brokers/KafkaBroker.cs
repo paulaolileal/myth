@@ -1,7 +1,10 @@
 ﻿using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
-using Myth.Flow.Interfaces;
+using Myth.Flow.Actions.Settings;
+using Myth.Interfaces;
 using System.Text.Json;
+
+namespace Myth.Flow.Actions.Brokers;
 
 /// <summary>
 /// Kafka message broker implementation
@@ -47,10 +50,10 @@ internal sealed class KafkaBroker : IMessageBroker, IDisposable {
 				Value = value,
 				Headers = new Headers
 				{
-					{ "event-type", System.Text.Encoding.UTF8.GetBytes(typeof(TEvent).FullName ?? typeof(TEvent).Name) },
-					{ "event-id", System.Text.Encoding.UTF8.GetBytes(@event.EventId) },
-					{ "occurred-at", System.Text.Encoding.UTF8.GetBytes(@event.OccurredAt.ToString("O")) }
-				}
+				{ "event-type", System.Text.Encoding.UTF8.GetBytes(typeof(TEvent).FullName ?? typeof(TEvent).Name) },
+				{ "event-id", System.Text.Encoding.UTF8.GetBytes(@event.EventId) },
+				{ "occurred-at", System.Text.Encoding.UTF8.GetBytes(@event.OccurredAt.ToString("O")) }
+			}
 			};
 
 			var result = await _producer.ProduceAsync( topic, message, cancellationToken );

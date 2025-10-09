@@ -1,4 +1,4 @@
-﻿namespace Myth.Flow.Interfaces;
+﻿namespace Myth.Interfaces;
 
 /// <summary>
 /// Registry for event handlers

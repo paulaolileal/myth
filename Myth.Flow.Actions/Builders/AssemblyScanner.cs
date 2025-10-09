@@ -1,4 +1,4 @@
-﻿using Myth.Flow.Interfaces;
+﻿using Myth.Interfaces;
 using System.Reflection;
 
 namespace Myth.Builders {
