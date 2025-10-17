@@ -64,6 +64,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myth.Flow.Test", "Myth.Flow
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myth.Flow.Actions", "Myth.Flow.Actions\Myth.Flow.Actions.csproj", "{5C17E9F1-60DA-4327-9828-57533735ACE4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myth.Flow.Actions.Test", "Myth.Flow.Actions.Test\Myth.Flow.Actions.Test.csproj", "{13D741B3-04B6-4A77-A2F9-C78BFA3B2401}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -138,6 +140,10 @@ Global
 		{5C17E9F1-60DA-4327-9828-57533735ACE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5C17E9F1-60DA-4327-9828-57533735ACE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5C17E9F1-60DA-4327-9828-57533735ACE4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13D741B3-04B6-4A77-A2F9-C78BFA3B2401}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13D741B3-04B6-4A77-A2F9-C78BFA3B2401}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13D741B3-04B6-4A77-A2F9-C78BFA3B2401}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13D741B3-04B6-4A77-A2F9-C78BFA3B2401}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -160,6 +166,7 @@ Global
 		{80B9A6E6-81BF-45F5-9B9C-5415940F9454} = {9DE1B267-4703-44D5-911D-89D9C8AB8F27}
 		{8AF3DA6D-1EA9-476A-A338-CB0A0BB587D0} = {9DE1B267-4703-44D5-911D-89D9C8AB8F27}
 		{5C17E9F1-60DA-4327-9828-57533735ACE4} = {9DE1B267-4703-44D5-911D-89D9C8AB8F27}
+		{13D741B3-04B6-4A77-A2F9-C78BFA3B2401} = {9DE1B267-4703-44D5-911D-89D9C8AB8F27}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {57C72C75-3DFD-47D6-BEBE-072183C4FAA7}
