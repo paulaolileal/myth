@@ -132,6 +132,11 @@ public static class ServiceCollectionExtensions {
 
 		var eventHandlers = scanner.ScanForEventHandlers( configuration.AssembliesToScan.ToArray( ) );
 
+		foreach ( var (eventType, handlerType) in eventHandlers ) {
+			var eventHandlerInterface = typeof( IEventHandler<> ).MakeGenericType( eventType );
+			services.AddTransient( eventHandlerInterface, handlerType );
+		}
+
 		services.AddSingleton<IEventHandlerRegistry>( sp => {
 			var subscriptionManager = sp.GetRequiredService<IEventSubscriptionManager>( );
 			var registry = new EventHandlerRegistry( subscriptionManager );
