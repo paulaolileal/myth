@@ -9,8 +9,16 @@ public sealed class FlowActionsBuilder {
 	/// <summary>
 	/// Configures in-memory message broker
 	/// </summary>
-	public FlowActionsBuilder UseInMemory( ) {
+	public FlowActionsBuilder UseInMemory( Action<InMemoryBrokerOptions>? configure = null ) {
 		_configuration.BrokerType = MessageBrokerType.InMemory;
+
+		if ( configure is not null )
+			_configuration.BrokerConfigurationFactory = ( ) => {
+				var options = new InMemoryBrokerOptions( );
+				configure?.Invoke( options );
+				return options;
+			};
+
 		return this;
 	}
 
@@ -19,7 +27,22 @@ public sealed class FlowActionsBuilder {
 	/// </summary>
 	public FlowActionsBuilder UseKafka( Action<KafkaOptions> configure ) {
 		_configuration.BrokerType = MessageBrokerType.Kafka;
-		_configuration.BrokerConfiguration = options => configure( ( KafkaOptions )options );
+		_configuration.BrokerConfigurationFactory = ( ) => {
+			var options = new KafkaOptions {
+				BootstrapServers = "localhost:9092",
+				GroupId = "flow-actions"
+			};
+			configure( options );
+
+			// Validar propriedades obrigatórias
+			if ( string.IsNullOrWhiteSpace( options.BootstrapServers ) )
+				throw new ArgumentException( "BootstrapServers is required for Kafka configuration" );
+
+			if ( string.IsNullOrWhiteSpace( options.GroupId ) )
+				throw new ArgumentException( "GroupId is required for Kafka configuration" );
+
+			return options;
+		};
 		return this;
 	}
 
@@ -28,7 +51,27 @@ public sealed class FlowActionsBuilder {
 	/// </summary>
 	public FlowActionsBuilder UseRabbitMQ( Action<RabbitMQOptions> configure ) {
 		_configuration.BrokerType = MessageBrokerType.RabbitMQ;
-		_configuration.BrokerConfiguration = options => configure( ( RabbitMQOptions )options );
+		_configuration.BrokerConfigurationFactory = ( ) => {
+			var options = new RabbitMQOptions {
+				HostName = "localhost",
+				UserName = "guest",
+				Password = "guest"
+			};
+			configure( options );
+
+			// Validar propriedades obrigatórias
+			if ( string.IsNullOrWhiteSpace( options.HostName ) )
+				throw new ArgumentException( "HostName is required for RabbitMQ configuration" );
+
+			if ( string.IsNullOrWhiteSpace( options.UserName ) )
+				throw new ArgumentException( "UserName is required for RabbitMQ configuration" );
+
+			if ( string.IsNullOrWhiteSpace( options.Password ) )
+				throw new ArgumentException( "Password is required for RabbitMQ configuration" );
+
+			return options;
+		};
+
 		return this;
 	}
 

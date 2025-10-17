@@ -5,7 +5,7 @@
 /// </summary>
 public sealed class FlowActionsConfiguration {
 	internal MessageBrokerType BrokerType { get; set; } = MessageBrokerType.InMemory;
-	internal Action<object>? BrokerConfiguration { get; set; }
+	internal Func<object>? BrokerConfigurationFactory { get; set; }
 	internal bool TelemetryEnabled { get; set; } = true;
 	internal bool CachingEnabled { get; set; }
 	internal Action<CacheConfiguration>? CacheConfiguration { get; set; }

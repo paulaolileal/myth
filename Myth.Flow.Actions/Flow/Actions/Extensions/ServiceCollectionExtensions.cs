@@ -4,7 +4,9 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Myth.Builders;
 using Myth.Flow.Actions.Brokers;
+using Myth.Flow.Actions.Hosting;
 using Myth.Flow.Actions.Settings;
+using Myth.Flow.Resilience;
 using Myth.Interfaces;
 using Myth.Models;
 using System.Diagnostics;
@@ -37,6 +39,8 @@ public static class ServiceCollectionExtensions {
 		RegisterTelemetry( services, configuration );
 		RegisterHandlers( services, configuration );
 
+		services.AddHostedService<MessageBrokerHostedService>( );
+
 		return services;
 	}
 
@@ -49,9 +53,36 @@ public static class ServiceCollectionExtensions {
 	private static void RegisterMessageBroker( IServiceCollection services, FlowActionsConfiguration configuration ) {
 		switch ( configuration.BrokerType ) {
 			case MessageBrokerType.InMemory:
+			var inMemoryOptions = new InMemoryBrokerOptions( );
+			if ( configuration.BrokerConfigurationFactory != null ) {
+				var options = configuration.BrokerConfigurationFactory( );
+				if ( options is InMemoryBrokerOptions opt )
+					inMemoryOptions = opt;
+			}
+
+			services.AddSingleton( inMemoryOptions );
+
+			if ( inMemoryOptions.EnableDeadLetterQueue ) {
+				services.AddSingleton<DeadLetterQueue>( sp => {
+					var logger = sp.GetRequiredService<ILogger<DeadLetterQueue>>( );
+					return new DeadLetterQueue( logger, maxSize: 10000 );
+				} );
+			}
+
 			services.AddSingleton<IMessageBroker>( sp => {
+				var serviceProvider = sp;
+				var subscriptionManager = sp.GetRequiredService<IEventSubscriptionManager>( );
 				var logger = sp.GetRequiredService<ILogger<InMemoryBroker>>( );
-				return new InMemoryBroker( logger );
+				var activitySource = sp.GetService<ActivitySource>( ) ?? new ActivitySource( "Myth.Flow.Actions" );
+				var dlq = inMemoryOptions.EnableDeadLetterQueue ? sp.GetService<DeadLetterQueue>( ) : null;
+
+				return new InMemoryBroker(
+					serviceProvider,
+					subscriptionManager,
+					logger,
+					activitySource,
+					inMemoryOptions,
+					dlq );
 			} );
 			break;
 
@@ -60,7 +91,12 @@ public static class ServiceCollectionExtensions {
 				BootstrapServers = "localhost:9092",
 				GroupId = "flow-actions"
 			};
-			configuration.BrokerConfiguration?.Invoke( kafkaOptions );
+
+			if ( configuration.BrokerConfigurationFactory != null ) {
+				var options = configuration.BrokerConfigurationFactory( );
+				if ( options is KafkaOptions opt )
+					kafkaOptions = opt;
+			}
 
 			services.AddSingleton( kafkaOptions );
 			services.AddSingleton<IMessageBroker>( sp => {
@@ -75,7 +111,12 @@ public static class ServiceCollectionExtensions {
 				UserName = "guest",
 				Password = "guest"
 			};
-			configuration.BrokerConfiguration?.Invoke( rabbitOptions );
+
+			if ( configuration.BrokerConfigurationFactory != null ) {
+				var options = configuration.BrokerConfigurationFactory( );
+				if ( options is RabbitMQOptions opt )
+					rabbitOptions = opt;
+			}
 
 			services.AddSingleton( rabbitOptions );
 			services.AddSingleton<IMessageBroker>( sp => {

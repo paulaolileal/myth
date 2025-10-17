@@ -32,7 +32,7 @@ namespace Myth.Flow.Actions.Test {
 
 			// Assert
 			config.BrokerType.Should( ).Be( MessageBrokerType.Kafka );
-			config.BrokerConfiguration.Should( ).NotBeNull( );
+			config.BrokerConfigurationFactory.Should( ).NotBeNull( );
 		}
 
 		[Fact]
@@ -50,7 +50,7 @@ namespace Myth.Flow.Actions.Test {
 
 			// Assert
 			config.BrokerType.Should( ).Be( MessageBrokerType.RabbitMQ );
-			config.BrokerConfiguration.Should( ).NotBeNull( );
+			config.BrokerConfigurationFactory.Should( ).NotBeNull( );
 		}
 
 		[Fact]
