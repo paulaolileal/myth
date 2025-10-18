@@ -29,6 +29,13 @@ internal sealed class Dispatcher : IDispatcher {
 		_activitySource = activitySource;
 	}
 
+	/// <summary>
+	/// Dispatches a command to its registered handler
+	/// </summary>
+	/// <typeparam name="TCommand">The type of command to dispatch</typeparam>
+	/// <param name="command">The command instance to execute</param>
+	/// <param name="cancellationToken">Token to cancel the operation</param>
+	/// <returns>A task containing the command execution result</returns>
 	public async Task<CommandResult> DispatchCommandAsync<TCommand>(
 		TCommand command,
 		CancellationToken cancellationToken = default )
@@ -56,6 +63,14 @@ internal sealed class Dispatcher : IDispatcher {
 		}
 	}
 
+	/// <summary>
+	/// Dispatches a command to its registered handler and returns a typed response
+	/// </summary>
+	/// <typeparam name="TCommand">The type of command to dispatch</typeparam>
+	/// <typeparam name="TResponse">The type of response expected from the command</typeparam>
+	/// <param name="command">The command instance to execute</param>
+	/// <param name="cancellationToken">Token to cancel the operation</param>
+	/// <returns>A task containing the command execution result with typed response</returns>
 	public async Task<CommandResult<TResponse>> DispatchCommandAsync<TCommand, TResponse>(
 		TCommand command,
 		CancellationToken cancellationToken = default )
@@ -83,6 +98,15 @@ internal sealed class Dispatcher : IDispatcher {
 		}
 	}
 
+	/// <summary>
+	/// Dispatches a query to its registered handler with optional caching
+	/// </summary>
+	/// <typeparam name="TQuery">The type of query to dispatch</typeparam>
+	/// <typeparam name="TResponse">The type of response expected from the query</typeparam>
+	/// <param name="query">The query instance to execute</param>
+	/// <param name="cacheOptions">Optional caching configuration for the query result</param>
+	/// <param name="cancellationToken">Token to cancel the operation</param>
+	/// <returns>A task containing the query execution result with typed response</returns>
 	public async Task<QueryResult<TResponse>> DispatchQueryAsync<TQuery, TResponse>(
 		TQuery query,
 		CacheOptions? cacheOptions = null,
@@ -129,6 +153,13 @@ internal sealed class Dispatcher : IDispatcher {
 		}
 	}
 
+	/// <summary>
+	/// Publishes an event to the event bus for processing by registered handlers
+	/// </summary>
+	/// <typeparam name="TEvent">The type of event to publish</typeparam>
+	/// <param name="event">The event instance to publish</param>
+	/// <param name="cancellationToken">Token to cancel the operation</param>
+	/// <returns>A task representing the asynchronous publish operation</returns>
 	public async Task PublishEventAsync<TEvent>( TEvent @event, CancellationToken cancellationToken = default )
 		where TEvent : IEvent {
 		using var activity = _activitySource.StartActivity( $"Event.{typeof( TEvent ).Name}" );
@@ -147,6 +178,12 @@ internal sealed class Dispatcher : IDispatcher {
 		}
 	}
 
+	/// <summary>
+	/// Generates a cache key for a query based on its type and hash code
+	/// </summary>
+	/// <typeparam name="TQuery">The type of query</typeparam>
+	/// <param name="query">The query instance</param>
+	/// <returns>A cache key string in the format "TypeName:HashCode"</returns>
 	private static string GenerateCacheKey<TQuery>( TQuery query ) {
 		var typeName = typeof( TQuery ).Name;
 		var hashCode = query?.GetHashCode( ) ?? 0;

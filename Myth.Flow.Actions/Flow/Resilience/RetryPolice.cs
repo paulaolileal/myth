@@ -18,6 +18,14 @@ public sealed class RetryPolicy {
 		_logger = logger;
 	}
 
+	/// <summary>
+	/// Executes an operation with retry logic based on the configured policy
+	/// </summary>
+	/// <typeparam name="T">The return type of the operation</typeparam>
+	/// <param name="operation">The async operation to execute with retry</param>
+	/// <param name="cancellationToken">Token to cancel the operation</param>
+	/// <returns>The result of the successful operation</returns>
+	/// <exception cref="Exception">Throws the last exception if all retry attempts fail</exception>
 	public async Task<T> ExecuteAsync<T>(
 		Func<Task<T>> operation,
 		CancellationToken cancellationToken = default ) {
@@ -39,6 +47,11 @@ public sealed class RetryPolicy {
 		}
 	}
 
+	/// <summary>
+	/// Calculates the delay before the next retry attempt
+	/// </summary>
+	/// <param name="attempt">The current attempt number (1-indexed)</param>
+	/// <returns>The delay in milliseconds</returns>
 	private int CalculateDelay( int attempt ) {
 		if ( !_exponentialBackoff )
 			return _baseBackoffMs;

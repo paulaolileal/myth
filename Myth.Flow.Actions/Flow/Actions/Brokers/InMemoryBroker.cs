@@ -224,7 +224,7 @@ public sealed class InMemoryBroker : IMessageBroker, IAsyncDisposable {
 
 			// Método HandleAsync está na interface
 			var handleMethod = eventHandlerInterface.GetMethod( "HandleAsync",
-				[eventType, typeof( CancellationToken )] );
+				[ eventType, typeof( CancellationToken ) ] );
 
 			if ( handleMethod == null ) {
 				_logger.LogError( "HandleAsync method not found" );

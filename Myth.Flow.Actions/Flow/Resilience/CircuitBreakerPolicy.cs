@@ -21,6 +21,14 @@ public sealed class CircuitBreakerPolicy {
 		_logger = logger;
 	}
 
+	/// <summary>
+	/// Executes an operation with circuit breaker protection
+	/// </summary>
+	/// <typeparam name="T">The return type of the operation</typeparam>
+	/// <param name="operation">The async operation to execute</param>
+	/// <param name="cancellationToken">Token to cancel the operation</param>
+	/// <returns>The result of the successful operation</returns>
+	/// <exception cref="InvalidOperationException">Thrown when the circuit breaker is open</exception>
 	public async Task<T> ExecuteAsync<T>(
 		Func<Task<T>> operation,
 		CancellationToken cancellationToken = default ) {
@@ -64,6 +72,9 @@ public sealed class CircuitBreakerPolicy {
 		}
 	}
 
+	/// <summary>
+	/// Gets the current state of the circuit breaker
+	/// </summary>
 	public CircuitState State {
 		get {
 			lock ( _lock ) {

@@ -10,8 +10,14 @@ namespace Myth.Flow.Actions.Extensions;
 public static class PipelineExtensions {
 
 	/// <summary>
-	/// Processes a command in the pipeline
+	/// Processes a command in the pipeline using the dispatcher
 	/// </summary>
+	/// <typeparam name="TContext">The pipeline context type</typeparam>
+	/// <typeparam name="TCommand">The command type to execute</typeparam>
+	/// <param name="builder">The pipeline builder</param>
+	/// <param name="commandFactory">Factory function to create the command from context</param>
+	/// <returns>The pipeline builder for method chaining</returns>
+	/// <exception cref="PipelineException">Thrown when command execution fails</exception>
 	public static IPipelineBuilder<TContext> Process<TContext, TCommand>(
 		this IPipelineBuilder<TContext> builder,
 		Func<TContext, TCommand> commandFactory )
@@ -30,8 +36,16 @@ public static class PipelineExtensions {
 	}
 
 	/// <summary>
-	/// Processes a command with response in the pipeline
+	/// Processes a command with typed response in the pipeline
 	/// </summary>
+	/// <typeparam name="TContext">The pipeline context type</typeparam>
+	/// <typeparam name="TCommand">The command type to execute</typeparam>
+	/// <typeparam name="TResponse">The response type from the command</typeparam>
+	/// <param name="builder">The pipeline builder</param>
+	/// <param name="commandFactory">Factory function to create the command from context</param>
+	/// <param name="onSuccess">Callback invoked with context and response data on successful execution</param>
+	/// <returns>The pipeline builder for method chaining</returns>
+	/// <exception cref="PipelineException">Thrown when command execution fails</exception>
 	public static IPipelineBuilder<TContext> Process<TContext, TCommand, TResponse>(
 		this IPipelineBuilder<TContext> builder,
 		Func<TContext, TCommand> commandFactory,
@@ -54,8 +68,17 @@ public static class PipelineExtensions {
 	}
 
 	/// <summary>
-	/// Executes a query in the pipeline
+	/// Executes a query in the pipeline with optional caching support
 	/// </summary>
+	/// <typeparam name="TContext">The pipeline context type</typeparam>
+	/// <typeparam name="TQuery">The query type to execute</typeparam>
+	/// <typeparam name="TResponse">The response type from the query</typeparam>
+	/// <param name="builder">The pipeline builder</param>
+	/// <param name="queryFactory">Factory function to create the query from context</param>
+	/// <param name="onSuccess">Callback invoked with context and response data on successful execution</param>
+	/// <param name="configureCache">Optional action to configure caching for the query</param>
+	/// <returns>The pipeline builder for method chaining</returns>
+	/// <exception cref="PipelineException">Thrown when query execution fails</exception>
 	public static IPipelineBuilder<TContext> Query<TContext, TQuery, TResponse>(
 		this IPipelineBuilder<TContext> builder,
 		Func<TContext, TQuery> queryFactory,
@@ -83,8 +106,19 @@ public static class PipelineExtensions {
 	}
 
 	/// <summary>
-	/// Executes a query with cache configuration in the pipeline
+	/// Executes a query with explicit cache configuration in the pipeline
 	/// </summary>
+	/// <typeparam name="TContext">The pipeline context type</typeparam>
+	/// <typeparam name="TQuery">The query type to execute</typeparam>
+	/// <typeparam name="TResponse">The response type from the query</typeparam>
+	/// <param name="builder">The pipeline builder</param>
+	/// <param name="queryFactory">Factory function to create the query from context</param>
+	/// <param name="onSuccess">Callback invoked with context and response data on successful execution</param>
+	/// <param name="cacheKey">The cache key to use for storing/retrieving the result</param>
+	/// <param name="ttl">Time-to-live for the cached result. Default is 5 minutes</param>
+	/// <param name="slidingExpiration">Whether to use sliding expiration (resets TTL on access)</param>
+	/// <returns>The pipeline builder for method chaining</returns>
+	/// <exception cref="PipelineException">Thrown when query execution fails</exception>
 	public static IPipelineBuilder<TContext> Query<TContext, TQuery, TResponse>(
 		this IPipelineBuilder<TContext> builder,
 		Func<TContext, TQuery> queryFactory,
@@ -105,8 +139,13 @@ public static class PipelineExtensions {
 	}
 
 	/// <summary>
-	/// Publishes an event in the pipeline
+	/// Publishes an event in the pipeline using the event bus
 	/// </summary>
+	/// <typeparam name="TContext">The pipeline context type</typeparam>
+	/// <typeparam name="TEvent">The event type to publish</typeparam>
+	/// <param name="builder">The pipeline builder</param>
+	/// <param name="eventFactory">Factory function to create the event from context</param>
+	/// <returns>The pipeline builder for method chaining</returns>
 	public static IPipelineBuilder<TContext> Publish<TContext, TEvent>(
 		this IPipelineBuilder<TContext> builder,
 		Func<TContext, TEvent> eventFactory )
@@ -120,8 +159,11 @@ public static class PipelineExtensions {
 	}
 
 	/// <summary>
-	/// Publishes an event from context property in the pipeline
+	/// Publishes the context itself as an event when the context implements IEvent
 	/// </summary>
+	/// <typeparam name="TContext">The pipeline context type that implements IEvent</typeparam>
+	/// <param name="builder">The pipeline builder</param>
+	/// <returns>The pipeline builder for method chaining</returns>
 	public static IPipelineBuilder<TContext> Publish<TContext>(
 		this IPipelineBuilder<TContext> builder )
 		where TContext : IEvent {

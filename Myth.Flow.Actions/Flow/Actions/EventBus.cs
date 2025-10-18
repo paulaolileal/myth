@@ -27,6 +27,13 @@ internal sealed class EventBus : IEventBus {
 		_activitySource = activitySource;
 	}
 
+	/// <summary>
+	/// Publishes an event to the message broker and invokes all registered local handlers
+	/// </summary>
+	/// <typeparam name="TEvent">The type of event to publish</typeparam>
+	/// <param name="event">The event instance to publish</param>
+	/// <param name="cancellationToken">Token to cancel the operation</param>
+	/// <returns>A task representing the asynchronous publish operation</returns>
 	public async Task PublishAsync<TEvent>( TEvent @event, CancellationToken cancellationToken = default )
 		where TEvent : IEvent {
 		using var activity = _activitySource.StartActivity( $"EventBus.Publish.{typeof( TEvent ).Name}" );
@@ -57,6 +64,11 @@ internal sealed class EventBus : IEventBus {
 		}
 	}
 
+	/// <summary>
+	/// Subscribes a handler to a specific event type
+	/// </summary>
+	/// <typeparam name="TEvent">The type of event to subscribe to</typeparam>
+	/// <typeparam name="THandler">The handler type that will process the event</typeparam>
 	public void Subscribe<TEvent, THandler>( )
 		where TEvent : IEvent
 		where THandler : IEventHandler<TEvent> {
@@ -76,6 +88,11 @@ internal sealed class EventBus : IEventBus {
 			handlerType.Name, eventType.Name );
 	}
 
+	/// <summary>
+	/// Unsubscribes a handler from a specific event type
+	/// </summary>
+	/// <typeparam name="TEvent">The type of event to unsubscribe from</typeparam>
+	/// <typeparam name="THandler">The handler type to remove from subscriptions</typeparam>
 	public void Unsubscribe<TEvent, THandler>( )
 		where TEvent : IEvent
 		where THandler : IEventHandler<TEvent> {
@@ -89,6 +106,14 @@ internal sealed class EventBus : IEventBus {
 		}
 	}
 
+	/// <summary>
+	/// Invokes a specific event handler with proper scoping and error handling
+	/// </summary>
+	/// <typeparam name="TEvent">The type of event being handled</typeparam>
+	/// <param name="event">The event instance to process</param>
+	/// <param name="handlerType">The type of handler to invoke</param>
+	/// <param name="cancellationToken">Token to cancel the operation</param>
+	/// <returns>A task representing the asynchronous handler invocation</returns>
 	private async Task InvokeHandlerAsync<TEvent>(
 		TEvent @event,
 		Type handlerType,

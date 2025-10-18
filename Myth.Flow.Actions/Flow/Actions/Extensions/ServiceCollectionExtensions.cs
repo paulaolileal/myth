@@ -19,8 +19,12 @@ namespace Myth.Flow.Actions.Extensions;
 public static class ServiceCollectionExtensions {
 
 	/// <summary>
-	/// Adds Flow.Actions services to the service collection
+	/// Adds Flow.Actions services to the service collection with CQRS, event bus, and message broker support
 	/// </summary>
+	/// <param name="services">The service collection to add services to</param>
+	/// <param name="configure">Configuration action for Flow.Actions builder</param>
+	/// <returns>The service collection for method chaining</returns>
+	/// <exception cref="ArgumentNullException">Thrown when services or configure is null</exception>
 	public static IServiceCollection AddFlowActions(
 		this IServiceCollection services,
 		Action<FlowActionsBuilder> configure ) {
@@ -44,12 +48,22 @@ public static class ServiceCollectionExtensions {
 		return services;
 	}
 
+	/// <summary>
+	/// Registers core Flow.Actions services including dispatcher and event bus
+	/// </summary>
+	/// <param name="services">The service collection</param>
+	/// <param name="configuration">The Flow.Actions configuration</param>
 	private static void RegisterCore( IServiceCollection services, FlowActionsConfiguration configuration ) {
 		services.TryAddSingleton<IDispatcher, Dispatcher>( );
 		services.TryAddSingleton<IEventBus, EventBus>( );
 		services.TryAddSingleton<IEventSubscriptionManager, EventSubscriptionManager>( );
 	}
 
+	/// <summary>
+	/// Registers the configured message broker (InMemory, Kafka, or RabbitMQ)
+	/// </summary>
+	/// <param name="services">The service collection</param>
+	/// <param name="configuration">The Flow.Actions configuration</param>
 	private static void RegisterMessageBroker( IServiceCollection services, FlowActionsConfiguration configuration ) {
 		switch ( configuration.BrokerType ) {
 			case MessageBrokerType.InMemory:
@@ -127,6 +141,11 @@ public static class ServiceCollectionExtensions {
 		}
 	}
 
+	/// <summary>
+	/// Registers caching services if caching is enabled (Memory or Distributed Redis)
+	/// </summary>
+	/// <param name="services">The service collection</param>
+	/// <param name="configuration">The Flow.Actions configuration</param>
 	private static void RegisterCache( IServiceCollection services, FlowActionsConfiguration configuration ) {
 		if ( !configuration.CachingEnabled )
 			return;
@@ -156,11 +175,21 @@ public static class ServiceCollectionExtensions {
 		}
 	}
 
+	/// <summary>
+	/// Registers OpenTelemetry ActivitySource for distributed tracing if telemetry is enabled
+	/// </summary>
+	/// <param name="services">The service collection</param>
+	/// <param name="configuration">The Flow.Actions configuration</param>
 	private static void RegisterTelemetry( IServiceCollection services, FlowActionsConfiguration configuration ) {
 		if ( configuration.TelemetryEnabled )
 			services.TryAddSingleton( new ActivitySource( "Myth.Flow.Actions" ) );
 	}
 
+	/// <summary>
+	/// Scans assemblies and registers all command, query, and event handlers
+	/// </summary>
+	/// <param name="services">The service collection</param>
+	/// <param name="configuration">The Flow.Actions configuration</param>
 	private static void RegisterHandlers( IServiceCollection services, FlowActionsConfiguration configuration ) {
 		if ( !configuration.AssembliesToScan.Any( ) )
 			return;
