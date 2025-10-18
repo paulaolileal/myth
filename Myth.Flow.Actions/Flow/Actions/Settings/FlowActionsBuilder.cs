@@ -1,0 +1,123 @@
+﻿namespace Myth.Flow.Actions.Settings;
+
+/// <summary>
+/// Fluent builder for Flow.Actions configuration
+/// </summary>
+public sealed class FlowActionsBuilder {
+	private readonly FlowActionsConfiguration _configuration = new( );
+
+	/// <summary>
+	/// Configures in-memory message broker
+	/// </summary>
+	public FlowActionsBuilder UseInMemory( Action<InMemoryBrokerOptions>? configure = null ) {
+		_configuration.BrokerType = MessageBrokerType.InMemory;
+
+		if ( configure is not null )
+			_configuration.BrokerConfigurationFactory = ( ) => {
+				var options = new InMemoryBrokerOptions( );
+				configure?.Invoke( options );
+				return options;
+			};
+
+		return this;
+	}
+
+	/// <summary>
+	/// Configures Kafka message broker
+	/// </summary>
+	public FlowActionsBuilder UseKafka( Action<KafkaOptions> configure ) {
+		_configuration.BrokerType = MessageBrokerType.Kafka;
+		_configuration.BrokerConfigurationFactory = ( ) => {
+			var options = new KafkaOptions {
+				BootstrapServers = "localhost:9092",
+				GroupId = "flow-actions"
+			};
+			configure( options );
+
+			// Validar propriedades obrigatórias
+			if ( string.IsNullOrWhiteSpace( options.BootstrapServers ) )
+				throw new ArgumentException( "BootstrapServers is required for Kafka configuration" );
+
+			if ( string.IsNullOrWhiteSpace( options.GroupId ) )
+				throw new ArgumentException( "GroupId is required for Kafka configuration" );
+
+			return options;
+		};
+		return this;
+	}
+
+	/// <summary>
+	/// Configures RabbitMQ message broker
+	/// </summary>
+	public FlowActionsBuilder UseRabbitMQ( Action<RabbitMQOptions> configure ) {
+		_configuration.BrokerType = MessageBrokerType.RabbitMQ;
+		_configuration.BrokerConfigurationFactory = ( ) => {
+			var options = new RabbitMQOptions {
+				HostName = "localhost",
+				UserName = "guest",
+				Password = "guest"
+			};
+			configure( options );
+
+			// Validar propriedades obrigatórias
+			if ( string.IsNullOrWhiteSpace( options.HostName ) )
+				throw new ArgumentException( "HostName is required for RabbitMQ configuration" );
+
+			if ( string.IsNullOrWhiteSpace( options.UserName ) )
+				throw new ArgumentException( "UserName is required for RabbitMQ configuration" );
+
+			if ( string.IsNullOrWhiteSpace( options.Password ) )
+				throw new ArgumentException( "Password is required for RabbitMQ configuration" );
+
+			return options;
+		};
+
+		return this;
+	}
+
+	/// <summary>
+	/// Enables telemetry
+	/// </summary>
+	public FlowActionsBuilder EnableTelemetry( bool enabled = true ) {
+		_configuration.TelemetryEnabled = enabled;
+		return this;
+	}
+
+	/// <summary>
+	/// Enables caching
+	/// </summary>
+	public FlowActionsBuilder EnableCaching( Action<CacheConfiguration>? configure = null ) {
+		_configuration.CachingEnabled = true;
+		_configuration.CacheConfiguration = configure;
+		return this;
+	}
+
+	/// <summary>
+	/// Configures retry policy
+	/// </summary>
+	public FlowActionsBuilder EnableRetry( Action<RetryConfiguration> configure ) {
+		configure( _configuration.RetryConfig );
+		return this;
+	}
+
+	/// <summary>
+	/// Enables dead letter queue
+	/// </summary>
+	public FlowActionsBuilder EnableDeadLetterQueue( bool enabled = true ) {
+		_configuration.DeadLetterQueueEnabled = enabled;
+		return this;
+	}
+
+	/// <summary>
+	/// Scans assemblies for handlers
+	/// </summary>
+	public FlowActionsBuilder ScanAssemblies( params System.Reflection.Assembly[ ] assemblies ) {
+		_configuration.AssembliesToScan.AddRange( assemblies );
+		return this;
+	}
+
+	/// <summary>
+	/// Builds the configuration
+	/// </summary>
+	internal FlowActionsConfiguration Build( ) => _configuration;
+}

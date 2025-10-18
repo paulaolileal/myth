@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.0.11018.127 d18.0
+VisualStudioVersion = 18.0.11018.127
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Commons", "Myth.Commons\Myth.Commons.csproj", "{F0B8E629-F5BC-4CDC-BC00-E469E8B963AD}"
 EndProject
@@ -11,7 +11,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Logo.jpg = Logo.jpg
 		README.md = README.md
 		README.pt-br.md = README.pt-br.md
-		UpgradeVersion.ps1 = UpgradeVersion.ps1
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Repository", "Myth.Repository\Myth.Repository.csproj", "{64BCED11-ACBC-4F67-911D-DDA0395D06C0}"
@@ -62,6 +61,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myth.Flow", "Myth.Flow\Myth.Flow.csproj", "{80B9A6E6-81BF-45F5-9B9C-5415940F9454}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myth.Flow.Test", "Myth.Flow.Test\Myth.Flow.Test.csproj", "{8AF3DA6D-1EA9-476A-A338-CB0A0BB587D0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myth.Flow.Actions", "Myth.Flow.Actions\Myth.Flow.Actions.csproj", "{5C17E9F1-60DA-4327-9828-57533735ACE4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myth.Flow.Actions.Test", "Myth.Flow.Actions.Test\Myth.Flow.Actions.Test.csproj", "{13D741B3-04B6-4A77-A2F9-C78BFA3B2401}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -133,6 +136,14 @@ Global
 		{8AF3DA6D-1EA9-476A-A338-CB0A0BB587D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8AF3DA6D-1EA9-476A-A338-CB0A0BB587D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8AF3DA6D-1EA9-476A-A338-CB0A0BB587D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C17E9F1-60DA-4327-9828-57533735ACE4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C17E9F1-60DA-4327-9828-57533735ACE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C17E9F1-60DA-4327-9828-57533735ACE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C17E9F1-60DA-4327-9828-57533735ACE4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13D741B3-04B6-4A77-A2F9-C78BFA3B2401}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13D741B3-04B6-4A77-A2F9-C78BFA3B2401}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13D741B3-04B6-4A77-A2F9-C78BFA3B2401}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13D741B3-04B6-4A77-A2F9-C78BFA3B2401}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -154,6 +165,8 @@ Global
 		{55F035D6-6CCA-40D8-BEB0-B136D7D3046F} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{80B9A6E6-81BF-45F5-9B9C-5415940F9454} = {9DE1B267-4703-44D5-911D-89D9C8AB8F27}
 		{8AF3DA6D-1EA9-476A-A338-CB0A0BB587D0} = {9DE1B267-4703-44D5-911D-89D9C8AB8F27}
+		{5C17E9F1-60DA-4327-9828-57533735ACE4} = {9DE1B267-4703-44D5-911D-89D9C8AB8F27}
+		{13D741B3-04B6-4A77-A2F9-C78BFA3B2401} = {9DE1B267-4703-44D5-911D-89D9C8AB8F27}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {57C72C75-3DFD-47D6-BEBE-072183C4FAA7}
