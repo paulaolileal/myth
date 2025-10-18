@@ -7,6 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Myth.Commons", "Myth.Common
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F6861C44-E45C-4EBC-A10A-DCC18E867FFC}"
 	ProjectSection(SolutionItems) = preProject
+		CLAUDE.md = CLAUDE.md
 		LICENSE.txt = LICENSE.txt
 		Logo.jpg = Logo.jpg
 		README.md = README.md
@@ -65,6 +66,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myth.Flow.Actions", "Myth.Flow.Actions\Myth.Flow.Actions.csproj", "{5C17E9F1-60DA-4327-9828-57533735ACE4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myth.Flow.Actions.Test", "Myth.Flow.Actions.Test\Myth.Flow.Actions.Test.csproj", "{13D741B3-04B6-4A77-A2F9-C78BFA3B2401}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Guard", "Guard", "{DB5A7CD5-FE07-4A5D-AC1F-40B16E27E29A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Myth.Guard", "Myth.Guard\Myth.Guard.csproj", "{86B7BCFE-3814-46B4-BE2D-7106DAFA15D8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -144,6 +149,10 @@ Global
 		{13D741B3-04B6-4A77-A2F9-C78BFA3B2401}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{13D741B3-04B6-4A77-A2F9-C78BFA3B2401}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{13D741B3-04B6-4A77-A2F9-C78BFA3B2401}.Release|Any CPU.Build.0 = Release|Any CPU
+		{86B7BCFE-3814-46B4-BE2D-7106DAFA15D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86B7BCFE-3814-46B4-BE2D-7106DAFA15D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86B7BCFE-3814-46B4-BE2D-7106DAFA15D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86B7BCFE-3814-46B4-BE2D-7106DAFA15D8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -167,6 +176,7 @@ Global
 		{8AF3DA6D-1EA9-476A-A338-CB0A0BB587D0} = {9DE1B267-4703-44D5-911D-89D9C8AB8F27}
 		{5C17E9F1-60DA-4327-9828-57533735ACE4} = {9DE1B267-4703-44D5-911D-89D9C8AB8F27}
 		{13D741B3-04B6-4A77-A2F9-C78BFA3B2401} = {9DE1B267-4703-44D5-911D-89D9C8AB8F27}
+		{86B7BCFE-3814-46B4-BE2D-7106DAFA15D8} = {DB5A7CD5-FE07-4A5D-AC1F-40B16E27E29A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {57C72C75-3DFD-47D6-BEBE-072183C4FAA7}
