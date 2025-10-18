@@ -6,42 +6,42 @@
 
 [![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg?style=for-the-badge)](/README.pt-br.md) [![en](https://img.shields.io/badge/lang-en-red.svg?style=for-the-badge)](/README.md)
 
-A powerful .NET library implementing CQRS and Event-Driven Architecture patterns with seamless integration to Myth.Flow pipelines. Built for scalability with support for multiple message brokers, caching strategies, and enterprise-grade resilience features.
+Uma poderosa biblioteca .NET que implementa os padrões CQRS e Arquitetura Orientada a Eventos com integração perfeita aos pipelines Myth.Flow. Construída para escalabilidade com suporte a múltiplos message brokers, estratégias de cache e recursos de resiliência de nível empresarial.
 
-# ⭐ Features
+# ⭐ Funcionalidades
 
-- **CQRS Pattern**: Clean separation of Commands, Queries, and Events
-- **Pipeline Integration**: Fluent integration with Myth.Flow for composable workflows
-- **Multiple Message Brokers**: InMemory (dev/test), Kafka, and RabbitMQ support
-- **Query Caching**: Built-in caching with Memory and Redis providers
-- **Event-Driven Architecture**: Publish/subscribe with multiple handler support
-- **Resilience Patterns**: Retry policies with exponential backoff, circuit breakers, and dead letter queues
-- **Auto-Discovery**: Automatic handler registration via assembly scanning
-- **OpenTelemetry Integration**: Built-in distributed tracing and observability
-- **Type Safety**: Fully typed APIs with compile-time safety
+- **Padrão CQRS**: Separação clara de Commands, Queries e Events
+- **Integração com Pipeline**: Integração fluente com Myth.Flow para workflows compostos
+- **Múltiplos Message Brokers**: Suporte a InMemory (dev/test), Kafka e RabbitMQ
+- **Cache de Queries**: Cache integrado com provedores Memory e Redis
+- **Arquitetura Orientada a Eventos**: Publish/subscribe com suporte a múltiplos handlers
+- **Padrões de Resiliência**: Políticas de retry com backoff exponencial, circuit breakers e dead letter queues
+- **Auto-descoberta**: Registro automático de handlers via scan de assemblies
+- **Integração OpenTelemetry**: Rastreamento distribuído e observabilidade integrados
+- **Segurança de Tipo**: APIs totalmente tipadas com segurança em tempo de compilação
 
-# 📦 Installation
+# 📦 Instalação
 
 ```bash
 dotnet add package Myth.Flow.Actions
 ```
 
-## Optional Dependencies
+## Dependências Opcionais
 
 ```bash
-# For Kafka support
+# Para suporte a Kafka
 dotnet add package Confluent.Kafka
 
-# For RabbitMQ support
+# Para suporte a RabbitMQ
 dotnet add package RabbitMQ.Client
 
-# For Redis distributed caching
+# Para cache distribuído Redis
 dotnet add package Microsoft.Extensions.Caching.StackExchangeRedis
 ```
 
-# 🚀 Quick Start
+# 🚀 Início Rápido
 
-## 1. Configure Services
+## 1. Configurar Serviços
 
 ```csharp
 using Myth.Flow.Actions.Extensions;
@@ -56,7 +56,7 @@ builder.Services.AddFlowActions(config =>
 });
 ```
 
-## 2. Define Commands, Queries, and Events
+## 2. Definir Commands, Queries e Events
 
 ### Command
 
@@ -121,7 +121,7 @@ public class GetUserQueryHandler : IQueryHandler<GetUserQuery, UserDto>
         var user = await _repository.GetByIdAsync(query.UserId, cancellationToken);
 
         if (user == null)
-            return QueryResult<UserDto>.Failure("User not found");
+            return QueryResult<UserDto>.Failure("Usuário não encontrado");
 
         var dto = new UserDto
         {
@@ -162,7 +162,7 @@ public class UserCreatedEventHandler : IEventHandler<UserCreatedEvent>
 }
 ```
 
-## 3. Use in Pipeline
+## 3. Usar no Pipeline
 
 ```csharp
 using Myth.Flow;
@@ -179,11 +179,11 @@ public class CreateUserContext
 var result = await Pipeline
     .Start(new CreateUserContext
     {
-        Email = "user@example.com",
-        Name = "John Doe"
+        Email = "usuario@exemplo.com",
+        Name = "João Silva"
     })
     .WithTelemetry("CreateUserFlow")
-    // Process command
+    // Processar command
     .Process<CreateUserContext, CreateUserCommand, Guid>(
         ctx => new CreateUserCommand
         {
@@ -191,13 +191,13 @@ var result = await Pipeline
             Name = ctx.Name
         },
         (ctx, userId) => ctx.UserId = userId)
-    // Query with cache
+    // Query com cache
     .Query<CreateUserContext, GetUserQuery, UserDto>(
         ctx => new GetUserQuery { UserId = ctx.UserId!.Value },
         (ctx, user) => ctx.User = user,
         cacheKey: $"user:{ctx.UserId}",
         ttl: TimeSpan.FromMinutes(10))
-    // Publish event
+    // Publicar evento
     .Publish<CreateUserContext, UserCreatedEvent>(ctx => new UserCreatedEvent
     {
         UserId = ctx.UserId!.Value,
@@ -207,11 +207,11 @@ var result = await Pipeline
 
 if (result.IsSuccess)
 {
-    Console.WriteLine($"User created: {result.Value.User?.Name}");
+    Console.WriteLine($"Usuário criado: {result.Value.User?.Name}");
 }
 ```
 
-# 🔧 Configuration
+# 🔧 Configuração
 
 ## InMemory Broker
 
@@ -223,7 +223,7 @@ services.AddFlowActions(config =>
 });
 ```
 
-## Kafka
+## Kafka 
 
 ```csharp
 services.AddFlowActions(config =>
@@ -232,8 +232,8 @@ services.AddFlowActions(config =>
     config.BrokerConfigurationFactory = () => new KafkaOptions
     {
         BootstrapServers = "localhost:9092",
-        GroupId = "my-service",
-        ClientId = "my-service-instance-1",
+        GroupId = "meu-servico",
+        ClientId = "meu-servico-instancia-1",
         EnableAutoCommit = false,
         SessionTimeoutMs = 30000,
         AutoOffsetReset = "earliest"
@@ -256,7 +256,7 @@ services.AddFlowActions(config =>
         UserName = "guest",
         Password = "guest",
         VirtualHost = "/",
-        ExchangeName = "my-service-events",
+        ExchangeName = "eventos-meu-servico",
         ExchangeType = "topic"
     };
     config.CachingEnabled = true;
@@ -270,59 +270,59 @@ services.AddFlowActions(config =>
 });
 ```
 
-# 📚 Pipeline Extensions
+# 📚 Extensões de Pipeline
 
 ## Process (Commands)
 
 ```csharp
-// Command without response
+// Command sem resposta
 .Process<TContext, TCommand>(
     ctx => new TCommand { /* ... */ })
 
-// Command with response
+// Command com resposta
 .Process<TContext, TCommand, TResponse>(
     ctx => new TCommand { /* ... */ },
     (ctx, response) => ctx.Result = response)
 ```
 
-## Query (Read Operations)
+## Query (Operações de Leitura)
 
 ```csharp
-// Query with optional cache configuration
+// Query com configuração de cache opcional
 .Query<TContext, TQuery, TResponse>(
     ctx => new TQuery { /* ... */ },
     (ctx, result) => ctx.Data = result,
     options =>
     {
         options.Enabled = true;
-        options.CacheKey = $"key:{ctx.Id}";
+        options.CacheKey = $"chave:{ctx.Id}";
         options.Ttl = TimeSpan.FromMinutes(10);
         options.SlidingExpiration = true;
     })
 
-// Query with simple cache key
+// Query com chave de cache simples
 .Query<TContext, TQuery, TResponse>(
     ctx => new TQuery { /* ... */ },
     (ctx, result) => ctx.Data = result,
-    cacheKey: "my-cache-key",
+    cacheKey: "minha-chave-cache",
     ttl: TimeSpan.FromMinutes(10),
     slidingExpiration: false)
 ```
 
-## Publish (Events)
+## Publish (Eventos)
 
 ```csharp
-// Publish event from factory
+// Publicar evento a partir de factory
 .Publish<TContext, TEvent>(
     ctx => new TEvent { /* ... */ })
 
-// Publish context as event (when TContext implements IEvent)
+// Publicar contexto como evento (quando TContext implementa IEvent)
 .Publish<TEvent>()
 ```
 
-# 🔍 Direct Dispatcher Usage
+# 🔍 Uso Direto do Dispatcher
 
-For scenarios where you don't need the full pipeline:
+Para cenários onde você não precisa do pipeline completo:
 
 ```csharp
 public class UserService
@@ -336,14 +336,14 @@ public class UserService
 
     public async Task<Guid> CreateUserAsync(string email, string name)
     {
-        // Execute command
+        // Executar command
         var command = new CreateUserCommand { Email = email, Name = name };
         var result = await _dispatcher.DispatchCommandAsync<CreateUserCommand, Guid>(command);
 
         if (result.IsFailure)
             throw new InvalidOperationException(result.ErrorMessage);
 
-        // Publish event
+        // Publicar evento
         await _dispatcher.PublishEventAsync(new UserCreatedEvent
         {
             UserId = result.Data,
@@ -355,7 +355,7 @@ public class UserService
 
     public async Task<UserDto?> GetUserAsync(Guid userId)
     {
-        // Execute query with caching
+        // Executar query com cache
         var query = new GetUserQuery { UserId = userId };
         var cacheOptions = new CacheOptions
         {
@@ -373,9 +373,9 @@ public class UserService
 }
 ```
 
-# 🛡️ Resilience Features
+# 🛡️ Recursos de Resiliência
 
-## Retry Policy
+## Política de Retry
 
 ```csharp
 using Myth.Flow.Resilience;
@@ -388,7 +388,7 @@ var retryPolicy = new RetryPolicy(
 
 var result = await retryPolicy.ExecuteAsync(async () =>
 {
-    return await externalService.CallAsync();
+    return await servicoExterno.CallAsync();
 });
 ```
 
@@ -402,13 +402,13 @@ var circuitBreaker = new CircuitBreakerPolicy(
 
 var result = await circuitBreaker.ExecuteAsync(async () =>
 {
-    return await unreliableService.CallAsync();
+    return await servicoNaoConfiavel.CallAsync();
 });
 
-// Check circuit state
+// Verificar estado do circuit
 if (circuitBreaker.State == CircuitState.Open)
 {
-    // Circuit is open, service calls are blocked
+    // Circuit está aberto, chamadas ao serviço estão bloqueadas
 }
 ```
 
@@ -425,7 +425,7 @@ services.AddFlowActions(config =>
     };
 });
 
-// Access dead letter queue
+// Acessar dead letter queue
 public class MonitoringService
 {
     private readonly DeadLetterQueue _dlq;
@@ -444,15 +444,15 @@ public class MonitoringService
     {
         if (_dlq.TryDequeue(out var message))
         {
-            // Retry processing the failed message
+            // Tentar processar novamente a mensagem que falhou
         }
     }
 }
 ```
 
-# 📊 Telemetry & Observability
+# 📊 Telemetria & Observabilidade
 
-## OpenTelemetry Integration
+## Integração OpenTelemetry
 
 ```csharp
 services.AddFlowActions(config =>
@@ -462,33 +462,33 @@ services.AddFlowActions(config =>
     config.AssembliesToScan.Add(typeof(Program).Assembly);
 });
 
-// Activities are automatically created with the following names:
-// - Command.{CommandName}
-// - Query.{QueryName}
-// - Event.{EventName}
-// - EventBus.Publish.{EventName}
-// - EventHandler.{HandlerName}
+// Activities são criadas automaticamente com os seguintes nomes:
+// - Command.{NomeDoCommand}
+// - Query.{NomeDaQuery}
+// - Event.{NomeDoEvento}
+// - EventBus.Publish.{NomeDoEvento}
+// - EventHandler.{NomeDoHandler}
 ```
 
-## Activity Tags
+## Tags de Activity
 
-Each activity includes relevant tags:
-- `pipeline.input.type`: The context type name
-- `cache.hit`: Whether the query result was served from cache
-- Additional custom tags from metadata
+Cada activity inclui tags relevantes:
+- `pipeline.input.type`: Nome do tipo de contexto
+- `cache.hit`: Se o resultado da query foi servido do cache
+- Tags customizadas adicionais dos metadados
 
-# 🎯 Advanced Patterns
+# 🎯 Padrões Avançados
 
-## Multiple Event Handlers
+## Múltiplos Event Handlers
 
-All handlers for an event execute in parallel:
+Todos os handlers de um evento executam em paralelo:
 
 ```csharp
 public class UserCreatedEmailHandler : IEventHandler<UserCreatedEvent>
 {
     public async Task HandleAsync(UserCreatedEvent @event, CancellationToken ct)
     {
-        // Send welcome email
+        // Enviar email de boas-vindas
     }
 }
 
@@ -496,7 +496,7 @@ public class UserCreatedAnalyticsHandler : IEventHandler<UserCreatedEvent>
 {
     public async Task HandleAsync(UserCreatedEvent @event, CancellationToken ct)
     {
-        // Track analytics
+        // Rastrear analytics
     }
 }
 
@@ -504,14 +504,14 @@ public class UserCreatedNotificationHandler : IEventHandler<UserCreatedEvent>
 {
     public async Task HandleAsync(UserCreatedEvent @event, CancellationToken ct)
     {
-        // Send push notification
+        // Enviar notificação push
     }
 }
 
-// All three handlers execute concurrently when event is published
+// Todos os três handlers executam concorrentemente quando o evento é publicado
 ```
 
-## Conditional Pipeline Steps
+## Steps Condicionais no Pipeline
 
 ```csharp
 var result = await Pipeline.Start(context)
@@ -526,7 +526,7 @@ var result = await Pipeline.Start(context)
     .ExecuteAsync();
 ```
 
-## Context Transformation
+## Transformação de Contexto
 
 ```csharp
 var result = await Pipeline.Start(orderContext)
@@ -544,7 +544,7 @@ var result = await Pipeline.Start(orderContext)
     .ExecuteAsync();
 ```
 
-# 🧪 Testing
+# 🧪 Testes
 
 ```csharp
 using Xunit;
@@ -553,7 +553,7 @@ using Microsoft.Extensions.DependencyInjection;
 public class UserCommandHandlerTests
 {
     [Fact]
-    public async Task CreateUser_WithValidData_ShouldSucceed()
+    public async Task CreateUser_ComDadosValidos_DeveSerBemSucedido()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -573,8 +573,8 @@ public class UserCommandHandlerTests
         // Act
         var command = new CreateUserCommand
         {
-            Email = "test@example.com",
-            Name = "Test User"
+            Email = "teste@exemplo.com",
+            Name = "Usuário Teste"
         };
 
         var result = await dispatcher.DispatchCommandAsync<CreateUserCommand, Guid>(command);
@@ -585,7 +585,7 @@ public class UserCommandHandlerTests
     }
 
     [Fact]
-    public async Task GetUser_WithCaching_ShouldReturnFromCache()
+    public async Task GetUser_ComCache_DeveRetornarDoCache()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -620,12 +620,12 @@ public class UserCommandHandlerTests
         Assert.True(result1.IsSuccess);
         Assert.False(result1.FromCache);
         Assert.True(result2.IsSuccess);
-        Assert.True(result2.FromCache); // Second call should be from cache
+        Assert.True(result2.FromCache); // Segunda chamada deve vir do cache
     }
 }
 ```
 
-# 🏗️ Architecture
+# 🏗️ Arquitetura
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -642,7 +642,7 @@ public class UserCommandHandlerTests
                             ▼
 ┌─────────────────────┬────────────────────┬───────────────────┐
 │  Command Handlers   │  Query Handlers    │    IEventBus      │
-│  (Write Operations) │  (Read + Cache)    │  (Pub/Sub)        │
+│  (Operações Write)  │  (Read + Cache)    │  (Pub/Sub)        │
 └─────────────────────┴────────────────────┴───────────────────┘
                                                ▼
                             ┌──────────────────────────────────┐
@@ -654,41 +654,41 @@ public class UserCommandHandlerTests
                             ┌──────────────────────────────────┐
                             │      Event Handlers              │
                             ├──────────────────────────────────┤
-                            │ Parallel execution per event     │
+                            │ Execução paralela por evento     │
                             └──────────────────────────────────┘
 ```
 
-# 🎯 Best Practices
+# 🎯 Boas Práticas
 
-1. **Commands**: Use for state-changing operations, imperative naming (CreateUser, UpdateOrder)
-2. **Queries**: Use for read operations, leverage caching, prefix with Get/Find
-3. **Events**: Use for decoupled communication, past tense naming (UserCreated, OrderProcessed)
-4. **Handlers**: Keep focused and testable, single responsibility principle
-5. **Pipeline**: Chain operations logically, use .When() for conditional flows
-6. **Testing**: Use InMemory broker for fast, isolated unit tests
-7. **Production**: Use Kafka/RabbitMQ with retry policies and dead letter queues
-8. **Caching**: Cache expensive queries, use appropriate TTL values
-9. **Telemetry**: Enable for production to track command/query/event flows
-10. **Result Pattern**: Always check IsSuccess before accessing Data
+1. **Commands**: Use para operações que alteram estado, nomenclatura imperativa (CreateUser, UpdateOrder)
+2. **Queries**: Use para operações de leitura, aproveite o cache, prefixe com Get/Find
+3. **Events**: Use para comunicação desacoplada, nomenclatura no passado (UserCreated, OrderProcessed)
+4. **Handlers**: Mantenha focados e testáveis, princípio de responsabilidade única
+5. **Pipeline**: Encadeie operações logicamente, use .When() para fluxos condicionais
+6. **Testes**: Use broker InMemory para testes unitários rápidos e isolados
+7. **Produção**: Use Kafka/RabbitMQ com políticas de retry e dead letter queues
+8. **Cache**: Cache queries caras, use valores de TTL apropriados
+9. **Telemetria**: Habilite para produção para rastrear fluxos de command/query/event
+10. **Padrão Result**: Sempre verifique IsSuccess antes de acessar Data
 
-# 📝 Naming Conventions
+# 📝 Convenções de Nomenclatura
 
-- **Commands**: `{Verb}{Noun}Command` (CreateUserCommand, UpdateOrderCommand)
-- **Queries**: `{Get|Find}{Noun}Query` (GetUserQuery, FindOrdersQuery)
-- **Events**: `{Noun}{PastTenseVerb}Event` (UserCreatedEvent, OrderProcessedEvent)
+- **Commands**: `{Verbo}{Substantivo}Command` (CreateUserCommand, UpdateOrderCommand)
+- **Queries**: `{Get|Find}{Substantivo}Query` (GetUserQuery, FindOrdersQuery)
+- **Events**: `{Substantivo}{VerboPassado}Event` (UserCreatedEvent, OrderProcessedEvent)
 - **Handlers**: `{Request}Handler` (CreateUserCommandHandler, UserCreatedEventHandler)
-- **Results**: Use CommandResult, QueryResult with proper success/failure handling
+- **Results**: Use CommandResult, QueryResult com tratamento adequado de sucesso/falha
 
-# 🤝 Contributing
+# 🤝 Contribuindo
 
-Contributions are welcome! Please follow the existing code style and add tests for new features.
+Contribuições são bem-vindas! Por favor, siga o estilo de código existente e adicione testes para novas funcionalidades.
 
-# 📄 License
+# 📄 Licença
 
-This project is licensed under the Apache License 2.0 - see the LICENSE file for details.
+Este projeto está licenciado sob a Licença Apache 2.0 - veja o arquivo LICENSE para detalhes.
 
-# 🔗 Related Projects
+# 🔗 Projetos Relacionados
 
-- [Myth.Flow](../Myth.Flow/README.md) - Core pipeline orchestration framework
-- [Myth.Commons](../Myth.Commons/README.md) - Common utilities and extensions
-- [Myth.Repository](../Myth.Repository/README.md) - Repository pattern implementation
+- [Myth.Flow](../Myth.Flow/README.md) - Framework principal de orquestração de pipelines
+- [Myth.Commons](../Myth.Commons/README.md) - Utilitários e extensões comuns
+- [Myth.Repository](../Myth.Repository/README.md) - Implementação do padrão Repository
