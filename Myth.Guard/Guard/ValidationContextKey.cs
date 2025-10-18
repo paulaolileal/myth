@@ -2,7 +2,7 @@
 	/// <summary>
 	/// Represents a validation context key
 	/// </summary>
-	public readonly record struct ValidationContextKey( string Key ) {
+	public readonly record struct  ValidationContextKey( string Key ) {
 		public static readonly ValidationContextKey Default = new( "Default" );
 		public static readonly ValidationContextKey Create = new( "Create" );
 		public static readonly ValidationContextKey Update = new( "Update" );
@@ -16,5 +16,7 @@
 		public static ValidationContextKey Custom( string key ) => new( key );
 
 		public override string ToString( ) => Key;
+
+		public static implicit operator ValidationContextKey(string key) => new( key );
 	}
 }

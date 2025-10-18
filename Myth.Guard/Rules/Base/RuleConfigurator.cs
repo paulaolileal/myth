@@ -1,4 +1,5 @@
-﻿using Myth.Interfaces.Rules;
+﻿using Myth.Interfaces;
+using Myth.Interfaces.Rules;
 using Myth.Rules.Generics;
 
 namespace Myth.Rules.Base {
@@ -6,7 +7,7 @@ namespace Myth.Rules.Base {
 	/// <summary>
 	/// Generic rule configurator
 	/// </summary>
-	public class RuleConfigurator<T> : IRuleConfigurator<T> {
+	public class RuleConfigurator<T> : IRuleConfigurator<T>, IRuleBuilder<T> {
 		protected readonly FieldRuleBuilder<T> Builder;
 
 		public RuleConfigurator( FieldRuleBuilder<T> builder ) {
@@ -51,6 +52,13 @@ namespace Myth.Rules.Base {
 		public FieldRuleBuilder<T> NotDefault( ) {
 			Builder.AddRule( new NotDefaultRule<T>( ) );
 			return Builder;
+		}
+
+		/// <summary>
+		/// Gets the configured validation rules
+		/// </summary>
+		public IReadOnlyList<IValidationRule<T>> GetRules( ) {
+			return Builder.GetRules( );
 		}
 	}
 }

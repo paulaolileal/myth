@@ -15,6 +15,13 @@ namespace Myth.Models {
 			? Errors.Max( e => e.StatusCode )
 			: HttpStatusCode.OK;
 
+		public ValidationResult( ) {
+		}
+
+		public ValidationResult( List<ValidationError> errors ) {
+			_errors = errors;
+		}
+
 		internal void AddError( ValidationError error ) {
 			_errors.Add( error );
 		}

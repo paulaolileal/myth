@@ -54,7 +54,8 @@ namespace Myth.Validation {
 						value: GetFieldValue( entity, fieldValidation.FieldName ),
 						fieldName: fieldValidation.FieldName,
 						serviceProvider: _serviceProvider,
-						cancellationToken: cancellationToken
+						cancellationToken: cancellationToken,
+						entity: entity
 					);
 
 					var error = await rule.ValidateAsync( ruleContext );

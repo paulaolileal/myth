@@ -7,6 +7,6 @@ namespace Myth.Builder {
 	/// </summary>
 	internal sealed class FieldValidation {
 		public string FieldName { get; init; } = string.Empty;
-		public List<IValidationRule<object>> Rules { get; init; } = new( );
+		public List<IValidationRule> Rules { get; init; } = new( );
 	}
 }
