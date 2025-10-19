@@ -6,8 +6,6 @@ namespace Myth.Models {
 	/// Represents a validation error
 	/// </summary>
 	public sealed class ValidationError {
-
-
 		public string Field { get; init; } = string.Empty;
 		public string Message { get; init; } = string.Empty;
 		public string Code { get; init; } = "VIOLATION";
@@ -22,5 +20,7 @@ namespace Myth.Models {
 			Code = code;
 			StatusCode = statusCode;
 		}
+
+		public override string ToString( ) => $"Error on field `{Field}` with `{Code}: {Message}";
 	}
 }

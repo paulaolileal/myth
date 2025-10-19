@@ -25,6 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
     <ProjectReference Include="..\Myth.Guard\Myth.Guard.csproj" />
   </ItemGroup>
 

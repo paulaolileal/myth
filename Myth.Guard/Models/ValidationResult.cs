@@ -19,6 +19,7 @@ namespace Myth.Models {
 		}
 
 		public ValidationResult( List<ValidationError> errors ) {
+			ArgumentNullException.ThrowIfNull( errors, nameof( errors ) );
 			_errors = errors;
 		}
 

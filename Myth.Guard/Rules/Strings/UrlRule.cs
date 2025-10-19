@@ -10,7 +10,16 @@ namespace Myth.Rules.Strings {
 				return Task.FromResult( false );
 
 			return Task.FromResult( Uri.TryCreate( context.Value, UriKind.Absolute, out var uri ) &&
-								   ( uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps ) );
+									new List<string> {
+										Uri.UriSchemeFtps,
+										Uri.UriSchemeFtp,
+										Uri.UriSchemeHttp,
+										Uri.UriSchemeHttps,
+										Uri.UriSchemeMailto,
+										Uri.UriSchemeNews,
+										Uri.UriSchemeNntp,
+										Uri.UriSchemeTelnet
+									}.Contains( uri.Scheme ) );
 		}
 
 		protected override string GetDefaultMessage( string value ) {

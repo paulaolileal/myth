@@ -1,3 +1,6 @@
+using Myth.Guard.Rules.Nullables.Booleans;
+using Myth.Guard.Rules.Nullables.DateTimes;
+using Myth.Guard.Rules.Nullables.Numerics;
 using Myth.Rules.Base;
 using Myth.Rules.Boooleans;
 using Myth.Rules.Collections;
@@ -271,6 +274,89 @@ namespace Myth.Extensions {
 		}
 
 		#endregion Generic Extensions (already implemented in FluentRuleBuilder base class, but adding for completeness)
+
+		#region Nullable Extensions
+
+		// DateTime? Extensions
+		public static FluentRuleBuilder<DateTime?> Future( this FluentRuleBuilder<DateTime?> builder ) {
+			return builder.AddRule( new NullableFutureRule( ) );
+		}
+
+		public static FluentRuleBuilder<DateTime?> Past( this FluentRuleBuilder<DateTime?> builder ) {
+			return builder.AddRule( new NullablePastRule( ) );
+		}
+
+		public static FluentRuleBuilder<DateTime?> Today( this FluentRuleBuilder<DateTime?> builder ) {
+			return builder.AddRule( new NullableTodayRule( ) );
+		}
+
+		public static FluentRuleBuilder<DateTime?> After( this FluentRuleBuilder<DateTime?> builder, DateTime dateTime ) {
+			return builder.AddRule( new NullableAfterRule( dateTime ) );
+		}
+
+		public static FluentRuleBuilder<DateTime?> Before( this FluentRuleBuilder<DateTime?> builder, DateTime dateTime ) {
+			return builder.AddRule( new NullableBeforeRule( dateTime ) );
+		}
+
+		public static FluentRuleBuilder<DateTime?> Between( this FluentRuleBuilder<DateTime?> builder, DateTime start, DateTime end ) {
+			return builder.AddRule( new NullableBetweenRule( start, end ) );
+		}
+
+		public static FluentRuleBuilder<DateTime?> AfterOrEquals( this FluentRuleBuilder<DateTime?> builder, DateTime dateTime ) {
+			return builder.AddRule( new NullableAfterOrEqualsRule( dateTime ) );
+		}
+
+		public static FluentRuleBuilder<DateTime?> BeforeOrEquals( this FluentRuleBuilder<DateTime?> builder, DateTime dateTime ) {
+			return builder.AddRule( new NullableBeforeOrEqualsRule( dateTime ) );
+		}
+
+		// Numeric? Extensions
+		public static FluentRuleBuilder<T?> GreaterThan<T>( this FluentRuleBuilder<T?> builder, T value ) where T : struct, IComparable<T> {
+			return builder.AddRule( new NullableGreaterThanRule<T>( value ) );
+		}
+
+		public static FluentRuleBuilder<T?> GreaterOrEquals<T>( this FluentRuleBuilder<T?> builder, T value ) where T : struct, IComparable<T> {
+			return builder.AddRule( new NullableGreaterOrEqualsRule<T>( value ) );
+		}
+
+		public static FluentRuleBuilder<T?> LessThan<T>( this FluentRuleBuilder<T?> builder, T value ) where T : struct, IComparable<T> {
+			return builder.AddRule( new NullableLessThanRule<T>( value ) );
+		}
+
+		public static FluentRuleBuilder<T?> LessOrEquals<T>( this FluentRuleBuilder<T?> builder, T value ) where T : struct, IComparable<T> {
+			return builder.AddRule( new NullableLessOrEqualsRule<T>( value ) );
+		}
+
+		public static FluentRuleBuilder<T?> Between<T>( this FluentRuleBuilder<T?> builder, T min, T max ) where T : struct, IComparable<T> {
+			return builder.AddRule( new NullableBetweenRule<T>( min, max ) );
+		}
+
+		public static FluentRuleBuilder<T?> Positive<T>( this FluentRuleBuilder<T?> builder ) where T : struct, IComparable<T> {
+			return builder.AddRule( new NullablePositiveRule<T>( ) );
+		}
+
+		public static FluentRuleBuilder<T?> Negative<T>( this FluentRuleBuilder<T?> builder ) where T : struct, IComparable<T> {
+			return builder.AddRule( new NullableNegativeRule<T>( ) );
+		}
+
+		public static FluentRuleBuilder<T?> Zero<T>( this FluentRuleBuilder<T?> builder ) where T : struct, IComparable<T> {
+			return builder.AddRule( new NullableZeroRule<T>( ) );
+		}
+
+		public static FluentRuleBuilder<T?> NotZero<T>( this FluentRuleBuilder<T?> builder ) where T : struct, IComparable<T> {
+			return builder.AddRule( new NullableNotZeroRule<T>( ) );
+		}
+
+		// Boolean? Extensions
+		public static FluentRuleBuilder<bool?> IsTrue( this FluentRuleBuilder<bool?> builder ) {
+			return builder.AddRule( new NullableIsTrueRule( ) );
+		}
+
+		public static FluentRuleBuilder<bool?> IsFalse( this FluentRuleBuilder<bool?> builder ) {
+			return builder.AddRule( new NullableIsFalseRule( ) );
+		}
+
+		#endregion Nullable Extensions
 
 		#region Conditional Extensions (When/Unless) - Now functional!
 

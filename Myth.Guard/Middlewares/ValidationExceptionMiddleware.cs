@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 using Myth.Exceptions;
 using Myth.Models;
 using System.Text.Json;

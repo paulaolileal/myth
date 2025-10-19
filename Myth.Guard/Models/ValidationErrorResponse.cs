@@ -5,6 +5,6 @@
 	/// </summary>
 	internal sealed class ValidationErrorResponse {
 		public string Code { get; set; } = string.Empty;
-		public List<ErrorDetail> Errors { get; set; } = new( );
+		public List<ErrorDetail> Errors { get; set; } = [ ];
 	}
 }

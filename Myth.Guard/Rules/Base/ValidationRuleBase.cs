@@ -27,7 +27,7 @@ namespace Myth.Rules.Base {
 		async Task<ValidationError?> IValidationRule.ValidateAsync( RuleContext<object> context ) {
 			// Create typed context from object context
 			var typedContext = new RuleContext<T>(
-				(T)context.Value,
+				( T )context.Value,
 				context.FieldName,
 				context.ServiceProvider,
 				context.CancellationToken,

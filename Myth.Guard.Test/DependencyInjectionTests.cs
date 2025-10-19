@@ -20,6 +20,7 @@ namespace Myth.Guard.Test;
 /// Tests for dependency injection setup and middleware integration
 /// </summary>
 public class DependencyInjectionTests {
+
 	[Fact]
 	public void AddGuard_ShouldRegisterValidator( ) {
 		// Arrange
@@ -71,7 +72,7 @@ public class DependencyInjectionTests {
 
 		// Assert
 		var serviceProvider = services.BuildServiceProvider( );
-		var validator = serviceProvider.GetService<IValidator>( );
+		var validator = serviceProvider.GetServices<IValidator>( ).First( );
 
 		validator.Should( ).BeOfType<CustomValidator>( ); // Should use the first registration
 	}
@@ -219,13 +220,13 @@ public class DependencyInjectionTests {
 				webBuilder
 					.UseTestServer( )
 					.ConfigureServices( services => {
+						services.AddRouting( );
 						services.AddGuard( );
 					} )
 					.Configure( app => {
 						app.UseGuard( );
-						app.UseRouting();
-						app.UseEndpoints(endpoints =>
-						{
+						app.UseRouting( );
+						app.UseEndpoints( endpoints => {
 							endpoints.MapPost( "/validate", async ( HttpContext context ) => {
 								var validator = context.RequestServices.GetRequiredService<IValidator>( );
 
@@ -235,9 +236,9 @@ public class DependencyInjectionTests {
 								// This should throw ValidationException
 								await validator.ValidateAsync( invalidEntity );
 
-								await context.Response.WriteAsync("Should not reach here");
+								await context.Response.WriteAsync( "Should not reach here" );
 							} );
-						});
+						} );
 					} );
 			} )
 			.StartAsync( );
@@ -262,6 +263,7 @@ public class DependencyInjectionTests {
 
 	// Helper class for testing custom validator registration
 	private class CustomValidator : IValidator {
+
 		public Task ValidateAsync<T>( T entity, ValidationContextKey? context = null, CancellationToken cancellationToken = default ) where T : class {
 			return Task.CompletedTask;
 		}

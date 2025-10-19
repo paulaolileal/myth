@@ -21,6 +21,7 @@ namespace Myth.Validation {
 		/// </summary>
 		public async Task ValidateAsync<T>( T entity, ValidationContextKey? context = null, CancellationToken cancellationToken = default )
 			where T : class {
+			ArgumentNullException.ThrowIfNull( entity );
 			var result = await ValidateAndReturnAsync( entity, context, cancellationToken );
 
 			if ( !result.IsValid ) {
@@ -49,6 +50,8 @@ namespace Myth.Validation {
 				foreach ( var rule in fieldValidation.Rules ) {
 					if ( shouldStop )
 						break;
+
+					cancellationToken.ThrowIfCancellationRequested( );
 
 					var ruleContext = new RuleContext<object>(
 						value: GetFieldValue( entity, fieldValidation.FieldName ),

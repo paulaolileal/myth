@@ -1,14 +1,6 @@
 ﻿using Myth.Guard;
 using Myth.Interfaces;
 using Myth.Rules.Base;
-using Myth.Rules.Boooleans;
-using Myth.Rules.Collections;
-using Myth.Rules.Dates;
-using Myth.Rules.DateTimes;
-using Myth.Rules.Enums;
-using Myth.Rules.Numerics;
-using Myth.Rules.Strings;
-using Myth.Extensions;
 
 namespace Myth.Builder {
 
@@ -52,8 +44,6 @@ namespace Myth.Builder {
 			}
 		}
 
-
-
 		internal List<FieldValidation> GetRules( ValidationContextKey? context ) {
 			var rules = new List<FieldValidation>( _globalRules );
 
@@ -73,6 +63,5 @@ namespace Myth.Builder {
 			var fieldBuilder = new FieldRuleBuilder<TValue>( fieldName );
 			return new FluentRuleBuilder<TValue>( fieldBuilder );
 		}
-
 	}
 }

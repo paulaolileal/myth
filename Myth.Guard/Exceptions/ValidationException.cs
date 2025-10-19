@@ -9,7 +9,8 @@ namespace Myth.Exceptions {
 		public ValidationResult ValidationResult { get; }
 
 		public ValidationException( ValidationResult result )
-			: base( "Validation failed" ) {
+			: base( "Validation failed" + ( result is not null && !result.IsValid ? $" {result.Errors.Count} error(s)" : string.Empty ) ) {
+			ArgumentNullException.ThrowIfNull( result, nameof( ValidationResult ) );
 			ValidationResult = result;
 		}
 	}
