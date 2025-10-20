@@ -12,7 +12,7 @@
 		<PackageId>Myth.Flow</PackageId>
 		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>
-		<Description>Construção de pipelines fluentes, fortemente tipados e leves para .NET. Sem boilerplate, sem handlers verbosos</Description>
+		<Description>A fluent .NET library for pipeline orchestration with Result pattern</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Flow</RepositoryUrl>

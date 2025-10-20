@@ -15,6 +15,7 @@ The solution follows a feature-based folder structure with solution folders:
 - **Specification**: Query specification pattern (Myth.Specification)
 - **Rest**: HTTP communication (Myth.Rest)
 - **Morph**: Object transformation and mapping (Myth.Morph)
+- **Guard**: Fluent validation and data integrity (Myth.Guard)
 - **Flow**: Pipeline orchestration with two key libraries:
   - Myth.Flow: Fluent pipelines with Result pattern
   - Myth.Flow.Actions: CQRS/Event-driven architecture with dispatcher, event bus, and message brokers
@@ -62,6 +63,15 @@ Test projects use:
 - **coverlet.collector** for code coverage
 - Target framework: .NET 8.0
 
+## Coding instructions 
+- Do not create comments not useful 
+- Name variables with significant names 
+- Avoid repeating code 
+- Write code with good spacing and readability 
+- Functions must have only one responsibility
+- Always follow SOLID and CLEAN CODE patterns 
+- Every new method should have a summary XML comment explaining its purpose and use tags for parameters, exceptions and return values
+
 ## Architecture Patterns
 
 ### Myth.Flow - Pipeline Pattern
@@ -106,6 +116,21 @@ Test projects use:
 - Implement `IMorphable<TDestination>` for custom mappings
 - Use `Schema<T>` for property binding: `.Bind()`, `.BindAsync()`, `.Ignore()`
 - Configuration: `services.AddMorph(settings => { ... })`
+
+### Myth.Guard - Fluent Validation
+- **Declarative, context-aware validation** for entities and DTOs
+- **Fluent API** with chainable validation rules for all common types
+- **Context-based validation**: Different rules per operation (Create, Update, Delete, etc.)
+- **Type-specific rules**: String, numeric, collection, DateTime, boolean, and enum validation
+- **Async validation** with service provider access for database/API checks
+- **ASP.NET Core middleware** for automatic validation exception handling
+- **Structured error responses** with field-level details and HTTP status codes
+- Entities implement `IValidatable<T>` with `Validate(ValidationBuilder<T> builder, ValidationContextKey? context)` method
+- Use `IValidator.ValidateAsync()` to validate and throw, or `ValidateAndReturnAsync()` for result checking
+- Configuration: `services.AddGuard()` and `app.UseGuard()` for middleware
+- Pre-defined contexts: `ValidationContextKey.Create`, `.Update`, `.Delete`, `.Search`, etc.
+- Custom rules: `.Respect()` for sync predicates, `.RespectAsync()` for async with service access
+- Rule modifiers: `.WithMessage()`, `.WithCode()`, `.WithStatusCode()`, `.When()`, `.Unless()`, `.SetStopOnFailure()`
 
 ### Myth.Repository
 - Generic repository interfaces: `IRepository<TEntity>`
@@ -234,6 +259,56 @@ public class UserDto : IMorphable<User> {
 // Transform
 var user = userDto.To<User>(serviceProvider);
 var users = await userDtos.ToAsync<User>(serviceProvider);
+```
+
+### Working with Myth.Guard Validation
+```csharp
+// Implement IValidatable on your entity/DTO
+public class CreateUserDto : IValidatable<CreateUserDto> {
+    public string Name { get; set; }
+    public string Email { get; set; }
+    public int Age { get; set; }
+    public List<string> Tags { get; set; }
+
+    public void Validate(ValidationBuilder<CreateUserDto> builder, ValidationContextKey? context = null) {
+        // Global rules (apply to all contexts)
+        builder.For(Name, x => x.NotEmpty().MinimumLength(3).MaximumLength(100));
+        builder.For(Email, x => x.NotEmpty().Email());
+        builder.For(Age, x => x.GreaterThan(0).LessThan(150));
+        builder.For(Tags, x => x.NotEmpty().CountBetween(1, 10));
+
+        // Context-specific rules
+        builder.InContext(ValidationContextKey.Create, b => {
+            // Additional validation only for Create operations
+            b.For(Email, x => x
+                .RespectAsync(async (email, ct, sp) => {
+                    var userService = sp.GetRequiredService<IUserService>();
+                    return await userService.IsEmailAvailableAsync(email, ct);
+                })
+                .WithMessage("Email already exists")
+                .WithCode("EMAIL_EXISTS"));
+        });
+    }
+}
+
+// Use in controller
+[HttpPost]
+public async Task<IActionResult> CreateUser(CreateUserDto dto) {
+    // Validate and throw ValidationException on failure
+    await _validator.ValidateAsync(dto, ValidationContextKey.Create);
+
+    // Or validate and check result without throwing
+    var result = await _validator.ValidateAndReturnAsync(dto, ValidationContextKey.Create);
+    if (!result.IsValid) {
+        return BadRequest(result.Errors);
+    }
+
+    // Process user creation...
+}
+
+// Configuration in Program.cs
+services.AddGuard();  // Register validation services
+app.UseGuard();       // Add middleware for exception handling
 ```
 
 ## Platform Targets
