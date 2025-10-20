@@ -192,6 +192,10 @@ Version is extracted from git tags (format: `v{version}`).
 - Always use one empty line before the return
 - Always keep the open bracket in the same line of the method or class declaration
 
+## Docs
+- Always keep this CLAUDE.md updated with new workflows and patterns
+- Always create or update README.md and README.pt-br.md files for new libraries with documentation and usage examples
+
 ## Common Development Workflows
 
 ### Adding New Library
