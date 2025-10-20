@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Myth.DependencyInjection;
+using Myth.Extensions;
 using Myth.Interfaces;
 using Myth.Models;
 using Myth.Validation;

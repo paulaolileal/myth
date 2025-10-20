@@ -2,7 +2,7 @@
 using Myth.Interfaces;
 using Myth.Validation;
 
-namespace Myth.DependencyInjection {
+namespace Myth.Extensions {
 
 	/// <summary>
 	/// Extension methods for service collection
@@ -14,6 +14,7 @@ namespace Myth.DependencyInjection {
 		/// </summary>
 		public static IServiceCollection AddGuard( this IServiceCollection services ) {
 			services.AddScoped<IValidator, Validator>( );
+
 			return services;
 		}
 	}
