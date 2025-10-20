@@ -33,15 +33,15 @@ namespace Myth.Flow.Actions.Test {
 			var provider = services.BuildServiceProvider( );
 			var dispatcher = provider.GetRequiredService<IDispatcher>( );
 
-			// Act - Process Command
+			// Act
 			var commandResult = await dispatcher.DispatchCommandAsync<TestCommand, string>(
 				new TestCommand { Value = "test-value" } );
 
-			// Act - Execute Query
+			// Act
 			var queryResult = await dispatcher.DispatchQueryAsync<TestQuery, string>(
 				new TestQuery { Key = "test-key" } );
 
-			// Act - Publish Event
+			// Act
 			await dispatcher.PublishEventAsync( new TestEvent { Message = "test-message" } );
 
 			// Assert
@@ -66,27 +66,19 @@ namespace Myth.Flow.Actions.Test {
 
 			var provider = services.BuildServiceProvider( );
 
-			var context = new WorkflowContext {
-				Input = "initial-value"
-			};
-
 			// Act
-			var result = await Myth.Flow.Pipeline
-				.Start( context, provider )
-				.Process<WorkflowContext, TestCommand, string>(
-					ctx => new TestCommand { Value = ctx.Input },
-					( ctx, response ) => ctx.CommandResult = response )
-				.Query<WorkflowContext, TestQuery, string>(
-					ctx => new TestQuery { Key = ctx.Input },
-					( ctx, response ) => ctx.QueryResult = response )
-				.Publish<WorkflowContext, TestEvent>(
-					ctx => new TestEvent { Message = ctx.Input } )
+			var result = await PipelineExtensions
+				.Start( new TestCommand { Value = "initial-value" }, provider )
+				.Process<TestCommand, string>( )                                            // Command → string response
+				.Transform( response => new TestQuery { Key = response } )              // Transform response → Query
+				.Query<TestQuery, string>( )                                                // Execute query
+				.Transform( queryResult => new TestEvent { Message = queryResult } )        // Transform → Event
+				.Publish<TestEvent>( )                                                  // Publish event
 				.ExecuteAsync( );
 
 			// Assert
 			result.IsSuccess.Should( ).BeTrue( );
-			result.Value!.CommandResult.Should( ).NotBeNull( );
-			result.Value!.QueryResult.Should( ).NotBeNull( );
+			result.Value.Should( ).NotBeNull( );
 		}
 
 		[Fact]
@@ -129,10 +121,29 @@ namespace Myth.Flow.Actions.Test {
 			secondResult.Data.Should( ).Be( firstResult.Data );
 		}
 
-		private class WorkflowContext {
-			public string Input { get; set; } = string.Empty;
-			public string? CommandResult { get; set; }
-			public string? QueryResult { get; set; }
+		[Fact]
+		public async Task PipelineWithCache_ShouldUseCacheConfiguration( ) {
+			// Arrange
+			var services = new ServiceCollection( );
+			services.AddLogging( );
+			services.AddFlow( );
+			services.AddFlowActions( options => {
+				options.UseInMemory( )
+					   .EnableCaching( cache => cache.ProviderType = CacheProviderType.Memory )
+					   .ScanAssemblies( typeof( TestCommandHandler ).Assembly );
+			} );
+
+			var provider = services.BuildServiceProvider( );
+
+			// Act
+			var result = await PipelineExtensions
+				.Start( new TestQuery { Key = "cached-pipeline-test" }, provider )
+				.Query<TestQuery, string>( x => x.UseCache( "pipeline-cache-key", TimeSpan.FromMinutes( 5 ) ) )
+				.ExecuteAsync( );
+
+			// Assert
+			result.IsSuccess.Should( ).BeTrue( );
+			result.Value.Should( ).NotBeNull( );
 		}
 	}
 }

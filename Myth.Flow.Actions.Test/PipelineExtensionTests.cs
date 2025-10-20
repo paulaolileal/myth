@@ -25,50 +25,36 @@ namespace Myth.Flow.Actions.Test {
 
 		[Fact]
 		public async Task Process_WithValidCommand_ShouldExecuteSuccessfully( ) {
-			// Arrange
-			var context = new TestContext { Value = "test" };
-
 			// Act
-			var result = await Myth.Flow.Pipeline
-				.Start( context, _serviceProvider )
-				.Process<TestContext, TestCommand, string>(
-					ctx => new TestCommand { Value = ctx.Value },
-					( ctx, response ) => ctx.Result = response )
+			var result = await PipelineExtensions
+				.Start( new TestCommand { Value = "test" }, _serviceProvider )
+				.Process<TestCommand, string>( )
 				.ExecuteAsync( );
 
 			// Assert
 			result.IsSuccess.Should( ).BeTrue( );
-			result.Value!.Result.Should( ).Be( "Handled: test" );
+			result.Value.Should( ).Be( "Handled: test" );
 		}
 
 		[Fact]
 		public async Task Query_WithValidQuery_ShouldReturnResult( ) {
-			// Arrange
-			var context = new TestContext { Value = "query-key" };
-
 			// Act
-			var result = await Myth.Flow.Pipeline
-				.Start( context, _serviceProvider )
-				.Query<TestContext, TestQuery, string>(
-					ctx => new TestQuery { Key = ctx.Value },
-					( ctx, response ) => ctx.Result = response )
+			var result = await PipelineExtensions
+				.Start( new TestQuery { Key = "query-key" }, _serviceProvider )
+				.Query<TestQuery, string>( )
 				.ExecuteAsync( );
 
 			// Assert
 			result.IsSuccess.Should( ).BeTrue( );
-			result.Value!.Result.Should( ).Contain( "query-key" );
+			result.Value.Should( ).Contain( "query-key" );
 		}
 
 		[Fact]
 		public async Task Publish_WithValidEvent_ShouldNotThrow( ) {
-			// Arrange
-			var context = new TestContext { Value = "event" };
-
 			// Act
-			var result = await Myth.Flow.Pipeline
-				.Start( context, _serviceProvider )
-				.Publish<TestContext, TestEvent>(
-					ctx => new TestEvent { Message = ctx.Value } )
+			var result = await PipelineExtensions
+				.Start( new TestEvent { Message = "event" }, _serviceProvider )
+				.Publish( )
 				.ExecuteAsync( );
 
 			// Assert
@@ -77,26 +63,45 @@ namespace Myth.Flow.Actions.Test {
 
 		[Fact]
 		public async Task QueryCached_ShouldUseCacheKey( ) {
-			// Arrange
-			var context = new TestContext { Value = "cached-key" };
-
 			// Act
-			var result = await Pipeline
-				.Start( context, _serviceProvider )
-				.Query<TestContext, TestQuery, string>(
-					ctx => new TestQuery { Key = ctx.Value },
-					( ctx, response ) => ctx.Result = response,
-					cacheKey: "test-cache-key",
-					ttl: TimeSpan.FromMinutes( 5 ) )
+			var result = await PipelineExtensions
+				.Start( new TestQuery { Key = "cached-key" }, _serviceProvider )
+				.Query<TestQuery, string>( x => x.UseCache( "test-cache-key", TimeSpan.FromMinutes( 5 ) ) )
 				.ExecuteAsync( );
 
 			// Assert
 			result.IsSuccess.Should( ).BeTrue( );
 		}
 
-		private class TestContext {
-			public string Value { get; set; } = string.Empty;
-			public string? Result { get; set; }
+		[Fact]
+		public async Task EmptyPipeline_WithTransform_ShouldWork( ) {
+			// Act
+			var result = await PipelineExtensions
+				.Start( _serviceProvider )
+				.Transform( ( ) => new TestCommand { Value = "from-empty-pipeline" } )
+				.Process<TestCommand, string>( )
+				.ExecuteAsync( );
+
+			// Assert
+			result.IsSuccess.Should( ).BeTrue( );
+			result.Value.Should( ).Be( "Handled: from-empty-pipeline" );
+		}
+
+		[Fact]
+		public async Task ChainedOperations_ShouldTransformCorrectly( ) {
+			// Act
+			var result = await PipelineExtensions
+				.Start( new TestCommand { Value = "chain-test" }, _serviceProvider )
+				.Process<TestCommand, string>( )                                            // Command → string
+				.Transform( response => new TestQuery { Key = response } )              // string → Query
+				.Query<TestQuery, string>( )                                                // Query → string
+				.Transform( queryResult => new TestEvent { Message = queryResult } )        // string → Event
+				.Publish<TestEvent>( )                                                  // Publish Event
+				.ExecuteAsync( );
+
+			// Assert
+			result.IsSuccess.Should( ).BeTrue( );
+			result.Value.Should( ).NotBeNull( );
 		}
 	}
 }
