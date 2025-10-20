@@ -12,7 +12,7 @@
 		<PackageId>Myth.Flow.Actions</PackageId>
 		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>
-		<Description>Construção de pipelines fluentes, fortemente tipados e leves para .NET. Sem boilerplate, sem handlers verbosos</Description>
+		<Description>A fluent .NET library extension for Myth.Flow library with CQRS/Event-driven architecture with dispatcher, event bus, and message brokers</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Flow</RepositoryUrl>
