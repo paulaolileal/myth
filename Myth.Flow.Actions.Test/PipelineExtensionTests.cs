@@ -26,7 +26,7 @@ namespace Myth.Flow.Actions.Test {
 		[Fact]
 		public async Task Process_WithValidCommand_ShouldExecuteSuccessfully( ) {
 			// Act
-			var result = await PipelineExtensions
+			var result = await Pipeline
 				.Start( new TestCommand { Value = "test" }, _serviceProvider )
 				.Process<TestCommand, string>( )
 				.ExecuteAsync( );
@@ -102,6 +102,27 @@ namespace Myth.Flow.Actions.Test {
 			// Assert
 			result.IsSuccess.Should( ).BeTrue( );
 			result.Value.Should( ).NotBeNull( );
+		}
+
+		[Fact]
+		public async Task Pipeline_StaticClass_ShouldWork( ) {
+			// Act - Test both APIs work the same
+			var resultExtensions = await PipelineExtensions
+				.Start( new TestCommand { Value = "extensions" }, _serviceProvider )
+				.Process<TestCommand, string>( )
+				.ExecuteAsync( );
+
+			var resultPipeline = await Pipeline
+				.Start( new TestCommand { Value = "pipeline" }, _serviceProvider )
+				.Process<TestCommand, string>( )
+				.ExecuteAsync( );
+
+			// Assert - Both should work identically
+			resultExtensions.IsSuccess.Should( ).BeTrue( );
+			resultExtensions.Value.Should( ).Be( "Handled: extensions" );
+
+			resultPipeline.IsSuccess.Should( ).BeTrue( );
+			resultPipeline.Value.Should( ).Be( "Handled: pipeline" );
 		}
 	}
 }

@@ -18,7 +18,7 @@ Pipeline.Start(context)
     .Process<Context, Command>(ctx => new Command { ... }, (ctx, result) => ctx.Result = result)
 
 // ✅ NOVO: Action-First (limpo e direto)
-PipelineExtensions.Start(new Command { ... }, serviceProvider)
+Pipeline.Start(new Command { ... }, serviceProvider)
     .Process<Command, Result>()
 ```
 
@@ -189,10 +189,10 @@ public class UserCreatedEventHandler : IEventHandler<UserCreatedEvent>
 ### Exemplo de Pipeline Simples
 
 ```csharp
-using Myth.Flow.Actions.Extensions;
+using Myth.Flow.Actions;
 
 // Execução direta de action - sem contexto necessário!
-var result = await PipelineExtensions
+var result = await Pipeline
     .Start(new CreateUserCommand { Email = "usuario@exemplo.com", Name = "João Silva" }, serviceProvider)
     .Process<CreateUserCommand, Guid>()
     .ExecuteAsync();
@@ -207,7 +207,7 @@ if (result.IsSuccess)
 
 ```csharp
 // Encadear operações com transformações
-var result = await PipelineExtensions
+var result = await Pipeline
     .Start(new CreateUserCommand { Email = "usuario@exemplo.com", Name = "João Silva" }, serviceProvider)
     .Process<CreateUserCommand, Guid>()                                        // Command → Guid
     .Transform(userId => new GetUserQuery { UserId = userId })                 // Guid → Query
@@ -226,7 +226,7 @@ if (result.IsSuccess)
 
 ```csharp
 // Iniciar sem dados iniciais para funções utilitárias
-var result = await PipelineExtensions
+var result = await Pipeline
     .Start(serviceProvider)
     .Transform(() => new GetActiveUsersQuery())
     .Query<GetActiveUsersQuery, List<UserDto>>()
@@ -300,12 +300,12 @@ services.AddFlowActions(config =>
 
 ```csharp
 // Iniciar com um objeto de request
-PipelineExtensions.Start(command, serviceProvider)
-PipelineExtensions.Start(query, serviceProvider)
-PipelineExtensions.Start(event, serviceProvider)
+Pipeline.Start(command, serviceProvider)
+Pipeline.Start(query, serviceProvider)
+Pipeline.Start(event, serviceProvider)
 
 // Iniciar sem dados iniciais (para funções utilitárias)
-PipelineExtensions.Start(serviceProvider)
+Pipeline.Start(serviceProvider)
 ```
 
 ## Process (Commands)
@@ -560,7 +560,7 @@ public class UserCreatedNotificationHandler : IEventHandler<UserCreatedEvent>
 
 ```csharp
 // Pipeline action-first com lógica condicional usando TransformIf
-var result = await PipelineExtensions
+var result = await Pipeline
     .Start(new ValidateOrderCommand { OrderId = orderId }, serviceProvider)
     .Process<ValidateOrderCommand, OrderDto>()
     .TransformIf<FraudCheckCommand>(
@@ -578,7 +578,7 @@ var result = await PipelineExtensions
 
 ```csharp
 // Transformações diretas entre diferentes tipos de action
-var result = await PipelineExtensions
+var result = await Pipeline
     .Start(new CreateOrderCommand
     {
         Items = items,
@@ -610,7 +610,7 @@ var result = await PipelineExtensions
 
 ```csharp
 // Pipeline utilitário iniciando sem dados iniciais
-var result = await PipelineExtensions
+var result = await Pipeline
     .Start(serviceProvider)
     .Transform(() => new GetMonthlyOrdersQuery { Month = DateTime.Now.Month })
     .Query<GetMonthlyOrdersQuery, List<OrderDto>>(x => x.UseCache("pedidos-mensais", TimeSpan.FromHours(1)))
@@ -638,7 +638,7 @@ var result = await PipelineExtensions
 using Xunit;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Myth.Flow.Actions.Extensions;
+using Myth.Flow.Actions;
 
 public class UserPipelineTests
 {
@@ -673,7 +673,7 @@ public class UserPipelineTests
         };
 
         // Act - Usando API action-first
-        var result = await PipelineExtensions
+        var result = await Pipeline
             .Start(command, _serviceProvider)
             .Process<CreateUserCommand, Guid>()
             .ExecuteAsync();
@@ -694,7 +694,7 @@ public class UserPipelineTests
         };
 
         // Act - Encadear múltiplas operações
-        var result = await PipelineExtensions
+        var result = await Pipeline
             .Start(command, _serviceProvider)
             .Process<CreateUserCommand, Guid>()                                        // Criar usuário
             .Transform(userId => new GetUserQuery { UserId = userId })                 // Transformar para query
@@ -712,7 +712,7 @@ public class UserPipelineTests
     public async Task PipelineVazio_ComTransforms_DeveFuncionar()
     {
         // Act - Iniciar sem dados iniciais
-        var result = await PipelineExtensions
+        var result = await Pipeline
             .Start(_serviceProvider)
             .Transform(() => new GetActiveUsersQuery())
             .Query<GetActiveUsersQuery, List<UserDto>>()
@@ -734,7 +734,7 @@ public class UserPipelineTests
         };
 
         // Act - Transformação condicional
-        var result = await PipelineExtensions
+        var result = await Pipeline
             .Start(command, _serviceProvider)
             .Process<CreateUserCommand, Guid>()
             .Transform(userId => new GetUserQuery { UserId = userId })

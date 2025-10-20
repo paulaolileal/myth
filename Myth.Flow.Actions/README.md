@@ -18,7 +18,7 @@ Pipeline.Start(context)
     .Process<Context, Command>(ctx => new Command { ... }, (ctx, result) => ctx.Result = result)
 
 // ✅ NEW: Action-First (clean and direct)
-PipelineExtensions.Start(new Command { ... }, serviceProvider)
+Pipeline.Start(new Command { ... }, serviceProvider)
     .Process<Command, Result>()
 ```
 
@@ -189,10 +189,10 @@ public class UserCreatedEventHandler : IEventHandler<UserCreatedEvent>
 ### Simple Pipeline Example
 
 ```csharp
-using Myth.Flow.Actions.Extensions;
+using Myth.Flow.Actions;
 
 // Direct action execution - no context needed!
-var result = await PipelineExtensions
+var result = await Pipeline
     .Start(new CreateUserCommand { Email = "user@example.com", Name = "John Doe" }, serviceProvider)
     .Process<CreateUserCommand, Guid>()
     .ExecuteAsync();
@@ -207,7 +207,7 @@ if (result.IsSuccess)
 
 ```csharp
 // Chain operations with transformations
-var result = await PipelineExtensions
+var result = await Pipeline
     .Start(new CreateUserCommand { Email = "user@example.com", Name = "John Doe" }, serviceProvider)
     .Process<CreateUserCommand, Guid>()                                        // Command → Guid
     .Transform(userId => new GetUserQuery { UserId = userId })                 // Guid → Query
