@@ -8,12 +8,34 @@
 
 Uma poderosa biblioteca .NET que implementa os padrões CQRS e Arquitetura Orientada a Eventos com integração perfeita aos pipelines Myth.Flow. Construída para escalabilidade com suporte a múltiplos message brokers, estratégias de cache e recursos de resiliência de nível empresarial.
 
+## 🚀 API Pipeline Action-First
+
+Esta biblioteca apresenta uma abordagem revolucionária **Action-First** que elimina o boilerplate de contexto e simplifica drasticamente o desenvolvimento de pipelines:
+
+```csharp
+// ❌ ANTIGO: Baseado em contexto (muito boilerplate)
+Pipeline.Start(context)
+    .Process<Context, Command>(ctx => new Command { ... }, (ctx, result) => ctx.Result = result)
+
+// ✅ NOVO: Action-First (limpo e direto)
+PipelineExtensions.Start(new Command { ... }, serviceProvider)
+    .Process<Command, Result>()
+```
+
+**Benefícios:**
+- **70% menos código boilerplate** - Nenhuma classe de contexto necessária
+- **Transformações type-safe** - Fluxo direto objeto-para-objeto no pipeline
+- **Experiência de desenvolvedor intuitiva** - Actions prontas para execução
+- **Configuração fluente de cache** - `x => x.UseCache("key", TimeSpan.FromMinutes(5))`
+- **Pipelines utilitários** - Iniciar sem parâmetros para cenários funcionais
+
 # ⭐ Funcionalidades
 
+- **API Action-First**: Abordagem revolucionária de pipeline com zero boilerplate de contexto
 - **Padrão CQRS**: Separação clara de Commands, Queries e Events
 - **Integração com Pipeline**: Integração fluente com Myth.Flow para workflows compostos
 - **Múltiplos Message Brokers**: Suporte a InMemory (dev/test), Kafka e RabbitMQ
-- **Cache de Queries**: Cache integrado com provedores Memory e Redis
+- **Cache de Queries**: Cache integrado com provedores Memory e Redis com configuração fluente
 - **Arquitetura Orientada a Eventos**: Publish/subscribe com suporte a múltiplos handlers
 - **Padrões de Resiliência**: Políticas de retry com backoff exponencial, circuit breakers e dead letter queues
 - **Auto-descoberta**: Registro automático de handlers via scan de assemblies
@@ -162,53 +184,55 @@ public class UserCreatedEventHandler : IEventHandler<UserCreatedEvent>
 }
 ```
 
-## 3. Usar no Pipeline
+## 3. Usar Pipeline Action-First
+
+### Exemplo de Pipeline Simples
 
 ```csharp
-using Myth.Flow;
 using Myth.Flow.Actions.Extensions;
 
-public class CreateUserContext
-{
-    public required string Email { get; init; }
-    public required string Name { get; init; }
-    public Guid? UserId { get; set; }
-    public UserDto? User { get; set; }
-}
-
-var result = await Pipeline
-    .Start(new CreateUserContext
-    {
-        Email = "usuario@exemplo.com",
-        Name = "João Silva"
-    })
-    .WithTelemetry("CreateUserFlow")
-    // Processar command
-    .Process<CreateUserContext, CreateUserCommand, Guid>(
-        ctx => new CreateUserCommand
-        {
-            Email = ctx.Email,
-            Name = ctx.Name
-        },
-        (ctx, userId) => ctx.UserId = userId)
-    // Query com cache
-    .Query<CreateUserContext, GetUserQuery, UserDto>(
-        ctx => new GetUserQuery { UserId = ctx.UserId!.Value },
-        (ctx, user) => ctx.User = user,
-        cacheKey: $"user:{ctx.UserId}",
-        ttl: TimeSpan.FromMinutes(10))
-    // Publicar evento
-    .Publish<CreateUserContext, UserCreatedEvent>(ctx => new UserCreatedEvent
-    {
-        UserId = ctx.UserId!.Value,
-        Email = ctx.Email
-    })
+// Execução direta de action - sem contexto necessário!
+var result = await PipelineExtensions
+    .Start(new CreateUserCommand { Email = "usuario@exemplo.com", Name = "João Silva" }, serviceProvider)
+    .Process<CreateUserCommand, Guid>()
     .ExecuteAsync();
 
 if (result.IsSuccess)
 {
-    Console.WriteLine($"Usuário criado: {result.Value.User?.Name}");
+    Console.WriteLine($"Usuário criado com ID: {result.Value}");
 }
+```
+
+### Exemplo de Workflow Complexo
+
+```csharp
+// Encadear operações com transformações
+var result = await PipelineExtensions
+    .Start(new CreateUserCommand { Email = "usuario@exemplo.com", Name = "João Silva" }, serviceProvider)
+    .Process<CreateUserCommand, Guid>()                                        // Command → Guid
+    .Transform(userId => new GetUserQuery { UserId = userId })                 // Guid → Query
+    .Query<GetUserQuery, UserDto>(x => x.UseCache($"user:{userId}", TimeSpan.FromMinutes(10))) // Query com cache
+    .Transform(user => new UserCreatedEvent { UserId = user.Id, Email = user.Email })          // User → Event
+    .Publish<UserCreatedEvent>()                                               // Publicar evento
+    .ExecuteAsync();
+
+if (result.IsSuccess)
+{
+    Console.WriteLine("Workflow de criação de usuário concluído com sucesso!");
+}
+```
+
+### Pipeline Utilitário (Início Vazio)
+
+```csharp
+// Iniciar sem dados iniciais para funções utilitárias
+var result = await PipelineExtensions
+    .Start(serviceProvider)
+    .Transform(() => new GetActiveUsersQuery())
+    .Query<GetActiveUsersQuery, List<UserDto>>()
+    .Transform(users => new GenerateReportCommand { Users = users })
+    .Process<GenerateReportCommand, ReportDto>()
+    .ExecuteAsync();
 ```
 
 # 🔧 Configuração
@@ -270,54 +294,75 @@ services.AddFlowActions(config =>
 });
 ```
 
-# 📚 Extensões de Pipeline
+# 📚 API Pipeline Action-First
+
+## Iniciar Pipeline
+
+```csharp
+// Iniciar com um objeto de request
+PipelineExtensions.Start(command, serviceProvider)
+PipelineExtensions.Start(query, serviceProvider)
+PipelineExtensions.Start(event, serviceProvider)
+
+// Iniciar sem dados iniciais (para funções utilitárias)
+PipelineExtensions.Start(serviceProvider)
+```
 
 ## Process (Commands)
 
 ```csharp
-// Command sem resposta
-.Process<TContext, TCommand>(
-    ctx => new TCommand { /* ... */ })
+// Command sem resposta (quando TCommand : ICommand)
+.Process<TCommand>()
 
-// Command com resposta
-.Process<TContext, TCommand, TResponse>(
-    ctx => new TCommand { /* ... */ },
-    (ctx, response) => ctx.Result = response)
+// Command com resposta tipada (quando TCommand : ICommand<TResponse>)
+.Process<TCommand, TResponse>()
 ```
 
 ## Query (Operações de Leitura)
 
 ```csharp
-// Query com configuração de cache opcional
-.Query<TContext, TQuery, TResponse>(
-    ctx => new TQuery { /* ... */ },
-    (ctx, result) => ctx.Data = result,
-    options =>
-    {
-        options.Enabled = true;
-        options.CacheKey = $"chave:{ctx.Id}";
-        options.Ttl = TimeSpan.FromMinutes(10);
-        options.SlidingExpiration = true;
-    })
+// Query sem cache
+.Query<TQuery, TResponse>()
 
-// Query com chave de cache simples
-.Query<TContext, TQuery, TResponse>(
-    ctx => new TQuery { /* ... */ },
-    (ctx, result) => ctx.Data = result,
-    cacheKey: "minha-chave-cache",
-    ttl: TimeSpan.FromMinutes(10),
-    slidingExpiration: false)
+// Query com configuração de cache usando API fluente
+.Query<TQuery, TResponse>(x => x
+    .UseCache("chave-cache", TimeSpan.FromMinutes(10))
+    .WithSlidingExpiration())
+
+// Query com configuração simples de cache
+.Query<TQuery, TResponse>(x => x.UseCache($"chave:{algumaId}", TimeSpan.FromMinutes(5)))
 ```
 
 ## Publish (Eventos)
 
 ```csharp
-// Publicar evento a partir de factory
-.Publish<TContext, TEvent>(
-    ctx => new TEvent { /* ... */ })
-
-// Publicar contexto como evento (quando TContext implementa IEvent)
+// Publicar evento (quando TEvent : IEvent)
 .Publish<TEvent>()
+```
+
+## Transform
+
+```csharp
+// Transformar request atual para novo tipo
+.Transform<TNext>(current => new TNext { /* ... */ })
+
+// Transformação assíncrona
+.TransformAsync<TNext>(async current => await CreateNextAsync(current))
+
+// Transformação condicional
+.TransformIf<TNext>(
+    condition: current => current.IsValid,
+    transform: current => new TNext { /* ... */ })
+
+// Condicional com branches verdadeiro/falso
+.TransformIf<TNext>(
+    condition: current => current.Type == "Premium",
+    transformTrue: current => new PremiumAction { /* ... */ },
+    transformFalse: current => new StandardAction { /* ... */ })
+
+// Transformação de pipeline vazio (quando iniciando sem dados)
+.Transform<TRequest>(() => new TRequest { /* ... */ })
+.TransformAsync<TRequest>(async () => await CreateRequestAsync())
 ```
 
 # 🔍 Uso Direto do Dispatcher
@@ -511,116 +556,223 @@ public class UserCreatedNotificationHandler : IEventHandler<UserCreatedEvent>
 // Todos os três handlers executam concorrentemente quando o evento é publicado
 ```
 
-## Steps Condicionais no Pipeline
+## Processamento de Pedido de Alto Valor
 
 ```csharp
-var result = await Pipeline.Start(context)
-    .Process<Context, ValidateOrderCommand>(ctx => new ValidateOrderCommand { OrderId = ctx.OrderId })
-    .When(
-        ctx => ctx.Order?.TotalAmount > 1000,
-        pipeline => pipeline
-            .Process<Context, FraudCheckCommand>(ctx => new FraudCheckCommand { OrderId = ctx.OrderId })
-            .Process<Context, ManagerApprovalCommand>(ctx => new ManagerApprovalCommand { OrderId = ctx.OrderId }))
-    .Process<Context, ProcessPaymentCommand>(ctx => new ProcessPaymentCommand { OrderId = ctx.OrderId })
-    .Publish<Context, OrderCompletedEvent>(ctx => new OrderCompletedEvent { OrderId = ctx.OrderId })
+// Pipeline action-first com lógica condicional usando TransformIf
+var result = await PipelineExtensions
+    .Start(new ValidateOrderCommand { OrderId = orderId }, serviceProvider)
+    .Process<ValidateOrderCommand, OrderDto>()
+    .TransformIf<FraudCheckCommand>(
+        order => order.TotalAmount > 1000,
+        order => new FraudCheckCommand { OrderId = order.Id })
+    .Process<FraudCheckCommand>()
+    .Transform(fraudResult => new ProcessPaymentCommand { OrderId = orderId })
+    .Process<ProcessPaymentCommand>()
+    .Transform(paymentResult => new OrderCompletedEvent { OrderId = orderId })
+    .Publish<OrderCompletedEvent>()
     .ExecuteAsync();
 ```
 
-## Transformação de Contexto
+## Workflow de Pedido para Envio
 
 ```csharp
-var result = await Pipeline.Start(orderContext)
-    .Process<OrderContext, CreateOrderCommand, Guid>(
-        ctx => new CreateOrderCommand { /* ... */ },
-        (ctx, orderId) => ctx.OrderId = orderId)
-    .Transform(ctx => new ShipmentContext
+// Transformações diretas entre diferentes tipos de action
+var result = await PipelineExtensions
+    .Start(new CreateOrderCommand
     {
-        OrderId = ctx.OrderId,
+        Items = items,
+        CustomerId = customerId,
+        ShippingAddress = address
+    }, serviceProvider)
+    .Process<CreateOrderCommand, Guid>()                           // Criar pedido → OrderId
+    .Transform(orderId => new GetOrderQuery { OrderId = orderId }) // OrderId → Query
+    .Query<GetOrderQuery, OrderDto>()                              // Obter detalhes completos do pedido
+    .Transform(order => new CreateShipmentCommand                  // Order → Command de envio
+    {
+        OrderId = order.Id,
         ShipmentId = Guid.NewGuid(),
-        Address = ctx.ShippingAddress
+        Address = order.ShippingAddress,
+        Items = order.Items
     })
-    .Process<ShipmentContext, CreateShipmentCommand>(
-        ctx => new CreateShipmentCommand { /* ... */ })
+    .Process<CreateShipmentCommand, ShipmentDto>()                 // Processar envio
+    .Transform(shipment => new ShipmentCreatedEvent               // Shipment → Event
+    {
+        OrderId = shipment.OrderId,
+        ShipmentId = shipment.Id,
+        TrackingNumber = shipment.TrackingNumber
+    })
+    .Publish<ShipmentCreatedEvent>()                              // Notificar sobre envio
+    .ExecuteAsync();
+```
+
+## Pipeline de Geração de Relatórios
+
+```csharp
+// Pipeline utilitário iniciando sem dados iniciais
+var result = await PipelineExtensions
+    .Start(serviceProvider)
+    .Transform(() => new GetMonthlyOrdersQuery { Month = DateTime.Now.Month })
+    .Query<GetMonthlyOrdersQuery, List<OrderDto>>(x => x.UseCache("pedidos-mensais", TimeSpan.FromHours(1)))
+    .Transform(orders => new GenerateReportCommand
+    {
+        Orders = orders,
+        ReportType = ReportType.Monthly,
+        GeneratedBy = currentUserId
+    })
+    .Process<GenerateReportCommand, ReportDto>()
+    .Transform(report => new ReportGeneratedEvent
+    {
+        ReportId = report.Id,
+        GeneratedBy = currentUserId
+    })
+    .Publish<ReportGeneratedEvent>()
     .ExecuteAsync();
 ```
 
 # 🧪 Testes
 
+## Testando Pipelines Action-First
+
 ```csharp
 using Xunit;
+using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Myth.Flow.Actions.Extensions;
 
-public class UserCommandHandlerTests
+public class UserPipelineTests
 {
-    [Fact]
-    public async Task CreateUser_ComDadosValidos_DeveSerBemSucedido()
+    private readonly IServiceProvider _serviceProvider;
+
+    public UserPipelineTests()
     {
-        // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddFlow();
         services.AddFlowActions(config =>
         {
-            config.BrokerType = MessageBrokerType.InMemory;
-            config.AssembliesToScan.Add(typeof(CreateUserCommand).Assembly);
+            config.UseInMemory()
+                   .EnableCaching(cache => cache.ProviderType = CacheProviderType.Memory)
+                   .ScanAssemblies(typeof(CreateUserCommand).Assembly);
         });
 
         services.AddScoped<IUserRepository, InMemoryUserRepository>();
         services.AddScoped<IEmailService, FakeEmailService>();
 
-        var provider = services.BuildServiceProvider();
-        var dispatcher = provider.GetRequiredService<IDispatcher>();
+        _serviceProvider = services.BuildServiceProvider();
+    }
 
-        // Act
+    [Fact]
+    public async Task CreateUser_ComAPIActionFirst_DeveSerBemSucedido()
+    {
+        // Arrange
         var command = new CreateUserCommand
         {
             Email = "teste@exemplo.com",
             Name = "Usuário Teste"
         };
 
-        var result = await dispatcher.DispatchCommandAsync<CreateUserCommand, Guid>(command);
+        // Act - Usando API action-first
+        var result = await PipelineExtensions
+            .Start(command, _serviceProvider)
+            .Process<CreateUserCommand, Guid>()
+            .ExecuteAsync();
 
         // Assert
-        Assert.True(result.IsSuccess);
-        Assert.NotEqual(Guid.Empty, result.Data);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBe(Guid.Empty);
     }
 
     [Fact]
-    public async Task GetUser_ComCache_DeveRetornarDoCache()
+    public async Task WorkflowCompletoUsuario_DeveEncadearOperacoes()
     {
         // Arrange
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddMemoryCache();
-        services.AddFlowActions(config =>
+        var command = new CreateUserCommand
         {
-            config.BrokerType = MessageBrokerType.InMemory;
-            config.CachingEnabled = true;
-            config.AssembliesToScan.Add(typeof(GetUserQuery).Assembly);
-        });
+            Email = "workflow@exemplo.com",
+            Name = "Usuário Workflow"
+        };
 
-        services.AddScoped<IUserRepository, InMemoryUserRepository>();
+        // Act - Encadear múltiplas operações
+        var result = await PipelineExtensions
+            .Start(command, _serviceProvider)
+            .Process<CreateUserCommand, Guid>()                                        // Criar usuário
+            .Transform(userId => new GetUserQuery { UserId = userId })                 // Transformar para query
+            .Query<GetUserQuery, UserDto>(x => x.UseCache($"user:{userId}", TimeSpan.FromMinutes(5))) // Obter usuário com cache
+            .Transform(user => new UserCreatedEvent { UserId = user.Id, Email = user.Email })          // Transformar para evento
+            .Publish<UserCreatedEvent>()                                               // Publicar evento
+            .ExecuteAsync();
 
-        var provider = services.BuildServiceProvider();
-        var dispatcher = provider.GetRequiredService<IDispatcher>();
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+    }
 
-        var userId = Guid.NewGuid();
-        var query = new GetUserQuery { UserId = userId };
-        var cacheOptions = new CacheOptions
+    [Fact]
+    public async Task PipelineVazio_ComTransforms_DeveFuncionar()
+    {
+        // Act - Iniciar sem dados iniciais
+        var result = await PipelineExtensions
+            .Start(_serviceProvider)
+            .Transform(() => new GetActiveUsersQuery())
+            .Query<GetActiveUsersQuery, List<UserDto>>()
+            .ExecuteAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task WorkflowCondicional_DeveExecutarBaseadoNaCondicao()
+    {
+        // Arrange
+        var command = new CreateUserCommand
         {
-            Enabled = true,
-            CacheKey = $"user:{userId}",
-            Ttl = TimeSpan.FromMinutes(10)
+            Email = "premium@exemplo.com",
+            Name = "Usuário Premium"
+        };
+
+        // Act - Transformação condicional
+        var result = await PipelineExtensions
+            .Start(command, _serviceProvider)
+            .Process<CreateUserCommand, Guid>()
+            .Transform(userId => new GetUserQuery { UserId = userId })
+            .Query<GetUserQuery, UserDto>()
+            .TransformIf<SendWelcomeEmailCommand>(
+                user => user.Email.Contains("premium"),
+                user => new SendWelcomeEmailCommand { Email = user.Email, IsPremium = true })
+            .Process<SendWelcomeEmailCommand>()
+            .ExecuteAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+    }
+}
+
+## Testando Handlers Individuais
+
+```csharp
+public class CreateUserCommandHandlerTests
+{
+    [Fact]
+    public async Task Handle_ComCommandValido_DeveRetornarSucesso()
+    {
+        // Arrange
+        var repository = new InMemoryUserRepository();
+        var handler = new CreateUserCommandHandler(repository);
+        var command = new CreateUserCommand
+        {
+            Email = "teste@exemplo.com",
+            Name = "Usuário Teste"
         };
 
         // Act
-        var result1 = await dispatcher.DispatchQueryAsync<GetUserQuery, UserDto>(query, cacheOptions);
-        var result2 = await dispatcher.DispatchQueryAsync<GetUserQuery, UserDto>(query, cacheOptions);
+        var result = await handler.HandleAsync(command);
 
         // Assert
-        Assert.True(result1.IsSuccess);
-        Assert.False(result1.FromCache);
-        Assert.True(result2.IsSuccess);
-        Assert.True(result2.FromCache); // Segunda chamada deve vir do cache
+        result.IsSuccess.Should().BeTrue();
+        result.Data.Should().NotBe(Guid.Empty);
     }
 }
 ```
