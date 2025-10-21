@@ -35,6 +35,58 @@ dotnet build --configuration Release
 dotnet build --configuration Debug
 ```
 
+## Application Setup
+
+### ASP.NET Core Applications
+
+For ASP.NET Core applications, use `builder.BuildApp()` instead of `builder.Build()` to automatically initialize cross-library dependency resolution:
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddFlow();
+builder.Services.AddGuard();
+builder.Services.AddFlowActions(config => { ... });
+
+var app = builder.BuildApp(); // Instead of builder.Build()
+
+app.UseGuard();
+app.Run();
+```
+
+### Console Applications / Background Services
+
+For non-web applications, use `services.BuildWithGlobalProvider()`:
+
+```csharp
+var services = new ServiceCollection();
+services.AddFlow();
+services.AddGuard();
+
+var serviceProvider = services.BuildWithGlobalProvider();
+
+// Now all libraries can resolve dependencies from each other
+var pipeline = Pipeline.Start(context); // Works!
+```
+
+### External Library Integration
+
+External libraries can access the global service provider:
+
+```csharp
+// In third-party library code
+public class ExternalService {
+    public void DoSomething() {
+        var provider = ServiceCollectionExtensions.GetGlobalProvider();
+        var validator = provider?.GetService<IValidator>();
+        // Use any registered service
+    }
+}
+
+// Or initialize manually for legacy integration
+ServiceCollectionExtensions.InitializeGlobalProvider(yourServiceProvider);
+```
+
 ## Testing
 
 ```bash
@@ -211,6 +263,19 @@ Version is extracted from git tags (format: `v{version}`).
 6. Ensure test project references xUnit, FluentAssertions, and coverlet.collector
 
 ### Working with Myth.Flow Pipelines
+
+**Setup in Program.cs:**
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddFlow(config => config
+    .UseTelemetry()
+    .UseRetry(maxAttempts: 3, backoffMs: 100));
+
+var app = builder.BuildApp(); // Enables cross-library dependencies
+```
+
+**Using pipelines:**
 ```csharp
 var result = await Pipeline.Start(context)
     .WithTelemetry("OperationName")
@@ -223,6 +288,20 @@ var result = await Pipeline.Start(context)
 ```
 
 ### Working with Myth.Flow.Actions
+
+**Setup in Program.cs:**
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddFlowActions(config => config
+    .UseBroker(MessageBrokerType.InMemory)
+    .EnableCaching()
+    .ScanAssemblies(typeof(Program).Assembly));
+
+var app = builder.BuildApp(); // Enables cross-library dependencies
+```
+
+**Using CQRS:**
 ```csharp
 // Dispatch command
 var commandResult = await dispatcher.DispatchCommandAsync(new CreateOrderCommand { ... });
@@ -278,6 +357,18 @@ var users = await userDtos.ToAsync<User>(serviceProvider);
 ```
 
 ### Working with Myth.Guard Validation
+
+**Setup in Program.cs:**
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddGuard();
+
+var app = builder.BuildApp(); // Enables cross-library dependencies
+app.UseGuard(); // Add middleware for exception handling
+```
+
+**Implement validation:**
 ```csharp
 // Implement IValidatable on your entity/DTO
 public class CreateUserDto : IValidatable<CreateUserDto> {
@@ -321,10 +412,6 @@ public async Task<IActionResult> CreateUser(CreateUserDto dto) {
 
     // Process user creation...
 }
-
-// Configuration in Program.cs
-services.AddGuard();  // Register validation services
-app.UseGuard();       // Add middleware for exception handling
 ```
 
 ## Platform Targets
