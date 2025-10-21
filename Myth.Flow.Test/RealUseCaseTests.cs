@@ -44,10 +44,10 @@ namespace Myth.Flow.Test {
 			services.AddLogging( );
 
 			// Register Myth.Flow
-			services.AddFlow( config => {
-				config.EnableTelemetry = true;
-				config.EnableLogging = true;
-			} );
+			services.AddFlow( builder => builder
+				.UseTelemetry( )
+				.UseLogging( )
+			);
 
 			_serviceProvider = services.BuildServiceProvider( );
 

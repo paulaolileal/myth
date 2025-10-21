@@ -25,10 +25,10 @@ namespace Myth.Flow.Test {
 			ActivitySource.AddActivityListener( listener );
 
 			var services = new ServiceCollection( );
-			services.AddFlow( config => {
-				config.ActivitySource = activitySource;
-				config.EnableTelemetry = true;
-			} );
+			services.AddFlow( builder => builder
+				.UseTelemetry( )
+				.UseActivitySource( activitySource )
+			);
 			var provider = services.BuildServiceProvider( );
 
 			// Service provider auto-initializes now - no manual initialization needed
@@ -49,7 +49,7 @@ namespace Myth.Flow.Test {
 			var dto = new TestDto { Value = 42 };
 
 			var services = new ServiceCollection( );
-			services.AddFlow( config => config.EnableTelemetry = false );
+			services.AddFlow( builder => builder.DisableTelemetry( ) );
 			var provider = services.BuildServiceProvider( );
 
 			// Act
