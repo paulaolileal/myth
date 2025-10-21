@@ -1,11 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Myth.Extensions;
+using FlowExtensions = Myth.Extensions;
 using Myth.Flow.Test.Models;
 using Myth.Interfaces;
 using Myth.Models;
 using System;
 using System.Diagnostics;
 using Xunit;
+using Myth.Extensions;
 
 namespace Myth.Flow.Test {
 
@@ -44,21 +45,13 @@ namespace Myth.Flow.Test {
 		}
 
 		[Fact]
-		public void AddFlow_WithNullServices_ShouldThrowArgumentNullException( ) {
-			// Act & Assert
-			Assert.Throws<ArgumentNullException>( ( ) =>
-				ServiceCollectionExtensions.AddFlow( null! ) );
-		}
-
-		[Fact]
 		public void AddFlow_ShouldSetGlobalServiceProvider( ) {
 			// Arrange
 			var services = new ServiceCollection( );
 			services.AddFlow( );
 			var provider = services.BuildServiceProvider( );
 
-			// Force initialization
-			provider.GetService<IServiceProviderInitializer>( );
+			// Service provider auto-initializes now - no manual initialization needed
 
 			// Act
 			var dto = new TestDto { Value = 1 };

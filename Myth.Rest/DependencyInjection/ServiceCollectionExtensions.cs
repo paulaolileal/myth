@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Myth.Builders;
+using Myth.Extensions;
 using Myth.Interfaces;
 using Myth.Rest;
 
@@ -11,7 +12,8 @@ namespace Myth.DependencyInjection
 	{
 
 		/// <summary>
-		/// Add to the service collection the dependency injection of REST builder
+		/// Add to the service collection the dependency injection of REST builder.
+		/// Automatically initializes the global service provider using the centralized Myth system.
 		/// </summary>
 		/// <param name="services">The collection of services</param>
 		/// <param name="configurationBuilder">The default configuration</param>
@@ -30,11 +32,15 @@ namespace Myth.DependencyInjection
 
 			services.Add(serviceDescriptor);
 
+			// Auto-initialize global service provider using Myth.Commons centralized system
+			services.AddMythAutoInitialization( "Myth.Rest" );
+
 			return services;
 		}
 
 		/// <summary>
-		/// Add a centralized REST factory to manage multiple REST configurations
+		/// Add a centralized REST factory to manage multiple REST configurations.
+		/// Automatically initializes the global service provider using the centralized Myth system.
 		/// </summary>
 		/// <param name="services">The collection of services</param>
 		/// <param name="lifetime">The lifetime of the factory service</param>
@@ -42,6 +48,10 @@ namespace Myth.DependencyInjection
 		public static IServiceCollection AddRestFactory(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Singleton)
 		{
 			services.TryAdd(ServiceDescriptor.Describe(typeof(IRestFactory), typeof(RestFactory), lifetime));
+
+			// Auto-initialize global service provider using Myth.Commons centralized system
+			services.AddMythAutoInitialization( "Myth.Rest.Factory" );
+
 			return services;
 		}
 

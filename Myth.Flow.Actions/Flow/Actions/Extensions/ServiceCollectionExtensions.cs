@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Myth.Builders;
+using Myth.Extensions;
 using Myth.Flow.Actions.Brokers;
 using Myth.Flow.Actions.Hosting;
 using Myth.Flow.Actions.Settings;
@@ -19,7 +20,8 @@ namespace Myth.Flow.Actions.Extensions;
 public static class ServiceCollectionExtensions {
 
 	/// <summary>
-	/// Adds Flow.Actions services to the service collection with CQRS, event bus, and message broker support
+	/// Adds Flow.Actions services to the service collection with CQRS, event bus, and message broker support.
+	/// Automatically initializes the global service provider using the centralized Myth system.
 	/// </summary>
 	/// <param name="services">The service collection to add services to</param>
 	/// <param name="configure">Configuration action for Flow.Actions builder</param>
@@ -44,6 +46,9 @@ public static class ServiceCollectionExtensions {
 		RegisterHandlers( services, configuration );
 
 		services.AddHostedService<MessageBrokerHostedService>( );
+
+		// Auto-initialize global service provider using Myth.Commons centralized system
+		services.AddMythAutoInitialization( "Myth.Flow.Actions" );
 
 		return services;
 	}

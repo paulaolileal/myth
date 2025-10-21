@@ -46,6 +46,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Myth.Flow\Myth.Flow.csproj" />
+	  <ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
