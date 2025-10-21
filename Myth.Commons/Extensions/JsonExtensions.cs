@@ -1,34 +1,36 @@
 ﻿using Myth.Constants;
 using Myth.Exceptions;
 using Myth.Models;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Myth.Extensions;
 
 public static class JsonExtensions {
 	private static JsonSettings _globalSettings = new( );
 
-	private static JsonSerializerSettings BaseSerializer( Action<JsonSettings>? settings = null ) {
+	private static JsonSerializerOptions BaseSerializer( Action<JsonSettings>? settings = null ) {
 		var jsonSettings = _globalSettings.Copy( );
 
 		settings?.Invoke( jsonSettings );
 
-		var contractResolver = new DefaultContractResolver {
-			NamingStrategy = StrategyResolver( jsonSettings.CaseStrategy )
+		var options = new JsonSerializerOptions {
+			WriteIndented = !jsonSettings.MinifyResult,
+			DefaultIgnoreCondition = jsonSettings.IgnoreNullValues
+				? JsonIgnoreCondition.WhenWritingNull
+				: JsonIgnoreCondition.Never,
+			PropertyNamingPolicy = StrategyResolver( jsonSettings.CaseStrategy ),
+			ReferenceHandler = ReferenceHandler.IgnoreCycles
 		};
 
-		var serializerSettings = new JsonSerializerSettings {
-			Formatting = jsonSettings.MinifyResult ? Formatting.None : Formatting.Indented,
-			NullValueHandling = jsonSettings.IgnoreNullValues ? NullValueHandling.Ignore : NullValueHandling.Include,
-			ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-			ContractResolver = contractResolver,
-			Converters = jsonSettings.Converters,
-		};
+		// Adicionar conversores customizados
+		foreach ( var converter in jsonSettings.Converters ) {
+			options.Converters.Add( converter );
+		}
 
-		jsonSettings.OtherSettings?.Invoke( serializerSettings );
+		jsonSettings.OtherSettings?.Invoke( options );
 
-		return serializerSettings;
+		return options;
 	}
 
 	/// <summary>
@@ -39,10 +41,10 @@ public static class JsonExtensions {
 	/// <returns>A string in json format</returns>
 	/// <exception cref="JsonParsingException">Throws when object can't be serializable</exception>
 	public static string ToJson( this object content, Action<JsonSettings>? settings = null ) {
-		var serializerSettings = BaseSerializer( settings );
+		var serializerOptions = BaseSerializer( settings );
 
 		try {
-			return JsonConvert.SerializeObject( content, serializerSettings );
+			return JsonSerializer.Serialize( content, serializerOptions );
 		} catch ( Exception exception ) {
 			throw new JsonParsingException( "Error on serialize object.", exception );
 		}
@@ -57,10 +59,21 @@ public static class JsonExtensions {
 	/// <returns>An object based on json</returns>
 	/// <exception cref="JsonParsingException">Throws when the string can't be parsed into a file</exception>
 	public static object? FromJson( this string content, Type responseType, Action<JsonSettings>? settings = null ) {
-		var serializerSettings = BaseSerializer( settings );
+		var serializerOptions = BaseSerializer( settings );
 
 		try {
-			return JsonConvert.DeserializeObject( content, responseType, serializerSettings );
+			// Handle empty or whitespace content
+			if ( string.IsNullOrWhiteSpace( content ) ) {
+				return responseType == typeof( string ) ? content : null;
+			}
+
+			// Special handling for dynamic type to maintain compatibility with Newtonsoft.Json behavior
+			if ( responseType == typeof( object ) || responseType.Name == "Object" ) {
+				var jsonElement = JsonSerializer.Deserialize<JsonElement>( content, serializerOptions );
+				return ConvertJsonElementToDynamic( jsonElement );
+			}
+
+			return JsonSerializer.Deserialize( content, responseType, serializerOptions );
 		} catch ( Exception exception ) {
 			throw new JsonParsingException( "Error on deserialize object.", exception );
 		}
@@ -76,10 +89,10 @@ public static class JsonExtensions {
 	public static TResponse? FromJson<TResponse>( this string content, Action<JsonSettings>? settings = null ) =>
 		( TResponse? )content.FromJson( typeof( TResponse ), settings );
 
-	private static NamingStrategy StrategyResolver( CaseStrategy caseStrategy ) =>
+	private static JsonNamingPolicy? StrategyResolver( CaseStrategy caseStrategy ) =>
 		caseStrategy switch {
-			CaseStrategy.SnakeCase => new SnakeCaseNamingStrategy( ),
-			_ => new CamelCaseNamingStrategy( )
+			CaseStrategy.SnakeCase => JsonNamingPolicy.SnakeCaseLower,
+			_ => JsonNamingPolicy.CamelCase
 		};
 
 	/// <summary>
@@ -87,4 +100,41 @@ public static class JsonExtensions {
 	/// </summary>
 	/// <param name="settings"></param>
 	public static void Configure( Action<JsonSettings>? settings ) => settings?.Invoke( _globalSettings );
+
+	private static dynamic ConvertJsonElementToDynamic( JsonElement element ) {
+		switch ( element.ValueKind ) {
+			case JsonValueKind.Object:
+			var expandoObject = new System.Dynamic.ExpandoObject( );
+			var dictionary = ( IDictionary<string, object?> )expandoObject;
+			foreach ( var property in element.EnumerateObject( ) ) {
+				dictionary[ property.Name ] = ConvertJsonElementToDynamic( property.Value );
+			}
+			return expandoObject;
+
+			case JsonValueKind.Array:
+			return element.EnumerateArray( ).Select( ConvertJsonElementToDynamic ).ToArray( );
+
+			case JsonValueKind.String:
+			return element.GetString( )!;
+
+			case JsonValueKind.Number:
+			if ( element.TryGetInt32( out var intValue ) )
+				return intValue;
+			if ( element.TryGetInt64( out var longValue ) )
+				return longValue;
+			return element.GetDouble( );
+
+			case JsonValueKind.True:
+			return true;
+
+			case JsonValueKind.False:
+			return false;
+
+			case JsonValueKind.Null:
+			return null!;
+
+			default:
+			throw new ArgumentOutOfRangeException( nameof( element.ValueKind ), element.ValueKind, "Unsupported JsonValueKind" );
+		}
+	}
 }

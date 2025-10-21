@@ -1,12 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using FlowExtensions = Myth.Extensions;
+using Myth.Extensions;
 using Myth.Flow.Test.Models;
-using Myth.Interfaces;
 using Myth.Models;
-using System;
 using System.Diagnostics;
 using Xunit;
-using Myth.Extensions;
 
 namespace Myth.Flow.Test {
 
