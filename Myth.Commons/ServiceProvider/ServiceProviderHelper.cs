@@ -14,8 +14,7 @@ internal static class ServiceProviderHelper {
 	/// <returns>The global service provider (initialized or existing)</returns>
 	/// <exception cref="ArgumentNullException">Thrown when serviceProvider is null</exception>
 	public static IServiceProvider EnsureGlobalProvider( IServiceProvider serviceProvider ) {
-		if ( serviceProvider == null )
-			throw new ArgumentNullException( nameof( serviceProvider ) );
+		ArgumentNullException.ThrowIfNull( serviceProvider );
 
 		// Try to initialize with the provided service provider
 		MythServiceProvider.TryInitialize( serviceProvider );
