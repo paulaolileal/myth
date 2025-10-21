@@ -540,6 +540,75 @@ namespace Myth.Builders {
 				.GetAwaiter( )
 				.GetResult( );
 
+		// Object-based pipeline methods (simplified API without context management)
+
+		/// <summary>
+		/// Adds an asynchronous step to the pipeline using a service resolved from DI with cancellation token support.
+		/// The step receives the current object and a cancellation token, returns a new object directly.
+		/// </summary>
+		/// <typeparam name="TService">Type of service to resolve.</typeparam>
+		/// <param name="handler">Async step handler function that takes the current object and cancellation token and returns a new object.</param>
+		/// <returns>The current <see cref="IPipelineBuilder{TContext}"/> instance.</returns>
+		/// <exception cref="PipelineConfigurationException">Thrown if service provider is not available or service is not registered.</exception>
+		public IPipelineBuilder<TContext> StepAsync<TService>(
+			Func<TService, TContext, CancellationToken, Task<TContext>> handler )
+			where TService : notnull {
+			var stepName = typeof( TService ).Name;
+			var currentRetry = _retryAttempts;
+			var currentBackoff = _backoffMs;
+
+			_steps.Add( new StepDescriptor<TContext>(
+				StepType.Async,
+				async ( context, ct ) => {
+					var service = GetRequiredService<TService>( );
+					var result = await handler( service, context, ct ).ConfigureAwait( false );
+					return result;
+				},
+				stepName,
+				currentRetry,
+				currentBackoff ) );
+
+			return this;
+		}
+
+		/// <summary>
+		/// Adds an asynchronous step to the pipeline that returns a <see cref="Result{TContext}"/>.
+		/// The step receives the current object and a cancellation token, returns a Result with the new object.
+		/// Throws <see cref="PipelineException"/> if the result is failure.
+		/// </summary>
+		/// <typeparam name="TService">Type of service to resolve.</typeparam>
+		/// <param name="handler">Async step handler returning a <see cref="Result{TContext}"/>.</param>
+		/// <returns>The current <see cref="IPipelineBuilder{TContext}"/> instance.</returns>
+		/// <exception cref="PipelineException">Thrown if the result is failure.</exception>
+		/// <exception cref="PipelineConfigurationException">Thrown if service provider is not available or service is not registered.</exception>
+		public IPipelineBuilder<TContext> StepResultAsync<TService>(
+			Func<TService, TContext, CancellationToken, Task<Result<TContext>>> handler )
+			where TService : notnull {
+			var stepName = typeof( TService ).Name;
+			var currentRetry = _retryAttempts;
+			var currentBackoff = _backoffMs;
+
+			_steps.Add( new StepDescriptor<TContext>(
+				StepType.Async,
+				async ( context, ct ) => {
+					var service = GetRequiredService<TService>( );
+					var result = await handler( service, context, ct ).ConfigureAwait( false );
+
+					if ( result.IsFailure ) {
+						throw new PipelineException(
+							result.ErrorMessage ?? "Step failed",
+							result.Exception );
+					}
+
+					return result.Value!;
+				},
+				stepName,
+				currentRetry,
+				currentBackoff ) );
+
+			return this;
+		}
+
 		/// <summary>
 		/// Resolves a required service from the DI container.
 		/// </summary>

@@ -121,4 +121,29 @@ public interface IActionPipelineBuilder<TCurrent> {
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Pipeline execution result</returns>
 	Task<Result<TCurrent>> ExecuteAsync( CancellationToken cancellationToken = default );
+
+	// Simplified API methods (without explicit state management)
+
+	/// <summary>
+	/// Adds an asynchronous step to the pipeline using a service resolved from DI with cancellation token support.
+	/// The step receives the current object and a cancellation token, returns a new object directly.
+	/// </summary>
+	/// <typeparam name="TService">Type of service to resolve.</typeparam>
+	/// <param name="handler">Async step handler function that takes the current object and cancellation token and returns a new object.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	IActionPipelineBuilder<TCurrent> StepAsync<TService>(
+		Func<TService, TCurrent, CancellationToken, Task<TCurrent>> handler )
+		where TService : notnull;
+
+	/// <summary>
+	/// Adds an asynchronous step to the pipeline that returns a <see cref="Result{TCurrent}"/>.
+	/// The step receives the current object and a cancellation token, returns a Result with the new object.
+	/// Throws <see cref="Exceptions.PipelineException"/> if the result is failure.
+	/// </summary>
+	/// <typeparam name="TService">Type of service to resolve.</typeparam>
+	/// <param name="handler">Async step handler returning a <see cref="Result{TCurrent}"/>.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	IActionPipelineBuilder<TCurrent> StepResultAsync<TService>(
+		Func<TService, TCurrent, CancellationToken, Task<Result<TCurrent>>> handler )
+		where TService : notnull;
 }

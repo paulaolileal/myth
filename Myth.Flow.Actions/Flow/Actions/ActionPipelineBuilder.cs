@@ -187,4 +187,71 @@ internal class ActionPipelineBuilder<TCurrent> : IActionPipelineBuilder<TCurrent
 
 		return Result<TCurrent>.Success( finalRequest );
 	}
+
+	// Simplified API methods (without explicit state management)
+
+	/// <summary>
+	/// Adds an asynchronous step to the pipeline using a service resolved from DI with cancellation token support.
+	/// The step receives the current object and a cancellation token, returns a new object directly.
+	/// </summary>
+	/// <typeparam name="TService">Type of service to resolve.</typeparam>
+	/// <param name="handler">Async step handler function that takes the current object and cancellation token and returns a new object.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	public IActionPipelineBuilder<TCurrent> StepAsync<TService>(
+		Func<TService, TCurrent, CancellationToken, Task<TCurrent>> handler )
+		where TService : notnull {
+		var newPipeline = _innerPipeline.StepAsync<TService>( async ( service, state, ct ) => {
+			var currentRequest = state.CurrentRequest;
+			if ( currentRequest == null ) {
+				throw new InvalidOperationException( "Current request is null in pipeline state" );
+			}
+
+			var result = await handler( service, currentRequest, ct );
+
+			return new ActionPipelineState<TCurrent> {
+				CurrentRequest = result,
+				LastResult = state.LastResult,
+				ServiceProvider = state.ServiceProvider,
+				CorrelationId = state.CorrelationId
+			};
+		} );
+
+		return new ActionPipelineBuilder<TCurrent>( newPipeline );
+	}
+
+	/// <summary>
+	/// Adds an asynchronous step to the pipeline that returns a <see cref="Result{TCurrent}"/>.
+	/// The step receives the current object and a cancellation token, returns a Result with the new object.
+	/// Throws <see cref="Exceptions.PipelineException"/> if the result is failure.
+	/// </summary>
+	/// <typeparam name="TService">Type of service to resolve.</typeparam>
+	/// <param name="handler">Async step handler returning a <see cref="Result{TCurrent}"/>.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	public IActionPipelineBuilder<TCurrent> StepResultAsync<TService>(
+		Func<TService, TCurrent, CancellationToken, Task<Result<TCurrent>>> handler )
+		where TService : notnull {
+		var newPipeline = _innerPipeline.StepResultAsync<TService>( async ( service, state, ct ) => {
+			var currentRequest = state.CurrentRequest;
+			if ( currentRequest == null ) {
+				return Result<ActionPipelineState<TCurrent>>.Failure( "Current request is null in pipeline state" );
+			}
+
+			var result = await handler( service, currentRequest, ct );
+
+			if ( result.IsFailure ) {
+				return Result<ActionPipelineState<TCurrent>>.Failure( result.ErrorMessage!, result.Exception );
+			}
+
+			var newState = new ActionPipelineState<TCurrent> {
+				CurrentRequest = result.Value,
+				LastResult = state.LastResult,
+				ServiceProvider = state.ServiceProvider,
+				CorrelationId = state.CorrelationId
+			};
+
+			return Result<ActionPipelineState<TCurrent>>.Success( newState );
+		} );
+
+		return new ActionPipelineBuilder<TCurrent>( newPipeline );
+	}
 }
