@@ -1,10 +1,10 @@
 ﻿namespace Myth.Flow.Actions;
 
 /// <summary>
-/// Internal state container for action pipelines
+/// State container for action pipelines
 /// </summary>
 /// <typeparam name="TCurrent">The current request type</typeparam>
-internal class ActionPipelineState<TCurrent> {
+public class ActionPipelineState<TCurrent> {
 
 	/// <summary>
 	/// Gets or sets the current request in the pipeline

@@ -235,6 +235,111 @@ var result = await Pipeline
     .ExecuteAsync();
 ```
 
+## 🛠️ Steps Intermediários de Pipeline
+
+A API Action-First agora suporta todos os métodos de pipeline do Myth.Flow para adicionar lógica personalizada, validação, telemetria e padrões de resiliência **entre** operações de action:
+
+### Validação e Steps Personalizados
+
+```csharp
+var result = await Pipeline
+    .Start(new CreateUserCommand { Email = "user@example.com" }, serviceProvider)
+    // Validar entrada antes do processamento
+    .Step<IValidationService>((validator, state) => {
+        validator.ValidateEmail(state.CurrentRequest!.Email);
+        return state;
+    })
+    // Adicionar lógica de negócio personalizada
+    .StepAsync<IUserService>(async (userService, state) => {
+        await userService.CheckUserLimitsAsync(state.CurrentRequest!.Email);
+        return state;
+    })
+    .Process<CreateUserCommand, Guid>()
+    .ExecuteAsync();
+```
+
+### Efeitos Colaterais e Logging
+
+```csharp
+var result = await Pipeline
+    .Start(new GetUserQuery { UserId = userId }, serviceProvider)
+    // Registrar o início da operação
+    .Tap<ILogger>((logger, state) =>
+        logger.LogInformation("Consultando usuário {UserId}", state.CurrentRequest!.UserId))
+    .Query<GetUserQuery, UserDto>()
+    // Registrar após consulta bem-sucedida
+    .TapAsync<IMetricsService>(async (metrics, state) =>
+        await metrics.RecordQueryExecutionAsync("GetUser"))
+    .ExecuteAsync();
+```
+
+### Execução Condicional
+
+```csharp
+var result = await Pipeline
+    .Start(new ProcessOrderCommand { OrderId = orderId }, serviceProvider)
+    // Validar pagamento apenas se o pedido exigir
+    .When(state => state.CurrentRequest!.RequiresPayment, builder =>
+        builder.StepAsync<IPaymentService>((payment, state) =>
+            payment.ValidatePaymentMethodAsync(state.CurrentRequest!.PaymentInfo)))
+    .Process<ProcessOrderCommand, OrderResult>()
+    .ExecuteAsync();
+```
+
+### Resiliência e Telemetria
+
+```csharp
+var result = await Pipeline
+    .Start(new CallExternalApiQuery { Endpoint = "users" }, serviceProvider)
+    // Adicionar rastreamento de telemetria
+    .WithTelemetry("ExternalApiCall")
+    // Configurar política de retry para chamadas externas
+    .WithRetry(maxAttempts: 3, backoffMs: 1000)
+    .Query<CallExternalApiQuery, ApiResponse>()
+    .ExecuteAsync();
+```
+
+### Workflows Complexos com Múltiplos Steps
+
+```csharp
+var result = await Pipeline
+    .Start(new CreateOrderCommand { CustomerId = customerId, Items = items }, serviceProvider)
+    // Validar cliente
+    .StepAsync<ICustomerService>(async (service, state) => {
+        await service.ValidateCustomerAsync(state.CurrentRequest!.CustomerId);
+        return state;
+    })
+    // Verificar inventário
+    .StepAsync<IInventoryService>(async (service, state) => {
+        await service.ReserveItemsAsync(state.CurrentRequest!.Items);
+        return state;
+    })
+    // Registrar antes do processamento
+    .Tap<ILogger>((logger, state) =>
+        logger.LogInformation("Processando pedido para cliente {CustomerId}",
+            state.CurrentRequest!.CustomerId))
+    // Processar o pedido
+    .Process<CreateOrderCommand, OrderResult>()
+    // Enviar notificação após sucesso
+    .TapAsync<INotificationService>(async (notifications, state) =>
+        await notifications.SendOrderConfirmationAsync(state.CurrentRequest!))
+    .ExecuteAsync();
+```
+
+### Métodos Intermediários Disponíveis
+
+- **`Step<TService>()`** - Operações síncronas com injeção de dependência
+- **`StepAsync<TService>()`** - Operações assíncronas com injeção de dependência
+- **`StepResult<TService>()`** - Operações retornando `Result<T>` para tratamento de erro
+- **`StepResultAsync<TService>()`** - Operações assíncronas retornando `Result<T>`
+- **`Tap<TService>()`** - Efeitos colaterais (logging, métricas, eventos) com DI
+- **`TapAsync<TService>()`** - Efeitos colaterais assíncronos com DI
+- **`When(predicate, configure)`** - Execução condicional de pipeline
+- **`WithRetry(maxAttempts, backoffMs)`** - Políticas de retry com backoff exponencial
+- **`WithTelemetry(operationName)`** - Rastreamento distribuído OpenTelemetry
+
+Todos os métodos mantêm o design de API fluente e podem ser encadeados para workflows complexos preservando a segurança de tipos e a abordagem Action-First.
+
 # 🔧 Configuração
 
 ## InMemory Broker

@@ -235,6 +235,111 @@ var result = await PipelineExtensions
     .ExecuteAsync();
 ```
 
+## 🛠️ Intermediate Pipeline Steps
+
+The Action-First API now supports all Myth.Flow pipeline methods for adding custom logic, validation, telemetry, and resilience patterns **between** action operations:
+
+### Validation and Custom Steps
+
+```csharp
+var result = await Pipeline
+    .Start(new CreateUserCommand { Email = "user@example.com" }, serviceProvider)
+    // Validate input before processing
+    .Step<IValidationService>((validator, state) => {
+        validator.ValidateEmail(state.CurrentRequest!.Email);
+        return state;
+    })
+    // Add custom business logic
+    .StepAsync<IUserService>(async (userService, state) => {
+        await userService.CheckUserLimitsAsync(state.CurrentRequest!.Email);
+        return state;
+    })
+    .Process<CreateUserCommand, Guid>()
+    .ExecuteAsync();
+```
+
+### Side Effects and Logging
+
+```csharp
+var result = await Pipeline
+    .Start(new GetUserQuery { UserId = userId }, serviceProvider)
+    // Log the start of the operation
+    .Tap<ILogger>((logger, state) =>
+        logger.LogInformation("Querying user {UserId}", state.CurrentRequest!.UserId))
+    .Query<GetUserQuery, UserDto>()
+    // Log after successful query
+    .TapAsync<IMetricsService>(async (metrics, state) =>
+        await metrics.RecordQueryExecutionAsync("GetUser"))
+    .ExecuteAsync();
+```
+
+### Conditional Execution
+
+```csharp
+var result = await Pipeline
+    .Start(new ProcessOrderCommand { OrderId = orderId }, serviceProvider)
+    // Only validate payment if order requires it
+    .When(state => state.CurrentRequest!.RequiresPayment, builder =>
+        builder.StepAsync<IPaymentService>((payment, state) =>
+            payment.ValidatePaymentMethodAsync(state.CurrentRequest!.PaymentInfo)))
+    .Process<ProcessOrderCommand, OrderResult>()
+    .ExecuteAsync();
+```
+
+### Resilience and Telemetry
+
+```csharp
+var result = await Pipeline
+    .Start(new CallExternalApiQuery { Endpoint = "users" }, serviceProvider)
+    // Add telemetry tracking
+    .WithTelemetry("ExternalApiCall")
+    // Configure retry policy for external calls
+    .WithRetry(maxAttempts: 3, backoffMs: 1000)
+    .Query<CallExternalApiQuery, ApiResponse>()
+    .ExecuteAsync();
+```
+
+### Complex Workflows with Multiple Steps
+
+```csharp
+var result = await Pipeline
+    .Start(new CreateOrderCommand { CustomerId = customerId, Items = items }, serviceProvider)
+    // Validate customer
+    .StepAsync<ICustomerService>(async (service, state) => {
+        await service.ValidateCustomerAsync(state.CurrentRequest!.CustomerId);
+        return state;
+    })
+    // Check inventory
+    .StepAsync<IInventoryService>(async (service, state) => {
+        await service.ReserveItemsAsync(state.CurrentRequest!.Items);
+        return state;
+    })
+    // Log before processing
+    .Tap<ILogger>((logger, state) =>
+        logger.LogInformation("Processing order for customer {CustomerId}",
+            state.CurrentRequest!.CustomerId))
+    // Process the order
+    .Process<CreateOrderCommand, OrderResult>()
+    // Send notification after success
+    .TapAsync<INotificationService>(async (notifications, state) =>
+        await notifications.SendOrderConfirmationAsync(state.CurrentRequest!))
+    .ExecuteAsync();
+```
+
+### Available Intermediate Methods
+
+- **`Step<TService>()`** - Synchronous operations with dependency injection
+- **`StepAsync<TService>()`** - Asynchronous operations with dependency injection
+- **`StepResult<TService>()`** - Operations returning `Result<T>` for error handling
+- **`StepResultAsync<TService>()`** - Async operations returning `Result<T>`
+- **`Tap<TService>()`** - Side effects (logging, metrics, events) with DI
+- **`TapAsync<TService>()`** - Async side effects with DI
+- **`When(predicate, configure)`** - Conditional pipeline execution
+- **`WithRetry(maxAttempts, backoffMs)`** - Retry policies with exponential backoff
+- **`WithTelemetry(operationName)`** - OpenTelemetry distributed tracing
+
+All methods maintain the fluent API design and can be chained together for complex workflows while preserving type safety and the Action-First approach.
+
 # 🔧 Configuration
 
 ## InMemory Broker
