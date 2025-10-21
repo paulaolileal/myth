@@ -20,6 +20,9 @@ namespace Myth.Flow.Actions.Test {
 					   .ScanAssemblies( typeof( TestCommandHandler ).Assembly );
 			} );
 
+			// Register TestService for pipeline step testing
+			services.AddTransient<TestService>( );
+
 			_serviceProvider = services.BuildServiceProvider( );
 		}
 
@@ -47,6 +50,139 @@ namespace Myth.Flow.Actions.Test {
 			// Assert
 			result.IsSuccess.Should( ).BeTrue( );
 			result.Value.Should( ).Contain( "query-key" );
+		}
+
+		[Fact]
+		public async Task Step_BeforeProcess_ShouldExecuteAndModifyState( ) {
+			// Arrange
+			string? stepExecuted = null;
+
+			// Act
+			var result = await Pipeline
+				.Start( new TestCommand { Value = "original" }, _serviceProvider )
+				.Step<TestService>( ( service, state ) => {
+					stepExecuted = "Step executed";
+					// Create new command with modified value (since TestCommand is a record with init-only property)
+					state.CurrentRequest = new TestCommand { Value = "modified" };
+					return state;
+				} )
+				.Process<TestCommand, string>( )
+				.ExecuteAsync( );
+
+			// Assert
+			result.IsSuccess.Should( ).BeTrue( );
+			result.Value.Should( ).Be( "Handled: modified" );
+			stepExecuted.Should( ).Be( "Step executed" );
+		}
+
+		[Fact]
+		public async Task Tap_BeforeQuery_ShouldExecuteSideEffect( ) {
+			// Arrange
+			string? tapExecuted = null;
+
+			// Act
+			var result = await Pipeline
+				.Start( new TestQuery { Key = "test-key" }, _serviceProvider )
+				.Tap<TestService>( ( service, state ) => {
+					tapExecuted = $"Tap executed for: {state.CurrentRequest!.Key}";
+				} )
+				.Query<TestQuery, string>( )
+				.ExecuteAsync( );
+
+			// Assert
+			result.IsSuccess.Should( ).BeTrue( );
+			result.Value.Should( ).Contain( "test-key" );
+			tapExecuted.Should( ).Be( "Tap executed for: test-key" );
+		}
+
+		[Fact]
+		public async Task WithRetry_BeforeProcess_ShouldApplyRetryPolicy( ) {
+			// Act
+			var result = await Pipeline
+				.Start( new TestCommand { Value = "retry-test" }, _serviceProvider )
+				.WithRetry( maxAttempts: 3, backoffMs: 50 )
+				.Process<TestCommand, string>( )
+				.ExecuteAsync( );
+
+			// Assert
+			result.IsSuccess.Should( ).BeTrue( );
+			result.Value.Should( ).Be( "Handled: retry-test" );
+		}
+
+		[Fact]
+		public async Task WithTelemetry_BeforeQuery_ShouldEnableTelemetry( ) {
+			// Act
+			var result = await Pipeline
+				.Start( new TestQuery { Key = "telemetry-test" }, _serviceProvider )
+				.WithTelemetry( "QueryOperation" )
+				.Query<TestQuery, string>( )
+				.ExecuteAsync( );
+
+			// Assert
+			result.IsSuccess.Should( ).BeTrue( );
+			result.Value.Should( ).Contain( "telemetry-test" );
+		}
+
+		[Fact]
+		public async Task When_ConditionalExecution_ShouldExecuteWhenTrue( ) {
+			// Act
+			var result = await Pipeline
+				.Start( new TestCommand { Value = "conditional" }, _serviceProvider )
+				.When( state => state.CurrentRequest!.Value == "conditional", builder =>
+					builder.Tap( state => state.CurrentRequest = new TestCommand { Value = "modified-by-condition" } ) )
+				.Process<TestCommand, string>( )
+				.ExecuteAsync( );
+
+			// Assert
+			result.IsSuccess.Should( ).BeTrue( );
+			result.Value.Should( ).Be( "Handled: modified-by-condition" );
+		}
+
+		[Fact]
+		public async Task When_ConditionalExecution_ShouldNotExecuteWhenFalse( ) {
+			// Act
+			var result = await Pipeline
+				.Start( new TestCommand { Value = "original" }, _serviceProvider )
+				.When( state => state.CurrentRequest!.Value == "different", builder =>
+					builder.Tap( state => state.CurrentRequest = new TestCommand { Value = "should-not-change" } ) )
+				.Process<TestCommand, string>( )
+				.ExecuteAsync( );
+
+			// Assert
+			result.IsSuccess.Should( ).BeTrue( );
+			result.Value.Should( ).Be( "Handled: original" );
+		}
+
+		[Fact]
+		public async Task MultipleSteps_BeforeProcess_ShouldExecuteInOrder( ) {
+			// Arrange
+			var executionOrder = new List<string>( );
+
+			// Act
+			var result = await Pipeline
+				.Start( new TestCommand { Value = "start" }, _serviceProvider )
+				.Tap( state => executionOrder.Add( "Tap1" ) )
+				.Step<TestService>( ( service, state ) => {
+					executionOrder.Add( "Step1" );
+					state.CurrentRequest = new TestCommand { Value = state.CurrentRequest!.Value + "-step1" };
+					return state;
+				} )
+				.TapAsync( async state => {
+					await Task.Delay( 1 );
+					executionOrder.Add( "TapAsync" );
+				} )
+				.Step<TestService>( ( service, state ) => {
+					executionOrder.Add( "Step2" );
+					state.CurrentRequest = new TestCommand { Value = state.CurrentRequest!.Value + "-step2" };
+					return state;
+				} )
+				.Process<TestCommand, string>( )
+				.ExecuteAsync( );
+
+			// Assert
+			result.IsSuccess.Should( ).BeTrue( );
+			result.Value.Should( ).Be( "Handled: start-step1-step2" );
+			executionOrder.Should( ).Equal( "Tap1", "Step1", "TapAsync", "Step2" );
 		}
 
 		[Fact]

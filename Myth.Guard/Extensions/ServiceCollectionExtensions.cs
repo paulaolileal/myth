@@ -10,10 +10,14 @@ namespace Myth.Extensions {
 	public static class ServiceCollectionExtensions {
 
 		/// <summary>
-		/// Adds Myth.Guard validation services
+		/// Adds Myth.Guard validation services.
+		/// Automatically initializes the global service provider using the centralized Myth system.
 		/// </summary>
 		public static IServiceCollection AddGuard( this IServiceCollection services ) {
 			services.AddScoped<IValidator, Validator>( );
+
+			// Auto-initialize global service provider using Myth.Commons centralized system
+			services.AddMythAutoInitialization( "Myth.Guard" );
 
 			return services;
 		}

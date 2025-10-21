@@ -1,6 +1,7 @@
 ﻿using Myth.Constants;
 using Myth.ValueProviders;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Myth.Models;
 
@@ -9,7 +10,7 @@ public class JsonSettings : ICloneable {
 	internal bool IgnoreNullValues { get; set; } = false;
 	internal IList<JsonConverter> Converters { get; set; } = [ ];
 	internal CaseStrategy CaseStrategy { get; set; } = CaseStrategy.CamelCase;
-	public Action<JsonSerializerSettings>? OtherSettings { get; }
+	public Action<JsonSerializerOptions>? OtherSettings { get; set; }
 
 	public JsonSettings( ) {
 	}

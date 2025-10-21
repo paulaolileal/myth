@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Myth.Extensions;
 using Myth.Flow.Test.Models;
-using Myth.Interfaces;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Xunit;
@@ -32,7 +31,7 @@ namespace Myth.Flow.Test {
 			} );
 			var provider = services.BuildServiceProvider( );
 
-			provider.GetService<IServiceProviderInitializer>( );
+			// Service provider auto-initializes now - no manual initialization needed
 
 			// Act
 			var result = await Pipeline.Start( dto, provider )

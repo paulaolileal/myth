@@ -1,8 +1,9 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Myth.ValueProviders {
 
-	internal class InterfaceToConcreteConverter : JsonConverter {
+	internal class InterfaceToConcreteConverter : JsonConverter<object> {
 		private readonly Type _interfaceType;
 		private readonly Type _concreteType;
 
@@ -16,12 +17,12 @@ namespace Myth.ValueProviders {
 			_concreteType = concreteType;
 		}
 
-		public override bool CanConvert( Type objectType ) => objectType == _interfaceType;
+		public override bool CanConvert( Type typeToConvert ) => typeToConvert == _interfaceType;
 
-		public override object ReadJson( JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer ) => serializer.Deserialize( reader, _concreteType );
+		public override object? Read( ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options ) =>
+			JsonSerializer.Deserialize( ref reader, _concreteType, options );
 
-		public override bool CanWrite => false;
-
-		public override void WriteJson( JsonWriter writer, object value, JsonSerializer serializer ) => throw new NotImplementedException( );
+		public override void Write( Utf8JsonWriter writer, object value, JsonSerializerOptions options ) =>
+			JsonSerializer.Serialize( writer, value, _concreteType, options );
 	}
 }

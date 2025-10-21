@@ -25,6 +25,150 @@ internal class ActionPipelineBuilder<TCurrent> : IActionPipelineBuilder<TCurrent
 	internal IPipelineBuilder<ActionPipelineState<TCurrent>> InnerPipeline => _innerPipeline;
 
 	/// <summary>
+	/// Adds a synchronous step to the pipeline using a service resolved from DI.
+	/// </summary>
+	/// <typeparam name="TService">Type of service to resolve.</typeparam>
+	/// <param name="handler">Step handler function.</param>
+	/// <param name="onSuccess">Optional callback on success.</param>
+	/// <param name="onError">Optional error handler for this step.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	public IActionPipelineBuilder<TCurrent> Step<TService>(
+		Func<TService, ActionPipelineState<TCurrent>, ActionPipelineState<TCurrent>> handler,
+		Action<ActionPipelineState<TCurrent>>? onSuccess = null,
+		Action<Exception>? onError = null )
+		where TService : notnull {
+		var newPipeline = _innerPipeline.Step<TService>( handler, onSuccess, onError );
+		return new ActionPipelineBuilder<TCurrent>( newPipeline );
+	}
+
+	/// <summary>
+	/// Adds an asynchronous step to the pipeline using a service resolved from DI.
+	/// </summary>
+	/// <typeparam name="TService">Type of service to resolve.</typeparam>
+	/// <param name="handler">Async step handler function.</param>
+	/// <param name="onSuccess">Optional callback on success.</param>
+	/// <param name="onError">Optional error handler for this step.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	public IActionPipelineBuilder<TCurrent> StepAsync<TService>(
+		Func<TService, ActionPipelineState<TCurrent>, Task<ActionPipelineState<TCurrent>>> handler,
+		Action<ActionPipelineState<TCurrent>>? onSuccess = null,
+		Action<Exception>? onError = null )
+		where TService : notnull {
+		var newPipeline = _innerPipeline.StepAsync<TService>( handler, onSuccess, onError );
+		return new ActionPipelineBuilder<TCurrent>( newPipeline );
+	}
+
+	/// <summary>
+	/// Adds a synchronous step to the pipeline that returns a <see cref="Result{T}"/>.
+	/// Throws <see cref="Exceptions.PipelineException"/> if the result is failure.
+	/// </summary>
+	/// <typeparam name="TService">Type of service to resolve.</typeparam>
+	/// <param name="handler">Step handler returning a <see cref="Result{T}"/>.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	public IActionPipelineBuilder<TCurrent> StepResult<TService>(
+		Func<TService, ActionPipelineState<TCurrent>, Result<ActionPipelineState<TCurrent>>> handler )
+		where TService : notnull {
+		var newPipeline = _innerPipeline.StepResult<TService>( handler );
+		return new ActionPipelineBuilder<TCurrent>( newPipeline );
+	}
+
+	/// <summary>
+	/// Adds an asynchronous step to the pipeline that returns a <see cref="Result{T}"/>.
+	/// Throws <see cref="Exceptions.PipelineException"/> if the result is failure.
+	/// </summary>
+	/// <typeparam name="TService">Type of service to resolve.</typeparam>
+	/// <param name="handler">Async step handler returning a <see cref="Result{T}"/>.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	public IActionPipelineBuilder<TCurrent> StepResultAsync<TService>(
+		Func<TService, ActionPipelineState<TCurrent>, Task<Result<ActionPipelineState<TCurrent>>>> handler )
+		where TService : notnull {
+		var newPipeline = _innerPipeline.StepResultAsync<TService>( handler );
+		return new ActionPipelineBuilder<TCurrent>( newPipeline );
+	}
+
+	/// <summary>
+	/// Adds a tap step to the pipeline that executes a side-effect action on the context.
+	/// </summary>
+	/// <param name="action">Action to execute on the context.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	public IActionPipelineBuilder<TCurrent> Tap( Action<ActionPipelineState<TCurrent>> action ) {
+		var newPipeline = _innerPipeline.Tap( action );
+		return new ActionPipelineBuilder<TCurrent>( newPipeline );
+	}
+
+	/// <summary>
+	/// Adds an asynchronous tap step to the pipeline that executes a side-effect async action on the context.
+	/// </summary>
+	/// <param name="action">Async action to execute on the context.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	public IActionPipelineBuilder<TCurrent> TapAsync( Func<ActionPipelineState<TCurrent>, Task> action ) {
+		var newPipeline = _innerPipeline.TapAsync( action );
+		return new ActionPipelineBuilder<TCurrent>( newPipeline );
+	}
+
+	/// <summary>
+	/// Adds a tap step to the pipeline that executes a side-effect action using a service resolved from DI.
+	/// </summary>
+	/// <typeparam name="TService">Type of service to resolve.</typeparam>
+	/// <param name="action">Action to execute using the service and context.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	public IActionPipelineBuilder<TCurrent> Tap<TService>( Action<TService, ActionPipelineState<TCurrent>> action )
+		where TService : notnull {
+		var newPipeline = _innerPipeline.Tap<TService>( action );
+		return new ActionPipelineBuilder<TCurrent>( newPipeline );
+	}
+
+	/// <summary>
+	/// Adds an asynchronous tap step to the pipeline that executes a side-effect async action using a service resolved from DI.
+	/// </summary>
+	/// <typeparam name="TService">Type of service to resolve.</typeparam>
+	/// <param name="action">Async action to execute using the service and context.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	public IActionPipelineBuilder<TCurrent> TapAsync<TService>( Func<TService, ActionPipelineState<TCurrent>, Task> action )
+		where TService : notnull {
+		var newPipeline = _innerPipeline.TapAsync<TService>( action );
+		return new ActionPipelineBuilder<TCurrent>( newPipeline );
+	}
+
+	/// <summary>
+	/// Adds a conditional step to the pipeline. Executes the configured pipeline if the predicate returns true.
+	/// </summary>
+	/// <param name="predicate">Predicate to determine if the conditional pipeline should run.</param>
+	/// <param name="configurePipeline">Action to configure the conditional pipeline.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	public IActionPipelineBuilder<TCurrent> When(
+		Func<ActionPipelineState<TCurrent>, bool> predicate,
+		Action<IActionPipelineBuilder<TCurrent>> configurePipeline ) {
+		var newPipeline = _innerPipeline.When( predicate, innerBuilder => {
+			var actionBuilder = new ActionPipelineBuilder<TCurrent>( innerBuilder );
+			configurePipeline( actionBuilder );
+		} );
+
+		return new ActionPipelineBuilder<TCurrent>( newPipeline );
+	}
+
+	/// <summary>
+	/// Enables telemetry for the pipeline execution with the specified operation name.
+	/// </summary>
+	/// <param name="operationName">Telemetry operation name.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	public IActionPipelineBuilder<TCurrent> WithTelemetry( string operationName ) {
+		var newPipeline = _innerPipeline.WithTelemetry( operationName );
+		return new ActionPipelineBuilder<TCurrent>( newPipeline );
+	}
+
+	/// <summary>
+	/// Configures retry attempts and backoff for subsequent steps in the pipeline.
+	/// </summary>
+	/// <param name="maxAttempts">Maximum number of retry attempts.</param>
+	/// <param name="backoffMs">Backoff in milliseconds between retries.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	public IActionPipelineBuilder<TCurrent> WithRetry( int maxAttempts, int backoffMs = 100 ) {
+		var newPipeline = _innerPipeline.WithRetry( maxAttempts, backoffMs );
+		return new ActionPipelineBuilder<TCurrent>( newPipeline );
+	}
+
+	/// <summary>
 	/// Executes the pipeline and returns the result
 	/// </summary>
 	/// <param name="cancellationToken">Cancellation token</param>

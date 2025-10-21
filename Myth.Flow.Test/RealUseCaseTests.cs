@@ -11,7 +11,7 @@ using Xunit;
 namespace Myth.Flow.Test {
 
 	public class CreateUserTests : IDisposable {
-		private readonly ServiceProvider _serviceProvider;
+		private readonly IServiceProvider _serviceProvider;
 		private readonly MockUserRepository _repository;
 		private readonly MockUnitOfWork _unitOfWork;
 		private readonly MockEventPublisher _eventPublisher;
@@ -70,7 +70,7 @@ namespace Myth.Flow.Test {
 		}
 
 		public void Dispose( ) {
-			_serviceProvider?.Dispose( );
+			( _serviceProvider as IDisposable )?.Dispose( );
 		}
 
 		[Fact]

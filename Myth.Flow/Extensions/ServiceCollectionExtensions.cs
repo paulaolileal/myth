@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Myth.Builders;
-using Myth.Flow;
 using Myth.Interfaces;
 using Myth.Models;
 using System.Diagnostics;
@@ -14,14 +13,16 @@ namespace Myth.Extensions {
 
 		/// <summary>
 		/// Adds Myth.Flow services to the dependency injection container.
-		/// Registers <see cref="PipelineConfiguration"/>, telemetry, service provider accessor, and initializer.
+		/// Registers <see cref="PipelineConfiguration"/>, telemetry, and automatically initializes
+		/// the global service provider for seamless pipeline creation.
 		/// </summary>
 		/// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
 		/// <param name="configure">Optional action to configure <see cref="PipelineConfiguration"/>.</param>
 		/// <returns>The updated <see cref="IServiceCollection"/>.</returns>
 		/// <exception cref="ArgumentNullException">Thrown when <paramref name="services"/> is null.</exception>
 		/// <remarks>
-		/// See <see cref="ServiceProviderAccessor"/>, <see cref="ServiceProviderInitializer"/>, and <see cref="Pipeline.SetGlobalServiceProvider"/> for related types and methods.
+		/// This method automatically registers the global service provider using the Myth.Commons
+		/// centralized service provider management. No additional configuration is required.
 		/// </remarks>
 		public static IServiceCollection AddFlow(
 			this IServiceCollection services,
@@ -44,11 +45,8 @@ namespace Myth.Extensions {
 			services.AddSingleton<IServiceProviderAccessor>( sp =>
 				new ServiceProviderAccessor( sp ) );
 
-			// Set global service provider after container is built
-			services.AddSingleton<IServiceProviderInitializer>( sp => {
-				Pipeline.SetGlobalServiceProvider( sp );
-				return new ServiceProviderInitializer( sp );
-			} );
+			// Auto-initialize global service provider using Myth.Commons centralized system
+			services.AddMythAutoInitialization( "Myth.Flow" );
 
 			return services;
 		}

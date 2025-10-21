@@ -10,9 +10,9 @@ namespace Myth.Morph.Test.Models {
 
 		public void MorphTo( Schema<ParentDto> schema ) {
 			schema
-				.Bind(
+				.BindAsync(
 					dest => dest.Child,
-					( ) => Child.To<ChildDto>( ) );
+					async ( sp ) => Child.To<ChildDto>( sp ) );
 		}
 	}
 }
