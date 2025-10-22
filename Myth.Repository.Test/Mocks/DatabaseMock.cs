@@ -2,7 +2,6 @@ using Bogus;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Myth.Interfaces.Repositories.EntityFramework;
-using Myth.Repositories.EntityFramework;
 using Myth.Repository.Test.Contexts;
 using Myth.Repository.Test.Interfaces;
 using Myth.Repository.Test.Repositories;
@@ -28,7 +27,7 @@ public class DatabaseMock : IDisposable {
 
 		Repository = new RepositoryTest( Context );
 
-		UnitOfWork = new UnitOfWorkRepository( Context );
+		UnitOfWork = new TestUnitOfWorkRepository( Context );
 	}
 
 	internal async Task<Person> MockAsync( ) {

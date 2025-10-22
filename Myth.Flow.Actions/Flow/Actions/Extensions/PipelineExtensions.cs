@@ -18,10 +18,10 @@ public static class PipelineExtensions {
 	/// <param name="request">The initial request to start the pipeline with</param>
 	/// <param name="serviceProvider">Service provider for dependency injection</param>
 	/// <returns>Action pipeline builder for method chaining</returns>
-	public static IActionPipelineBuilder<TRequest> Start<TRequest>(TRequest request, IServiceProvider serviceProvider) {
-		var state = new ActionPipelineState<TRequest>(request, serviceProvider);
-		var pipeline = Myth.Flow.Pipeline.Start(state, serviceProvider);
-		return new ActionPipelineBuilder<TRequest>(pipeline);
+	public static IActionPipelineBuilder<TRequest> Start<TRequest>( TRequest request, IServiceProvider serviceProvider ) {
+		var state = new ActionPipelineState<TRequest>( request, serviceProvider );
+		var pipeline = Myth.Flow.Pipeline.Start( state, serviceProvider );
+		return new ActionPipelineBuilder<TRequest>( pipeline );
 	}
 
 	/// <summary>
@@ -30,9 +30,9 @@ public static class PipelineExtensions {
 	/// <typeparam name="TRequest">The initial request type</typeparam>
 	/// <param name="request">The initial request to start the pipeline with</param>
 	/// <returns>Action pipeline builder for method chaining</returns>
-	public static IActionPipelineBuilder<TRequest> Start<TRequest>(TRequest request) {
-		var serviceProvider = (IServiceProvider)new ServiceCollection().BuildServiceProvider();
-		return Start(request, serviceProvider);
+	public static IActionPipelineBuilder<TRequest> Start<TRequest>( TRequest request ) {
+		var serviceProvider = ( IServiceProvider )new ServiceCollection( ).BuildServiceProvider( );
+		return Start( request, serviceProvider );
 	}
 
 	/// <summary>
@@ -40,17 +40,17 @@ public static class PipelineExtensions {
 	/// </summary>
 	/// <param name="serviceProvider">Service provider for dependency injection</param>
 	/// <returns>Empty pipeline builder that can be populated with Transform operations</returns>
-	public static IEmptyPipelineBuilder Start(IServiceProvider serviceProvider) {
-		return new EmptyPipelineBuilder(serviceProvider);
+	public static IEmptyPipelineBuilder Start( IServiceProvider serviceProvider ) {
+		return new EmptyPipelineBuilder( serviceProvider );
 	}
 
 	/// <summary>
 	/// Starts an empty action pipeline with default service provider
 	/// </summary>
 	/// <returns>Empty pipeline builder that can be populated with Transform operations</returns>
-	public static IEmptyPipelineBuilder Start() {
-		var serviceProvider = (IServiceProvider)new ServiceCollection().BuildServiceProvider();
-		return Start(serviceProvider);
+	public static IEmptyPipelineBuilder Start( ) {
+		var serviceProvider = ( IServiceProvider )new ServiceCollection( ).BuildServiceProvider( );
+		return Start( serviceProvider );
 	}
 
 	/// <summary>
@@ -61,24 +61,23 @@ public static class PipelineExtensions {
 	/// <returns>The pipeline builder for method chaining</returns>
 	/// <exception cref="PipelineException">Thrown when command execution fails</exception>
 	public static IActionPipelineBuilder<TCommand> Process<TCommand>(
-		this IActionPipelineBuilder<TCommand> builder)
+		this IActionPipelineBuilder<TCommand> builder )
 		where TCommand : ICommand {
-
-		var internalBuilder = (ActionPipelineBuilder<TCommand>)builder;
-		var newPipeline = internalBuilder.InnerPipeline.StepAsync<IDispatcher>(async (dispatcher, state) => {
+		var internalBuilder = ( ActionPipelineBuilder<TCommand> )builder;
+		var newPipeline = internalBuilder.InnerPipeline.StepAsync<IDispatcher>( async ( dispatcher, state ) => {
 			var command = state.CurrentRequest!;
-			var result = await dispatcher.DispatchCommandAsync(command);
+			var result = await dispatcher.DispatchCommandAsync( command );
 
-			if (result.IsFailure)
+			if ( result.IsFailure )
 				throw new PipelineException(
 					result.ErrorMessage ?? "Command processing failed",
-					result.Exception);
+					result.Exception );
 
 			state.LastResult = result;
 			return state;
-		});
+		} );
 
-		return new ActionPipelineBuilder<TCommand>(newPipeline);
+		return new ActionPipelineBuilder<TCommand>( newPipeline );
 	}
 
 	/// <summary>
@@ -90,32 +89,31 @@ public static class PipelineExtensions {
 	/// <returns>The pipeline builder transformed to the response type</returns>
 	/// <exception cref="PipelineException">Thrown when command execution fails</exception>
 	public static IActionPipelineBuilder<TResponse> Process<TCommand, TResponse>(
-		this IActionPipelineBuilder<TCommand> builder)
+		this IActionPipelineBuilder<TCommand> builder )
 		where TCommand : ICommand<TResponse> {
-
-		var internalBuilder = (ActionPipelineBuilder<TCommand>)builder;
+		var internalBuilder = ( ActionPipelineBuilder<TCommand> )builder;
 		var newPipeline = internalBuilder.InnerPipeline
-			.StepAsync<IDispatcher>(async (dispatcher, state) => {
+			.StepAsync<IDispatcher>( async ( dispatcher, state ) => {
 				var command = state.CurrentRequest!;
-				var result = await dispatcher.DispatchCommandAsync<TCommand, TResponse>(command);
+				var result = await dispatcher.DispatchCommandAsync<TCommand, TResponse>( command );
 
-				if (result.IsFailure)
+				if ( result.IsFailure )
 					throw new PipelineException(
 						result.ErrorMessage ?? "Command processing failed",
-						result.Exception);
+						result.Exception );
 
 				state.LastResult = result;
 				return state;
-			})
-			.Transform(state => {
-				var cmdResult = (CommandResult<TResponse>)state.LastResult!;
-				return new ActionPipelineState<TResponse>(cmdResult.Data!, state.ServiceProvider) {
+			} )
+			.Transform( state => {
+				var cmdResult = ( CommandResult<TResponse> )state.LastResult!;
+				return new ActionPipelineState<TResponse>( cmdResult.Data!, state.ServiceProvider ) {
 					LastResult = state.LastResult,
 					CorrelationId = state.CorrelationId
 				};
-			});
+			} );
 
-		return new ActionPipelineBuilder<TResponse>(newPipeline);
+		return new ActionPipelineBuilder<TResponse>( newPipeline );
 	}
 
 	/// <summary>
@@ -127,10 +125,9 @@ public static class PipelineExtensions {
 	/// <returns>The pipeline builder transformed to the response type</returns>
 	/// <exception cref="PipelineException">Thrown when query execution fails</exception>
 	public static IActionPipelineBuilder<TResponse> Query<TQuery, TResponse>(
-		this IActionPipelineBuilder<TQuery> builder)
+		this IActionPipelineBuilder<TQuery> builder )
 		where TQuery : IQuery<TResponse> {
-
-		return builder.Query<TQuery, TResponse>(null);
+		return builder.Query<TQuery, TResponse>( null );
 	}
 
 	/// <summary>
@@ -139,42 +136,41 @@ public static class PipelineExtensions {
 	/// <typeparam name="TQuery">The query type to execute</typeparam>
 	/// <typeparam name="TResponse">The response type from the query</typeparam>
 	/// <param name="builder">The action pipeline builder</param>
-	/// <param name="configureCache">Optional function to configure caching. If null, no caching is used</param>
+	/// <param name="configureCache">Optional function to configure caching with access to query instance. If null, no caching is used</param>
 	/// <returns>The pipeline builder transformed to the response type</returns>
 	/// <exception cref="PipelineException">Thrown when query execution fails</exception>
 	public static IActionPipelineBuilder<TResponse> Query<TQuery, TResponse>(
 		this IActionPipelineBuilder<TQuery> builder,
-		Func<ICacheConfig, ICacheConfig>? configureCache)
+		Func<TQuery, ICacheConfig, ICacheConfig>? configureCache )
 		where TQuery : IQuery<TResponse> {
-
-		var internalBuilder = (ActionPipelineBuilder<TQuery>)builder;
+		var internalBuilder = ( ActionPipelineBuilder<TQuery> )builder;
 		var newPipeline = internalBuilder.InnerPipeline
-			.StepAsync<IDispatcher>(async (dispatcher, state) => {
+			.StepAsync<IDispatcher>( async ( dispatcher, state ) => {
 				var query = state.CurrentRequest!;
 
 				var cacheOptions = configureCache != null
-					? ((CacheConfigBuilder)configureCache(new CacheConfigBuilder())).ToCacheOptions()
+					? ( ( CacheConfigBuilder )configureCache( query, new CacheConfigBuilder( ) ) ).ToCacheOptions( )
 					: null;
 
-				var result = await dispatcher.DispatchQueryAsync<TQuery, TResponse>(query, cacheOptions);
+				var result = await dispatcher.DispatchQueryAsync<TQuery, TResponse>( query, cacheOptions );
 
-				if (result.IsFailure)
+				if ( result.IsFailure )
 					throw new PipelineException(
 						result.ErrorMessage ?? "Query execution failed",
-						result.Exception);
+						result.Exception );
 
 				state.LastResult = result;
 				return state;
-			})
-			.Transform(state => {
-				var queryResult = (QueryResult<TResponse>)state.LastResult!;
-				return new ActionPipelineState<TResponse>(queryResult.Data!, state.ServiceProvider) {
+			} )
+			.Transform( state => {
+				var queryResult = ( QueryResult<TResponse> )state.LastResult!;
+				return new ActionPipelineState<TResponse>( queryResult.Data!, state.ServiceProvider ) {
 					LastResult = state.LastResult,
 					CorrelationId = state.CorrelationId
 				};
-			});
+			} );
 
-		return new ActionPipelineBuilder<TResponse>(newPipeline);
+		return new ActionPipelineBuilder<TResponse>( newPipeline );
 	}
 
 	/// <summary>
@@ -184,19 +180,18 @@ public static class PipelineExtensions {
 	/// <param name="builder">The action pipeline builder</param>
 	/// <returns>The pipeline builder for method chaining</returns>
 	public static IActionPipelineBuilder<TEvent> Publish<TEvent>(
-		this IActionPipelineBuilder<TEvent> builder)
+		this IActionPipelineBuilder<TEvent> builder )
 		where TEvent : IEvent {
-
-		var internalBuilder = (ActionPipelineBuilder<TEvent>)builder;
-		var newPipeline = internalBuilder.InnerPipeline.StepAsync<IDispatcher>(async (dispatcher, state) => {
+		var internalBuilder = ( ActionPipelineBuilder<TEvent> )builder;
+		var newPipeline = internalBuilder.InnerPipeline.StepAsync<IDispatcher>( async ( dispatcher, state ) => {
 			var @event = state.CurrentRequest!;
-			await dispatcher.PublishEventAsync(@event);
+			await dispatcher.PublishEventAsync( @event );
 
 			state.LastResult = "Event published successfully";
 			return state;
-		});
+		} );
 
-		return new ActionPipelineBuilder<TEvent>(newPipeline);
+		return new ActionPipelineBuilder<TEvent>( newPipeline );
 	}
 
 	/// <summary>
@@ -209,20 +204,19 @@ public static class PipelineExtensions {
 	/// <returns>The pipeline builder with the new request type</returns>
 	public static IActionPipelineBuilder<TNext> Transform<TCurrent, TNext>(
 		this IActionPipelineBuilder<TCurrent> builder,
-		Func<TCurrent, TNext> transform) {
-
-		var internalBuilder = (ActionPipelineBuilder<TCurrent>)builder;
-		var newPipeline = internalBuilder.InnerPipeline.Transform(state => {
+		Func<TCurrent, TNext> transform ) {
+		var internalBuilder = ( ActionPipelineBuilder<TCurrent> )builder;
+		var newPipeline = internalBuilder.InnerPipeline.Transform( state => {
 			var current = state.CurrentRequest!;
-			var next = transform(current);
+			var next = transform( current );
 
-			return new ActionPipelineState<TNext>(next, state.ServiceProvider) {
+			return new ActionPipelineState<TNext>( next, state.ServiceProvider ) {
 				LastResult = state.LastResult,
 				CorrelationId = state.CorrelationId
 			};
-		});
+		} );
 
-		return new ActionPipelineBuilder<TNext>(newPipeline);
+		return new ActionPipelineBuilder<TNext>( newPipeline );
 	}
 
 	/// <summary>
@@ -235,20 +229,19 @@ public static class PipelineExtensions {
 	/// <returns>The pipeline builder with the new request type</returns>
 	public static IActionPipelineBuilder<TNext> TransformAsync<TCurrent, TNext>(
 		this IActionPipelineBuilder<TCurrent> builder,
-		Func<TCurrent, Task<TNext>> transform) {
-
-		var internalBuilder = (ActionPipelineBuilder<TCurrent>)builder;
-		var newPipeline = internalBuilder.InnerPipeline.TransformAsync(async state => {
+		Func<TCurrent, Task<TNext>> transform ) {
+		var internalBuilder = ( ActionPipelineBuilder<TCurrent> )builder;
+		var newPipeline = internalBuilder.InnerPipeline.TransformAsync( async state => {
 			var current = state.CurrentRequest!;
-			var next = await transform(current);
+			var next = await transform( current );
 
-			return new ActionPipelineState<TNext>(next, state.ServiceProvider) {
+			return new ActionPipelineState<TNext>( next, state.ServiceProvider ) {
 				LastResult = state.LastResult,
 				CorrelationId = state.CorrelationId
 			};
-		});
+		} );
 
-		return new ActionPipelineBuilder<TNext>(newPipeline);
+		return new ActionPipelineBuilder<TNext>( newPipeline );
 	}
 
 	/// <summary>
@@ -263,22 +256,21 @@ public static class PipelineExtensions {
 	public static IActionPipelineBuilder<TNext?> TransformIf<TCurrent, TNext>(
 		this IActionPipelineBuilder<TCurrent> builder,
 		Func<TCurrent, bool> condition,
-		Func<TCurrent, TNext> transform) {
-
-		var internalBuilder = (ActionPipelineBuilder<TCurrent>)builder;
-		var newPipeline = internalBuilder.InnerPipeline.Transform(state => {
+		Func<TCurrent, TNext> transform ) {
+		var internalBuilder = ( ActionPipelineBuilder<TCurrent> )builder;
+		var newPipeline = internalBuilder.InnerPipeline.Transform( state => {
 			var current = state.CurrentRequest!;
-			var shouldTransform = condition(current);
+			var shouldTransform = condition( current );
 
-			TNext? next = shouldTransform ? transform(current) : default;
+			TNext? next = shouldTransform ? transform( current ) : default;
 
-			return new ActionPipelineState<TNext?>(next, state.ServiceProvider) {
+			return new ActionPipelineState<TNext?>( next, state.ServiceProvider ) {
 				LastResult = state.LastResult,
 				CorrelationId = state.CorrelationId
 			};
-		});
+		} );
 
-		return new ActionPipelineBuilder<TNext?>(newPipeline);
+		return new ActionPipelineBuilder<TNext?>( newPipeline );
 	}
 
 	/// <summary>
@@ -295,22 +287,21 @@ public static class PipelineExtensions {
 		this IActionPipelineBuilder<TCurrent> builder,
 		Func<TCurrent, bool> condition,
 		Func<TCurrent, TNext> transformTrue,
-		Func<TCurrent, TNext> transformFalse) {
-
-		var internalBuilder = (ActionPipelineBuilder<TCurrent>)builder;
-		var newPipeline = internalBuilder.InnerPipeline.Transform(state => {
+		Func<TCurrent, TNext> transformFalse ) {
+		var internalBuilder = ( ActionPipelineBuilder<TCurrent> )builder;
+		var newPipeline = internalBuilder.InnerPipeline.Transform( state => {
 			var current = state.CurrentRequest!;
-			var shouldUseTrue = condition(current);
+			var shouldUseTrue = condition( current );
 
-			var next = shouldUseTrue ? transformTrue(current) : transformFalse(current);
+			var next = shouldUseTrue ? transformTrue( current ) : transformFalse( current );
 
-			return new ActionPipelineState<TNext>(next, state.ServiceProvider) {
+			return new ActionPipelineState<TNext>( next, state.ServiceProvider ) {
 				LastResult = state.LastResult,
 				CorrelationId = state.CorrelationId
 			};
-		});
+		} );
 
-		return new ActionPipelineBuilder<TNext>(newPipeline);
+		return new ActionPipelineBuilder<TNext>( newPipeline );
 	}
 }
 
@@ -318,6 +309,7 @@ public static class PipelineExtensions {
 /// Interface for empty pipeline builder that can be populated with Transform operations
 /// </summary>
 public interface IEmptyPipelineBuilder {
+
 	/// <summary>
 	/// Gets the service provider for dependency injection
 	/// </summary>
@@ -329,7 +321,7 @@ public interface IEmptyPipelineBuilder {
 	/// <typeparam name="TRequest">The request type to create</typeparam>
 	/// <param name="factory">Factory function to create the initial request</param>
 	/// <returns>Action pipeline builder with the created request</returns>
-	IActionPipelineBuilder<TRequest> Transform<TRequest>(Func<TRequest> factory);
+	IActionPipelineBuilder<TRequest> Transform<TRequest>( Func<TRequest> factory );
 
 	/// <summary>
 	/// Transforms empty pipeline to a request type using an async factory function
@@ -337,13 +329,14 @@ public interface IEmptyPipelineBuilder {
 	/// <typeparam name="TRequest">The request type to create</typeparam>
 	/// <param name="factory">Async factory function to create the initial request</param>
 	/// <returns>Action pipeline builder with the created request</returns>
-	IActionPipelineBuilder<TRequest> TransformAsync<TRequest>(Func<Task<TRequest>> factory);
+	IActionPipelineBuilder<TRequest> TransformAsync<TRequest>( Func<Task<TRequest>> factory );
 }
 
 /// <summary>
 /// Internal implementation of empty pipeline builder
 /// </summary>
 internal class EmptyPipelineBuilder : IEmptyPipelineBuilder {
+
 	/// <summary>
 	/// Gets the service provider for dependency injection
 	/// </summary>
@@ -353,7 +346,7 @@ internal class EmptyPipelineBuilder : IEmptyPipelineBuilder {
 	/// Initializes a new instance of EmptyPipelineBuilder
 	/// </summary>
 	/// <param name="serviceProvider">Service provider for dependency injection</param>
-	public EmptyPipelineBuilder(IServiceProvider serviceProvider) {
+	public EmptyPipelineBuilder( IServiceProvider serviceProvider ) {
 		ServiceProvider = serviceProvider;
 	}
 
@@ -363,11 +356,11 @@ internal class EmptyPipelineBuilder : IEmptyPipelineBuilder {
 	/// <typeparam name="TRequest">The request type to create</typeparam>
 	/// <param name="factory">Factory function to create the initial request</param>
 	/// <returns>Action pipeline builder with the created request</returns>
-	public IActionPipelineBuilder<TRequest> Transform<TRequest>(Func<TRequest> factory) {
-		var request = factory();
-		var state = new ActionPipelineState<TRequest>(request, ServiceProvider);
-		var pipeline = Myth.Flow.Pipeline.Start(state, ServiceProvider);
-		return new ActionPipelineBuilder<TRequest>(pipeline);
+	public IActionPipelineBuilder<TRequest> Transform<TRequest>( Func<TRequest> factory ) {
+		var request = factory( );
+		var state = new ActionPipelineState<TRequest>( request, ServiceProvider );
+		var pipeline = Myth.Flow.Pipeline.Start( state, ServiceProvider );
+		return new ActionPipelineBuilder<TRequest>( pipeline );
 	}
 
 	/// <summary>
@@ -376,14 +369,14 @@ internal class EmptyPipelineBuilder : IEmptyPipelineBuilder {
 	/// <typeparam name="TRequest">The request type to create</typeparam>
 	/// <param name="factory">Async factory function to create the initial request</param>
 	/// <returns>Action pipeline builder with the created request</returns>
-	public IActionPipelineBuilder<TRequest> TransformAsync<TRequest>(Func<Task<TRequest>> factory) {
-		var state = new ActionPipelineState<TRequest>(default!, ServiceProvider);
-		var pipeline = Myth.Flow.Pipeline.Start(state, ServiceProvider)
-			.StepAsync<IServiceProvider>(async (_, s) => {
-				var request = await factory();
+	public IActionPipelineBuilder<TRequest> TransformAsync<TRequest>( Func<Task<TRequest>> factory ) {
+		var state = new ActionPipelineState<TRequest>( default!, ServiceProvider );
+		var pipeline = Myth.Flow.Pipeline.Start( state, ServiceProvider )
+			.StepAsync<IServiceProvider>( async ( _, s ) => {
+				var request = await factory( );
 				s.CurrentRequest = request;
 				return s;
-			});
-		return new ActionPipelineBuilder<TRequest>(pipeline);
+			} );
+		return new ActionPipelineBuilder<TRequest>( pipeline );
 	}
 }

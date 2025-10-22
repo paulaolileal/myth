@@ -202,7 +202,7 @@ namespace Myth.Flow.Actions.Test {
 			// Act
 			var result = await PipelineExtensions
 				.Start( new TestQuery { Key = "cached-key" }, _serviceProvider )
-				.Query<TestQuery, string>( x => x.UseCache( "test-cache-key", TimeSpan.FromMinutes( 5 ) ) )
+				.Query<TestQuery, string>( ( query, x ) => x.UseCache( "test-cache-key", TimeSpan.FromMinutes( 5 ) ) )
 				.ExecuteAsync( );
 
 			// Assert

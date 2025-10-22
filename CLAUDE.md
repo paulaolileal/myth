@@ -227,27 +227,6 @@ The project uses GitLab CI with three stages:
 
 Version is extracted from git tags (format: `v{version}`).
 
-## Coding conventions 
-- Do not create comments not useful 
-- Name variables with significant names 
-- Avoid repeating code 
-- Write code with good spacing and readability 
-- Functions must have only one responsibility
-- Always follow SOLID and CLEAN CODE patterns 
-- Every new method should have a summary XML comment explaining its purpose and use tags for parameters, exceptions and return values
-- Avoid create more than one class or interface in the same file
-
-## Code style
-- Do not use brackets in if with only one line
-- Use more spaces for better readability, like `public void Test( Cancellation Token )` or `var test = new List<Test> {`
-- Use more empty lines to separate code blocks
-- Always use one empty line before the return
-- Always keep the open bracket in the same line of the method or class declaration
-
-## Commit conventions
-- Always write commit messages in English
-- Always use Conventional Commits format: `type(scope): description`
-
 ## Docs
 - Always keep this CLAUDE.md updated with new workflows and patterns
 - Always create or update README.md and README.pt-br.md files for new libraries with documentation and usage examples

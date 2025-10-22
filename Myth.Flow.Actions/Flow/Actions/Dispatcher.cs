@@ -3,6 +3,9 @@ using Microsoft.Extensions.Logging;
 using Myth.Interfaces;
 using Myth.Models;
 using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
 namespace Myth.Flow.Actions;
 
@@ -115,9 +118,19 @@ internal sealed class Dispatcher : IDispatcher {
 		using var activity = _activitySource.StartActivity( $"Query.{typeof( TQuery ).Name}" );
 
 		try {
-			var cacheKey = cacheOptions?.CacheKey ?? GenerateCacheKey( query );
+			string? cacheKey = null;
+			if ( cacheOptions?.Enabled == true ) {
+				// Prioridade: KeyGenerator > CacheKey explícita > Auto-geração
+				if ( cacheOptions.KeyGenerator != null ) {
+					cacheKey = cacheOptions.KeyGenerator( query );
+				} else if ( !string.IsNullOrEmpty( cacheOptions.CacheKey ) ) {
+					cacheKey = cacheOptions.CacheKey;
+				} else {
+					cacheKey = GenerateCacheKey( query );
+				}
+			}
 
-			if ( cacheOptions?.Enabled == true && _cacheProvider != null ) {
+			if ( cacheOptions?.Enabled == true && _cacheProvider != null && !string.IsNullOrEmpty( cacheKey ) ) {
 				var cached = await _cacheProvider.GetAsync<TResponse>( cacheKey, cancellationToken );
 				if ( cached.HasValue ) {
 					_logger.LogInformation( "Query {QueryType} served from cache", typeof( TQuery ).Name );
@@ -133,7 +146,7 @@ internal sealed class Dispatcher : IDispatcher {
 
 			var result = await handler.HandleAsync( query, cancellationToken );
 
-			if ( result.IsSuccess && cacheOptions?.Enabled == true && _cacheProvider != null ) {
+			if ( result.IsSuccess && cacheOptions?.Enabled == true && _cacheProvider != null && !string.IsNullOrEmpty( cacheKey ) ) {
 				await _cacheProvider.SetAsync(
 					cacheKey,
 					result.Data!,
@@ -179,14 +192,43 @@ internal sealed class Dispatcher : IDispatcher {
 	}
 
 	/// <summary>
-	/// Generates a cache key for a query based on its type and hash code
+	/// Generates a cache key for a query using JSON serialization for parameter consistency
 	/// </summary>
 	/// <typeparam name="TQuery">The type of query</typeparam>
 	/// <param name="query">The query instance</param>
-	/// <returns>A cache key string in the format "TypeName:HashCode"</returns>
+	/// <returns>A cache key string in the format "TypeName:Hash" where Hash is derived from JSON serialization</returns>
 	private static string GenerateCacheKey<TQuery>( TQuery query ) {
 		var typeName = typeof( TQuery ).Name;
-		var hashCode = query?.GetHashCode( ) ?? 0;
-		return $"{typeName}:{hashCode}";
+
+		try {
+			// Serialização determinística para garantir consistência
+			var jsonOptions = new JsonSerializerOptions {
+				WriteIndented = false,
+				PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+				IgnoreNullValues = true,
+				IncludeFields = false
+			};
+
+			var serialized = JsonSerializer.Serialize( query, jsonOptions );
+			var hash = ComputeStableHash( serialized );
+
+			return $"{typeName}:{hash}";
+		} catch {
+			// Fallback para GetHashCode() em caso de erro na serialização
+			var hashCode = query?.GetHashCode( ) ?? 0;
+			return $"{typeName}:{hashCode}";
+		}
+	}
+
+	/// <summary>
+	/// Computes a stable hash from a string using SHA256
+	/// </summary>
+	/// <param name="input">The input string to hash</param>
+	/// <returns>A 16-character hexadecimal hash string</returns>
+	private static string ComputeStableHash( string input ) {
+		using var sha256 = SHA256.Create( );
+		var bytes = Encoding.UTF8.GetBytes( input );
+		var hashBytes = sha256.ComputeHash( bytes );
+		return Convert.ToHexString( hashBytes )[ ..16 ]; // Primeiros 16 caracteres para performance
 	}
 }

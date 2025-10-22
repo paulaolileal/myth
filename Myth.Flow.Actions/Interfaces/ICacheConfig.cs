@@ -21,6 +21,14 @@ public interface ICacheConfig {
 	ICacheConfig UseCache( string key, TimeSpan ttl );
 
 	/// <summary>
+	/// Enables caching with a custom key generator function
+	/// </summary>
+	/// <typeparam name="TQuery">The type of query for the key generator</typeparam>
+	/// <param name="keyGenerator">Function to generate cache key from query instance</param>
+	/// <returns>Cache configuration builder for method chaining</returns>
+	ICacheConfig UseCache<TQuery>( Func<TQuery, string> keyGenerator );
+
+	/// <summary>
 	/// Sets the cache key for the query result
 	/// </summary>
 	/// <param name="key">The cache key to use</param>

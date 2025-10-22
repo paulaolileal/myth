@@ -28,6 +28,11 @@ internal class CacheConfigBuilder : ICacheConfig {
 	public bool SlidingExpiration { get; private set; }
 
 	/// <summary>
+	/// Gets the key generator function for custom cache key generation
+	/// </summary>
+	public Func<object, string>? KeyGenerator { get; private set; }
+
+	/// <summary>
 	/// Enables caching for the query with optional cache key
 	/// </summary>
 	/// <param name="key">The cache key to use. If null, auto-generates key based on query type and properties</param>
@@ -48,6 +53,18 @@ internal class CacheConfigBuilder : ICacheConfig {
 		Enabled = true;
 		Key = key;
 		Ttl = ttl;
+		return this;
+	}
+
+	/// <summary>
+	/// Enables caching with a custom key generator function
+	/// </summary>
+	/// <typeparam name="TQuery">The type of query for the key generator</typeparam>
+	/// <param name="keyGenerator">Function to generate cache key from query instance</param>
+	/// <returns>Cache configuration builder for method chaining</returns>
+	public ICacheConfig UseCache<TQuery>( Func<TQuery, string> keyGenerator ) {
+		Enabled = true;
+		KeyGenerator = query => keyGenerator( ( TQuery )query );
 		return this;
 	}
 
@@ -92,6 +109,7 @@ internal class CacheConfigBuilder : ICacheConfig {
 		return new CacheOptions {
 			Enabled = true,
 			CacheKey = Key,
+			KeyGenerator = KeyGenerator,
 			Ttl = Ttl ?? TimeSpan.FromMinutes( 5 ),
 			SlidingExpiration = SlidingExpiration
 		};
