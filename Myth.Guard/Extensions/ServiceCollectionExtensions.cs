@@ -16,9 +16,6 @@ namespace Myth.Extensions {
 		public static IServiceCollection AddGuard( this IServiceCollection services ) {
 			services.AddScoped<IValidator, Validator>( );
 
-			// Auto-initialize global service provider using Myth.Commons centralized system
-			services.AddMythAutoInitialization( "Myth.Guard" );
-
 			return services;
 		}
 	}

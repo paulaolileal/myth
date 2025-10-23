@@ -269,7 +269,7 @@ namespace Myth.Extensions {
 		/// <returns>An ILogger instance or null if not available.</returns>
 		private static ILogger? GetLogger( IServiceProvider? sp = null ) {
 			try {
-				var serviceProvider = sp ?? MythServiceProvider.Current;
+				var serviceProvider = MythServiceProvider.GetOrFallback( sp );
 				return serviceProvider?.GetService( typeof( ILogger<> ).MakeGenericType( typeof( MorphExtensions ) ) ) as ILogger;
 			} catch {
 				return null;

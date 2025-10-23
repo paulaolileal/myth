@@ -55,9 +55,6 @@ namespace Myth.Extensions {
 				return registry;
 			} );
 
-			// Auto-initialize global service provider using Myth.Commons centralized system
-			services.AddMythAutoInitialization( "Myth.Morph" );
-
 			return services;
 		}
 
