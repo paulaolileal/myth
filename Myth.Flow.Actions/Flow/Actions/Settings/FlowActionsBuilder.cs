@@ -117,6 +117,18 @@ public sealed class FlowActionsBuilder {
 	}
 
 	/// <summary>
+	/// Configures automatic subscription of event handlers to the EventBus.
+	/// When enabled (default), all discovered event handlers are automatically subscribed to handle their respective events.
+	/// When disabled, handlers must be manually subscribed using EventBus.Subscribe&lt;TEvent, THandler&gt;().
+	/// </summary>
+	/// <param name="enabled">True to automatically subscribe handlers (default), false to require manual subscription</param>
+	/// <returns>The builder instance for method chaining</returns>
+	public FlowActionsBuilder AutoSubscribeEventHandlers( bool enabled = true ) {
+		_configuration.AutoSubscribeEventHandlers = enabled;
+		return this;
+	}
+
+	/// <summary>
 	/// Builds the configuration
 	/// </summary>
 	internal FlowActionsConfiguration Build( ) => _configuration;

@@ -11,5 +11,6 @@ public sealed class FlowActionsConfiguration {
 	internal Action<CacheConfiguration>? CacheConfiguration { get; set; }
 	internal RetryConfiguration RetryConfig { get; set; } = new( );
 	internal bool DeadLetterQueueEnabled { get; set; }
+	internal bool AutoSubscribeEventHandlers { get; set; } = true;
 	internal List<System.Reflection.Assembly> AssembliesToScan { get; set; } = new( );
 }

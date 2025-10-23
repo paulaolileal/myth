@@ -205,15 +205,27 @@ public static class ServiceCollectionExtensions {
 
 		foreach ( var (eventType, handlerType) in eventHandlers ) {
 			var eventHandlerInterface = typeof( IEventHandler<> ).MakeGenericType( eventType );
+
+			// Register both the interface and the concrete type
 			services.AddTransient( eventHandlerInterface, handlerType );
+			services.AddTransient( handlerType );
 		}
 
 		services.AddSingleton<IEventHandlerRegistry>( sp => {
 			var subscriptionManager = sp.GetRequiredService<IEventSubscriptionManager>( );
 			var registry = new EventHandlerRegistry( subscriptionManager );
 
-			foreach ( var (eventType, handlerType) in eventHandlers )
+			foreach ( var (eventType, handlerType) in eventHandlers ) {
 				registry.RegisterHandler( eventType, handlerType );
+
+				// Auto-subscribe handlers to EventBus if enabled
+				if ( configuration.AutoSubscribeEventHandlers ) {
+					var eventBus = sp.GetRequiredService<IEventBus>( );
+					var subscribeMethod = typeof( IEventBus ).GetMethod( nameof( IEventBus.Subscribe ) );
+					var genericSubscribeMethod = subscribeMethod!.MakeGenericMethod( eventType, handlerType );
+					genericSubscribeMethod.Invoke( eventBus, null );
+				}
+			}
 
 			return registry;
 		} );
