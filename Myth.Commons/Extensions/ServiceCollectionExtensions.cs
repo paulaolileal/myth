@@ -77,4 +77,54 @@ public static class ServiceCollectionExtensions {
 	public static IServiceProvider? GetGlobalProvider( ) {
 		return MythServiceProvider.Current;
 	}
+
+	/// <summary>
+	/// Registers the scoped service provider pattern that enables automatic service scope management.
+	/// This allows injection of IScopedService&lt;T&gt; for any registered service, automatically
+	/// handling scope creation and disposal when executing operations.
+	/// </summary>
+	/// <param name="services">The service collection to add the scoped service provider to</param>
+	/// <returns>The service collection for method chaining</returns>
+	/// <exception cref="ArgumentNullException">Thrown when services is null</exception>
+	/// <remarks>
+	/// <para>
+	/// This registration enables the use of IScopedService&lt;T&gt; for any service T that is
+	/// registered in the dependency injection container, regardless of the original service's
+	/// lifetime (Singleton, Scoped, or Transient).
+	/// </para>
+	/// <para>
+	/// The scoped service pattern is particularly useful in scenarios where:
+	/// - Transient handlers need to use Scoped services (like repositories with DbContext)
+	/// - Background services need to access request-scoped dependencies
+	/// - Singleton services need to perform operations with scoped dependencies
+	/// </para>
+	/// <para>
+	/// Only needs to be called once per application. All libraries using IScopedService&lt;T&gt;
+	/// will automatically benefit from this registration.
+	/// </para>
+	/// </remarks>
+	/// <example>
+	/// <code>
+	/// var builder = WebApplication.CreateBuilder(args);
+	///
+	/// // Register the scoped service provider pattern
+	/// builder.Services.AddScopedServiceProvider();
+	///
+	/// // Register your services normally
+	/// builder.Services.AddScoped&lt;IRepository, Repository&gt;();
+	/// builder.Services.AddFlowActions(config =&gt; { ... });
+	///
+	/// var app = builder.BuildApp();
+	///
+	/// // Now handlers can inject IScopedService&lt;IRepository&gt; automatically
+	/// </code>
+	/// </example>
+	public static IServiceCollection AddScopedServiceProvider( this IServiceCollection services ) {
+		ArgumentNullException.ThrowIfNull( services );
+
+		// Register the generic factory that will create ScopedService<T> for any T
+		services.AddTransient( typeof( IScopedService<> ), typeof( ServiceProvider.ScopedService<> ) );
+
+		return services;
+	}
 }
