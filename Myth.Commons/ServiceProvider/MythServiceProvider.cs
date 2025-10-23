@@ -6,7 +6,7 @@ namespace Myth.ServiceProvider;
 /// </summary>
 public static class MythServiceProvider {
 	private static volatile IServiceProvider? _serviceProvider;
-	private static readonly object _lock = new object( );
+	private static readonly object _lock = new( );
 
 	/// <summary>
 	/// Gets the current global service provider, or null if not initialized

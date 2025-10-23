@@ -33,19 +33,4 @@ internal static class ServiceProviderHelper {
 	public static IServiceProvider GetProviderOrFallback( IServiceProvider? fallbackServiceProvider ) {
 		return MythServiceProvider.GetOrFallback( fallbackServiceProvider );
 	}
-
-	/// <summary>
-	/// Creates an auto-initializer factory function for use in service registration.
-	/// This factory ensures the global service provider is initialized when the DI container is built.
-	/// </summary>
-	/// <param name="libraryName">Name of the library for debugging/logging purposes</param>
-	/// <returns>Factory function that can be used in AddSingleton registration</returns>
-	public static Func<IServiceProvider, IServiceProviderAutoInitializer> CreateAutoInitializerFactory( string libraryName ) {
-		return serviceProvider => {
-			// When the container is built, this factory will be called
-			// and automatically initialize the global provider
-			EnsureGlobalProvider( serviceProvider );
-			return new ServiceProviderAutoInitializer( libraryName );
-		};
-	}
 }
