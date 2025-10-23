@@ -35,6 +35,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Myth.Repository\Myth.Repository.csproj" />
 		<ProjectReference Include="..\Myth.Specification\Myth.Specification.csproj" />
+		<ProjectReference Include="..\Myth.DependencyInjection\Myth.DependencyInjection.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
