@@ -29,7 +29,7 @@ namespace Myth.Extensions {
 		/// <typeparam name="TContext">The specific BaseContext type that the UnitOfWorkRepository will operate on</typeparam>
 		/// <param name="services">The service collection to add the registration to</param>
 		/// <returns>The service collection for method chaining</returns>
-		public static IServiceCollection AddUnitOfWorkFoContext<TContext>( this IServiceCollection services ) where TContext : BaseContext {
+		public static IServiceCollection AddUnitOfWorkForContext<TContext>( this IServiceCollection services ) where TContext : BaseContext {
 			services.AddScoped<IUnitOfWorkRepository, UnitOfWorkRepository<TContext>>( );
 
 			return services;
