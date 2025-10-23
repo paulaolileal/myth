@@ -15,7 +15,7 @@ namespace Myth.Flow.Test {
 			var dto = new TestDto { Value = 1 };
 
 			// Act
-			var result = Pipeline.Start( dto )
+			var result = Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) )
 				.Tap( d => d.Value++ )
 				.Execute( );
 

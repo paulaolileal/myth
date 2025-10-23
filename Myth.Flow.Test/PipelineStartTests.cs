@@ -12,7 +12,7 @@ namespace Myth.Flow.Test {
 			var dto = new TestDto { Value = 42 };
 
 			// Act
-			var pipeline = Pipeline.Start( dto );
+			var pipeline = Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) );
 
 			// Assert
 			Assert.NotNull( pipeline );

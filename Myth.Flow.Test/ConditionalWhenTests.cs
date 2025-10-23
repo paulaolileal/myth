@@ -16,7 +16,7 @@ namespace Myth.Flow.Test {
 			var dto = new TestDto { Value = 5 };
 
 			// Act
-			var result = await Pipeline.Start( dto )
+			var result = await Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) )
 				.When(
 					d => d.Value > 3,
 					pipeline => pipeline.Tap( d => d.Value *= 2 ) )
@@ -33,7 +33,7 @@ namespace Myth.Flow.Test {
 			var dto = new TestDto { Value = 2 };
 
 			// Act
-			var result = await Pipeline.Start( dto )
+			var result = await Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) )
 				.When(
 					d => d.Value > 3,
 					pipeline => pipeline.Tap( d => d.Value *= 2 ) )

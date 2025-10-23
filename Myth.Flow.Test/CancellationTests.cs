@@ -49,7 +49,7 @@ namespace Myth.Flow.Test {
 			cts.Cancel( );
 
 			// Act
-			var result = await Pipeline.Start( dto )
+			var result = await Pipeline.Start( dto, new ServiceCollection().BuildServiceProvider() )
 				.Tap( d => d.Value++ )
 				.ExecuteAsync( cts.Token );
 

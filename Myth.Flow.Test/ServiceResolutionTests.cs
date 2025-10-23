@@ -16,7 +16,7 @@ namespace Myth.Flow.Test {
 
 			// Act & Assert
 			await Assert.ThrowsAsync<PipelineConfigurationException>( async ( ) =>
-				await Pipeline.Start( dto )
+				await Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) )
 					.Step<ITestService>( ( svc, d ) => svc.Process( d ) )
 					.ExecuteAsync( ) );
 		}

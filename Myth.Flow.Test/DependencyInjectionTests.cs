@@ -52,7 +52,7 @@ namespace Myth.Flow.Test {
 
 			// Act
 			var dto = new TestDto { Value = 1 };
-			var pipeline = Pipeline.Start( dto );
+			var pipeline = Pipeline.Start( dto, provider );
 
 			// Assert - pipeline should be created without exception
 			Assert.NotNull( pipeline );

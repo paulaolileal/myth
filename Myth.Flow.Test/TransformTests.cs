@@ -15,7 +15,7 @@ namespace Myth.Flow.Test {
 			var dto = new TestDto { Value = 42, Message = "Test" };
 
 			// Act
-			var result = await Pipeline.Start( dto )
+			var result = await Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) )
 				.Transform( d => new TestResult {
 					Success = true,
 					Data = $"{d.Message}:{d.Value}"
@@ -34,7 +34,7 @@ namespace Myth.Flow.Test {
 			var dto = new TestDto { Value = 42, Message = "Test" };
 
 			// Act
-			var result = await Pipeline.Start( dto )
+			var result = await Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) )
 				.TransformAsync( async d => {
 					await Task.Delay( 10 );
 					return new TestResult {

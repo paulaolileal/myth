@@ -1,4 +1,5 @@
-﻿using Myth.Flow.Test.Models;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Myth.Flow.Test.Models;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -13,7 +14,7 @@ namespace Myth.Flow.Test {
 			var sideEffectExecuted = false;
 
 			// Act
-			var result = await Pipeline.Start( dto )
+			var result = await Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) )
 				.Tap( d => sideEffectExecuted = true )
 				.ExecuteAsync( );
 
@@ -30,7 +31,7 @@ namespace Myth.Flow.Test {
 			var sideEffectValue = 0;
 
 			// Act
-			var result = await Pipeline.Start( dto )
+			var result = await Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) )
 				.TapAsync( async d => {
 					await Task.Delay( 10 );
 					sideEffectValue = d.Value;
@@ -49,7 +50,7 @@ namespace Myth.Flow.Test {
 			var dto = new TestDto { Value = 42 };
 
 			// Act
-			var result = await Pipeline.Start( dto )
+			var result = await Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) )
 				.Tap( d => d.Value = 100 ) // Try to modify
 				.ExecuteAsync( );
 
