@@ -27,6 +27,8 @@
 
 ## 💪 Empoderando tipos
 - [Myth.Morph](Myth.Morph/README.pt-br.md)
+- [Myth.Guard](Myth.Guard/README.pt-br.md)
 
 ## 🧩 Fluxo de trabalho e pipelines
 - [Myth.Flow](Myth.Flow/README.pt-br.md)
+- [Myth.Flow.Actions](Myth.Flow.Actions/README.pt-br.md)

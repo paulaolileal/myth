@@ -27,6 +27,8 @@ It is a set of simple and commonly reused libraries. They encompass all types of
 
 ## 💪 Empowering types
 - [Myth.Morph](Myth.Morph/README.md)
+- [Myth.Guard](Myth.Guard/README.md)
 
 ## 🧩 Workflow and pipelines
 - [Myth.Flow](Myth.Flow/README.md)
+- [Myth.Flow.Actions](Myth.Flow.Actions/README.md)
