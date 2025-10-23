@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Myth.Builders;
-using Myth.Interfaces;
 using Myth.Models;
 using System.Diagnostics;
 
@@ -81,13 +80,6 @@ namespace Myth.Extensions {
 				services.AddSingleton( sp =>
 					config.ActivitySource ?? new ActivitySource( "Myth.Flow" ) );
 			}
-
-			// Register service provider accessor
-			services.AddSingleton<IServiceProviderAccessor>( sp =>
-				new ServiceProviderAccessor( sp ) );
-
-			// Auto-initialize global service provider using Myth.Commons centralized system
-			services.AddMythAutoInitialization( "Myth.Flow" );
 
 			return services;
 		}

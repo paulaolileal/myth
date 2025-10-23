@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Myth.Builders;
+﻿using Myth.Builders;
 using Myth.Interfaces;
 using Myth.Models;
 using Myth.ServiceProvider;
@@ -21,7 +20,9 @@ namespace Myth.Flow {
 		/// <param name="input">Initial input context for the pipeline.</param>
 		/// <returns>An <see cref="IPipelineBuilder{TInput}"/> for building the pipeline.</returns>
 		public static IPipelineBuilder<TInput> Start<TInput>( TInput input ) {
-			var serviceProvider = MythServiceProvider.Current ?? new Microsoft.Extensions.DependencyInjection.ServiceCollection( ).BuildServiceProvider( );
+			var serviceProvider = MythServiceProvider.Current
+				?? throw new InvalidOperationException( "No global service provider is configured. Please use the `builder.BuildApp()` for initialize global service pprovider." );
+
 			var config = serviceProvider.GetService( typeof( PipelineConfiguration ) ) as PipelineConfiguration
 				?? new PipelineConfiguration( );
 
