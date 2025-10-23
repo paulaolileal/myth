@@ -24,40 +24,52 @@ internal sealed class ScopedService<T> : IScopedService<T> where T : class {
 	public TResult Execute<TResult>( Func<T, TResult> operation ) {
 		ArgumentNullException.ThrowIfNull( operation );
 
-		using var scope = _scopeFactory.CreateScope( );
-		var service = ResolveService( scope.ServiceProvider );
-
-		return operation( service );
+		var scope = _scopeFactory.CreateScope( );
+		try {
+			var service = ResolveService( scope.ServiceProvider );
+			return operation( service );
+		} finally {
+			DisposeScope( scope );
+		}
 	}
 
 	/// <inheritdoc />
 	public async Task<TResult> ExecuteAsync<TResult>( Func<T, Task<TResult>> operation ) {
 		ArgumentNullException.ThrowIfNull( operation );
 
-		using var scope = _scopeFactory.CreateScope( );
-		var service = ResolveService( scope.ServiceProvider );
-
-		return await operation( service );
+		var scope = _scopeFactory.CreateScope( );
+		try {
+			var service = ResolveService( scope.ServiceProvider );
+			return await operation( service );
+		} finally {
+			await DisposeScopeAsync( scope );
+		}
 	}
 
 	/// <inheritdoc />
 	public void Execute( Action<T> operation ) {
 		ArgumentNullException.ThrowIfNull( operation );
 
-		using var scope = _scopeFactory.CreateScope( );
-		var service = ResolveService( scope.ServiceProvider );
-
-		operation( service );
+		var scope = _scopeFactory.CreateScope( );
+		try {
+			var service = ResolveService( scope.ServiceProvider );
+			operation( service );
+		} finally {
+			DisposeScope( scope );
+		}
 	}
 
 	/// <inheritdoc />
 	public async Task ExecuteAsync( Func<T, Task> operation ) {
 		ArgumentNullException.ThrowIfNull( operation );
 
-		using var scope = _scopeFactory.CreateScope( );
-		var service = ResolveService( scope.ServiceProvider );
-
-		await operation( service );
+		var scope = _scopeFactory.CreateScope( );
+		try {
+			var service = ResolveService( scope.ServiceProvider );
+			await operation( service );
+		} finally {
+			await DisposeScopeAsync( scope );
+		}
 	}
 
 	/// <summary>
@@ -76,5 +88,42 @@ internal sealed class ScopedService<T> : IScopedService<T> where T : class {
 		}
 
 		return service;
+	}
+
+	/// <summary>
+	/// Disposes a service scope using the appropriate disposal method.
+	/// Attempts async disposal first (IAsyncDisposable), then falls back to sync disposal (IDisposable).
+	/// </summary>
+	/// <param name="scope">The service scope to dispose</param>
+	private static void DisposeScope( IServiceScope scope ) {
+		// Try async disposal first, but execute synchronously
+		if ( scope is IAsyncDisposable asyncDisposable ) {
+			try {
+				asyncDisposable.DisposeAsync( ).AsTask( ).GetAwaiter( ).GetResult( );
+				return;
+			} catch {
+				// If async disposal fails, fall back to sync disposal
+			}
+		}
+
+		// Fall back to sync disposal
+		scope.Dispose( );
+	}
+
+	/// <summary>
+	/// Asynchronously disposes a service scope using the appropriate disposal method.
+	/// Attempts async disposal first (IAsyncDisposable), then falls back to sync disposal (IDisposable).
+	/// </summary>
+	/// <param name="scope">The service scope to dispose</param>
+	/// <returns>A task representing the disposal operation</returns>
+	private static async ValueTask DisposeScopeAsync( IServiceScope scope ) {
+		// Try async disposal first
+		if ( scope is IAsyncDisposable asyncDisposable ) {
+			await asyncDisposable.DisposeAsync( );
+			return;
+		}
+
+		// Fall back to sync disposal
+		scope.Dispose( );
 	}
 }
