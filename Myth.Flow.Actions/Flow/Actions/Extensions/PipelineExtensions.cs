@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Myth.Exceptions;
+﻿using Myth.Exceptions;
 using Myth.Flow.Actions.Interfaces;
 using Myth.Interfaces;
 using Myth.Models;
+using Myth.ServiceProvider;
 
 namespace Myth.Flow.Actions.Extensions;
 
@@ -31,7 +31,9 @@ public static class PipelineExtensions {
 	/// <param name="request">The initial request to start the pipeline with</param>
 	/// <returns>Action pipeline builder for method chaining</returns>
 	public static IActionPipelineBuilder<TRequest> Start<TRequest>( TRequest request ) {
-		var serviceProvider = ( IServiceProvider )new ServiceCollection( ).BuildServiceProvider( );
+		var serviceProvider = MythServiceProvider.Current
+			?? throw new InvalidOperationException( "No global service provider is configured. Please use the `builder.BuildApp()` for initialize global service pprovider." );
+
 		return Start( request, serviceProvider );
 	}
 
@@ -49,7 +51,9 @@ public static class PipelineExtensions {
 	/// </summary>
 	/// <returns>Empty pipeline builder that can be populated with Transform operations</returns>
 	public static IEmptyPipelineBuilder Start( ) {
-		var serviceProvider = ( IServiceProvider )new ServiceCollection( ).BuildServiceProvider( );
+		var serviceProvider = MythServiceProvider.Current
+			?? throw new InvalidOperationException( "No global service provider is configured. Please use the `builder.BuildApp()` for initialize global service pprovider." );
+
 		return Start( serviceProvider );
 	}
 
@@ -302,81 +306,5 @@ public static class PipelineExtensions {
 		} );
 
 		return new ActionPipelineBuilder<TNext>( newPipeline );
-	}
-}
-
-/// <summary>
-/// Interface for empty pipeline builder that can be populated with Transform operations
-/// </summary>
-public interface IEmptyPipelineBuilder {
-
-	/// <summary>
-	/// Gets the service provider for dependency injection
-	/// </summary>
-	IServiceProvider ServiceProvider { get; }
-
-	/// <summary>
-	/// Transforms empty pipeline to a request type using a factory function
-	/// </summary>
-	/// <typeparam name="TRequest">The request type to create</typeparam>
-	/// <param name="factory">Factory function to create the initial request</param>
-	/// <returns>Action pipeline builder with the created request</returns>
-	IActionPipelineBuilder<TRequest> Transform<TRequest>( Func<TRequest> factory );
-
-	/// <summary>
-	/// Transforms empty pipeline to a request type using an async factory function
-	/// </summary>
-	/// <typeparam name="TRequest">The request type to create</typeparam>
-	/// <param name="factory">Async factory function to create the initial request</param>
-	/// <returns>Action pipeline builder with the created request</returns>
-	IActionPipelineBuilder<TRequest> TransformAsync<TRequest>( Func<Task<TRequest>> factory );
-}
-
-/// <summary>
-/// Internal implementation of empty pipeline builder
-/// </summary>
-internal class EmptyPipelineBuilder : IEmptyPipelineBuilder {
-
-	/// <summary>
-	/// Gets the service provider for dependency injection
-	/// </summary>
-	public IServiceProvider ServiceProvider { get; }
-
-	/// <summary>
-	/// Initializes a new instance of EmptyPipelineBuilder
-	/// </summary>
-	/// <param name="serviceProvider">Service provider for dependency injection</param>
-	public EmptyPipelineBuilder( IServiceProvider serviceProvider ) {
-		ServiceProvider = serviceProvider;
-	}
-
-	/// <summary>
-	/// Transforms empty pipeline to a request type using a factory function
-	/// </summary>
-	/// <typeparam name="TRequest">The request type to create</typeparam>
-	/// <param name="factory">Factory function to create the initial request</param>
-	/// <returns>Action pipeline builder with the created request</returns>
-	public IActionPipelineBuilder<TRequest> Transform<TRequest>( Func<TRequest> factory ) {
-		var request = factory( );
-		var state = new ActionPipelineState<TRequest>( request, ServiceProvider );
-		var pipeline = Myth.Flow.Pipeline.Start( state, ServiceProvider );
-		return new ActionPipelineBuilder<TRequest>( pipeline );
-	}
-
-	/// <summary>
-	/// Transforms empty pipeline to a request type using an async factory function
-	/// </summary>
-	/// <typeparam name="TRequest">The request type to create</typeparam>
-	/// <param name="factory">Async factory function to create the initial request</param>
-	/// <returns>Action pipeline builder with the created request</returns>
-	public IActionPipelineBuilder<TRequest> TransformAsync<TRequest>( Func<Task<TRequest>> factory ) {
-		var state = new ActionPipelineState<TRequest>( default!, ServiceProvider );
-		var pipeline = Myth.Flow.Pipeline.Start( state, ServiceProvider )
-			.StepAsync<IServiceProvider>( async ( _, s ) => {
-				var request = await factory( );
-				s.CurrentRequest = request;
-				return s;
-			} );
-		return new ActionPipelineBuilder<TRequest>( pipeline );
 	}
 }

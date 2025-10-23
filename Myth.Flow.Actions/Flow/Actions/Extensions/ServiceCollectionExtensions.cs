@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Myth.Builders;
-using Myth.Extensions;
 using Myth.Flow.Actions.Brokers;
 using Myth.Flow.Actions.Hosting;
 using Myth.Flow.Actions.Settings;
@@ -46,9 +45,6 @@ public static class ServiceCollectionExtensions {
 		RegisterHandlers( services, configuration );
 
 		services.AddHostedService<MessageBrokerHostedService>( );
-
-		// Auto-initialize global service provider using Myth.Commons centralized system
-		services.AddMythAutoInitialization( "Myth.Flow.Actions" );
 
 		return services;
 	}
