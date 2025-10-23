@@ -24,7 +24,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
+	  <ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
