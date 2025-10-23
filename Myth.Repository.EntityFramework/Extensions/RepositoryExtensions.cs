@@ -47,11 +47,10 @@ namespace Myth.Extensions {
 			foreach ( var repositoryType in repositoryTypes ) {
 				var interfaces = GetRepositoryInterfaces( repositoryType );
 
-				foreach ( var interfaceType in interfaces ) {
-					services.Add( new ServiceDescriptor( interfaceType, repositoryType, lifetime ) );
-				}
-			}
+				var interfaceType = interfaces.First( );
 
+				services.Add( new ServiceDescriptor( interfaceType, repositoryType, lifetime ) );
+			}
 			return services;
 		}
 
@@ -68,9 +67,9 @@ namespace Myth.Extensions {
 			foreach ( var repositoryType in repositoryTypes ) {
 				var interfaces = GetRepositoryInterfaces( repositoryType );
 
-				foreach ( var interfaceType in interfaces ) {
-					services.Add( new ServiceDescriptor( interfaceType, repositoryType, lifetime ) );
-				}
+				var interfaceType = interfaces.First( );
+
+				services.Add( new ServiceDescriptor( interfaceType, repositoryType, lifetime ) );
 			}
 
 			return services;
@@ -120,31 +119,12 @@ namespace Myth.Extensions {
 		private static IEnumerable<Type> GetRepositoryInterfaces( Type repositoryType ) {
 			var interfaces = repositoryType.GetInterfaces( );
 
-			// Priority 1: EntityFramework-specific interfaces
-			var efInterfaces = interfaces.Where( i => i.Namespace?.Contains( "EntityFramework" ) == true ).ToList( );
-			if ( efInterfaces.Any( ) ) {
-				return efInterfaces;
-			}
-
-			// Priority 2: Base repository interfaces (excluding IRepository and IAsyncDisposable)
-			var baseInterfaces = interfaces.Where( i =>
-				i.Namespace?.Contains( "Repositories.Base" ) == true &&
-				i != typeof( IRepository ) &&
-				i != typeof( IAsyncDisposable )
-			).ToList( );
-
-			if ( baseInterfaces.Any( ) ) {
-				return baseInterfaces;
-			}
-
 			// Fallback: Use interface name matching strategy
 			var matchedInterface = interfaces.FirstOrDefault( i => i.Name.Contains( repositoryType.Name ) );
-			if ( matchedInterface != null ) {
+			if ( matchedInterface != null )
 				return new[ ] { matchedInterface };
-			}
 
-			// Last resort: Return IRepository if nothing else matches
-			return new[ ] { typeof( IRepository ) };
+			throw new InvalidOperationException( $"The type {repositoryType.Name} must implement a interface with the same name" );
 		}
 
 		/// <summary>

@@ -8,7 +8,7 @@ namespace Myth.Flow.Actions;
 /// </summary>
 internal sealed class EventHandlerRegistry : IEventHandlerRegistry {
 	private readonly IEventSubscriptionManager _subscriptionManager;
-	private readonly ConcurrentBag<(Type EventType, Type HandlerType)> _registrations = new( );
+	private readonly ConcurrentDictionary<Type, ConcurrentBag<Type>> _registrations = new( );
 
 	public EventHandlerRegistry( IEventSubscriptionManager subscriptionManager ) {
 		_subscriptionManager = subscriptionManager;
@@ -26,7 +26,14 @@ internal sealed class EventHandlerRegistry : IEventHandlerRegistry {
 
 		registerMethod?.Invoke( _subscriptionManager, null );
 
-		_registrations.Add( (eventType, handlerType) );
+		_registrations.AddOrUpdate(
+			eventType,
+			_ => new ConcurrentBag<Type> { handlerType },
+			( _, bag ) => {
+				if ( !bag.Contains( handlerType ) )
+					bag.Add( handlerType );
+				return bag;
+			} );
 	}
 
 	/// <summary>
@@ -34,5 +41,6 @@ internal sealed class EventHandlerRegistry : IEventHandlerRegistry {
 	/// </summary>
 	/// <returns>A collection of tuples containing event types and their corresponding handler types</returns>
 	public IEnumerable<(Type EventType, Type HandlerType)> GetRegisteredHandlers( ) =>
-		_registrations.ToList( );
+		_registrations.SelectMany( kvp =>
+			kvp.Value.Select( handlerType => (kvp.Key, handlerType) ) ).ToList( );
 }

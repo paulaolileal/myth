@@ -1,0 +1,48 @@
+<Solution>
+  <Folder Name="/Commons/">
+    <Project Path="Myth.Commons.Test/Myth.Commons.Test.csproj" />
+    <Project Path="Myth.Commons/Myth.Commons.csproj"/>
+  </Folder>
+  <Folder Name="/DependencyInjection/">
+    <Project Path="Myth.DependencyInjection.Providers/Myth.DependencyInjection.Providers.csproj" />
+    <Project Path="Myth.DependencyInjection.Test/Myth.DependencyInjection.Test.csproj" />
+    <Project Path="Myth.DependencyInjection/Myth.DependencyInjection.csproj" />
+  </Folder>
+  <Folder Name="/DevOps/">
+    <File Path=".gitlab-ci.yml" />
+  </Folder>
+  <Folder Name="/Flow/">
+    <Project Path="Myth.Flow.Actions.Test/Myth.Flow.Actions.Test.csproj" />
+    <Project Path="Myth.Flow.Actions/Myth.Flow.Actions.csproj" />
+    <Project Path="Myth.Flow.Test/Myth.Flow.Test.csproj" />
+    <Project Path="Myth.Flow/Myth.Flow.csproj" />
+  </Folder>
+  <Folder Name="/Guard/">
+    <Project Path="Myth.Guard.Test/Myth.Guard.Test.csproj" />
+    <Project Path="Myth.Guard/Myth.Guard.csproj" />
+  </Folder>
+  <Folder Name="/Morph/">
+    <Project Path="Myth.Morph.Test/Myth.Morph.Test.csproj" />
+    <Project Path="Myth.Morph/Myth.Morph.csproj" />
+  </Folder>
+  <Folder Name="/Repository/">
+    <Project Path="Myth.Repository.EntityFramework/Myth.Repository.EntityFramework.csproj" />
+    <Project Path="Myth.Repository.Test/Myth.Repository.Test.csproj" />
+    <Project Path="Myth.Repository/Myth.Repository.csproj" />
+  </Folder>
+  <Folder Name="/Rest/">
+    <Project Path="Myth.Rest.Test/Myth.Rest.Test.csproj" />
+    <Project Path="Myth.Rest/Myth.Rest.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="CLAUDE.md" />
+    <File Path="LICENSE.txt" />
+    <File Path="Logo.jpg" />
+    <File Path="README.md" />
+    <File Path="README.pt-br.md" />
+  </Folder>
+  <Folder Name="/Specification/">
+    <Project Path="Myth.Specification.Test/Myth.Specification.Test.csproj" />
+    <Project Path="Myth.Specification/Myth.Specification.csproj" />
+  </Folder>
+</Solution>
