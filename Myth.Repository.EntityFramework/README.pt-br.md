@@ -15,6 +15,7 @@
 - Implementação de leitura usando expressões
 - Implementação de leitura usando specification
 - Trabalhar com transações
+- **Registro automático de repositórios com injeção de dependência**
 
 # 🔮 Utilização
 Para utilizar basta que o contexto criado herde do [BaseContext](/Contexts/BaseContext.cs). Após isso somente crie os repositórios passando-o como parametro.
@@ -62,3 +63,89 @@ As funcionalidades independentes da entidade, são as seguintes:
 - `RollbackAsync`: Desfaz as alterações da transação
 - `CreateSavepointAsync`: Cria um checkpoint da transação
 - `RollbackToSavepointAsync`: Retorna para um checkpoint da transação
+
+## 🚀 Registro de Injeção de Dependência
+
+A biblioteca oferece registro automático de repositórios para configuração simplificada de injeção de dependência.
+
+### Métodos de Auto-Registro
+
+- `AddRepositories()`: Registra automaticamente todas as implementações de repositório encontradas nos assemblies da aplicação
+- `AddRepositoriesFromAssembly(assembly)`: Registra repositórios de um assembly específico
+- `AddRepository<TInterface, TImplementation>()`: Registra manualmente um repositório específico
+- `AddUnitOfWork<TUnitOfWork>()`: Registra uma implementação de Unit of Work
+
+### Uso Básico
+
+```csharp
+// Program.cs - ASP.NET Core
+var builder = WebApplication.CreateBuilder(args);
+
+// Adicionar DbContext do Entity Framework
+builder.Services.AddDbContext<MeuContexto>(options =>
+    options.UseSqlServer(connectionString));
+
+// Registrar automaticamente TODOS os repositórios
+builder.Services.AddRepositories();
+
+var app = builder.BuildApp(); // Use BuildApp() ao invés de Build()
+```
+
+### Configuração Avançada
+
+```csharp
+// Tempo de vida do serviço personalizado
+builder.Services.AddRepositories(ServiceLifetime.Transient);
+
+// Registrar de assembly específico
+builder.Services.AddRepositoriesFromAssembly(typeof(UsuarioRepository).Assembly);
+
+// Registro manual
+builder.Services.AddRepository<IUsuarioRepository, UsuarioRepository>();
+
+// Registrar Unit of Work
+builder.Services.AddUnitOfWork<MeuUnitOfWork>();
+```
+
+### Exemplo de Implementação de Repositório
+
+```csharp
+// 1. Crie sua interface de repositório
+public interface IUsuarioRepository : IReadWriteRepositoryAsync<Usuario> {
+    // Adicione métodos customizados se necessário
+}
+
+// 2. Crie sua implementação de repositório
+public class UsuarioRepository : ReadWriteRepositoryAsync<Usuario>, IUsuarioRepository {
+    public UsuarioRepository(MeuContexto context) : base(context) { }
+
+    // Implemente métodos customizados se necessário
+}
+
+// 3. O repositório será automaticamente registrado por AddRepositories()
+```
+
+### Uso em Controllers/Serviços
+
+```csharp
+[ApiController]
+public class UsuariosController : ControllerBase {
+    private readonly IUsuarioRepository _repository;
+
+    public UsuariosController(IUsuarioRepository repository) {
+        _repository = repository;
+    }
+
+    [HttpGet]
+    public async Task<IEnumerable<Usuario>> GetUsuarios() {
+        return await _repository.ToListAsync();
+    }
+}
+```
+
+### Comportamento do Registro
+
+- **Tempo de Vida do Serviço**: Scoped por padrão (recomendado para repositórios)
+- **Prioridade de Interface**: Interfaces específicas do EntityFramework são registradas antes das interfaces base
+- **Filtragem de Testes**: Tipos com "Test", "Mock", "Fake" ou "Stub" em seus nomes são automaticamente excluídos
+- **Tipos Genéricos**: Definições de tipos genéricos são automaticamente excluídas

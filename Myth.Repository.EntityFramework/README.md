@@ -15,6 +15,7 @@ It is a .NET library for defining database access repositories using Entity Fram
 - Implementation of reading using expressions
 - Implementation of reading using specification
 - Work with transactions
+- **Automatic repository registration with dependency injection**
 
 # 🔮 Usage
 To use it, simply inherit the created context from [BaseContext](/Contexts/BaseContext.cs). After that, just create the repositories by passing it as a parameter.
@@ -61,4 +62,90 @@ The entity's independent functionalities are as follows:
 - `CommitAsync`: Executes all transaction changes
 - `RollbackAsync`: Undoes transaction changes
 - `CreateSavepointAsync`: Creates a transaction checkpoint
-- `RollbackToSavepointAsync`: Returns to a t'ransaction checkpoint
+- `RollbackToSavepointAsync`: Returns to a transaction checkpoint
+
+## 🚀 Dependency Injection Registration
+
+The library provides automatic repository registration for simplified dependency injection setup.
+
+### Auto-Registration Methods
+
+- `AddRepositories()`: Automatically registers all repository implementations found in application assemblies
+- `AddRepositoriesFromAssembly(assembly)`: Registers repositories from a specific assembly
+- `AddRepository<TInterface, TImplementation>()`: Manually registers a specific repository
+- `AddUnitOfWork<TUnitOfWork>()`: Registers a Unit of Work implementation
+
+### Basic Usage
+
+```csharp
+// Program.cs - ASP.NET Core
+var builder = WebApplication.CreateBuilder(args);
+
+// Add Entity Framework DbContext
+builder.Services.AddDbContext<MyContext>(options =>
+    options.UseSqlServer(connectionString));
+
+// Automatically register ALL repositories
+builder.Services.AddRepositories();
+
+var app = builder.BuildApp(); // Use BuildApp() instead of Build()
+```
+
+### Advanced Configuration
+
+```csharp
+// Custom service lifetime
+builder.Services.AddRepositories(ServiceLifetime.Transient);
+
+// Register from specific assembly
+builder.Services.AddRepositoriesFromAssembly(typeof(UserRepository).Assembly);
+
+// Manual registration
+builder.Services.AddRepository<IUserRepository, UserRepository>();
+
+// Register Unit of Work
+builder.Services.AddUnitOfWork<MyUnitOfWork>();
+```
+
+### Repository Implementation Example
+
+```csharp
+// 1. Create your repository interface
+public interface IUserRepository : IReadWriteRepositoryAsync<User> {
+    // Add custom methods if needed
+}
+
+// 2. Create your repository implementation
+public class UserRepository : ReadWriteRepositoryAsync<User>, IUserRepository {
+    public UserRepository(MyContext context) : base(context) { }
+
+    // Implement custom methods if needed
+}
+
+// 3. The repository will be automatically registered by AddRepositories()
+```
+
+### Usage in Controllers/Services
+
+```csharp
+[ApiController]
+public class UsersController : ControllerBase {
+    private readonly IUserRepository _repository;
+
+    public UsersController(IUserRepository repository) {
+        _repository = repository;
+    }
+
+    [HttpGet]
+    public async Task<IEnumerable<User>> GetUsers() {
+        return await _repository.ToListAsync();
+    }
+}
+```
+
+### Registration Behavior
+
+- **Service Lifetime**: Scoped by default (recommended for repositories)
+- **Interface Priority**: EntityFramework-specific interfaces are registered before base interfaces
+- **Test Filtering**: Types with "Test", "Mock", "Fake", or "Stub" in their names are automatically excluded
+- **Generic Types**: Generic type definitions are automatically excluded
