@@ -1,13 +1,14 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Myth.Extensions;
 using Myth.Flow.Test.Models;
+using Myth.ServiceProvider;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace Myth.Flow.Test {
 
-	public class TelemetryTests {
+	public class TelemetryTests : BaseTestFixture {
 
 		[Fact]
 		public async Task WithTelemetry_ShouldCreateActivity( ) {
@@ -30,11 +31,10 @@ namespace Myth.Flow.Test {
 				.UseActivitySource( activitySource )
 			);
 			var provider = services.BuildServiceProvider( );
-
-			// Service provider auto-initializes now - no manual initialization needed
+			MythServiceProvider.Initialize( provider );
 
 			// Act
-			var result = await Pipeline.Start( dto, provider )
+			var result = await Pipeline.Start( dto )
 				.WithTelemetry( "TestOperation" )
 				.ExecuteAsync( );
 
@@ -51,9 +51,10 @@ namespace Myth.Flow.Test {
 			var services = new ServiceCollection( );
 			services.AddFlow( builder => builder.DisableTelemetry( ) );
 			var provider = services.BuildServiceProvider( );
+			MythServiceProvider.Initialize( provider );
 
 			// Act
-			var result = await Pipeline.Start( dto, provider )
+			var result = await Pipeline.Start( dto )
 				.WithTelemetry( "TestOperation" )
 				.ExecuteAsync( );
 

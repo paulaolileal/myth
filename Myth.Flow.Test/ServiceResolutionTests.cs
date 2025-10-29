@@ -1,4 +1,3 @@
-﻿using Microsoft.Extensions.DependencyInjection;
 using Myth.Exceptions;
 using Myth.Flow.Test.Interfaces;
 using Myth.Flow.Test.Models;
@@ -7,7 +6,7 @@ using Xunit;
 
 namespace Myth.Flow.Test {
 
-	public class ServiceResolutionTests {
+	public class ServiceResolutionTests : BaseTestFixture {
 
 		[Fact]
 		public async Task Step_WithoutServiceProvider_ShouldThrowException( ) {
@@ -16,7 +15,7 @@ namespace Myth.Flow.Test {
 
 			// Act & Assert
 			await Assert.ThrowsAsync<PipelineConfigurationException>( async ( ) =>
-				await Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) )
+				await Pipeline.Start( dto )
 					.Step<ITestService>( ( svc, d ) => svc.Process( d ) )
 					.ExecuteAsync( ) );
 		}
@@ -25,12 +24,10 @@ namespace Myth.Flow.Test {
 		public async Task Step_WithUnregisteredService_ShouldThrowException( ) {
 			// Arrange
 			var dto = new TestDto { Value = 1 };
-			var services = new ServiceCollection( );
-			var provider = services.BuildServiceProvider( );
 
 			// Act & Assert
 			await Assert.ThrowsAsync<PipelineConfigurationException>( async ( ) =>
-				await Pipeline.Start( dto, provider )
+				await Pipeline.Start( dto )
 					.Step<ITestService>( ( svc, d ) => svc.Process( d ) )
 					.ExecuteAsync( ) );
 		}

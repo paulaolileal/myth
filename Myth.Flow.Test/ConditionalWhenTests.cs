@@ -3,6 +3,7 @@ using Moq;
 using Myth.Flow.Test.Interfaces;
 using Myth.Flow.Test.Models;
 using Myth.Models;
+using Myth.ServiceProvider;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -14,9 +15,11 @@ namespace Myth.Flow.Test {
 		public async Task When_PredicateTrue_ShouldExecuteConditionalPipeline( ) {
 			// Arrange
 			var dto = new TestDto { Value = 5 };
+			var provider = new ServiceCollection( ).BuildServiceProvider( );
+			MythServiceProvider.Initialize( provider );
 
 			// Act
-			var result = await Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) )
+			var result = await Pipeline.Start( dto )
 				.When(
 					d => d.Value > 3,
 					pipeline => pipeline.Tap( d => d.Value *= 2 ) )
@@ -31,9 +34,11 @@ namespace Myth.Flow.Test {
 		public async Task When_PredicateFalse_ShouldSkipConditionalPipeline( ) {
 			// Arrange
 			var dto = new TestDto { Value = 2 };
+			var provider = new ServiceCollection( ).BuildServiceProvider( );
+			MythServiceProvider.Initialize( provider );
 
 			// Act
-			var result = await Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) )
+			var result = await Pipeline.Start( dto )
 				.When(
 					d => d.Value > 3,
 					pipeline => pipeline.Tap( d => d.Value *= 2 ) )
@@ -55,9 +60,10 @@ namespace Myth.Flow.Test {
 			var services = new ServiceCollection( );
 			services.AddSingleton( mockService.Object );
 			var provider = services.BuildServiceProvider( );
+			MythServiceProvider.Initialize( provider );
 
 			// Act
-			var result = await Pipeline.Start( dto, provider )
+			var result = await Pipeline.Start( dto )
 				.When(
 					d => d.Value > 3,
 					pipeline => pipeline.StepResult<IValidationService>(

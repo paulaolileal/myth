@@ -2,6 +2,7 @@
 using Moq;
 using Myth.Flow.Test.Interfaces;
 using Myth.Flow.Test.Models;
+using Myth.ServiceProvider;
 using System;
 using Xunit;
 
@@ -13,9 +14,11 @@ namespace Myth.Flow.Test {
 		public void Execute_ShouldRunSynchronously( ) {
 			// Arrange
 			var dto = new TestDto { Value = 1 };
+			var provider = new ServiceCollection( ).BuildServiceProvider( );
+			MythServiceProvider.Initialize( provider );
 
 			// Act
-			var result = Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) )
+			var result = Pipeline.Start( dto )
 				.Tap( d => d.Value++ )
 				.Execute( );
 
@@ -35,9 +38,10 @@ namespace Myth.Flow.Test {
 			var services = new ServiceCollection( );
 			services.AddSingleton( mockService.Object );
 			var provider = services.BuildServiceProvider( );
+			MythServiceProvider.Initialize( provider );
 
 			// Act
-			var result = Pipeline.Start( dto, provider )
+			var result = Pipeline.Start( dto )
 				.Step<ITestService>( ( svc, d ) => svc.Process( d ) )
 				.Execute( );
 

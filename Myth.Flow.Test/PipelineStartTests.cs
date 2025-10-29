@@ -1,10 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
 using Myth.Flow.Test.Models;
 using Xunit;
 
 namespace Myth.Flow.Test {
 
-	public class PipelineStartTests {
+	public class PipelineStartTests : BaseTestFixture {
 
 		[Fact]
 		public void Start_WithInputOnly_ShouldCreatePipeline( ) {
@@ -12,7 +11,7 @@ namespace Myth.Flow.Test {
 			var dto = new TestDto { Value = 42 };
 
 			// Act
-			var pipeline = Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) );
+			var pipeline = Pipeline.Start( dto );
 
 			// Assert
 			Assert.NotNull( pipeline );
@@ -22,11 +21,9 @@ namespace Myth.Flow.Test {
 		public void Start_WithServiceProvider_ShouldCreatePipeline( ) {
 			// Arrange
 			var dto = new TestDto { Value = 42 };
-			var services = new ServiceCollection( );
-			var provider = services.BuildServiceProvider( );
 
 			// Act
-			var pipeline = Pipeline.Start( dto, provider );
+			var pipeline = Pipeline.Start( dto );
 
 			// Assert
 			Assert.NotNull( pipeline );
@@ -36,11 +33,9 @@ namespace Myth.Flow.Test {
 		public void Start_WithConfiguration_ShouldCreatePipelineWithConfig( ) {
 			// Arrange
 			var dto = new TestDto { Value = 42 };
-			var services = new ServiceCollection( );
-			var provider = services.BuildServiceProvider( );
 
 			// Act
-			var pipeline = Pipeline.Start( dto, provider, config => {
+			var pipeline = Pipeline.Start( dto, config => {
 				config.EnableTelemetry = false;
 			} );
 

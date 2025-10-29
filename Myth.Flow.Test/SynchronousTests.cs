@@ -2,6 +2,7 @@
 using Moq;
 using Myth.Flow.Test.Interfaces;
 using Myth.Flow.Test.Models;
+using Myth.ServiceProvider;
 using System;
 using System.Threading.Tasks;
 using Xunit;
@@ -21,9 +22,10 @@ namespace Myth.Flow.Test {
 			var services = new ServiceCollection( );
 			services.AddSingleton( mockService.Object );
 			var provider = services.BuildServiceProvider( );
+			MythServiceProvider.Initialize( provider );
 
 			// Act
-			var result = await Pipeline.Start( dto, provider )
+			var result = await Pipeline.Start( dto )
 				.Step<ITestService>( ( svc, d ) => svc.Process( d ) )
 				.ExecuteAsync( );
 
@@ -45,9 +47,10 @@ namespace Myth.Flow.Test {
 			var services = new ServiceCollection( );
 			services.AddSingleton( mockService.Object );
 			var provider = services.BuildServiceProvider( );
+			MythServiceProvider.Initialize( provider );
 
 			// Act
-			var result = await Pipeline.Start( dto, provider )
+			var result = await Pipeline.Start( dto )
 				.Step<ITestService>(
 					( svc, d ) => svc.Process( d ),
 					onSuccess: _ => callbackInvoked = true )
@@ -70,9 +73,10 @@ namespace Myth.Flow.Test {
 			var services = new ServiceCollection( );
 			services.AddSingleton( mockService.Object );
 			var provider = services.BuildServiceProvider( );
+			MythServiceProvider.Initialize( provider );
 
 			// Act
-			var result = await Pipeline.Start( dto, provider )
+			var result = await Pipeline.Start( dto )
 				.Step<ITestService>(
 					( svc, d ) => svc.Process( d ),
 					onError: ex => capturedException = ex )

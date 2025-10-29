@@ -11,7 +11,11 @@ namespace Myth.Flow.Test {
 	/// <summary>
 	/// Tests for the simplified API that allows using objects directly without complex context management.
 	/// </summary>
-	public class SimplifiedApiTests {
+	public class SimplifiedApiTests : BaseTestFixture {
+
+		protected override void ConfigureServices( IServiceCollection services ) {
+			services.AddTransient<ValidationService>( );
+		}
 
 		public class ValidationService {
 
@@ -45,14 +49,10 @@ namespace Myth.Flow.Test {
 		[Fact]
 		public async Task StepAsync_WithCancellationToken_ShouldPassObjectDirectly( ) {
 			// Arrange
-			var services = new ServiceCollection( );
-			services.AddTransient<ValidationService>( );
-			var serviceProvider = services.BuildServiceProvider( );
-
 			var input = new TestDto { Value = 5 };
 
 			// Act
-			var result = await Pipeline.Start( input, serviceProvider )
+			var result = await Pipeline.Start( input )
 				.StepAsync<ValidationService>( ( service, dto, ct ) =>
 					service.ValidateAsync( dto, ct ) )
 				.ExecuteAsync( );
@@ -68,14 +68,10 @@ namespace Myth.Flow.Test {
 		[Fact]
 		public async Task StepResultAsync_WithCancellationToken_ShouldHandleResultPattern( ) {
 			// Arrange
-			var services = new ServiceCollection( );
-			services.AddTransient<ValidationService>( );
-			var serviceProvider = services.BuildServiceProvider( );
-
 			var input = new TestDto { Value = 5 };
 
 			// Act
-			var result = await Pipeline.Start( input, serviceProvider )
+			var result = await Pipeline.Start( input )
 				.StepResultAsync<ValidationService>( ( service, dto, ct ) =>
 					service.ValidateWithResultAsync( dto, ct ) )
 				.ExecuteAsync( );
@@ -91,14 +87,10 @@ namespace Myth.Flow.Test {
 		[Fact]
 		public async Task StepResultAsync_WithFailure_ShouldThrowPipelineException( ) {
 			// Arrange
-			var services = new ServiceCollection( );
-			services.AddTransient<ValidationService>( );
-			var serviceProvider = services.BuildServiceProvider( );
-
 			var input = new TestDto { Value = -1 }; // Invalid input
 
 			// Act
-			var result = await Pipeline.Start( input, serviceProvider )
+			var result = await Pipeline.Start( input )
 				.StepResultAsync<ValidationService>( ( service, dto, ct ) =>
 					service.ValidateWithResultAsync( dto, ct ) )
 				.ExecuteAsync( );
@@ -111,14 +103,10 @@ namespace Myth.Flow.Test {
 		[Fact]
 		public async Task ChainedSteps_WithSimplifiedApi_ShouldWorkCorrectly( ) {
 			// Arrange
-			var services = new ServiceCollection( );
-			services.AddTransient<ValidationService>( );
-			var serviceProvider = services.BuildServiceProvider( );
-
 			var input = new TestDto { Value = 5 };
 
 			// Act
-			var result = await Pipeline.Start( input, serviceProvider )
+			var result = await Pipeline.Start( input )
 				.StepAsync<ValidationService>( ( service, dto, ct ) =>
 					service.ValidateAsync( dto, ct ) )
 				.Transform( testDto => new TestDto { Value = testDto.Value * 2, Message = $"Processed: {testDto.Message}" } )
@@ -136,10 +124,6 @@ namespace Myth.Flow.Test {
 		[Fact]
 		public async Task SimplifiedApi_WithCancellation_ShouldRespectCancellationToken( ) {
 			// Arrange
-			var services = new ServiceCollection( );
-			services.AddTransient<ValidationService>( );
-			var serviceProvider = services.BuildServiceProvider( );
-
 			var input = new TestDto { Value = 5 };
 			var cts = new CancellationTokenSource( );
 
@@ -147,7 +131,7 @@ namespace Myth.Flow.Test {
 			cts.Cancel( );
 
 			// Act
-			var result = await Pipeline.Start( input, serviceProvider )
+			var result = await Pipeline.Start( input )
 				.StepAsync<ValidationService>( ( service, dto, ct ) =>
 					service.ValidateAsync( dto, ct ) )
 				.ExecuteAsync( cts.Token );

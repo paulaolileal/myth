@@ -13,7 +13,7 @@
 ## 🔮 Funcionalidades gerais
 - [Myth.Commons](Myth.Commons/README.pt-br.md)
 
-## 🛅 Manipualçao de assemblies e serviços
+## 🛅 Manipulação de assemblies e serviços
 - [Myth.DependecyInjection](Myth.DependencyInjection/README.pt-br.md)
 - [Myth.DependecyInjection.Providers](Myth.DependencyInjection.Providers/README.pt-br.md)
 

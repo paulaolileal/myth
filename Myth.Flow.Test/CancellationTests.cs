@@ -2,6 +2,7 @@
 using Moq;
 using Myth.Flow.Test.Interfaces;
 using Myth.Flow.Test.Models;
+using Myth.ServiceProvider;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,11 +29,12 @@ namespace Myth.Flow.Test {
 			var services = new ServiceCollection( );
 			services.AddSingleton( mockService.Object );
 			var provider = services.BuildServiceProvider( );
+			MythServiceProvider.Initialize( provider );
 
 			cts.Cancel( );
 
 			// Act
-			var result = await Pipeline.Start( dto, provider )
+			var result = await Pipeline.Start( dto )
 				.StepAsync<ITestService>( ( svc, d ) => svc.ProcessAsync( d ) )
 				.ExecuteAsync( cts.Token );
 
@@ -47,9 +49,11 @@ namespace Myth.Flow.Test {
 			var dto = new TestDto { Value = 1 };
 			var cts = new CancellationTokenSource( );
 			cts.Cancel( );
+			var provider = new ServiceCollection( ).BuildServiceProvider( );
+			MythServiceProvider.Initialize( provider );
 
 			// Act
-			var result = await Pipeline.Start( dto, new ServiceCollection().BuildServiceProvider() )
+			var result = await Pipeline.Start( dto )
 				.Tap( d => d.Value++ )
 				.ExecuteAsync( cts.Token );
 

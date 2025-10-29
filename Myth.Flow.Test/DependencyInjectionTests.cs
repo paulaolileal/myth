@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Myth.Extensions;
 using Myth.Flow.Test.Models;
 using Myth.Models;
@@ -7,28 +7,19 @@ using Xunit;
 
 namespace Myth.Flow.Test {
 
-	public class DependencyInjectionTests {
+	public class DependencyInjectionTests : BaseTestFixture {
 
 		[Fact]
 		public void AddFlow_ShouldRegisterServices( ) {
-			// Arrange
-			var services = new ServiceCollection( );
-
-			// Act
-			services.AddFlow( );
-			var provider = services.BuildServiceProvider( );
-
 			// Assert
-			Assert.NotNull( provider.GetService<PipelineConfiguration>( ) );
-			Assert.NotNull( provider.GetService<ActivitySource>( ) );
+			Assert.NotNull( ServiceProvider.GetService<PipelineConfiguration>( ) );
+			Assert.NotNull( ServiceProvider.GetService<ActivitySource>( ) );
 		}
 
 		[Fact]
 		public void AddFlow_WithConfiguration_ShouldApplyConfiguration( ) {
 			// Arrange
 			var services = new ServiceCollection( );
-
-			// Act
 			services.AddFlow( builder => builder
 				.DisableTelemetry( )
 				.UseRetry( 5 )
@@ -43,16 +34,9 @@ namespace Myth.Flow.Test {
 
 		[Fact]
 		public void AddFlow_ShouldSetGlobalServiceProvider( ) {
-			// Arrange
-			var services = new ServiceCollection( );
-			services.AddFlow( );
-			var provider = services.BuildServiceProvider( );
-
-			// Service provider auto-initializes now - no manual initialization needed
-
 			// Act
 			var dto = new TestDto { Value = 1 };
-			var pipeline = Pipeline.Start( dto, provider );
+			var pipeline = Pipeline.Start( dto );
 
 			// Assert - pipeline should be created without exception
 			Assert.NotNull( pipeline );
@@ -62,8 +46,6 @@ namespace Myth.Flow.Test {
 		public void AddFlow_WithFluentConfiguration_ShouldRegisterServices( ) {
 			// Arrange
 			var services = new ServiceCollection( );
-
-			// Act
 			services.AddFlow( builder => builder
 				.UseTelemetry( )
 				.UseLogging( )
@@ -80,8 +62,6 @@ namespace Myth.Flow.Test {
 		public void AddFlow_WithFluentConfiguration_ShouldApplyConfiguration( ) {
 			// Arrange
 			var services = new ServiceCollection( );
-
-			// Act
 			services.AddFlow( builder => builder
 				.DisableTelemetry( )
 				.DisableLogging( )
@@ -102,8 +82,6 @@ namespace Myth.Flow.Test {
 			// Arrange
 			var services = new ServiceCollection( );
 			var customActivitySource = new ActivitySource( "CustomSource", "1.0.0" );
-
-			// Act
 			services.AddFlow( builder => builder
 				.UseTelemetry( )
 				.UseActivitySource( customActivitySource )
@@ -122,8 +100,6 @@ namespace Myth.Flow.Test {
 		public void AddFlow_WithFluentConfiguration_CustomActivitySourceByName_ShouldApplyConfiguration( ) {
 			// Arrange
 			var services = new ServiceCollection( );
-
-			// Act
 			services.AddFlow( builder => builder
 				.UseTelemetry( )
 				.UseActivitySource( "MyCustomSource", "2.0.0" )
@@ -144,8 +120,6 @@ namespace Myth.Flow.Test {
 		public void AddFlow_WithFluentConfiguration_DisableRetry_ShouldSetRetryToZero( ) {
 			// Arrange
 			var services = new ServiceCollection( );
-
-			// Act
 			services.AddFlow( builder => builder
 				.UseRetry( 5, 100 )  // Set some retry first
 				.DisableRetry( )     // Then disable it

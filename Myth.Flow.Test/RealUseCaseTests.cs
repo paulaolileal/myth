@@ -1,31 +1,34 @@
-﻿using Bogus;
+using Bogus;
 using Microsoft.Extensions.DependencyInjection;
 using Myth.Extensions;
 using Myth.Flow.Test.Contexts;
 using Myth.Flow.Test.Interfaces;
 using Myth.Flow.Test.Models;
+using Myth.ServiceProvider;
 using System;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace Myth.Flow.Test {
 
-	public class CreateUserTests : IDisposable {
-		private readonly IServiceProvider _serviceProvider;
-		private readonly MockUserRepository _repository;
-		private readonly MockUnitOfWork _unitOfWork;
-		private readonly MockEventPublisher _eventPublisher;
-		private readonly MockUserMetrics _metrics;
+	public class CreateUserTests : BaseTestFixture {
+		private readonly MockUserRepository _repository = new MockUserRepository( );
+		private readonly MockUnitOfWork _unitOfWork = new MockUnitOfWork( );
+		private readonly MockEventPublisher _eventPublisher = new MockEventPublisher( );
+		private readonly MockUserMetrics _metrics = new MockUserMetrics( );
 		private readonly Faker<CreateUserRequest> _requestFaker;
 
-		public CreateUserTests( ) {
-			_repository = new MockUserRepository( );
-			_unitOfWork = new MockUnitOfWork( );
-			_eventPublisher = new MockEventPublisher( );
-			_metrics = new MockUserMetrics( );
+		public CreateUserTests( ) : base( ) {
+			// Initialize Bogus faker
+			_requestFaker = new Faker<CreateUserRequest>( )
+				.CustomInstantiator( f => new CreateUserRequest(
+					Email: f.Internet.Email( ),
+					Password: GenerateValidPassword( f ),
+					Role: f.PickRandom( "admin", "common", "maintainer" )
+				) );
+		}
 
-			var services = new ServiceCollection( );
-
+		protected override void ConfigureServices( IServiceCollection services ) {
 			// Register mocks
 			services.AddSingleton<IUserRepository>( _repository );
 			services.AddSingleton<IPasswordValidator>( new MockPasswordValidator( ) );
@@ -42,22 +45,6 @@ namespace Myth.Flow.Test {
 
 			// Register logging
 			services.AddLogging( );
-
-			// Register Myth.Flow
-			services.AddFlow( builder => builder
-				.UseTelemetry( )
-				.UseLogging( )
-			);
-
-			_serviceProvider = services.BuildServiceProvider( );
-
-			// Initialize Bogus faker
-			_requestFaker = new Faker<CreateUserRequest>( )
-				.CustomInstantiator( f => new CreateUserRequest(
-					Email: f.Internet.Email( ),
-					Password: GenerateValidPassword( f ),
-					Role: f.PickRandom( "admin", "common", "maintainer" )
-				) );
 		}
 
 		private static string GenerateValidPassword( Faker faker ) {
@@ -69,10 +56,6 @@ namespace Myth.Flow.Test {
 			return password;
 		}
 
-		public void Dispose( ) {
-			( _serviceProvider as IDisposable )?.Dispose( );
-		}
-
 		[Fact]
 		public async Task CreateUser_WithValidData_ShouldSucceed( ) {
 			// Arrange
@@ -80,7 +63,7 @@ namespace Myth.Flow.Test {
 			var context = new CreateUserContext { Request = request };
 
 			// Act
-			var result = await Pipeline.Start( context, _serviceProvider )
+			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
 				.WithRetry( maxAttempts: 2, backoffMs: 100 )
 				.StepResultAsync<UserValidationService>(
@@ -128,7 +111,7 @@ namespace Myth.Flow.Test {
 			var context = new CreateUserContext { Request = request };
 
 			// Act
-			var result = await Pipeline.Start( context, _serviceProvider )
+			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
 				.StepResultAsync<UserValidationService>(
 					( svc, ctx ) => svc.ValidateAsync( ctx ) )
@@ -172,7 +155,7 @@ namespace Myth.Flow.Test {
 			var context = new CreateUserContext { Request = request };
 
 			// Act
-			var result = await Pipeline.Start( context, _serviceProvider )
+			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
 				.StepResultAsync<UserValidationService>(
 					( svc, ctx ) => svc.ValidateAsync( ctx ) )
@@ -209,7 +192,7 @@ namespace Myth.Flow.Test {
 			var context = new CreateUserContext { Request = request };
 
 			// Act
-			var result = await Pipeline.Start( context, _serviceProvider )
+			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
 				.StepResultAsync<UserValidationService>(
 					( svc, ctx ) => svc.ValidateAsync( ctx ) )
@@ -246,7 +229,7 @@ namespace Myth.Flow.Test {
 			var context = new CreateUserContext { Request = request };
 
 			// Act
-			var result = await Pipeline.Start( context, _serviceProvider )
+			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
 				.StepResultAsync<UserValidationService>(
 					( svc, ctx ) => svc.ValidateAsync( ctx ) )
@@ -283,7 +266,7 @@ namespace Myth.Flow.Test {
 			var context = new CreateUserContext { Request = request };
 
 			// Act
-			var result = await Pipeline.Start( context, _serviceProvider )
+			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
 				.StepResultAsync<UserValidationService>(
 					( svc, ctx ) => svc.ValidateAsync( ctx ) )
@@ -320,7 +303,7 @@ namespace Myth.Flow.Test {
 			var context = new CreateUserContext { Request = request };
 
 			// Act
-			var result = await Pipeline.Start( context, _serviceProvider )
+			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
 				.StepResultAsync<UserValidationService>(
 					( svc, ctx ) => svc.ValidateAsync( ctx ) )
@@ -369,12 +352,13 @@ namespace Myth.Flow.Test {
 			services.AddFlow( );
 
 			var serviceProvider = services.BuildServiceProvider( );
+			MythServiceProvider.Initialize( serviceProvider );
 
 			var request = _requestFaker.Generate( );
 			var context = new CreateUserContext { Request = request };
 
 			// Act
-			var result = await Pipeline.Start( context, serviceProvider )
+			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
 				.WithRetry( maxAttempts: 2, backoffMs: 50 )
 				.StepResultAsync<UserValidationService>(
@@ -419,7 +403,7 @@ namespace Myth.Flow.Test {
 			for ( int i = 0; i < requests.Count; i++ ) {
 				var context = new CreateUserContext { Request = requests[ i ] };
 
-				var result = await Pipeline.Start( context, _serviceProvider )
+				var result = await Pipeline.Start( context )
 					.WithTelemetry( $"CreateUser_{i}" )
 					.StepResultAsync<UserValidationService>(
 						( svc, ctx ) => svc.ValidateAsync( ctx ) )
@@ -463,7 +447,7 @@ namespace Myth.Flow.Test {
 			var context = new CreateUserContext { Request = request };
 
 			// Act
-			var result = await Pipeline.Start( context, _serviceProvider )
+			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
 				.StepResultAsync<UserValidationService>(
 					( svc, ctx ) => svc.ValidateAsync( ctx ) )
@@ -503,7 +487,7 @@ namespace Myth.Flow.Test {
 			var context = new CreateUserContext { Request = request };
 
 			// Act
-			var result = await Pipeline.Start( context, _serviceProvider )
+			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
 				.StepResultAsync<UserValidationService>(
 					( svc, ctx ) => svc.ValidateAsync( ctx ) )

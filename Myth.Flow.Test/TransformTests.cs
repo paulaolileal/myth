@@ -2,6 +2,7 @@
 using Moq;
 using Myth.Flow.Test.Interfaces;
 using Myth.Flow.Test.Models;
+using Myth.ServiceProvider;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -13,9 +14,11 @@ namespace Myth.Flow.Test {
 		public async Task Transform_ShouldChangeContextType( ) {
 			// Arrange
 			var dto = new TestDto { Value = 42, Message = "Test" };
+			var provider = new ServiceCollection( ).BuildServiceProvider( );
+			MythServiceProvider.Initialize( provider );
 
 			// Act
-			var result = await Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) )
+			var result = await Pipeline.Start( dto )
 				.Transform( d => new TestResult {
 					Success = true,
 					Data = $"{d.Message}:{d.Value}"
@@ -32,9 +35,11 @@ namespace Myth.Flow.Test {
 		public async Task TransformAsync_ShouldChangeContextTypeAsynchronously( ) {
 			// Arrange
 			var dto = new TestDto { Value = 42, Message = "Test" };
+			var provider = new ServiceCollection( ).BuildServiceProvider( );
+			MythServiceProvider.Initialize( provider );
 
 			// Act
-			var result = await Pipeline.Start( dto, new ServiceCollection( ).BuildServiceProvider( ) )
+			var result = await Pipeline.Start( dto )
 				.TransformAsync( async d => {
 					await Task.Delay( 10 );
 					return new TestResult {
@@ -60,9 +65,10 @@ namespace Myth.Flow.Test {
 			var services = new ServiceCollection( );
 			services.AddSingleton( mockService.Object );
 			var provider = services.BuildServiceProvider( );
+			MythServiceProvider.Initialize( provider );
 
 			// Act
-			var result = await Pipeline.Start( dto, provider )
+			var result = await Pipeline.Start( dto )
 				.Step<ITestService>( ( svc, d ) => svc.Process( d ) )
 				.Transform( d => new TestResult {
 					Success = d.Value > 1,
