@@ -81,7 +81,7 @@ public static class MythServiceProvider {
 	/// Resets the global service provider to null.
 	/// Primarily intended for testing scenarios.
 	/// </summary>
-	internal static void Reset( ) {
+	public static void Reset( ) {
 		lock ( _lock ) {
 			_serviceProvider = null;
 		}
