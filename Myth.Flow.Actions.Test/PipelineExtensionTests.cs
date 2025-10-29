@@ -7,11 +7,9 @@ using Myth.Flow.Actions.Test.Models;
 
 namespace Myth.Flow.Actions.Test {
 
-	public class PipelineExtensionsTests {
-		private readonly IServiceProvider _serviceProvider;
+	public class PipelineExtensionsTests : BaseTestFixture {
 
-		public PipelineExtensionsTests( ) {
-			var services = new ServiceCollection( );
+		protected override void ConfigureServices( IServiceCollection services ) {
 			services.AddLogging( );
 			services.AddFlow( );
 			services.AddFlowActions( options => {
@@ -22,15 +20,13 @@ namespace Myth.Flow.Actions.Test {
 
 			// Register TestService for pipeline step testing
 			services.AddTransient<TestService>( );
-
-			_serviceProvider = services.BuildServiceProvider( );
 		}
 
 		[Fact]
 		public async Task Process_WithValidCommand_ShouldExecuteSuccessfully( ) {
 			// Act
 			var result = await Pipeline
-				.Start( new TestCommand { Value = "test" }, _serviceProvider )
+				.Start( new TestCommand { Value = "test" } )
 				.Process<TestCommand, string>( )
 				.ExecuteAsync( );
 
@@ -43,7 +39,7 @@ namespace Myth.Flow.Actions.Test {
 		public async Task Query_WithValidQuery_ShouldReturnResult( ) {
 			// Act
 			var result = await PipelineExtensions
-				.Start( new TestQuery { Key = "query-key" }, _serviceProvider )
+				.Start( new TestQuery { Key = "query-key" } )
 				.Query<TestQuery, string>( )
 				.ExecuteAsync( );
 
@@ -59,7 +55,7 @@ namespace Myth.Flow.Actions.Test {
 
 			// Act
 			var result = await Pipeline
-				.Start( new TestCommand { Value = "original" }, _serviceProvider )
+				.Start( new TestCommand { Value = "original" } )
 				.Step<TestService>( ( service, state ) => {
 					stepExecuted = "Step executed";
 					// Create new command with modified value (since TestCommand is a record with init-only property)
@@ -82,7 +78,7 @@ namespace Myth.Flow.Actions.Test {
 
 			// Act
 			var result = await Pipeline
-				.Start( new TestQuery { Key = "test-key" }, _serviceProvider )
+				.Start( new TestQuery { Key = "test-key" } )
 				.Tap<TestService>( ( service, state ) => {
 					tapExecuted = $"Tap executed for: {state.CurrentRequest!.Key}";
 				} )
@@ -99,7 +95,7 @@ namespace Myth.Flow.Actions.Test {
 		public async Task WithRetry_BeforeProcess_ShouldApplyRetryPolicy( ) {
 			// Act
 			var result = await Pipeline
-				.Start( new TestCommand { Value = "retry-test" }, _serviceProvider )
+				.Start( new TestCommand { Value = "retry-test" } )
 				.WithRetry( maxAttempts: 3, backoffMs: 50 )
 				.Process<TestCommand, string>( )
 				.ExecuteAsync( );
@@ -113,7 +109,7 @@ namespace Myth.Flow.Actions.Test {
 		public async Task WithTelemetry_BeforeQuery_ShouldEnableTelemetry( ) {
 			// Act
 			var result = await Pipeline
-				.Start( new TestQuery { Key = "telemetry-test" }, _serviceProvider )
+				.Start( new TestQuery { Key = "telemetry-test" } )
 				.WithTelemetry( "QueryOperation" )
 				.Query<TestQuery, string>( )
 				.ExecuteAsync( );
@@ -127,7 +123,7 @@ namespace Myth.Flow.Actions.Test {
 		public async Task When_ConditionalExecution_ShouldExecuteWhenTrue( ) {
 			// Act
 			var result = await Pipeline
-				.Start( new TestCommand { Value = "conditional" }, _serviceProvider )
+				.Start( new TestCommand { Value = "conditional" } )
 				.When( state => state.CurrentRequest!.Value == "conditional", builder =>
 					builder.Tap( state => state.CurrentRequest = new TestCommand { Value = "modified-by-condition" } ) )
 				.Process<TestCommand, string>( )
@@ -142,7 +138,7 @@ namespace Myth.Flow.Actions.Test {
 		public async Task When_ConditionalExecution_ShouldNotExecuteWhenFalse( ) {
 			// Act
 			var result = await Pipeline
-				.Start( new TestCommand { Value = "original" }, _serviceProvider )
+				.Start( new TestCommand { Value = "original" } )
 				.When( state => state.CurrentRequest!.Value == "different", builder =>
 					builder.Tap( state => state.CurrentRequest = new TestCommand { Value = "should-not-change" } ) )
 				.Process<TestCommand, string>( )
@@ -160,7 +156,7 @@ namespace Myth.Flow.Actions.Test {
 
 			// Act
 			var result = await Pipeline
-				.Start( new TestCommand { Value = "start" }, _serviceProvider )
+				.Start( new TestCommand { Value = "start" } )
 				.Tap( state => executionOrder.Add( "Tap1" ) )
 				.Step<TestService>( ( service, state ) => {
 					executionOrder.Add( "Step1" );
@@ -189,7 +185,7 @@ namespace Myth.Flow.Actions.Test {
 		public async Task Publish_WithValidEvent_ShouldNotThrow( ) {
 			// Act
 			var result = await PipelineExtensions
-				.Start( new TestEvent { Message = "event" }, _serviceProvider )
+				.Start( new TestEvent { Message = "event" } )
 				.Publish( )
 				.ExecuteAsync( );
 
@@ -201,7 +197,7 @@ namespace Myth.Flow.Actions.Test {
 		public async Task QueryCached_ShouldUseCacheKey( ) {
 			// Act
 			var result = await PipelineExtensions
-				.Start( new TestQuery { Key = "cached-key" }, _serviceProvider )
+				.Start( new TestQuery { Key = "cached-key" } )
 				.Query<TestQuery, string>( ( query, x ) => x.UseCache( "test-cache-key", TimeSpan.FromMinutes( 5 ) ) )
 				.ExecuteAsync( );
 
@@ -213,7 +209,7 @@ namespace Myth.Flow.Actions.Test {
 		public async Task EmptyPipeline_WithTransform_ShouldWork( ) {
 			// Act
 			var result = await PipelineExtensions
-				.Start( _serviceProvider )
+				.Start( )
 				.Transform( ( ) => new TestCommand { Value = "from-empty-pipeline" } )
 				.Process<TestCommand, string>( )
 				.ExecuteAsync( );
@@ -227,7 +223,7 @@ namespace Myth.Flow.Actions.Test {
 		public async Task ChainedOperations_ShouldTransformCorrectly( ) {
 			// Act
 			var result = await PipelineExtensions
-				.Start( new TestCommand { Value = "chain-test" }, _serviceProvider )
+				.Start( new TestCommand { Value = "chain-test" } )
 				.Process<TestCommand, string>( )                                            // Command → string
 				.Transform( response => new TestQuery { Key = response } )              // string → Query
 				.Query<TestQuery, string>( )                                                // Query → string
@@ -244,12 +240,12 @@ namespace Myth.Flow.Actions.Test {
 		public async Task Pipeline_StaticClass_ShouldWork( ) {
 			// Act - Test both APIs work the same
 			var resultExtensions = await PipelineExtensions
-				.Start( new TestCommand { Value = "extensions" }, _serviceProvider )
+				.Start( new TestCommand { Value = "extensions" } )
 				.Process<TestCommand, string>( )
 				.ExecuteAsync( );
 
 			var resultPipeline = await Pipeline
-				.Start( new TestCommand { Value = "pipeline" }, _serviceProvider )
+				.Start( new TestCommand { Value = "pipeline" } )
 				.Process<TestCommand, string>( )
 				.ExecuteAsync( );
 

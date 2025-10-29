@@ -1,27 +1,25 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Myth.Interfaces;
+using Myth.ServiceProvider;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 
 namespace Myth.Flow.Actions;
 
 /// <summary>
-/// Default event bus implementation
+/// Default event bus implementation that uses MythServiceProvider for dependency resolution
 /// </summary>
 internal sealed class EventBus : IEventBus {
-	private readonly IServiceProvider _serviceProvider;
 	private readonly IMessageBroker _messageBroker;
 	private readonly ILogger<EventBus> _logger;
 	private readonly ActivitySource _activitySource;
 	private readonly ConcurrentDictionary<Type, List<Type>> _subscriptions = new( );
 
 	public EventBus(
-		IServiceProvider serviceProvider,
 		IMessageBroker messageBroker,
 		ILogger<EventBus> logger,
 		ActivitySource activitySource ) {
-		_serviceProvider = serviceProvider;
 		_messageBroker = messageBroker;
 		_logger = logger;
 		_activitySource = activitySource;
@@ -119,7 +117,7 @@ internal sealed class EventBus : IEventBus {
 		Type handlerType,
 		CancellationToken cancellationToken )
 		where TEvent : IEvent {
-		using var scope = _serviceProvider.CreateScope( );
+		using var scope = MythServiceProvider.GetRequired( ).CreateScope( );
 		using var activity = _activitySource.StartActivity( $"EventHandler.{handlerType.Name}" );
 
 		try {

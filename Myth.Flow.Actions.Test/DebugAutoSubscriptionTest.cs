@@ -11,35 +11,35 @@ namespace Myth.Flow.Actions.Test {
 	/// <summary>
 	/// Debug test to understand auto-subscription behavior
 	/// </summary>
-	public class DebugAutoSubscriptionTest {
+	public class DebugAutoSubscriptionTest : BaseTestFixture {
 
-		[Fact]
-		public async Task Debug_CheckIfAutoSubscriptionIsWorking( ) {
-			// Arrange
-			var services = new ServiceCollection( );
+		protected override void ConfigureServices( IServiceCollection services ) {
 			services.AddLogging( builder => builder.AddConsole( ).SetMinimumLevel( LogLevel.Debug ) );
 			services.AddFlow( );
 			services.AddFlowActions( config => config
 				.UseInMemory( )
 				.ScanAssemblies( typeof( TestEventHandler ).Assembly )
 				.AutoSubscribeEventHandlers( true ) );
+		}
 
-			var serviceProvider = services.BuildServiceProvider( );
+		[Fact]
+		public async Task Debug_CheckIfAutoSubscriptionIsWorking( ) {
+			// Arrange - using inherited service configuration
 
 			// Check if handlers are registered
-			var eventHandlerInterface = serviceProvider.GetService<IEventHandler<TestEvent>>( );
+			var eventHandlerInterface = ServiceProvider.GetService<IEventHandler<TestEvent>>( );
 			eventHandlerInterface.Should( ).NotBeNull( "EventHandler should be registered in DI" );
 
 			// Check if EventBus is registered
-			var eventBus = serviceProvider.GetRequiredService<IEventBus>( );
+			var eventBus = ServiceProvider.GetRequiredService<IEventBus>( );
 			eventBus.Should( ).NotBeNull( );
 
 			// Check if registry is working
-			var registry = serviceProvider.GetRequiredService<IEventHandlerRegistry>( );
+			var registry = ServiceProvider.GetRequiredService<IEventHandlerRegistry>( );
 			var registeredHandlers = registry.GetRegisteredHandlers( );
 			registeredHandlers.Should( ).NotBeEmpty( "Registry should have registered handlers" );
 
-			var dispatcher = serviceProvider.GetRequiredService<IDispatcher>( );
+			var dispatcher = ServiceProvider.GetRequiredService<IDispatcher>( );
 			var testEvent = new TestEvent { Message = "debug-test" };
 
 			// Act

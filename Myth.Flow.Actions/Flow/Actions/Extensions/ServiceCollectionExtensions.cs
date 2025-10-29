@@ -85,14 +85,12 @@ public static class ServiceCollectionExtensions {
 			}
 
 			services.AddSingleton<IMessageBroker>( sp => {
-				var serviceProvider = sp;
 				var subscriptionManager = sp.GetRequiredService<IEventSubscriptionManager>( );
 				var logger = sp.GetRequiredService<ILogger<InMemoryBroker>>( );
 				var activitySource = sp.GetService<ActivitySource>( ) ?? new ActivitySource( "Myth.Flow.Actions" );
 				var dlq = inMemoryOptions.EnableDeadLetterQueue ? sp.GetService<DeadLetterQueue>( ) : null;
 
 				return new InMemoryBroker(
-					serviceProvider,
 					subscriptionManager,
 					logger,
 					activitySource,

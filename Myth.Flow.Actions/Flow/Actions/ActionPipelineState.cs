@@ -1,4 +1,6 @@
-﻿namespace Myth.Flow.Actions;
+﻿using Myth.ServiceProvider;
+
+namespace Myth.Flow.Actions;
 
 /// <summary>
 /// State container for action pipelines
@@ -27,27 +29,22 @@ public class ActionPipelineState<TCurrent> {
 	public string? CorrelationId { get; set; }
 
 	/// <summary>
-	/// Initializes a new instance of ActionPipelineState
+	/// Initializes a new instance of ActionPipelineState using MythServiceProvider
 	/// </summary>
-	public ActionPipelineState( ) { }
-
-	/// <summary>
-	/// Initializes a new instance of ActionPipelineState with a request
-	/// </summary>
-	/// <param name="request">The initial request</param>
-	/// <param name="serviceProvider">The service provider</param>
-	public ActionPipelineState( TCurrent request, IServiceProvider serviceProvider ) {
-		CurrentRequest = request;
-		ServiceProvider = serviceProvider;
+	/// <exception cref="InvalidOperationException">Thrown when MythServiceProvider is not initialized</exception>
+	public ActionPipelineState( ) {
+		ServiceProvider = MythServiceProvider.GetRequired( );
 		CorrelationId = Guid.NewGuid( ).ToString( );
 	}
 
 	/// <summary>
-	/// Initializes a new instance of ActionPipelineState without a request
+	/// Initializes a new instance of ActionPipelineState with a request using MythServiceProvider
 	/// </summary>
-	/// <param name="serviceProvider">The service provider</param>
-	public ActionPipelineState( IServiceProvider serviceProvider ) {
-		ServiceProvider = serviceProvider;
+	/// <param name="request">The initial request</param>
+	/// <exception cref="InvalidOperationException">Thrown when MythServiceProvider is not initialized</exception>
+	public ActionPipelineState( TCurrent request ) {
+		CurrentRequest = request;
+		ServiceProvider = MythServiceProvider.GetRequired( );
 		CorrelationId = Guid.NewGuid( ).ToString( );
 	}
 }

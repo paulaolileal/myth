@@ -9,12 +9,9 @@ using Myth.Models;
 
 namespace Myth.Flow.Actions.Test {
 
-	public class EndToEndTests {
+	public class EndToEndTests : BaseTestFixture {
 
-		[Fact]
-		public async Task CompleteFlow_ShouldExecuteAllSteps( ) {
-			// Arrange
-			IServiceCollection services = new ServiceCollection( );
+		protected override void ConfigureServices( IServiceCollection services ) {
 			services.AddLogging( );
 			services.AddFlow( );
 			services.AddFlowActions( options => {
@@ -29,9 +26,12 @@ namespace Myth.Flow.Actions.Test {
 					   } )
 					   .ScanAssemblies( typeof( TestCommandHandler ).Assembly );
 			} );
+		}
 
-			var provider = services.BuildServiceProvider( );
-			var dispatcher = provider.GetRequiredService<IDispatcher>( );
+		[Fact]
+		public async Task CompleteFlow_ShouldExecuteAllSteps( ) {
+			// Arrange
+			var dispatcher = ServiceProvider.GetRequiredService<IDispatcher>( );
 
 			// Act
 			var commandResult = await dispatcher.DispatchCommandAsync<TestCommand, string>(
@@ -54,21 +54,11 @@ namespace Myth.Flow.Actions.Test {
 
 		[Fact]
 		public async Task PipelineIntegration_ShouldChainOperations( ) {
-			// Arrange
-			var services = new ServiceCollection( );
-			services.AddLogging( );
-			services.AddFlow( );
-			services.AddFlowActions( options => {
-				options.UseInMemory( )
-					   .EnableCaching( )
-					   .ScanAssemblies( typeof( TestCommandHandler ).Assembly );
-			} );
-
-			var provider = services.BuildServiceProvider( );
+			// Arrange - using inherited service configuration
 
 			// Act
 			var result = await PipelineExtensions
-				.Start( new TestCommand { Value = "initial-value" }, provider )
+				.Start( new TestCommand { Value = "initial-value" } )
 				.Process<TestCommand, string>( )                                            // Command → string response
 				.Transform( response => new TestQuery { Key = response } )              // Transform response → Query
 				.Query<TestQuery, string>( )                                                // Execute query
@@ -84,17 +74,7 @@ namespace Myth.Flow.Actions.Test {
 		[Fact]
 		public async Task CachedQuery_ShouldReturnFromCacheOnSecondCall( ) {
 			// Arrange
-			var services = new ServiceCollection( );
-			services.AddLogging( );
-			services.AddFlow( );
-			services.AddFlowActions( options => {
-				options.UseInMemory( )
-					   .EnableCaching( cache => cache.ProviderType = CacheProviderType.Memory )
-					   .ScanAssemblies( typeof( TestCommandHandler ).Assembly );
-			} );
-
-			var provider = services.BuildServiceProvider( );
-			var dispatcher = provider.GetRequiredService<IDispatcher>( );
+			var dispatcher = ServiceProvider.GetRequiredService<IDispatcher>( );
 
 			var cacheOptions = new CacheOptions {
 				Enabled = true,
@@ -123,21 +103,11 @@ namespace Myth.Flow.Actions.Test {
 
 		[Fact]
 		public async Task PipelineWithCache_ShouldUseCacheConfiguration( ) {
-			// Arrange
-			var services = new ServiceCollection( );
-			services.AddLogging( );
-			services.AddFlow( );
-			services.AddFlowActions( options => {
-				options.UseInMemory( )
-					   .EnableCaching( cache => cache.ProviderType = CacheProviderType.Memory )
-					   .ScanAssemblies( typeof( TestCommandHandler ).Assembly );
-			} );
-
-			var provider = services.BuildServiceProvider( );
+			// Arrange - using inherited service configuration
 
 			// Act
 			var result = await PipelineExtensions
-				.Start( new TestQuery { Key = "cached-pipeline-test" }, provider )
+				.Start( new TestQuery { Key = "cached-pipeline-test" } )
 				.Query<TestQuery, string>( ( query, x ) => x.UseCache( "pipeline-cache-key", TimeSpan.FromMinutes( 5 ) ) )
 				.ExecuteAsync( );
 

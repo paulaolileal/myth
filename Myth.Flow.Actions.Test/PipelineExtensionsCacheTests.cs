@@ -1,36 +1,45 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Myth.Extensions;
 using Myth.Flow.Actions.Extensions;
 using Myth.Flow.Actions.Test.Models;
 using Myth.Interfaces;
 using Myth.Models;
+using Myth.ServiceProvider;
 using NSubstitute;
-using System.Diagnostics;
 
 namespace Myth.Flow.Actions.Test;
 
 /// <summary>
 /// Tests for PipelineExtensions cache functionality
 /// </summary>
-public class PipelineExtensionsCacheTests {
-	private readonly IServiceProvider _serviceProvider;
+public class PipelineExtensionsCacheTests : IDisposable {
 	private readonly ICacheProvider _cacheProvider;
+	private readonly IServiceProvider _serviceProvider;
 
 	public PipelineExtensionsCacheTests( ) {
-		var services = new ServiceCollection( );
-
-		services.AddTransient<IQueryHandler<TestQuery, string>, TestQueryHandler>( );
-		services.AddSingleton<IEventBus>( sp => Substitute.For<IEventBus>( ) );
-		services.AddSingleton<ILogger<Dispatcher>>( sp => Substitute.For<ILogger<Dispatcher>>( ) );
-		services.AddSingleton( sp => new ActivitySource( "Test" ) );
-
+		// Create mock before registering services
 		_cacheProvider = Substitute.For<ICacheProvider>( );
-		services.AddSingleton( _cacheProvider );
 
-		services.AddTransient<IDispatcher, Dispatcher>( );
+		var services = new ServiceCollection( );
+		services.AddLogging( );
+		services.AddFlow( );
+		services.AddFlowActions( options => {
+			options.UseInMemory( )
+				   .ScanAssemblies( typeof( TestQueryHandler ).Assembly );
+		} );
+
+		// Replace the cache provider with our mock
+		services.AddSingleton<ICacheProvider>( _cacheProvider );
 
 		_serviceProvider = services.BuildServiceProvider( );
+		MythServiceProvider.Initialize( _serviceProvider );
+	}
+
+	public void Dispose( ) {
+		MythServiceProvider.Reset( );
+		( _serviceProvider as IAsyncDisposable )?.DisposeAsync( );
+		( _serviceProvider as IDisposable )?.Dispose( );
 	}
 
 	[Fact]
@@ -47,12 +56,12 @@ public class PipelineExtensionsCacheTests {
 
 		// Act
 		var result1 = await PipelineExtensions
-			.Start( query1, _serviceProvider )
+			.Start( query1 )
 			.Query<TestQuery, string>( ( query, conf ) => conf.UseCache( ) )
 			.ExecuteAsync( );
 
 		var result2 = await PipelineExtensions
-			.Start( query2, _serviceProvider )
+			.Start( query2 )
 			.Query<TestQuery, string>( ( query, conf ) => conf.UseCache( ) )
 			.ExecuteAsync( );
 
@@ -79,7 +88,7 @@ public class PipelineExtensionsCacheTests {
 
 		// Act
 		var result = await PipelineExtensions
-			.Start( query, _serviceProvider )
+			.Start( query )
 			.Query<TestQuery, string>( ( q, conf ) => conf.UseCache<TestQuery>( q => $"weather-forecast-{q.Key}" ) )
 			.ExecuteAsync( );
 
@@ -101,7 +110,7 @@ public class PipelineExtensionsCacheTests {
 
 		// Act
 		var result = await PipelineExtensions
-			.Start( query, _serviceProvider )
+			.Start( query )
 			.Query<TestQuery, string>( ( q, conf ) => conf.UseCache( "static-cache-key" ) )
 			.ExecuteAsync( );
 
@@ -117,7 +126,7 @@ public class PipelineExtensionsCacheTests {
 
 		// Act
 		var result = await PipelineExtensions
-			.Start( query, _serviceProvider )
+			.Start( query )
 			.Query<TestQuery, string>( )
 			.ExecuteAsync( );
 
@@ -138,7 +147,7 @@ public class PipelineExtensionsCacheTests {
 
 		// Act
 		var result = await PipelineExtensions
-			.Start( query, _serviceProvider )
+			.Start( query )
 			.Query<TestQuery, string>( ( q, conf ) => conf.UseCache( "cache-key" ) )
 			.ExecuteAsync( );
 
@@ -167,7 +176,7 @@ public class PipelineExtensionsCacheTests {
 
 		// Act
 		var result = await PipelineExtensions
-			.Start( query, _serviceProvider )
+			.Start( query )
 			.Query<TestQuery, string>( ( q, conf ) => conf
 				.UseCache( "cache-key" )
 				.WithTtl( TimeSpan.FromMinutes( 15 ) )

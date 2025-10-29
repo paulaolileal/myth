@@ -2,7 +2,6 @@
 using Myth.Flow.Actions.Interfaces;
 using Myth.Interfaces;
 using Myth.Models;
-using Myth.ServiceProvider;
 
 namespace Myth.Flow.Actions.Extensions;
 
@@ -12,49 +11,25 @@ namespace Myth.Flow.Actions.Extensions;
 public static class PipelineExtensions {
 
 	/// <summary>
-	/// Starts a new action pipeline with an initial request
+	/// Starts a new action pipeline with an initial request using MythServiceProvider
 	/// </summary>
 	/// <typeparam name="TRequest">The initial request type</typeparam>
 	/// <param name="request">The initial request to start the pipeline with</param>
-	/// <param name="serviceProvider">Service provider for dependency injection</param>
 	/// <returns>Action pipeline builder for method chaining</returns>
-	public static IActionPipelineBuilder<TRequest> Start<TRequest>( TRequest request, IServiceProvider serviceProvider ) {
-		var state = new ActionPipelineState<TRequest>( request, serviceProvider );
-		var pipeline = Myth.Flow.Pipeline.Start( state, serviceProvider );
+	/// <exception cref="InvalidOperationException">Thrown when MythServiceProvider is not initialized</exception>
+	public static IActionPipelineBuilder<TRequest> Start<TRequest>( TRequest request ) {
+		var state = new ActionPipelineState<TRequest>( request );
+		var pipeline = Myth.Flow.Pipeline.Start( state );
 		return new ActionPipelineBuilder<TRequest>( pipeline );
 	}
 
 	/// <summary>
-	/// Starts a new action pipeline with an initial request using default service provider
-	/// </summary>
-	/// <typeparam name="TRequest">The initial request type</typeparam>
-	/// <param name="request">The initial request to start the pipeline with</param>
-	/// <returns>Action pipeline builder for method chaining</returns>
-	public static IActionPipelineBuilder<TRequest> Start<TRequest>( TRequest request ) {
-		var serviceProvider = MythServiceProvider.Current
-			?? throw new InvalidOperationException( "No global service provider is configured. Please use the `builder.BuildApp()` for initialize global service pprovider." );
-
-		return Start( request, serviceProvider );
-	}
-
-	/// <summary>
-	/// Starts an empty action pipeline for functional/utility scenarios
-	/// </summary>
-	/// <param name="serviceProvider">Service provider for dependency injection</param>
-	/// <returns>Empty pipeline builder that can be populated with Transform operations</returns>
-	public static IEmptyPipelineBuilder Start( IServiceProvider serviceProvider ) {
-		return new EmptyPipelineBuilder( serviceProvider );
-	}
-
-	/// <summary>
-	/// Starts an empty action pipeline with default service provider
+	/// Starts an empty action pipeline using MythServiceProvider
 	/// </summary>
 	/// <returns>Empty pipeline builder that can be populated with Transform operations</returns>
+	/// <exception cref="InvalidOperationException">Thrown when MythServiceProvider is not initialized</exception>
 	public static IEmptyPipelineBuilder Start( ) {
-		var serviceProvider = MythServiceProvider.Current
-			?? throw new InvalidOperationException( "No global service provider is configured. Please use the `builder.BuildApp()` for initialize global service pprovider." );
-
-		return Start( serviceProvider );
+		return new EmptyPipelineBuilder( );
 	}
 
 	/// <summary>
@@ -111,7 +86,7 @@ public static class PipelineExtensions {
 			} )
 			.Transform( state => {
 				var cmdResult = ( CommandResult<TResponse> )state.LastResult!;
-				return new ActionPipelineState<TResponse>( cmdResult.Data!, state.ServiceProvider ) {
+				return new ActionPipelineState<TResponse>( cmdResult.Data! ) {
 					LastResult = state.LastResult,
 					CorrelationId = state.CorrelationId
 				};
@@ -168,7 +143,7 @@ public static class PipelineExtensions {
 			} )
 			.Transform( state => {
 				var queryResult = ( QueryResult<TResponse> )state.LastResult!;
-				return new ActionPipelineState<TResponse>( queryResult.Data!, state.ServiceProvider ) {
+				return new ActionPipelineState<TResponse>( queryResult.Data! ) {
 					LastResult = state.LastResult,
 					CorrelationId = state.CorrelationId
 				};
@@ -214,7 +189,7 @@ public static class PipelineExtensions {
 			var current = state.CurrentRequest!;
 			var next = transform( current );
 
-			return new ActionPipelineState<TNext>( next, state.ServiceProvider ) {
+			return new ActionPipelineState<TNext>( next ) {
 				LastResult = state.LastResult,
 				CorrelationId = state.CorrelationId
 			};
@@ -239,7 +214,7 @@ public static class PipelineExtensions {
 			var current = state.CurrentRequest!;
 			var next = await transform( current );
 
-			return new ActionPipelineState<TNext>( next, state.ServiceProvider ) {
+			return new ActionPipelineState<TNext>( next ) {
 				LastResult = state.LastResult,
 				CorrelationId = state.CorrelationId
 			};
@@ -268,7 +243,7 @@ public static class PipelineExtensions {
 
 			TNext? next = shouldTransform ? transform( current ) : default;
 
-			return new ActionPipelineState<TNext?>( next, state.ServiceProvider ) {
+			return new ActionPipelineState<TNext?>( next ) {
 				LastResult = state.LastResult,
 				CorrelationId = state.CorrelationId
 			};
@@ -299,7 +274,7 @@ public static class PipelineExtensions {
 
 			var next = shouldUseTrue ? transformTrue( current ) : transformFalse( current );
 
-			return new ActionPipelineState<TNext>( next, state.ServiceProvider ) {
+			return new ActionPipelineState<TNext>( next ) {
 				LastResult = state.LastResult,
 				CorrelationId = state.CorrelationId
 			};

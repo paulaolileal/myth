@@ -4,44 +4,26 @@ using Myth.Flow.Actions.Interfaces;
 namespace Myth.Flow.Actions;
 
 /// <summary>
-/// Static Pipeline class for improved developer experience with Action-First API
+/// Static Pipeline class for improved developer experience with Action-First API using MythServiceProvider
 /// </summary>
 public static class Pipeline {
 
 	/// <summary>
-	/// Starts a new action pipeline with an initial request
-	/// </summary>
-	/// <typeparam name="TRequest">The initial request type</typeparam>
-	/// <param name="request">The initial request to start the pipeline with</param>
-	/// <param name="serviceProvider">Service provider for dependency injection</param>
-	/// <returns>Action pipeline builder for method chaining</returns>
-	public static IActionPipelineBuilder<TRequest> Start<TRequest>( TRequest request, IServiceProvider serviceProvider ) {
-		return PipelineExtensions.Start( request, serviceProvider );
-	}
-
-	/// <summary>
-	/// Starts a new action pipeline with an initial request using default service provider
+	/// Starts a new action pipeline with an initial request using MythServiceProvider
 	/// </summary>
 	/// <typeparam name="TRequest">The initial request type</typeparam>
 	/// <param name="request">The initial request to start the pipeline with</param>
 	/// <returns>Action pipeline builder for method chaining</returns>
+	/// <exception cref="InvalidOperationException">Thrown when MythServiceProvider is not initialized</exception>
 	public static IActionPipelineBuilder<TRequest> Start<TRequest>( TRequest request ) {
 		return PipelineExtensions.Start( request );
 	}
 
 	/// <summary>
-	/// Starts an empty action pipeline for functional/utility scenarios
-	/// </summary>
-	/// <param name="serviceProvider">Service provider for dependency injection</param>
-	/// <returns>Empty pipeline builder that can be populated with Transform operations</returns>
-	public static IEmptyPipelineBuilder Start( IServiceProvider serviceProvider ) {
-		return PipelineExtensions.Start( serviceProvider );
-	}
-
-	/// <summary>
-	/// Starts an empty action pipeline with default service provider
+	/// Starts an empty action pipeline using MythServiceProvider
 	/// </summary>
 	/// <returns>Empty pipeline builder that can be populated with Transform operations</returns>
+	/// <exception cref="InvalidOperationException">Thrown when MythServiceProvider is not initialized</exception>
 	public static IEmptyPipelineBuilder Start( ) {
 		return PipelineExtensions.Start( );
 	}

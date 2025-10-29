@@ -8,23 +8,22 @@ using System.Diagnostics;
 
 namespace Myth.Flow.Actions.Test {
 
-	public class EventBusTests {
-		private readonly IServiceProvider _serviceProvider;
+	public class EventBusTests : BaseTestFixture {
 		private readonly IMessageBroker _messageBroker;
 		private readonly ILogger<EventBus> _logger;
 		private readonly ActivitySource _activitySource;
 		private readonly EventBus _sut;
 
 		public EventBusTests( ) {
-			var services = new ServiceCollection( );
-			var handler = new TestEventHandler( );
-			services.AddSingleton<TestEventHandler>( handler );
-			_serviceProvider = services.BuildServiceProvider( );
-
 			_messageBroker = Substitute.For<IMessageBroker>( );
 			_logger = Substitute.For<ILogger<EventBus>>( );
 			_activitySource = new ActivitySource( "Test" );
-			_sut = new EventBus( _serviceProvider, _messageBroker, _logger, _activitySource );
+			_sut = new EventBus( _messageBroker, _logger, _activitySource );
+		}
+
+		protected override void ConfigureServices( IServiceCollection services ) {
+			var handler = new TestEventHandler( );
+			services.AddSingleton<TestEventHandler>( handler );
 		}
 
 		[Fact]
@@ -49,7 +48,7 @@ namespace Myth.Flow.Actions.Test {
 			await _sut.PublishAsync( @event );
 
 			// Assert
-			var handler = _serviceProvider.GetRequiredService<TestEventHandler>( );
+			var handler = ServiceProvider.GetRequiredService<TestEventHandler>( );
 			handler.CallCount.Should( ).Be( 1 );
 			handler.LastEvent.Should( ).NotBeNull( );
 			handler.LastEvent!.Message.Should( ).Be( "test" );

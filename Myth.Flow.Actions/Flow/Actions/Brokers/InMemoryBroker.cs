@@ -4,6 +4,7 @@ using Myth.Flow.Actions.Settings;
 using Myth.Flow.Resilience;
 using Myth.Interfaces;
 using Myth.Models;
+using Myth.ServiceProvider;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
@@ -12,10 +13,9 @@ using System.Threading.Channels;
 namespace Myth.Flow.Actions.Brokers;
 
 /// <summary>
-/// Production-ready in-memory message broker with retry, DLQ, and parallel processing
+/// Production-ready in-memory message broker with retry, DLQ, and parallel processing that uses MythServiceProvider
 /// </summary>
 public sealed class InMemoryBroker : IMessageBroker, IAsyncDisposable {
-	private readonly IServiceProvider _serviceProvider;
 	private readonly IEventSubscriptionManager _subscriptionManager;
 	private readonly ILogger<InMemoryBroker> _logger;
 	private readonly ActivitySource _activitySource;
@@ -30,13 +30,11 @@ public sealed class InMemoryBroker : IMessageBroker, IAsyncDisposable {
 	private CancellationTokenSource? _cts;
 
 	public InMemoryBroker(
-		IServiceProvider serviceProvider,
 		IEventSubscriptionManager subscriptionManager,
 		ILogger<InMemoryBroker> logger,
 		ActivitySource activitySource,
 		InMemoryBrokerOptions? options = null,
 		DeadLetterQueue? deadLetterQueue = null ) {
-		_serviceProvider = serviceProvider;
 		_subscriptionManager = subscriptionManager;
 		_logger = logger;
 		_activitySource = activitySource;
@@ -208,7 +206,7 @@ public sealed class InMemoryBroker : IMessageBroker, IAsyncDisposable {
 	MessageEnvelope envelope,
 	CancellationToken cancellationToken ) {
 		using var activity = _activitySource.StartActivity( $"Handler.{handlerType.Name}" );
-		using var scope = _serviceProvider.CreateScope( );
+		using var scope = MythServiceProvider.GetRequired( ).CreateScope( );
 
 		try {
 			var eventHandlerInterface = typeof( IEventHandler<> ).MakeGenericType( eventType );

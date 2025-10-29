@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Myth.Interfaces;
 using Myth.Models;
+using Myth.ServiceProvider;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
@@ -10,22 +11,19 @@ using System.Text.Json;
 namespace Myth.Flow.Actions;
 
 /// <summary>
-/// Default dispatcher implementation
+/// Default dispatcher implementation that uses MythServiceProvider for dependency resolution
 /// </summary>
 internal sealed class Dispatcher : IDispatcher {
-	private readonly IServiceProvider _serviceProvider;
 	private readonly ICacheProvider? _cacheProvider;
 	private readonly IEventBus _eventBus;
 	private readonly ILogger<Dispatcher> _logger;
 	private readonly ActivitySource _activitySource;
 
 	public Dispatcher(
-		IServiceProvider serviceProvider,
 		IEventBus eventBus,
 		ILogger<Dispatcher> logger,
 		ActivitySource activitySource,
 		ICacheProvider? cacheProvider = null ) {
-		_serviceProvider = serviceProvider;
 		_cacheProvider = cacheProvider;
 		_eventBus = eventBus;
 		_logger = logger;
@@ -48,7 +46,7 @@ internal sealed class Dispatcher : IDispatcher {
 		try {
 			_logger.LogInformation( "Dispatching command {CommandType}", typeof( TCommand ).Name );
 
-			var handler = _serviceProvider.GetService<ICommandHandler<TCommand>>( )
+			var handler = MythServiceProvider.GetRequired( ).GetService<ICommandHandler<TCommand>>( )
 				?? throw new HandlerNotFoundException( $"No handler registered for command {typeof( TCommand ).Name}" );
 
 			var result = await handler.HandleAsync( command, cancellationToken );
@@ -83,7 +81,7 @@ internal sealed class Dispatcher : IDispatcher {
 		try {
 			_logger.LogInformation( "Dispatching command {CommandType}", typeof( TCommand ).Name );
 
-			var handler = _serviceProvider.GetService<ICommandHandler<TCommand, TResponse>>( )
+			var handler = MythServiceProvider.GetRequired( ).GetService<ICommandHandler<TCommand, TResponse>>( )
 				?? throw new HandlerNotFoundException( $"No handler registered for command {typeof( TCommand ).Name}" );
 
 			var result = await handler.HandleAsync( command, cancellationToken );
@@ -141,7 +139,7 @@ internal sealed class Dispatcher : IDispatcher {
 
 			_logger.LogInformation( "Dispatching query {QueryType}", typeof( TQuery ).Name );
 
-			var handler = _serviceProvider.GetService<IQueryHandler<TQuery, TResponse>>( )
+			var handler = MythServiceProvider.GetRequired( ).GetService<IQueryHandler<TQuery, TResponse>>( )
 				?? throw new HandlerNotFoundException( $"No handler registered for query {typeof( TQuery ).Name}" );
 
 			var result = await handler.HandleAsync( query, cancellationToken );

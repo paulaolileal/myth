@@ -9,7 +9,13 @@ namespace Myth.Flow.Actions.Test {
 	/// <summary>
 	/// Tests for the simplified Action API that allows using objects directly without complex state management.
 	/// </summary>
-	public class SimplifiedActionApiTests {
+	public class SimplifiedActionApiTests : BaseTestFixture {
+
+		protected override void ConfigureServices( IServiceCollection services ) {
+			services.AddFlow( );
+			services.AddFlowActions( options => options.UseInMemory( ) );
+			services.AddTransient<SimplifiedValidationService>( );
+		}
 
 		public class SimplifiedValidationService {
 
@@ -40,17 +46,12 @@ namespace Myth.Flow.Actions.Test {
 
 		[Fact]
 		public async Task SimplifiedStepAsync_WithCancellationToken_ShouldPassObjectDirectly( ) {
-			// Arrange
-			var services = new ServiceCollection( );
-			services.AddFlow( );
-			services.AddFlowActions( options => options.UseInMemory( ) );
-			services.AddTransient<SimplifiedValidationService>( );
-			var serviceProvider = services.BuildServiceProvider( );
+			// Arrange - using inherited service configuration
 
 			var input = new TestCommand { Value = "test" };
 
 			// Act
-			var result = await Pipeline.Start( input, serviceProvider )
+			var result = await Pipeline.Start( input )
 				.StepAsync<SimplifiedValidationService>( ( service, command, ct ) =>
 					service.ValidateAsync( command, ct ) )
 				.ExecuteAsync( );
@@ -63,17 +64,12 @@ namespace Myth.Flow.Actions.Test {
 
 		[Fact]
 		public async Task SimplifiedStepResultAsync_WithCancellationToken_ShouldHandleResultPattern( ) {
-			// Arrange
-			var services = new ServiceCollection( );
-			services.AddFlow( );
-			services.AddFlowActions( options => options.UseInMemory( ) );
-			services.AddTransient<SimplifiedValidationService>( );
-			var serviceProvider = services.BuildServiceProvider( );
+			// Arrange - using inherited service configuration
 
 			var input = new TestCommand { Value = "test" };
 
 			// Act
-			var result = await Pipeline.Start( input, serviceProvider )
+			var result = await Pipeline.Start( input )
 				.StepResultAsync<SimplifiedValidationService>( ( service, command, ct ) =>
 					service.ValidateWithResultAsync( command, ct ) )
 				.ExecuteAsync( );
@@ -86,17 +82,12 @@ namespace Myth.Flow.Actions.Test {
 
 		[Fact]
 		public async Task SimplifiedStepResultAsync_WithFailure_ShouldThrowPipelineException( ) {
-			// Arrange
-			var services = new ServiceCollection( );
-			services.AddFlow( );
-			services.AddFlowActions( options => options.UseInMemory( ) );
-			services.AddTransient<SimplifiedValidationService>( );
-			var serviceProvider = services.BuildServiceProvider( );
+			// Arrange - using inherited service configuration
 
 			var input = new TestCommand { Value = "" }; // Invalid input
 
 			// Act
-			var result = await Pipeline.Start( input, serviceProvider )
+			var result = await Pipeline.Start( input )
 				.StepResultAsync<SimplifiedValidationService>( ( service, command, ct ) =>
 					service.ValidateWithResultAsync( command, ct ) )
 				.ExecuteAsync( );
@@ -108,17 +99,12 @@ namespace Myth.Flow.Actions.Test {
 
 		[Fact]
 		public async Task ChainedSimplifiedSteps_ShouldWorkCorrectly( ) {
-			// Arrange
-			var services = new ServiceCollection( );
-			services.AddFlow( );
-			services.AddFlowActions( options => options.UseInMemory( ) );
-			services.AddTransient<SimplifiedValidationService>( );
-			var serviceProvider = services.BuildServiceProvider( );
+			// Arrange - using inherited service configuration
 
 			var input = new TestCommand { Value = "test" };
 
 			// Act
-			var result = await Pipeline.Start( input, serviceProvider )
+			var result = await Pipeline.Start( input )
 				.StepAsync<SimplifiedValidationService>( ( service, command, ct ) =>
 					service.ValidateAsync( command, ct ) )
 				.StepAsync<SimplifiedValidationService>( ( service, command, ct ) =>
@@ -133,12 +119,7 @@ namespace Myth.Flow.Actions.Test {
 
 		[Fact]
 		public async Task SimplifiedApi_WithCancellation_ShouldRespectCancellationToken( ) {
-			// Arrange
-			var services = new ServiceCollection( );
-			services.AddFlow( );
-			services.AddFlowActions( options => options.UseInMemory( ) );
-			services.AddTransient<SimplifiedValidationService>( );
-			var serviceProvider = services.BuildServiceProvider( );
+			// Arrange - using inherited service configuration
 
 			var input = new TestCommand { Value = "test" };
 			var cts = new CancellationTokenSource( );
@@ -147,7 +128,7 @@ namespace Myth.Flow.Actions.Test {
 			cts.Cancel( );
 
 			// Act
-			var result = await Pipeline.Start( input, serviceProvider )
+			var result = await Pipeline.Start( input )
 				.StepAsync<SimplifiedValidationService>( ( service, command, ct ) =>
 					service.ValidateAsync( command, ct ) )
 				.ExecuteAsync( cts.Token );
