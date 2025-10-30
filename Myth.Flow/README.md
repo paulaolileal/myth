@@ -14,7 +14,7 @@ A powerful .NET library for building maintainable and testable data processing p
 - **Type Safety**: Strong typing with context transformation support
 - **Automatic Retry**: Configurable retry policies with exponential backoff
 - **OpenTelemetry Integration**: Built-in tracing and observability
-- **Dependency Injection**: Full ASP.NET Core DI integration
+- **Constructor Injection**: Clean dependency injection via constructors (no service locator)
 - **Result Pattern**: Railway-oriented programming with `Result<T>`
 - **Error Handling**: Comprehensive error handling with custom exceptions
 - **Conditional Execution**: Execute steps based on context predicates
@@ -32,18 +32,40 @@ dotnet add package Myth.Flow
 ## Basic Usage
 
 ```csharp
-var input = new OrderContext { OrderId = 123 };
-
-var result = await Pipeline.Start(input)
-    .StepAsync<ValidationService>((svc, ctx) => svc.ValidateOrderAsync(ctx))
-    .StepAsync<PaymentService>((svc, ctx) => svc.ProcessPaymentAsync(ctx))
-    .StepAsync<InventoryService>((svc, ctx) => svc.ReserveItemsAsync(ctx))
-    .Tap(ctx => Console.WriteLine($"Order {ctx.OrderId} completed"))
-    .ExecuteAsync();
-
-if (result.IsSuccess)
+public class OrderService
 {
-    Console.WriteLine("Order processed successfully!");
+    private readonly ValidationService _validationService;
+    private readonly PaymentService _paymentService;
+    private readonly InventoryService _inventoryService;
+
+    public OrderService(
+        ValidationService validationService,
+        PaymentService paymentService,
+        InventoryService inventoryService)
+    {
+        _validationService = validationService;
+        _paymentService = paymentService;
+        _inventoryService = inventoryService;
+    }
+
+    public async Task<Result<OrderContext>> ProcessOrderAsync(int orderId)
+    {
+        var input = new OrderContext { OrderId = orderId };
+
+        var result = await Pipeline.Start(input)
+            .StepAsync(ctx => _validationService.ValidateOrderAsync(ctx))
+            .StepAsync(ctx => _paymentService.ProcessPaymentAsync(ctx))
+            .StepAsync(ctx => _inventoryService.ReserveItemsAsync(ctx))
+            .Tap(ctx => Console.WriteLine($"Order {ctx.OrderId} completed"))
+            .ExecuteAsync();
+
+        if (result.IsSuccess)
+        {
+            Console.WriteLine("Order processed successfully!");
+        }
+
+        return result;
+    }
 }
 ```
 
@@ -71,6 +93,20 @@ builder.Services.AddScoped<InventoryService>();
 ```csharp
 public class OrderController : ControllerBase
 {
+    private readonly OrderValidationService _validationService;
+    private readonly OrderCreationService _creationService;
+    private readonly OrderEventService _eventService;
+
+    public OrderController(
+        OrderValidationService validationService,
+        OrderCreationService creationService,
+        OrderEventService eventService)
+    {
+        _validationService = validationService;
+        _creationService = creationService;
+        _eventService = eventService;
+    }
+
     [HttpPost("orders")]
     public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest request)
     {
@@ -79,12 +115,9 @@ public class OrderController : ControllerBase
         var result = await Pipeline.Start(context)
             .WithTelemetry("CreateOrder")
             .WithRetry(maxAttempts: 3, backoffMs: 100)
-            .StepResultAsync<OrderValidationService>(
-                (svc, ctx) => svc.ValidateAsync(ctx))
-            .StepResultAsync<OrderCreationService>(
-                (svc, ctx) => svc.CreateAsync(ctx))
-            .TapAsync<OrderEventService>(
-                (svc, ctx) => svc.PublishOrderCreatedAsync(ctx))
+            .StepResultAsync(ctx => _validationService.ValidateAsync(ctx))
+            .StepResultAsync(ctx => _creationService.CreateAsync(ctx))
+            .TapAsync(ctx => _eventService.PublishOrderCreatedAsync(ctx))
             .Transform<OrderResponse>(ctx => new OrderResponse
             {
                 OrderId = ctx.CreatedOrder!.Id,
@@ -118,11 +151,26 @@ builder.Services.AddFlow(config =>
 ## Pipeline Configuration
 
 ```csharp
-var result = await Pipeline.Start(context)
-    .WithTelemetry("OperationName")          // Set operation name for tracing
-    .WithRetry(maxAttempts: 5, backoffMs: 200) // Configure retry for subsequent steps
-    .StepAsync<MyService>((svc, ctx) => svc.ProcessAsync(ctx))
-    .ExecuteAsync();
+public class MyService
+{
+    private readonly ProcessingService _processingService;
+
+    public MyService(ProcessingService processingService)
+    {
+        _processingService = processingService;
+    }
+
+    public async Task<Result<MyContext>> ExecuteAsync(MyContext context)
+    {
+        var result = await Pipeline.Start(context)
+            .WithTelemetry("OperationName")          // Set operation name for tracing
+            .WithRetry(maxAttempts: 5, backoffMs: 200) // Configure retry for subsequent steps
+            .StepAsync(ctx => _processingService.ProcessAsync(ctx))
+            .ExecuteAsync();
+
+        return result;
+    }
+}
 ```
 
 # 🔄 Pipeline Steps
@@ -130,26 +178,71 @@ var result = await Pipeline.Start(context)
 ## Synchronous Steps
 
 ```csharp
-.Step<MyService>((svc, ctx) => 
+public class MyService
 {
-    // Synchronous processing
-    ctx.Data = svc.Transform(ctx.Data);
-    return ctx;
-})
+    private readonly TransformService _transformService;
+
+    public MyService(TransformService transformService)
+    {
+        _transformService = transformService;
+    }
+
+    public MyContext ProcessData(MyContext ctx)
+    {
+        var result = Pipeline.Start(ctx)
+            .Step(context =>
+            {
+                // Synchronous processing
+                context.Data = _transformService.Transform(context.Data);
+                return context;
+            })
+            .Execute();
+
+        return result.Value;
+    }
+}
 ```
 
 ## Asynchronous Steps
 
 ```csharp
-.StepAsync<MyService>((svc, ctx) => 
-    svc.ProcessAsync(ctx))
+public class MyService
+{
+    private readonly ProcessingService _processingService;
+
+    public MyService(ProcessingService processingService)
+    {
+        _processingService = processingService;
+    }
+
+    public async Task<Result<MyContext>> ProcessAsync(MyContext context)
+    {
+        return await Pipeline.Start(context)
+            .StepAsync(ctx => _processingService.ProcessAsync(ctx))
+            .ExecuteAsync();
+    }
+}
 ```
 
 ## Steps with Result Pattern
 
 ```csharp
-.StepResultAsync<ValidationService>((svc, ctx) => 
-    svc.ValidateAsync(ctx))
+public class OrderProcessor
+{
+    private readonly ValidationService _validationService;
+
+    public OrderProcessor(ValidationService validationService)
+    {
+        _validationService = validationService;
+    }
+
+    public async Task<Result<OrderContext>> ProcessAsync(OrderContext context)
+    {
+        return await Pipeline.Start(context)
+            .StepResultAsync(ctx => _validationService.ValidateAsync(ctx))
+            .ExecuteAsync();
+    }
+}
 ```
 
 The `Result<T>` pattern allows steps to return success or failure:
@@ -190,31 +283,71 @@ Transform the pipeline context to a different type:
 Execute actions without modifying the context:
 
 ```csharp
-// Simple tap
-.Tap(ctx => Console.WriteLine($"Processing: {ctx.Id}"))
+public class OrderProcessor
+{
+    private readonly ILogger<OrderProcessor> _logger;
+    private readonly EventPublisher _eventPublisher;
+    private readonly MetricsService _metricsService;
 
-// Async tap
-.TapAsync(async ctx => 
-    await _logger.LogAsync($"Step completed: {ctx.Id}"))
+    public OrderProcessor(
+        ILogger<OrderProcessor> logger,
+        EventPublisher eventPublisher,
+        MetricsService metricsService)
+    {
+        _logger = logger;
+        _eventPublisher = eventPublisher;
+        _metricsService = metricsService;
+    }
 
-// Tap with service injection
-.TapAsync<EventPublisher>((svc, ctx) => 
-    svc.PublishAsync(new OrderCreated(ctx.OrderId)))
+    public async Task<Result<OrderContext>> ProcessAsync(OrderContext context)
+    {
+        return await Pipeline.Start(context)
+            // Simple tap
+            .Tap(ctx => Console.WriteLine($"Processing: {ctx.Id}"))
 
-.Tap<MetricsService>((svc, ctx) => 
-    svc.IncrementCounter("orders_created"))
+            // Async tap with logger
+            .TapAsync(async ctx =>
+                await _logger.LogAsync($"Step completed: {ctx.Id}"))
+
+            // Tap with event publishing
+            .TapAsync(ctx =>
+                _eventPublisher.PublishAsync(new OrderCreated(ctx.OrderId)))
+
+            // Tap with metrics
+            .Tap(ctx =>
+                _metricsService.IncrementCounter("orders_created"))
+            .ExecuteAsync();
+    }
+}
 ```
 
 ## Conditional Execution
 
 ```csharp
-.When(
-    ctx => ctx.Amount > 1000,
-    pipeline => pipeline
-        .StepAsync<FraudDetectionService>((svc, ctx) => 
-            svc.CheckAsync(ctx))
-        .StepAsync<ApprovalService>((svc, ctx) => 
-            svc.RequestApprovalAsync(ctx)))
+public class OrderProcessor
+{
+    private readonly FraudDetectionService _fraudDetectionService;
+    private readonly ApprovalService _approvalService;
+
+    public OrderProcessor(
+        FraudDetectionService fraudDetectionService,
+        ApprovalService approvalService)
+    {
+        _fraudDetectionService = fraudDetectionService;
+        _approvalService = approvalService;
+    }
+
+    public async Task<Result<OrderContext>> ProcessAsync(OrderContext context)
+    {
+        return await Pipeline.Start(context)
+            .When(
+                ctx => ctx.Amount > 1000,
+                pipeline => pipeline
+                    .StepAsync(ctx => _fraudDetectionService.CheckAsync(ctx))
+                    .StepAsync(ctx => _approvalService.RequestApprovalAsync(ctx)))
+            .ExecuteAsync();
+    }
+}
 ```
 
 # 🔁 Retry Policies
@@ -246,11 +379,25 @@ Retry behavior:
 ## Retry Example
 
 ```csharp
-var result = await Pipeline.Start(context)
-    .WithRetry(maxAttempts: 3, backoffMs: 100)
-    .StepAsync<ExternalApiService>((svc, ctx) => 
-        svc.CallUnreliableApiAsync(ctx)) // Will retry on exceptions
-    .ExecuteAsync();
+public class ApiIntegrationService
+{
+    private readonly ExternalApiService _externalApiService;
+
+    public ApiIntegrationService(ExternalApiService externalApiService)
+    {
+        _externalApiService = externalApiService;
+    }
+
+    public async Task<Result<ApiContext>> CallApiAsync(ApiContext context)
+    {
+        var result = await Pipeline.Start(context)
+            .WithRetry(maxAttempts: 3, backoffMs: 100)
+            .StepAsync(ctx => _externalApiService.CallUnreliableApiAsync(ctx)) // Will retry on exceptions
+            .ExecuteAsync();
+
+        return result;
+    }
+}
 ```
 
 # 📊 Observability & Telemetry
@@ -260,11 +407,30 @@ var result = await Pipeline.Start(context)
 The library automatically creates activities for distributed tracing:
 
 ```csharp
-var result = await Pipeline.Start(context)
-    .WithTelemetry("CreateUser")
-    .StepResultAsync<ValidationService>((svc, ctx) => svc.ValidateAsync(ctx))
-    .StepResultAsync<UserCreationService>((svc, ctx) => svc.CreateAsync(ctx))
-    .ExecuteAsync();
+public class UserService
+{
+    private readonly ValidationService _validationService;
+    private readonly UserCreationService _creationService;
+
+    public UserService(
+        ValidationService validationService,
+        UserCreationService creationService)
+    {
+        _validationService = validationService;
+        _creationService = creationService;
+    }
+
+    public async Task<Result<UserContext>> CreateUserAsync(UserContext context)
+    {
+        var result = await Pipeline.Start(context)
+            .WithTelemetry("CreateUser")
+            .StepResultAsync(ctx => _validationService.ValidateAsync(ctx))
+            .StepResultAsync(ctx => _creationService.CreateAsync(ctx))
+            .ExecuteAsync();
+
+        return result;
+    }
+}
 ```
 
 Each step creates a child activity with tags:
@@ -319,9 +485,22 @@ public class UserMetricsService : IUserMetrics
     public void IncrementUserFailed() => Interlocked.Increment(ref _usersFailed);
 }
 
-// Use in pipeline
-.TapAsync<UserObservabilityService>((svc, ctx) => 
-    svc.RecordMetricsAsync(ctx))
+public class UserProcessor
+{
+    private readonly UserObservabilityService _observabilityService;
+
+    public UserProcessor(UserObservabilityService observabilityService)
+    {
+        _observabilityService = observabilityService;
+    }
+
+    public async Task<Result<UserContext>> ProcessAsync(UserContext context)
+    {
+        return await Pipeline.Start(context)
+            .TapAsync(ctx => _observabilityService.RecordMetricsAsync(ctx))
+            .ExecuteAsync();
+    }
+}
 ```
 
 # 🏗️ Advanced Patterns
@@ -367,25 +546,48 @@ public class UserCreationService
 ## Event-Driven Architecture
 
 ```csharp
-var result = await Pipeline.Start(context)
-    .WithTelemetry("ProcessOrder")
-    .StepResultAsync<OrderValidationService>(
-        (svc, ctx) => svc.ValidateAsync(ctx))
-    .StepResultAsync<OrderCreationService>(
-        (svc, ctx) => svc.CreateAsync(ctx))
-    .TapAsync<OrderEventService>(
-        (svc, ctx) => svc.PublishOrderCreatedAsync(ctx))
-    .TapAsync<NotificationService>(
-        (svc, ctx) => svc.SendConfirmationEmailAsync(ctx))
-    .TapAsync<MetricsService>(
-        (svc, ctx) => svc.RecordOrderCreatedAsync(ctx))
-    .Transform<OrderResponse>(ctx => new OrderResponse
+public class OrderPipeline
+{
+    private readonly OrderValidationService _validationService;
+    private readonly OrderCreationService _creationService;
+    private readonly OrderEventService _eventService;
+    private readonly NotificationService _notificationService;
+    private readonly MetricsService _metricsService;
+
+    public OrderPipeline(
+        OrderValidationService validationService,
+        OrderCreationService creationService,
+        OrderEventService eventService,
+        NotificationService notificationService,
+        MetricsService metricsService)
     {
-        OrderId = ctx.Order.Id,
-        Status = ctx.Order.Status,
-        CreatedAt = ctx.Order.CreatedAt
-    })
-    .ExecuteAsync();
+        _validationService = validationService;
+        _creationService = creationService;
+        _eventService = eventService;
+        _notificationService = notificationService;
+        _metricsService = metricsService;
+    }
+
+    public async Task<Result<OrderResponse>> ProcessOrderAsync(OrderContext context)
+    {
+        var result = await Pipeline.Start(context)
+            .WithTelemetry("ProcessOrder")
+            .StepResultAsync(ctx => _validationService.ValidateAsync(ctx))
+            .StepResultAsync(ctx => _creationService.CreateAsync(ctx))
+            .TapAsync(ctx => _eventService.PublishOrderCreatedAsync(ctx))
+            .TapAsync(ctx => _notificationService.SendConfirmationEmailAsync(ctx))
+            .TapAsync(ctx => _metricsService.RecordOrderCreatedAsync(ctx))
+            .Transform<OrderResponse>(ctx => new OrderResponse
+            {
+                OrderId = ctx.Order.Id,
+                Status = ctx.Order.Status,
+                CreatedAt = ctx.Order.CreatedAt
+            })
+            .ExecuteAsync();
+
+        return result;
+    }
+}
 ```
 
 ## Multi-Step Validation Pipeline
@@ -393,6 +595,32 @@ var result = await Pipeline.Start(context)
 ```csharp
 public class UserRegistrationPipeline
 {
+    private readonly EmailValidationService _emailValidationService;
+    private readonly PasswordValidationService _passwordValidationService;
+    private readonly RoleValidationService _roleValidationService;
+    private readonly UserCreationService _userCreationService;
+    private readonly EventPublisher _eventPublisher;
+    private readonly EmailService _emailService;
+    private readonly MetricsService _metricsService;
+
+    public UserRegistrationPipeline(
+        EmailValidationService emailValidationService,
+        PasswordValidationService passwordValidationService,
+        RoleValidationService roleValidationService,
+        UserCreationService userCreationService,
+        EventPublisher eventPublisher,
+        EmailService emailService,
+        MetricsService metricsService)
+    {
+        _emailValidationService = emailValidationService;
+        _passwordValidationService = passwordValidationService;
+        _roleValidationService = roleValidationService;
+        _userCreationService = userCreationService;
+        _eventPublisher = eventPublisher;
+        _emailService = emailService;
+        _metricsService = metricsService;
+    }
+
     public async Task<Result<UserResponse>> RegisterAsync(RegisterUserRequest request)
     {
         var context = new UserContext { Request = request };
@@ -400,27 +628,20 @@ public class UserRegistrationPipeline
         var result = await Pipeline.Start(context)
             .WithTelemetry("RegisterUser")
             .WithRetry(maxAttempts: 2)
-            
+
             // Validation steps
-            .StepResultAsync<EmailValidationService>(
-                (svc, ctx) => svc.ValidateEmailAsync(ctx))
-            .StepResultAsync<PasswordValidationService>(
-                (svc, ctx) => svc.ValidatePasswordAsync(ctx))
-            .StepResultAsync<RoleValidationService>(
-                (svc, ctx) => svc.ValidateRoleAsync(ctx))
-            
+            .StepResultAsync(ctx => _emailValidationService.ValidateEmailAsync(ctx))
+            .StepResultAsync(ctx => _passwordValidationService.ValidatePasswordAsync(ctx))
+            .StepResultAsync(ctx => _roleValidationService.ValidateRoleAsync(ctx))
+
             // Creation step
-            .StepResultAsync<UserCreationService>(
-                (svc, ctx) => svc.CreateUserAsync(ctx))
-            
+            .StepResultAsync(ctx => _userCreationService.CreateUserAsync(ctx))
+
             // Side effects
-            .TapAsync<EventPublisher>(
-                (svc, ctx) => svc.PublishAsync(new UserRegistered(ctx.CreatedUser.Id)))
-            .TapAsync<EmailService>(
-                (svc, ctx) => svc.SendWelcomeEmailAsync(ctx.CreatedUser.Email))
-            .TapAsync<MetricsService>(
-                (svc, ctx) => svc.IncrementUserRegistrations())
-            
+            .TapAsync(ctx => _eventPublisher.PublishAsync(new UserRegistered(ctx.CreatedUser.Id)))
+            .TapAsync(ctx => _emailService.SendWelcomeEmailAsync(ctx.CreatedUser.Email))
+            .TapAsync(ctx => _metricsService.IncrementUserRegistrations())
+
             // Transform to response
             .Transform<UserResponse>(ctx => new UserResponse
             {
@@ -439,29 +660,54 @@ public class UserRegistrationPipeline
 ## Conditional Processing
 
 ```csharp
-var result = await Pipeline.Start(context)
-    .StepResultAsync<OrderValidationService>(
-        (svc, ctx) => svc.ValidateAsync(ctx))
-    
-    .When(
-        ctx => ctx.Order.Amount > 1000,
-        pipeline => pipeline
-            .StepAsync<FraudCheckService>(
-                (svc, ctx) => svc.CheckAsync(ctx))
-            .StepAsync<ManagerApprovalService>(
-                (svc, ctx) => svc.RequestApprovalAsync(ctx)))
-    
-    .When(
-        ctx => ctx.Order.IsInternational,
-        pipeline => pipeline
-            .StepAsync<ComplianceService>(
-                (svc, ctx) => svc.CheckComplianceAsync(ctx))
-            .StepAsync<CurrencyConversionService>(
-                (svc, ctx) => svc.ConvertCurrencyAsync(ctx)))
-    
-    .StepResultAsync<PaymentService>(
-        (svc, ctx) => svc.ProcessPaymentAsync(ctx))
-    .ExecuteAsync();
+public class OrderProcessor
+{
+    private readonly OrderValidationService _validationService;
+    private readonly FraudCheckService _fraudCheckService;
+    private readonly ManagerApprovalService _approvalService;
+    private readonly ComplianceService _complianceService;
+    private readonly CurrencyConversionService _currencyService;
+    private readonly PaymentService _paymentService;
+
+    public OrderProcessor(
+        OrderValidationService validationService,
+        FraudCheckService fraudCheckService,
+        ManagerApprovalService approvalService,
+        ComplianceService complianceService,
+        CurrencyConversionService currencyService,
+        PaymentService paymentService)
+    {
+        _validationService = validationService;
+        _fraudCheckService = fraudCheckService;
+        _approvalService = approvalService;
+        _complianceService = complianceService;
+        _currencyService = currencyService;
+        _paymentService = paymentService;
+    }
+
+    public async Task<Result<OrderContext>> ProcessAsync(OrderContext context)
+    {
+        var result = await Pipeline.Start(context)
+            .StepResultAsync(ctx => _validationService.ValidateAsync(ctx))
+
+            .When(
+                ctx => ctx.Order.Amount > 1000,
+                pipeline => pipeline
+                    .StepAsync(ctx => _fraudCheckService.CheckAsync(ctx))
+                    .StepAsync(ctx => _approvalService.RequestApprovalAsync(ctx)))
+
+            .When(
+                ctx => ctx.Order.IsInternational,
+                pipeline => pipeline
+                    .StepAsync(ctx => _complianceService.CheckComplianceAsync(ctx))
+                    .StepAsync(ctx => _currencyService.ConvertCurrencyAsync(ctx)))
+
+            .StepResultAsync(ctx => _paymentService.ProcessPaymentAsync(ctx))
+            .ExecuteAsync();
+
+        return result;
+    }
+}
 ```
 
 # ❌ Error Handling
@@ -484,21 +730,40 @@ public readonly struct Result<T>
 ## Handling Pipeline Results
 
 ```csharp
-var result = await Pipeline.Start(context)
-    .StepResultAsync<ValidationService>((svc, ctx) => svc.ValidateAsync(ctx))
-    .StepResultAsync<ProcessingService>((svc, ctx) => svc.ProcessAsync(ctx))
-    .ExecuteAsync();
+public class DataProcessor
+{
+    private readonly ValidationService _validationService;
+    private readonly ProcessingService _processingService;
 
-if (result.IsSuccess)
-{
-    var data = result.Value;
-    // Handle success
-}
-else
-{
-    var errorMessage = result.ErrorMessage;
-    var exception = result.Exception;
-    // Handle failure
+    public DataProcessor(
+        ValidationService validationService,
+        ProcessingService processingService)
+    {
+        _validationService = validationService;
+        _processingService = processingService;
+    }
+
+    public async Task<DataContext?> ProcessDataAsync(DataContext context)
+    {
+        var result = await Pipeline.Start(context)
+            .StepResultAsync(ctx => _validationService.ValidateAsync(ctx))
+            .StepResultAsync(ctx => _processingService.ProcessAsync(ctx))
+            .ExecuteAsync();
+
+        if (result.IsSuccess)
+        {
+            var data = result.Value;
+            // Handle success
+            return data;
+        }
+        else
+        {
+            var errorMessage = result.ErrorMessage;
+            var exception = result.Exception;
+            // Handle failure
+            return null;
+        }
+    }
 }
 ```
 
@@ -512,10 +777,27 @@ Configuration exceptions are fail-fast and are always re-thrown to prevent silen
 ## Success and Error Callbacks
 
 ```csharp
-.StepAsync<MyService>(
-    (svc, ctx) => svc.ProcessAsync(ctx),
-    onSuccess: ctx => _logger.LogInformation("Step succeeded"),
-    onError: ex => _logger.LogError(ex, "Step failed"))
+public class MyProcessor
+{
+    private readonly MyService _myService;
+    private readonly ILogger<MyProcessor> _logger;
+
+    public MyProcessor(MyService myService, ILogger<MyProcessor> logger)
+    {
+        _myService = myService;
+        _logger = logger;
+    }
+
+    public async Task<Result<MyContext>> ProcessAsync(MyContext context)
+    {
+        return await Pipeline.Start(context)
+            .StepAsync(
+                ctx => _myService.ProcessAsync(ctx),
+                onSuccess: ctx => _logger.LogInformation("Step succeeded"),
+                onError: ex => _logger.LogError(ex, "Step failed"))
+            .ExecuteAsync();
+    }
+}
 ```
 
 # 🧪 Testing
@@ -532,39 +814,64 @@ public async Task CreateUser_WithValidData_ShouldSucceed()
     services.AddSingleton<IPasswordValidator>(mockPasswordValidator);
     services.AddSingleton<UserValidationService>();
     services.AddSingleton<UserCreationService>();
+    services.AddSingleton<UserRegistrationPipeline>();
     services.AddLogging();
     services.AddFlow();
 
     var serviceProvider = services.BuildServiceProvider();
-    var context = new UserContext { Request = validRequest };
+    var pipeline = serviceProvider.GetRequiredService<UserRegistrationPipeline>();
+    var request = new RegisterUserRequest { Email = "test@example.com", Name = "Test User" };
 
     // Act
-    var result = await Pipeline.Start(context, serviceProvider)
-        .StepResultAsync<UserValidationService>(
-            (svc, ctx) => svc.ValidateAsync(ctx))
-        .StepResultAsync<UserCreationService>(
-            (svc, ctx) => svc.CreateAsync(ctx))
-        .ExecuteAsync();
+    var result = await pipeline.RegisterAsync(request);
 
     // Assert
     Assert.True(result.IsSuccess);
     Assert.NotNull(result.Value?.CreatedUser);
-    Assert.Equal(validRequest.Email, result.Value.CreatedUser.Email);
+    Assert.Equal(request.Email, result.Value.CreatedUser.Email);
+}
+
+[Fact]
+public async Task ProcessData_WithValidContext_ShouldExecuteAllSteps()
+{
+    // Arrange
+    var validationService = new Mock<ValidationService>();
+    var creationService = new Mock<UserCreationService>();
+
+    validationService
+        .Setup(x => x.ValidateAsync(It.IsAny<UserContext>()))
+        .ReturnsAsync(Result<UserContext>.Success(new UserContext()));
+
+    var processor = new UserProcessor(
+        validationService.Object,
+        creationService.Object);
+
+    var context = new UserContext { Request = validRequest };
+
+    // Act
+    var result = await processor.ProcessAsync(context);
+
+    // Assert
+    Assert.True(result.IsSuccess);
+    validationService.Verify(x => x.ValidateAsync(It.IsAny<UserContext>()), Times.Once);
+    creationService.Verify(x => x.CreateAsync(It.IsAny<UserContext>()), Times.Once);
 }
 ```
 
 # 📋 Best Practices
 
-1. **Use Result Pattern**: Return `Result<T>` from services for explicit error handling
-2. **Configure Dependency Injection**: Always use DI for better testability and maintainability
-3. **Enable Telemetry**: Use `WithTelemetry()` for production observability
-4. **Configure Retry Policies**: Set appropriate retry policies for unreliable operations
-5. **Separate Concerns**: Keep steps focused on single responsibilities
-6. **Use Tap for Side Effects**: Keep side effects (logging, metrics, events) separate from main flow
-7. **Handle Errors Gracefully**: Always check `IsSuccess` before accessing `Value`
-8. **Add Observability**: Integrate logging and metrics for production monitoring
-9. **Test Pipeline Steps**: Test individual services and complete pipelines separately
-10. **Use Conditional Execution**: Keep conditional logic readable with `When()`
+1. **Use Constructor Injection**: Inject all required services via constructor for better testability and maintainability
+2. **Use Result Pattern**: Return `Result<T>` from services for explicit error handling
+3. **Configure Dependency Injection**: Register all services in Program.cs/Startup.cs
+4. **Enable Telemetry**: Use `WithTelemetry()` for production observability
+5. **Configure Retry Policies**: Set appropriate retry policies for unreliable operations
+6. **Separate Concerns**: Keep steps focused on single responsibilities
+7. **Use Tap for Side Effects**: Keep side effects (logging, metrics, events) separate from main flow
+8. **Handle Errors Gracefully**: Always check `IsSuccess` before accessing `Value`
+9. **Add Observability**: Integrate logging and metrics for production monitoring
+10. **Test Pipeline Steps**: Test individual services and complete pipelines separately
+11. **Use Conditional Execution**: Keep conditional logic readable with `When()`
+12. **Avoid Service Locator**: Don't resolve services inside pipeline steps; use constructor injection instead
 
 # 📊 Response Information
 
@@ -583,6 +890,67 @@ if (result.IsSuccess)
     // Process successful result
 }
 ```
+
+# 🔄 Migration Guide
+
+## Moving from Service Locator Pattern
+
+If you're upgrading from an earlier version that used the service locator pattern, here's how to migrate your code:
+
+### Old Pattern (Service Locator - Deprecated)
+
+```csharp
+var result = await Pipeline.Start(context)
+    .StepAsync<ValidationService>((svc, ctx) => svc.ValidateAsync(ctx))
+    .StepAsync<ProcessingService>((svc, ctx) => svc.ProcessAsync(ctx))
+    .ExecuteAsync();
+```
+
+### New Pattern (Constructor Injection - Recommended)
+
+```csharp
+public class MyPipeline
+{
+    private readonly ValidationService _validationService;
+    private readonly ProcessingService _processingService;
+
+    public MyPipeline(
+        ValidationService validationService,
+        ProcessingService processingService)
+    {
+        _validationService = validationService;
+        _processingService = processingService;
+    }
+
+    public async Task<Result<MyContext>> ExecuteAsync(MyContext context)
+    {
+        var result = await Pipeline.Start(context)
+            .StepAsync(ctx => _validationService.ValidateAsync(ctx))
+            .StepAsync(ctx => _processingService.ProcessAsync(ctx))
+            .ExecuteAsync();
+
+        return result;
+    }
+}
+```
+
+### Benefits of Constructor Injection
+
+1. **Better Testability**: Easy to mock dependencies in unit tests
+2. **Explicit Dependencies**: Clear what services are required
+3. **Compile-Time Safety**: Missing dependencies caught at startup, not runtime
+4. **SOLID Principles**: Follows Dependency Inversion Principle
+5. **IDE Support**: Better IntelliSense and code navigation
+6. **No Hidden Dependencies**: All dependencies visible in constructor
+
+### Migration Steps
+
+1. **Identify Services**: Find all `.Step<TService>()`, `.StepAsync<TService>()`, `.Tap<TService>()` calls
+2. **Add Constructor Parameters**: Add these services as constructor parameters
+3. **Store as Fields**: Save constructor parameters as private readonly fields
+4. **Update Pipeline Calls**: Remove `<TService>` generic parameter and use injected fields
+5. **Register Services**: Ensure all services are registered in DI container
+6. **Test**: Verify your pipelines work with the new injection approach
 
 # 📄 License
 

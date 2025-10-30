@@ -1,4 +1,5 @@
-﻿using Myth.Exceptions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Myth.Exceptions;
 using Myth.Flow.Actions.Interfaces;
 using Myth.Interfaces;
 using Myth.Models;
@@ -43,7 +44,8 @@ public static class PipelineExtensions {
 		this IActionPipelineBuilder<TCommand> builder )
 		where TCommand : ICommand {
 		var internalBuilder = ( ActionPipelineBuilder<TCommand> )builder;
-		var newPipeline = internalBuilder.InnerPipeline.StepAsync<IDispatcher>( async ( dispatcher, state ) => {
+		var newPipeline = internalBuilder.InnerPipeline.StepAsync( async ( state, ct ) => {
+			var dispatcher = state.ServiceProvider!.GetRequiredService<IDispatcher>( );
 			var command = state.CurrentRequest!;
 			var result = await dispatcher.DispatchCommandAsync( command );
 
@@ -72,7 +74,8 @@ public static class PipelineExtensions {
 		where TCommand : ICommand<TResponse> {
 		var internalBuilder = ( ActionPipelineBuilder<TCommand> )builder;
 		var newPipeline = internalBuilder.InnerPipeline
-			.StepAsync<IDispatcher>( async ( dispatcher, state ) => {
+			.StepAsync( async ( state, ct ) => {
+				var dispatcher = state.ServiceProvider!.GetRequiredService<IDispatcher>( );
 				var command = state.CurrentRequest!;
 				var result = await dispatcher.DispatchCommandAsync<TCommand, TResponse>( command );
 
@@ -124,7 +127,8 @@ public static class PipelineExtensions {
 		where TQuery : IQuery<TResponse> {
 		var internalBuilder = ( ActionPipelineBuilder<TQuery> )builder;
 		var newPipeline = internalBuilder.InnerPipeline
-			.StepAsync<IDispatcher>( async ( dispatcher, state ) => {
+			.StepAsync( async ( state, ct ) => {
+				var dispatcher = state.ServiceProvider!.GetRequiredService<IDispatcher>( );
 				var query = state.CurrentRequest!;
 
 				var cacheOptions = configureCache != null
@@ -162,7 +166,8 @@ public static class PipelineExtensions {
 		this IActionPipelineBuilder<TEvent> builder )
 		where TEvent : IEvent {
 		var internalBuilder = ( ActionPipelineBuilder<TEvent> )builder;
-		var newPipeline = internalBuilder.InnerPipeline.StepAsync<IDispatcher>( async ( dispatcher, state ) => {
+		var newPipeline = internalBuilder.InnerPipeline.StepAsync( async ( state, ct ) => {
+			var dispatcher = state.ServiceProvider!.GetRequiredService<IDispatcher>( );
 			var @event = state.CurrentRequest!;
 			await dispatcher.PublishEventAsync( @event );
 

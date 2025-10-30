@@ -51,10 +51,19 @@ namespace Myth.Flow.Test {
 			// Arrange
 			var input = new TestDto { Value = 5 };
 
-			// Act
+			// Act - Note: Without service locator, this test now uses direct lambda
 			var result = await Pipeline.Start( input )
-				.StepAsync<ValidationService>( ( service, dto, ct ) =>
-					service.ValidateAsync( dto, ct ) )
+				.StepAsync( async dto => {
+					await Task.Delay( 10 );
+
+					if ( dto.Value <= 0 )
+						throw new InvalidOperationException( "Value must be greater than 0" );
+
+					return new TestDto {
+						Value = dto.Value + 1,
+						Message = $"Validated: {dto.Value}"
+					};
+				} )
 				.ExecuteAsync( );
 
 			// Assert
@@ -70,10 +79,19 @@ namespace Myth.Flow.Test {
 			// Arrange
 			var input = new TestDto { Value = 5 };
 
-			// Act
+			// Act - Note: Without service locator, this test now uses direct lambda
 			var result = await Pipeline.Start( input )
-				.StepResultAsync<ValidationService>( ( service, dto, ct ) =>
-					service.ValidateWithResultAsync( dto, ct ) )
+				.StepResultAsync( async dto => {
+					await Task.Delay( 10 );
+
+					if ( dto.Value <= 0 )
+						return Result<TestDto>.Failure( "Value must be greater than 0" );
+
+					return Result<TestDto>.Success( new TestDto {
+						Value = dto.Value + 1,
+						Message = $"Validated: {dto.Value}"
+					} );
+				} )
 				.ExecuteAsync( );
 
 			// Assert
@@ -89,10 +107,19 @@ namespace Myth.Flow.Test {
 			// Arrange
 			var input = new TestDto { Value = -1 }; // Invalid input
 
-			// Act
+			// Act - Note: Without service locator, this test now uses direct lambda
 			var result = await Pipeline.Start( input )
-				.StepResultAsync<ValidationService>( ( service, dto, ct ) =>
-					service.ValidateWithResultAsync( dto, ct ) )
+				.StepResultAsync( async dto => {
+					await Task.Delay( 10 );
+
+					if ( dto.Value <= 0 )
+						return Result<TestDto>.Failure( "Value must be greater than 0" );
+
+					return Result<TestDto>.Success( new TestDto {
+						Value = dto.Value + 1,
+						Message = $"Validated: {dto.Value}"
+					} );
+				} )
 				.ExecuteAsync( );
 
 			// Assert
@@ -105,13 +132,23 @@ namespace Myth.Flow.Test {
 			// Arrange
 			var input = new TestDto { Value = 5 };
 
-			// Act
+			// Act - Note: Without service locator, this test now uses direct lambdas
 			var result = await Pipeline.Start( input )
-				.StepAsync<ValidationService>( ( service, dto, ct ) =>
-					service.ValidateAsync( dto, ct ) )
+				.StepAsync( async dto => {
+					await Task.Delay( 10 );
+					return new TestDto {
+						Value = dto.Value + 1,
+						Message = $"Validated: {dto.Value}"
+					};
+				} )
 				.Transform( testDto => new TestDto { Value = testDto.Value * 2, Message = $"Processed: {testDto.Message}" } )
-				.StepAsync<ValidationService>( ( service, dto, ct ) =>
-					service.ValidateAsync( dto, ct ) )
+				.StepAsync( async dto => {
+					await Task.Delay( 10 );
+					return new TestDto {
+						Value = dto.Value + 1,
+						Message = $"Validated: {dto.Value}"
+					};
+				} )
 				.ExecuteAsync( );
 
 			// Assert
@@ -130,10 +167,15 @@ namespace Myth.Flow.Test {
 			// Cancel immediately
 			cts.Cancel( );
 
-			// Act
+			// Act - Note: Without service locator, this test now uses direct lambda
 			var result = await Pipeline.Start( input )
-				.StepAsync<ValidationService>( ( service, dto, ct ) =>
-					service.ValidateAsync( dto, ct ) )
+				.StepAsync( async dto => {
+					await Task.Delay( 10, cts.Token );
+					return new TestDto {
+						Value = dto.Value + 1,
+						Message = $"Validated: {dto.Value}"
+					};
+				} )
 				.ExecuteAsync( cts.Token );
 
 			// Assert

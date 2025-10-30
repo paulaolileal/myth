@@ -67,9 +67,11 @@ namespace Myth.Flow.Test {
 			var provider = services.BuildServiceProvider( );
 			MythServiceProvider.Initialize( provider );
 
+			var service = mockService.Object;
+
 			// Act
 			var result = await Pipeline.Start( dto )
-				.Step<ITestService>( ( svc, d ) => svc.Process( d ) )
+				.Step( d => service.Process( d ) )
 				.Transform( d => new TestResult {
 					Success = d.Value > 1,
 					Data = d.Message

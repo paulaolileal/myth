@@ -9,54 +9,46 @@ namespace Myth.Interfaces {
 	public interface IPipelineBuilder<TContext> {
 
 		/// <summary>
-		/// Adds a synchronous step to the pipeline using a service resolved from DI.
+		/// Adds a synchronous step to the pipeline.
 		/// </summary>
-		/// <typeparam name="TService">Type of service to resolve.</typeparam>
-		/// <param name="handler">Step handler function.</param>
+		/// <param name="handler">Step handler function that takes the current context and returns a new context.</param>
 		/// <param name="onSuccess">Optional callback on success.</param>
 		/// <param name="onError">Optional error handler for this step.</param>
 		/// <returns>The current <see cref="IPipelineBuilder{TContext}"/> instance.</returns>
-		IPipelineBuilder<TContext> Step<TService>(
-			Func<TService, TContext, TContext> handler,
+		IPipelineBuilder<TContext> Step(
+			Func<TContext, TContext> handler,
 			Action<TContext>? onSuccess = null,
-			Action<Exception>? onError = null )
-			where TService : notnull;
+			Action<Exception>? onError = null );
 
 		/// <summary>
-		/// Adds an asynchronous step to the pipeline using a service resolved from DI.
+		/// Adds an asynchronous step to the pipeline.
 		/// </summary>
-		/// <typeparam name="TService">Type of service to resolve.</typeparam>
-		/// <param name="handler">Async step handler function.</param>
+		/// <param name="handler">Async step handler function that takes the current context and returns a new context.</param>
 		/// <param name="onSuccess">Optional callback on success.</param>
 		/// <param name="onError">Optional error handler for this step.</param>
 		/// <returns>The current <see cref="IPipelineBuilder{TContext}"/> instance.</returns>
-		IPipelineBuilder<TContext> StepAsync<TService>(
-			Func<TService, TContext, Task<TContext>> handler,
+		IPipelineBuilder<TContext> StepAsync(
+			Func<TContext, Task<TContext>> handler,
 			Action<TContext>? onSuccess = null,
-			Action<Exception>? onError = null )
-			where TService : notnull;
+			Action<Exception>? onError = null );
 
 		/// <summary>
 		/// Adds a synchronous step to the pipeline that returns a <see cref="Result{TContext}"/>.
 		/// Throws <see cref="Exceptions.PipelineException"/> if the result is failure.
 		/// </summary>
-		/// <typeparam name="TService">Type of service to resolve.</typeparam>
 		/// <param name="handler">Step handler returning a <see cref="Result{TContext}"/>.</param>
 		/// <returns>The current <see cref="IPipelineBuilder{TContext}"/> instance.</returns>
-		IPipelineBuilder<TContext> StepResult<TService>(
-			Func<TService, TContext, Result<TContext>> handler )
-			where TService : notnull;
+		IPipelineBuilder<TContext> StepResult(
+			Func<TContext, Result<TContext>> handler );
 
 		/// <summary>
 		/// Adds an asynchronous step to the pipeline that returns a <see cref="Result{TContext}"/>.
 		/// Throws <see cref="Exceptions.PipelineException"/> if the result is failure.
 		/// </summary>
-		/// <typeparam name="TService">Type of service to resolve.</typeparam>
 		/// <param name="handler">Async step handler returning a <see cref="Result{TContext}"/>.</param>
 		/// <returns>The current <see cref="IPipelineBuilder{TContext}"/> instance.</returns>
-		IPipelineBuilder<TContext> StepResultAsync<TService>(
-			Func<TService, TContext, Task<Result<TContext>>> handler )
-			where TService : notnull;
+		IPipelineBuilder<TContext> StepResultAsync(
+			Func<TContext, Task<Result<TContext>>> handler );
 
 		/// <summary>
 		/// Transforms the pipeline context to a new type using the provided mapper function.
@@ -91,24 +83,6 @@ namespace Myth.Interfaces {
 		/// <param name="action">Async action to execute on the context.</param>
 		/// <returns>The current <see cref="IPipelineBuilder{TContext}"/> instance.</returns>
 		IPipelineBuilder<TContext> TapAsync( Func<TContext, Task> action );
-
-		/// <summary>
-		/// Adds a tap step to the pipeline that executes a side-effect action using a service resolved from DI.
-		/// </summary>
-		/// <typeparam name="TService">Type of service to resolve.</typeparam>
-		/// <param name="action">Action to execute using the service and context.</param>
-		/// <returns>The current <see cref="IPipelineBuilder{TContext}"/> instance.</returns>
-		IPipelineBuilder<TContext> Tap<TService>( Action<TService, TContext> action )
-			where TService : notnull;
-
-		/// <summary>
-		/// Adds an asynchronous tap step to the pipeline that executes a side-effect async action using a service resolved from DI.
-		/// </summary>
-		/// <typeparam name="TService">Type of service to resolve.</typeparam>
-		/// <param name="action">Async action to execute using the service and context.</param>
-		/// <returns>The current <see cref="IPipelineBuilder{TContext}"/> instance.</returns>
-		IPipelineBuilder<TContext> TapAsync<TService>( Func<TService, TContext, Task> action )
-			where TService : notnull;
 
 		/// <summary>
 		/// Adds a conditional step to the pipeline. Executes the configured pipeline if the predicate returns true.
@@ -148,29 +122,21 @@ namespace Myth.Interfaces {
 		/// <returns>A <see cref="Result{TContext}"/> representing the outcome of the pipeline execution.</returns>
 		Result<TContext> Execute( );
 
-		// Object-based pipeline methods (simplified API without context management)
-
 		/// <summary>
-		/// Adds an asynchronous step to the pipeline using a service resolved from DI with cancellation token support.
-		/// The step receives the current object and a cancellation token, returns a new object directly.
+		/// Adds an asynchronous step to the pipeline with cancellation token support.
 		/// </summary>
-		/// <typeparam name="TService">Type of service to resolve.</typeparam>
-		/// <param name="handler">Async step handler function that takes the current object and cancellation token and returns a new object.</param>
+		/// <param name="handler">Async step handler function that takes the current context and cancellation token, returns a new context.</param>
 		/// <returns>The current <see cref="IPipelineBuilder{TContext}"/> instance.</returns>
-		IPipelineBuilder<TContext> StepAsync<TService>(
-			Func<TService, TContext, CancellationToken, Task<TContext>> handler )
-			where TService : notnull;
+		IPipelineBuilder<TContext> StepAsync(
+			Func<TContext, CancellationToken, Task<TContext>> handler );
 
 		/// <summary>
-		/// Adds an asynchronous step to the pipeline that returns a <see cref="Result{TContext}"/>.
-		/// The step receives the current object and a cancellation token, returns a Result with the new object.
+		/// Adds an asynchronous step to the pipeline that returns a <see cref="Result{TContext}"/> with cancellation token support.
 		/// Throws <see cref="Exceptions.PipelineException"/> if the result is failure.
 		/// </summary>
-		/// <typeparam name="TService">Type of service to resolve.</typeparam>
 		/// <param name="handler">Async step handler returning a <see cref="Result{TContext}"/>.</param>
 		/// <returns>The current <see cref="IPipelineBuilder{TContext}"/> instance.</returns>
-		IPipelineBuilder<TContext> StepResultAsync<TService>(
-			Func<TService, TContext, CancellationToken, Task<Result<TContext>>> handler )
-			where TService : notnull;
+		IPipelineBuilder<TContext> StepResultAsync(
+			Func<TContext, CancellationToken, Task<Result<TContext>>> handler );
 	}
 }

@@ -25,9 +25,11 @@ namespace Myth.Flow.Test {
 			var provider = services.BuildServiceProvider( );
 			MythServiceProvider.Initialize( provider );
 
+			var service = mockService.Object;
+
 			// Act
 			var result = await Pipeline.Start( dto )
-				.StepResult<IValidationService>( ( svc, d ) => svc.Validate( d ) )
+				.StepResult( d => service.Validate( d ) )
 				.ExecuteAsync( );
 
 			// Assert
@@ -48,9 +50,11 @@ namespace Myth.Flow.Test {
 			var provider = services.BuildServiceProvider( );
 			MythServiceProvider.Initialize( provider );
 
+			var service = mockService.Object;
+
 			// Act
 			var result = await Pipeline.Start( dto )
-				.StepResult<IValidationService>( ( svc, d ) => svc.Validate( d ) )
+				.StepResult( d => service.Validate( d ) )
 				.ExecuteAsync( );
 
 			// Assert
@@ -72,9 +76,11 @@ namespace Myth.Flow.Test {
 			var provider = services.BuildServiceProvider( );
 			MythServiceProvider.Initialize( provider );
 
+			var service = mockService.Object;
+
 			// Act
 			var result = await Pipeline.Start( dto )
-				.StepResultAsync<ITestService>( ( svc, d ) => svc.ProcessWithResultAsync( d ) )
+				.StepResultAsync( d => service.ProcessWithResultAsync( d ) )
 				.ExecuteAsync( );
 
 			// Assert
@@ -95,9 +101,11 @@ namespace Myth.Flow.Test {
 			var provider = services.BuildServiceProvider( );
 			MythServiceProvider.Initialize( provider );
 
+			var service = mockService.Object;
+
 			// Act
 			var result = await Pipeline.Start( dto )
-				.StepResultAsync<ITestService>( ( svc, d ) => svc.ProcessWithResultAsync( d ) )
+				.StepResultAsync( d => service.ProcessWithResultAsync( d ) )
 				.ExecuteAsync( );
 
 			// Assert

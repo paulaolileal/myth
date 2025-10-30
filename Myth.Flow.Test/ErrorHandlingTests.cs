@@ -31,13 +31,16 @@ namespace Myth.Flow.Test {
 			var handler1Invoked = false;
 			var handler2Invoked = false;
 
+			var testService = _mockService1.Object;
+			var validationService = _mockService2.Object;
+
 			// Act
 			var result = await Pipeline.Start( dto )
-				.StepAsync<ITestService>(
-					( svc, d ) => svc.ProcessAsync( d ),
+				.StepAsync(
+					d => testService.ProcessAsync( d ),
 					onError: _ => handler1Invoked = true )
-				.StepResult<IValidationService>(
-					( svc, d ) => svc.Validate( d ) )
+				.StepResult(
+					d => validationService.Validate( d ) )
 				.ExecuteAsync( );
 
 			// Assert
@@ -60,10 +63,12 @@ namespace Myth.Flow.Test {
 			var provider = services.BuildServiceProvider( );
 			MythServiceProvider.Initialize( provider );
 
+			var service = mockService.Object;
+
 			// Act
 			var result = await Pipeline.Start( dto )
-				.StepAsync<ITestService>(
-					( svc, d ) => svc.ProcessAsync( d ),
+				.StepAsync(
+					d => service.ProcessAsync( d ),
 					onError: _ => throw new Exception( "Handler error" ) )
 				.ExecuteAsync( );
 

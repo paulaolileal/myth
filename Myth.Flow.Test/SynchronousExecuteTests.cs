@@ -40,9 +40,10 @@ namespace Myth.Flow.Test {
 			var provider = services.BuildServiceProvider( );
 			MythServiceProvider.Initialize( provider );
 
-			// Act
+			// Act - Using direct service reference instead of service locator
+			var service = mockService.Object;
 			var result = Pipeline.Start( dto )
-				.Step<ITestService>( ( svc, d ) => svc.Process( d ) )
+				.Step( d => service.Process( d ) )
 				.Execute( );
 
 			// Assert

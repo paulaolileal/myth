@@ -66,14 +66,14 @@ namespace Myth.Flow.Test {
 			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
 				.WithRetry( maxAttempts: 2, backoffMs: 100 )
-				.StepResultAsync<UserValidationService>(
-					( svc, ctx ) => svc.ValidateAsync( ctx ) )
-				.StepResultAsync<UserCreationService>(
-					( svc, ctx ) => svc.CreateUserAsync( ctx ) )
-				.TapAsync<UserEventService>(
-					( svc, ctx ) => svc.PublishUserCreatedAsync( ctx ) )
-				.TapAsync<UserObservabilityService>(
-					( svc, ctx ) => svc.ObserveUserCreationAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserValidationService>( )!.ValidateAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserCreationService>( )!.CreateUserAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserEventService>( )!.PublishUserCreatedAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserObservabilityService>( )!.ObserveUserCreationAsync( ctx ) )
 				.Transform<CreateUserResponse>( ctx => new CreateUserResponse(
 					ctx.CreatedUser!.Id,
 					ctx.CreatedUser.Email,
@@ -113,14 +113,14 @@ namespace Myth.Flow.Test {
 			// Act
 			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
-				.StepResultAsync<UserValidationService>(
-					( svc, ctx ) => svc.ValidateAsync( ctx ) )
-				.StepResultAsync<UserCreationService>(
-					( svc, ctx ) => svc.CreateUserAsync( ctx ) )
-				.TapAsync<UserEventService>(
-					( svc, ctx ) => svc.PublishUserCreatedAsync( ctx ) )
-				.TapAsync<UserObservabilityService>(
-					( svc, ctx ) => svc.ObserveUserCreationAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserValidationService>( )!.ValidateAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserCreationService>( )!.CreateUserAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserEventService>( )!.PublishUserCreatedAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserObservabilityService>( )!.ObserveUserCreationAsync( ctx ) )
 				.Transform<CreateUserResponse>( ctx => new CreateUserResponse(
 					ctx.CreatedUser!.Id,
 					ctx.CreatedUser.Email,
@@ -157,14 +157,14 @@ namespace Myth.Flow.Test {
 			// Act
 			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
-				.StepResultAsync<UserValidationService>(
-					( svc, ctx ) => svc.ValidateAsync( ctx ) )
-				.StepResultAsync<UserCreationService>(
-					( svc, ctx ) => svc.CreateUserAsync( ctx ) )
-				.TapAsync<UserEventService>(
-					( svc, ctx ) => svc.PublishUserCreatedAsync( ctx ) )
-				.TapAsync<UserObservabilityService>(
-					( svc, ctx ) => svc.ObserveUserCreationAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserValidationService>( )!.ValidateAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserCreationService>( )!.CreateUserAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserEventService>( )!.PublishUserCreatedAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserObservabilityService>( )!.ObserveUserCreationAsync( ctx ) )
 				.Transform<CreateUserResponse>( ctx => new CreateUserResponse(
 					ctx.CreatedUser!.Id,
 					ctx.CreatedUser.Email,
@@ -194,14 +194,14 @@ namespace Myth.Flow.Test {
 			// Act
 			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
-				.StepResultAsync<UserValidationService>(
-					( svc, ctx ) => svc.ValidateAsync( ctx ) )
-				.StepResultAsync<UserCreationService>(
-					( svc, ctx ) => svc.CreateUserAsync( ctx ) )
-				.TapAsync<UserEventService>(
-					( svc, ctx ) => svc.PublishUserCreatedAsync( ctx ) )
-				.TapAsync<UserObservabilityService>(
-					( svc, ctx ) => svc.ObserveUserCreationAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserValidationService>( )!.ValidateAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserCreationService>( )!.CreateUserAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserEventService>( )!.PublishUserCreatedAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserObservabilityService>( )!.ObserveUserCreationAsync( ctx ) )
 				.Transform<CreateUserResponse>( ctx => new CreateUserResponse(
 					ctx.CreatedUser!.Id,
 					ctx.CreatedUser.Email,
@@ -231,14 +231,14 @@ namespace Myth.Flow.Test {
 			// Act
 			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
-				.StepResultAsync<UserValidationService>(
-					( svc, ctx ) => svc.ValidateAsync( ctx ) )
-				.StepResultAsync<UserCreationService>(
-					( svc, ctx ) => svc.CreateUserAsync( ctx ) )
-				.TapAsync<UserEventService>(
-					( svc, ctx ) => svc.PublishUserCreatedAsync( ctx ) )
-				.TapAsync<UserObservabilityService>(
-					( svc, ctx ) => svc.ObserveUserCreationAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserValidationService>( )!.ValidateAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserCreationService>( )!.CreateUserAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserEventService>( )!.PublishUserCreatedAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserObservabilityService>( )!.ObserveUserCreationAsync( ctx ) )
 				.Transform<CreateUserResponse>( ctx => new CreateUserResponse(
 					ctx.CreatedUser!.Id,
 					ctx.CreatedUser.Email,
@@ -268,14 +268,14 @@ namespace Myth.Flow.Test {
 			// Act
 			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
-				.StepResultAsync<UserValidationService>(
-					( svc, ctx ) => svc.ValidateAsync( ctx ) )
-				.StepResultAsync<UserCreationService>(
-					( svc, ctx ) => svc.CreateUserAsync( ctx ) )
-				.TapAsync<UserEventService>(
-					( svc, ctx ) => svc.PublishUserCreatedAsync( ctx ) )
-				.TapAsync<UserObservabilityService>(
-					( svc, ctx ) => svc.ObserveUserCreationAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserValidationService>( )!.ValidateAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserCreationService>( )!.CreateUserAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserEventService>( )!.PublishUserCreatedAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserObservabilityService>( )!.ObserveUserCreationAsync( ctx ) )
 				.Transform<CreateUserResponse>( ctx => new CreateUserResponse(
 					ctx.CreatedUser!.Id,
 					ctx.CreatedUser.Email,
@@ -305,14 +305,14 @@ namespace Myth.Flow.Test {
 			// Act
 			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
-				.StepResultAsync<UserValidationService>(
-					( svc, ctx ) => svc.ValidateAsync( ctx ) )
-				.StepResultAsync<UserCreationService>(
-					( svc, ctx ) => svc.CreateUserAsync( ctx ) )
-				.TapAsync<UserEventService>(
-					( svc, ctx ) => svc.PublishUserCreatedAsync( ctx ) )
-				.TapAsync<UserObservabilityService>(
-					( svc, ctx ) => svc.ObserveUserCreationAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserValidationService>( )!.ValidateAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserCreationService>( )!.CreateUserAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserEventService>( )!.PublishUserCreatedAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserObservabilityService>( )!.ObserveUserCreationAsync( ctx ) )
 				.Transform<CreateUserResponse>( ctx => new CreateUserResponse(
 					ctx.CreatedUser!.Id,
 					ctx.CreatedUser.Email,
@@ -361,14 +361,14 @@ namespace Myth.Flow.Test {
 			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
 				.WithRetry( maxAttempts: 2, backoffMs: 50 )
-				.StepResultAsync<UserValidationService>(
-					( svc, ctx ) => svc.ValidateAsync( ctx ) )
-				.StepResultAsync<UserCreationService>(
-					( svc, ctx ) => svc.CreateUserAsync( ctx ) )
-				.TapAsync<UserEventService>(
-					( svc, ctx ) => svc.PublishUserCreatedAsync( ctx ) )
-				.TapAsync<UserObservabilityService>(
-					( svc, ctx ) => svc.ObserveUserCreationAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserValidationService>( )!.ValidateAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserCreationService>( )!.CreateUserAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserEventService>( )!.PublishUserCreatedAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserObservabilityService>( )!.ObserveUserCreationAsync( ctx ) )
 				.Transform<CreateUserResponse>( ctx => new CreateUserResponse(
 					ctx.CreatedUser!.Id,
 					ctx.CreatedUser.Email,
@@ -405,14 +405,14 @@ namespace Myth.Flow.Test {
 
 				var result = await Pipeline.Start( context )
 					.WithTelemetry( $"CreateUser_{i}" )
-					.StepResultAsync<UserValidationService>(
-						( svc, ctx ) => svc.ValidateAsync( ctx ) )
-					.StepResultAsync<UserCreationService>(
-						( svc, ctx ) => svc.CreateUserAsync( ctx ) )
-					.TapAsync<UserEventService>(
-						( svc, ctx ) => svc.PublishUserCreatedAsync( ctx ) )
-					.TapAsync<UserObservabilityService>(
-						( svc, ctx ) => svc.ObserveUserCreationAsync( ctx ) )
+					.StepResultAsync(
+						ctx => ServiceProvider.GetService<UserValidationService>( )!.ValidateAsync( ctx ) )
+					.StepResultAsync(
+						ctx => ServiceProvider.GetService<UserCreationService>( )!.CreateUserAsync( ctx ) )
+					.TapAsync(
+						ctx => ServiceProvider.GetService<UserEventService>( )!.PublishUserCreatedAsync( ctx ) )
+					.TapAsync(
+						ctx => ServiceProvider.GetService<UserObservabilityService>( )!.ObserveUserCreationAsync( ctx ) )
 					.Transform<CreateUserResponse>( ctx => new CreateUserResponse(
 						ctx.CreatedUser!.Id,
 						ctx.CreatedUser.Email,
@@ -449,14 +449,14 @@ namespace Myth.Flow.Test {
 			// Act
 			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
-				.StepResultAsync<UserValidationService>(
-					( svc, ctx ) => svc.ValidateAsync( ctx ) )
-				.StepResultAsync<UserCreationService>(
-					( svc, ctx ) => svc.CreateUserAsync( ctx ) )
-				.TapAsync<UserEventService>(
-					( svc, ctx ) => svc.PublishUserCreatedAsync( ctx ) )
-				.TapAsync<UserObservabilityService>(
-					( svc, ctx ) => svc.ObserveUserCreationAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserValidationService>( )!.ValidateAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserCreationService>( )!.CreateUserAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserEventService>( )!.PublishUserCreatedAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserObservabilityService>( )!.ObserveUserCreationAsync( ctx ) )
 				.Transform<CreateUserResponse>( ctx => new CreateUserResponse(
 					ctx.CreatedUser!.Id,
 					ctx.CreatedUser.Email,
@@ -489,14 +489,14 @@ namespace Myth.Flow.Test {
 			// Act
 			var result = await Pipeline.Start( context )
 				.WithTelemetry( "CreateUser" )
-				.StepResultAsync<UserValidationService>(
-					( svc, ctx ) => svc.ValidateAsync( ctx ) )
-				.StepResultAsync<UserCreationService>(
-					( svc, ctx ) => svc.CreateUserAsync( ctx ) )
-				.TapAsync<UserEventService>(
-					( svc, ctx ) => svc.PublishUserCreatedAsync( ctx ) )
-				.TapAsync<UserObservabilityService>(
-					( svc, ctx ) => svc.ObserveUserCreationAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserValidationService>( )!.ValidateAsync( ctx ) )
+				.StepResultAsync(
+					ctx => ServiceProvider.GetService<UserCreationService>( )!.CreateUserAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserEventService>( )!.PublishUserCreatedAsync( ctx ) )
+				.TapAsync(
+					ctx => ServiceProvider.GetService<UserObservabilityService>( )!.ObserveUserCreationAsync( ctx ) )
 				.Transform<CreateUserResponse>( ctx => new CreateUserResponse(
 					ctx.CreatedUser!.Id,
 					ctx.CreatedUser.Email,

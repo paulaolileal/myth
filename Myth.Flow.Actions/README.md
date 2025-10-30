@@ -242,48 +242,101 @@ The Action-First API now supports all Myth.Flow pipeline methods for adding cust
 ### Validation and Custom Steps
 
 ```csharp
-var result = await Pipeline
-    .Start(new CreateUserCommand { Email = "user@example.com" }, serviceProvider)
-    // Validate input before processing
-    .Step<IValidationService>((validator, state) => {
-        validator.ValidateEmail(state.CurrentRequest!.Email);
-        return state;
-    })
-    // Add custom business logic
-    .StepAsync<IUserService>(async (userService, state) => {
-        await userService.CheckUserLimitsAsync(state.CurrentRequest!.Email);
-        return state;
-    })
-    .Process<CreateUserCommand, Guid>()
-    .ExecuteAsync();
+public class UserCommandPipeline
+{
+    private readonly IValidationService _validationService;
+    private readonly IUserService _userService;
+
+    public UserCommandPipeline(
+        IValidationService validationService,
+        IUserService userService)
+    {
+        _validationService = validationService;
+        _userService = userService;
+    }
+
+    public async Task<Result<Guid>> CreateUserAsync(CreateUserCommand command)
+    {
+        var result = await Pipeline
+            .Start(command, serviceProvider)
+            // Validate input before processing
+            .Step(state => {
+                _validationService.ValidateEmail(state.CurrentRequest!.Email);
+                return state;
+            })
+            // Add custom business logic
+            .StepAsync(async state => {
+                await _userService.CheckUserLimitsAsync(state.CurrentRequest!.Email);
+                return state;
+            })
+            .Process<CreateUserCommand, Guid>()
+            .ExecuteAsync();
+
+        return result;
+    }
+}
 ```
 
 ### Side Effects and Logging
 
 ```csharp
-var result = await Pipeline
-    .Start(new GetUserQuery { UserId = userId }, serviceProvider)
-    // Log the start of the operation
-    .Tap<ILogger>((logger, state) =>
-        logger.LogInformation("Querying user {UserId}", state.CurrentRequest!.UserId))
-    .Query<GetUserQuery, UserDto>()
-    // Log after successful query
-    .TapAsync<IMetricsService>(async (metrics, state) =>
-        await metrics.RecordQueryExecutionAsync("GetUser"))
-    .ExecuteAsync();
+public class UserQueryPipeline
+{
+    private readonly ILogger<UserQueryPipeline> _logger;
+    private readonly IMetricsService _metricsService;
+
+    public UserQueryPipeline(
+        ILogger<UserQueryPipeline> logger,
+        IMetricsService metricsService)
+    {
+        _logger = logger;
+        _metricsService = metricsService;
+    }
+
+    public async Task<Result<UserDto>> GetUserAsync(Guid userId)
+    {
+        var result = await Pipeline
+            .Start(new GetUserQuery { UserId = userId }, serviceProvider)
+            // Log the start of the operation
+            .Tap(state =>
+                _logger.LogInformation("Querying user {UserId}", state.CurrentRequest!.UserId))
+            .Query<GetUserQuery, UserDto>()
+            // Log after successful query
+            .TapAsync(async state =>
+                await _metricsService.RecordQueryExecutionAsync("GetUser"))
+            .ExecuteAsync();
+
+        return result;
+    }
+}
 ```
 
 ### Conditional Execution
 
 ```csharp
-var result = await Pipeline
-    .Start(new ProcessOrderCommand { OrderId = orderId }, serviceProvider)
-    // Only validate payment if order requires it
-    .When(state => state.CurrentRequest!.RequiresPayment, builder =>
-        builder.StepAsync<IPaymentService>((payment, state) =>
-            payment.ValidatePaymentMethodAsync(state.CurrentRequest!.PaymentInfo)))
-    .Process<ProcessOrderCommand, OrderResult>()
-    .ExecuteAsync();
+public class OrderCommandPipeline
+{
+    private readonly IPaymentService _paymentService;
+
+    public OrderCommandPipeline(IPaymentService paymentService)
+    {
+        _paymentService = paymentService;
+    }
+
+    public async Task<Result<OrderResult>> ProcessOrderAsync(ProcessOrderCommand command)
+    {
+        var result = await Pipeline
+            .Start(command, serviceProvider)
+            // Only validate payment if order requires it
+            .When(state => state.CurrentRequest!.RequiresPayment, builder =>
+                builder.StepAsync(state =>
+                    _paymentService.ValidatePaymentMethodAsync(state.CurrentRequest!.PaymentInfo)))
+            .Process<ProcessOrderCommand, OrderResult>()
+            .ExecuteAsync();
+
+        return result;
+    }
+}
 ```
 
 ### Resilience and Telemetry
@@ -302,43 +355,70 @@ var result = await Pipeline
 ### Complex Workflows with Multiple Steps
 
 ```csharp
-var result = await Pipeline
-    .Start(new CreateOrderCommand { CustomerId = customerId, Items = items }, serviceProvider)
-    // Validate customer
-    .StepAsync<ICustomerService>(async (service, state) => {
-        await service.ValidateCustomerAsync(state.CurrentRequest!.CustomerId);
-        return state;
-    })
-    // Check inventory
-    .StepAsync<IInventoryService>(async (service, state) => {
-        await service.ReserveItemsAsync(state.CurrentRequest!.Items);
-        return state;
-    })
-    // Log before processing
-    .Tap<ILogger>((logger, state) =>
-        logger.LogInformation("Processing order for customer {CustomerId}",
-            state.CurrentRequest!.CustomerId))
-    // Process the order
-    .Process<CreateOrderCommand, OrderResult>()
-    // Send notification after success
-    .TapAsync<INotificationService>(async (notifications, state) =>
-        await notifications.SendOrderConfirmationAsync(state.CurrentRequest!))
-    .ExecuteAsync();
+public class OrderWorkflowPipeline
+{
+    private readonly ICustomerService _customerService;
+    private readonly IInventoryService _inventoryService;
+    private readonly ILogger<OrderWorkflowPipeline> _logger;
+    private readonly INotificationService _notificationService;
+
+    public OrderWorkflowPipeline(
+        ICustomerService customerService,
+        IInventoryService inventoryService,
+        ILogger<OrderWorkflowPipeline> logger,
+        INotificationService notificationService)
+    {
+        _customerService = customerService;
+        _inventoryService = inventoryService;
+        _logger = logger;
+        _notificationService = notificationService;
+    }
+
+    public async Task<Result<OrderResult>> CreateOrderAsync(
+        Guid customerId,
+        List<OrderItem> items)
+    {
+        var result = await Pipeline
+            .Start(new CreateOrderCommand { CustomerId = customerId, Items = items }, serviceProvider)
+            // Validate customer
+            .StepAsync(async state => {
+                await _customerService.ValidateCustomerAsync(state.CurrentRequest!.CustomerId);
+                return state;
+            })
+            // Check inventory
+            .StepAsync(async state => {
+                await _inventoryService.ReserveItemsAsync(state.CurrentRequest!.Items);
+                return state;
+            })
+            // Log before processing
+            .Tap(state =>
+                _logger.LogInformation("Processing order for customer {CustomerId}",
+                    state.CurrentRequest!.CustomerId))
+            // Process the order
+            .Process<CreateOrderCommand, OrderResult>()
+            // Send notification after success
+            .TapAsync(async state =>
+                await _notificationService.SendOrderConfirmationAsync(state.CurrentRequest!))
+            .ExecuteAsync();
+
+        return result;
+    }
+}
 ```
 
 ### Available Intermediate Methods
 
-- **`Step<TService>()`** - Synchronous operations with dependency injection
-- **`StepAsync<TService>()`** - Asynchronous operations with dependency injection
-- **`StepResult<TService>()`** - Operations returning `Result<T>` for error handling
-- **`StepResultAsync<TService>()`** - Async operations returning `Result<T>`
-- **`Tap<TService>()`** - Side effects (logging, metrics, events) with DI
-- **`TapAsync<TService>()`** - Async side effects with DI
+- **`Step()`** - Synchronous operations (use constructor-injected dependencies)
+- **`StepAsync()`** - Asynchronous operations (use constructor-injected dependencies)
+- **`StepResult()`** - Operations returning `Result<T>` for error handling
+- **`StepResultAsync()`** - Async operations returning `Result<T>`
+- **`Tap()`** - Side effects (logging, metrics, events) using injected services
+- **`TapAsync()`** - Async side effects using injected services
 - **`When(predicate, configure)`** - Conditional pipeline execution
 - **`WithRetry(maxAttempts, backoffMs)`** - Retry policies with exponential backoff
 - **`WithTelemetry(operationName)`** - OpenTelemetry distributed tracing
 
-All methods maintain the fluent API design and can be chained together for complex workflows while preserving type safety and the Action-First approach.
+All methods maintain the fluent API design and can be chained together for complex workflows while preserving type safety and the Action-First approach. Use constructor injection to provide dependencies to your pipeline class, then reference those dependencies in the pipeline steps.
 
 # 🔧 Configuration
 

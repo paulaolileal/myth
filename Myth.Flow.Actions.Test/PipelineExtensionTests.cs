@@ -17,9 +17,6 @@ namespace Myth.Flow.Actions.Test {
 					   .EnableCaching( cache => cache.ProviderType = CacheProviderType.Memory )
 					   .ScanAssemblies( typeof( TestCommandHandler ).Assembly );
 			} );
-
-			// Register TestService for pipeline step testing
-			services.AddTransient<TestService>( );
 		}
 
 		[Fact]
@@ -56,7 +53,7 @@ namespace Myth.Flow.Actions.Test {
 			// Act
 			var result = await Pipeline
 				.Start( new TestCommand { Value = "original" } )
-				.Step<TestService>( ( service, state ) => {
+				.Step( state => {
 					stepExecuted = "Step executed";
 					// Create new command with modified value (since TestCommand is a record with init-only property)
 					state.CurrentRequest = new TestCommand { Value = "modified" };
@@ -79,7 +76,7 @@ namespace Myth.Flow.Actions.Test {
 			// Act
 			var result = await Pipeline
 				.Start( new TestQuery { Key = "test-key" } )
-				.Tap<TestService>( ( service, state ) => {
+				.Tap( state => {
 					tapExecuted = $"Tap executed for: {state.CurrentRequest!.Key}";
 				} )
 				.Query<TestQuery, string>( )
@@ -158,7 +155,7 @@ namespace Myth.Flow.Actions.Test {
 			var result = await Pipeline
 				.Start( new TestCommand { Value = "start" } )
 				.Tap( state => executionOrder.Add( "Tap1" ) )
-				.Step<TestService>( ( service, state ) => {
+				.Step( state => {
 					executionOrder.Add( "Step1" );
 					state.CurrentRequest = new TestCommand { Value = state.CurrentRequest!.Value + "-step1" };
 					return state;
@@ -167,7 +164,7 @@ namespace Myth.Flow.Actions.Test {
 					await Task.Delay( 1 );
 					executionOrder.Add( "TapAsync" );
 				} )
-				.Step<TestService>( ( service, state ) => {
+				.Step( state => {
 					executionOrder.Add( "Step2" );
 					state.CurrentRequest = new TestCommand { Value = state.CurrentRequest!.Value + "-step2" };
 					return state;

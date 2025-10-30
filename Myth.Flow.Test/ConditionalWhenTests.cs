@@ -62,12 +62,14 @@ namespace Myth.Flow.Test {
 			var provider = services.BuildServiceProvider( );
 			MythServiceProvider.Initialize( provider );
 
+			var service = mockService.Object;
+
 			// Act
 			var result = await Pipeline.Start( dto )
 				.When(
 					d => d.Value > 3,
-					pipeline => pipeline.StepResult<IValidationService>(
-						( svc, d ) => svc.Validate( d ) ) )
+					pipeline => pipeline.StepResult(
+						d => service.Validate( d ) ) )
 				.ExecuteAsync( );
 
 			// Assert

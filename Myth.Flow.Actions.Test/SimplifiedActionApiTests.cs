@@ -14,7 +14,6 @@ namespace Myth.Flow.Actions.Test {
 		protected override void ConfigureServices( IServiceCollection services ) {
 			services.AddFlow( );
 			services.AddFlowActions( options => options.UseInMemory( ) );
-			services.AddTransient<SimplifiedValidationService>( );
 		}
 
 		public class SimplifiedValidationService {
@@ -48,12 +47,16 @@ namespace Myth.Flow.Actions.Test {
 		public async Task SimplifiedStepAsync_WithCancellationToken_ShouldPassObjectDirectly( ) {
 			// Arrange - using inherited service configuration
 
+			var service = new SimplifiedValidationService( );
 			var input = new TestCommand { Value = "test" };
 
 			// Act
 			var result = await Pipeline.Start( input )
-				.StepAsync<SimplifiedValidationService>( ( service, command, ct ) =>
-					service.ValidateAsync( command, ct ) )
+				.StepAsync( async ( state, ct ) => {
+					var result = await service.ValidateAsync( state.CurrentRequest!, ct );
+					state.CurrentRequest = result;
+					return state;
+				} )
 				.ExecuteAsync( );
 
 			// Assert
@@ -66,12 +69,21 @@ namespace Myth.Flow.Actions.Test {
 		public async Task SimplifiedStepResultAsync_WithCancellationToken_ShouldHandleResultPattern( ) {
 			// Arrange - using inherited service configuration
 
+			var service = new SimplifiedValidationService( );
 			var input = new TestCommand { Value = "test" };
 
 			// Act
 			var result = await Pipeline.Start( input )
-				.StepResultAsync<SimplifiedValidationService>( ( service, command, ct ) =>
-					service.ValidateWithResultAsync( command, ct ) )
+				.StepResultAsync( async ( state, ct ) => {
+					var validationResult = await service.ValidateWithResultAsync( state.CurrentRequest!, ct );
+
+					if ( validationResult.IsSuccess ) {
+						state.CurrentRequest = validationResult.Value;
+						return Result<ActionPipelineState<TestCommand>>.Success( state );
+					}
+
+					return Result<ActionPipelineState<TestCommand>>.Failure( validationResult.ErrorMessage ?? "Validation failed" );
+				} )
 				.ExecuteAsync( );
 
 			// Assert
@@ -84,12 +96,21 @@ namespace Myth.Flow.Actions.Test {
 		public async Task SimplifiedStepResultAsync_WithFailure_ShouldThrowPipelineException( ) {
 			// Arrange - using inherited service configuration
 
+			var service = new SimplifiedValidationService( );
 			var input = new TestCommand { Value = "" }; // Invalid input
 
 			// Act
 			var result = await Pipeline.Start( input )
-				.StepResultAsync<SimplifiedValidationService>( ( service, command, ct ) =>
-					service.ValidateWithResultAsync( command, ct ) )
+				.StepResultAsync( async ( state, ct ) => {
+					var validationResult = await service.ValidateWithResultAsync( state.CurrentRequest!, ct );
+
+					if ( validationResult.IsSuccess ) {
+						state.CurrentRequest = validationResult.Value;
+						return Result<ActionPipelineState<TestCommand>>.Success( state );
+					}
+
+					return Result<ActionPipelineState<TestCommand>>.Failure( validationResult.ErrorMessage ?? "Validation failed" );
+				} )
 				.ExecuteAsync( );
 
 			// Assert
@@ -101,14 +122,21 @@ namespace Myth.Flow.Actions.Test {
 		public async Task ChainedSimplifiedSteps_ShouldWorkCorrectly( ) {
 			// Arrange - using inherited service configuration
 
+			var service = new SimplifiedValidationService( );
 			var input = new TestCommand { Value = "test" };
 
 			// Act
 			var result = await Pipeline.Start( input )
-				.StepAsync<SimplifiedValidationService>( ( service, command, ct ) =>
-					service.ValidateAsync( command, ct ) )
-				.StepAsync<SimplifiedValidationService>( ( service, command, ct ) =>
-					service.ValidateAsync( command, ct ) )
+				.StepAsync( async ( state, ct ) => {
+					var result = await service.ValidateAsync( state.CurrentRequest!, ct );
+					state.CurrentRequest = result;
+					return state;
+				} )
+				.StepAsync( async ( state, ct ) => {
+					var result = await service.ValidateAsync( state.CurrentRequest!, ct );
+					state.CurrentRequest = result;
+					return state;
+				} )
 				.ExecuteAsync( );
 
 			// Assert
@@ -121,6 +149,7 @@ namespace Myth.Flow.Actions.Test {
 		public async Task SimplifiedApi_WithCancellation_ShouldRespectCancellationToken( ) {
 			// Arrange - using inherited service configuration
 
+			var service = new SimplifiedValidationService( );
 			var input = new TestCommand { Value = "test" };
 			var cts = new CancellationTokenSource( );
 
@@ -129,8 +158,11 @@ namespace Myth.Flow.Actions.Test {
 
 			// Act
 			var result = await Pipeline.Start( input )
-				.StepAsync<SimplifiedValidationService>( ( service, command, ct ) =>
-					service.ValidateAsync( command, ct ) )
+				.StepAsync( async ( state, ct ) => {
+					var result = await service.ValidateAsync( state.CurrentRequest!, ct );
+					state.CurrentRequest = result;
+					return state;
+				} )
 				.ExecuteAsync( cts.Token );
 
 			// Assert

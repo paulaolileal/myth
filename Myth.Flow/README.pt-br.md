@@ -14,7 +14,7 @@ Uma poderosa biblioteca .NET para construir pipelines de processamento de dados 
 - **Segurança de Tipos**: Tipagem forte com suporte a transformação de contexto
 - **Retry Automático**: Políticas de retry configuráveis com backoff exponencial
 - **Integração OpenTelemetry**: Rastreamento e observabilidade integrados
-- **Injeção de Dependência**: Integração completa com DI do ASP.NET Core
+- **Injeção via Construtor**: Injeção de dependência limpa via construtores (sem service locator)
 - **Padrão Result**: Programação orientada a railway com `Result<T>`
 - **Tratamento de Erros**: Tratamento abrangente de erros com exceções customizadas
 - **Execução Condicional**: Execute etapas baseadas em predicados do contexto
@@ -32,18 +32,40 @@ dotnet add package Myth.Flow
 ## Uso Básico
 
 ```csharp
-var input = new OrderContext { OrderId = 123 };
-
-var result = await Pipeline.Start(input)
-    .StepAsync<ValidationService>((svc, ctx) => svc.ValidateOrderAsync(ctx))
-    .StepAsync<PaymentService>((svc, ctx) => svc.ProcessPaymentAsync(ctx))
-    .StepAsync<InventoryService>((svc, ctx) => svc.ReserveItemsAsync(ctx))
-    .Tap(ctx => Console.WriteLine($"Pedido {ctx.OrderId} concluído"))
-    .ExecuteAsync();
-
-if (result.IsSuccess)
+public class OrderService
 {
-    Console.WriteLine("Pedido processado com sucesso!");
+    private readonly ValidationService _validationService;
+    private readonly PaymentService _paymentService;
+    private readonly InventoryService _inventoryService;
+
+    public OrderService(
+        ValidationService validationService,
+        PaymentService paymentService,
+        InventoryService inventoryService)
+    {
+        _validationService = validationService;
+        _paymentService = paymentService;
+        _inventoryService = inventoryService;
+    }
+
+    public async Task<Result<OrderContext>> ProcessOrderAsync(int orderId)
+    {
+        var input = new OrderContext { OrderId = orderId };
+
+        var result = await Pipeline.Start(input)
+            .StepAsync(ctx => _validationService.ValidateOrderAsync(ctx))
+            .StepAsync(ctx => _paymentService.ProcessPaymentAsync(ctx))
+            .StepAsync(ctx => _inventoryService.ReserveItemsAsync(ctx))
+            .Tap(ctx => Console.WriteLine($"Pedido {ctx.OrderId} concluído"))
+            .ExecuteAsync();
+
+        if (result.IsSuccess)
+        {
+            Console.WriteLine("Pedido processado com sucesso!");
+        }
+
+        return result;
+    }
 }
 ```
 
@@ -71,6 +93,20 @@ builder.Services.AddScoped<InventoryService>();
 ```csharp
 public class OrderController : ControllerBase
 {
+    private readonly OrderValidationService _validationService;
+    private readonly OrderCreationService _creationService;
+    private readonly OrderEventService _eventService;
+
+    public OrderController(
+        OrderValidationService validationService,
+        OrderCreationService creationService,
+        OrderEventService eventService)
+    {
+        _validationService = validationService;
+        _creationService = creationService;
+        _eventService = eventService;
+    }
+
     [HttpPost("orders")]
     public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest request)
     {
@@ -79,12 +115,9 @@ public class OrderController : ControllerBase
         var result = await Pipeline.Start(context)
             .WithTelemetry("CreateOrder")
             .WithRetry(maxAttempts: 3, backoffMs: 100)
-            .StepResultAsync<OrderValidationService>(
-                (svc, ctx) => svc.ValidateAsync(ctx))
-            .StepResultAsync<OrderCreationService>(
-                (svc, ctx) => svc.CreateAsync(ctx))
-            .TapAsync<OrderEventService>(
-                (svc, ctx) => svc.PublishOrderCreatedAsync(ctx))
+            .StepResultAsync(ctx => _validationService.ValidateAsync(ctx))
+            .StepResultAsync(ctx => _creationService.CreateAsync(ctx))
+            .TapAsync(ctx => _eventService.PublishOrderCreatedAsync(ctx))
             .Transform<OrderResponse>(ctx => new OrderResponse
             {
                 OrderId = ctx.CreatedOrder!.Id,
@@ -555,16 +588,18 @@ public async Task CreateUser_WithValidData_ShouldSucceed()
 
 # 📋 Melhores Práticas
 
-1. **Use o Padrão Result**: Retorne `Result<T>` dos serviços para tratamento explícito de erros
-2. **Configure Injeção de Dependência**: Sempre use DI para melhor testabilidade e manutenibilidade
-3. **Habilite Telemetria**: Use `WithTelemetry()` para observabilidade em produção
-4. **Configure Políticas de Retry**: Defina políticas de retry apropriadas para operações não confiáveis
-5. **Separe Responsabilidades**: Mantenha as etapas focadas em responsabilidades únicas
-6. **Use Tap para Efeitos Colaterais**: Mantenha efeitos colaterais (logging, métricas, eventos) separados do fluxo principal
-7. **Trate Erros com Graça**: Sempre verifique `IsSuccess` antes de acessar `Value`
-8. **Adicione Observabilidade**: Integre logging e métricas para monitoramento em produção
-9. **Teste Etapas do Pipeline**: Teste serviços individuais e pipelines completos separadamente
-10. **Use Execução Condicional**: Mantenha lógica condicional legível com `When()`
+1. **Use Injeção via Construtor**: Injete todos os serviços necessários via construtor para melhor testabilidade e manutenibilidade
+2. **Use o Padrão Result**: Retorne `Result<T>` dos serviços para tratamento explícito de erros
+3. **Configure Injeção de Dependência**: Registre todos os serviços em Program.cs/Startup.cs
+4. **Habilite Telemetria**: Use `WithTelemetry()` para observabilidade em produção
+5. **Configure Políticas de Retry**: Defina políticas de retry apropriadas para operações não confiáveis
+6. **Separe Responsabilidades**: Mantenha as etapas focadas em responsabilidades únicas
+7. **Use Tap para Efeitos Colaterais**: Mantenha efeitos colaterais (logging, métricas, eventos) separados do fluxo principal
+8. **Trate Erros com Graça**: Sempre verifique `IsSuccess` antes de acessar `Value`
+9. **Adicione Observabilidade**: Integre logging e métricas para monitoramento em produção
+10. **Teste Etapas do Pipeline**: Teste serviços individuais e pipelines completos separadamente
+11. **Use Execução Condicional**: Mantenha lógica condicional legível com `When()`
+12. **Evite Service Locator**: Não resolva serviços dentro das etapas do pipeline; use injeção via construtor
 
 # 📊 Informações da Resposta
 
@@ -766,6 +801,67 @@ public async Task<Result<UserResponse>> RegisterUserAsync(RegisterUserRequest re
         .ExecuteAsync();
 }
 ```
+
+# 🔄 Guia de Migração
+
+## Migrando do Padrão Service Locator
+
+Se você está atualizando de uma versão anterior que usava o padrão service locator, veja como migrar seu código:
+
+### Padrão Antigo (Service Locator - Descontinuado)
+
+```csharp
+var result = await Pipeline.Start(context)
+    .StepAsync<ValidationService>((svc, ctx) => svc.ValidateAsync(ctx))
+    .StepAsync<ProcessingService>((svc, ctx) => svc.ProcessAsync(ctx))
+    .ExecuteAsync();
+```
+
+### Padrão Novo (Injeção via Construtor - Recomendado)
+
+```csharp
+public class MyPipeline
+{
+    private readonly ValidationService _validationService;
+    private readonly ProcessingService _processingService;
+
+    public MyPipeline(
+        ValidationService validationService,
+        ProcessingService processingService)
+    {
+        _validationService = validationService;
+        _processingService = processingService;
+    }
+
+    public async Task<Result<MyContext>> ExecuteAsync(MyContext context)
+    {
+        var result = await Pipeline.Start(context)
+            .StepAsync(ctx => _validationService.ValidateAsync(ctx))
+            .StepAsync(ctx => _processingService.ProcessAsync(ctx))
+            .ExecuteAsync();
+
+        return result;
+    }
+}
+```
+
+### Benefícios da Injeção via Construtor
+
+1. **Melhor Testabilidade**: Fácil fazer mock de dependências em testes unitários
+2. **Dependências Explícitas**: Fica claro quais serviços são necessários
+3. **Segurança em Tempo de Compilação**: Dependências faltando são detectadas no startup, não em runtime
+4. **Princípios SOLID**: Segue o Princípio de Inversão de Dependência
+5. **Suporte de IDE**: Melhor IntelliSense e navegação de código
+6. **Sem Dependências Ocultas**: Todas as dependências visíveis no construtor
+
+### Passos de Migração
+
+1. **Identifique Serviços**: Encontre todas as chamadas `.Step<TService>()`, `.StepAsync<TService>()`, `.Tap<TService>()`
+2. **Adicione Parâmetros no Construtor**: Adicione esses serviços como parâmetros do construtor
+3. **Armazene como Campos**: Salve os parâmetros do construtor como campos privados readonly
+4. **Atualize Chamadas do Pipeline**: Remova o parâmetro genérico `<TService>` e use os campos injetados
+5. **Registre Serviços**: Garanta que todos os serviços estejam registrados no container DI
+6. **Teste**: Verifique se seus pipelines funcionam com a nova abordagem de injeção
 
 # 📖 Documentação Adicional
 

@@ -33,9 +33,11 @@ namespace Myth.Flow.Test {
 
 			cts.Cancel( );
 
+			var service = mockService.Object;
+
 			// Act
 			var result = await Pipeline.Start( dto )
-				.StepAsync<ITestService>( ( svc, d ) => svc.ProcessAsync( d ) )
+				.StepAsync( d => service.ProcessAsync( d ) )
 				.ExecuteAsync( cts.Token );
 
 			// Assert

@@ -43,7 +43,7 @@ internal class EmptyPipelineBuilder : IEmptyPipelineBuilder {
 	public IActionPipelineBuilder<TRequest> TransformAsync<TRequest>( Func<Task<TRequest>> factory ) {
 		var state = new ActionPipelineState<TRequest>( default( TRequest )! );
 		var pipeline = Myth.Flow.Pipeline.Start( state )
-			.StepAsync<IServiceProvider>( async ( _, s ) => {
+			.StepAsync( async s => {
 				var request = await factory( );
 				s.CurrentRequest = request;
 				return s;

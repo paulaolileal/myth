@@ -39,17 +39,21 @@ namespace Myth.Flow.Test {
 			var dto = new TestDto { Value = 1, Message = "Start" };
 			var sideEffectCount = 0;
 
+			var validationService = _mockValidator.Object;
+			var testService = _mockService.Object;
+			var eventService = _mockEvent.Object;
+
 			// Act
 			var result = await Pipeline.Start( dto )
 				.WithTelemetry( "ComplexOperation" )
 				.WithRetry( maxAttempts: 2 )
-				.StepResult<IValidationService>( ( svc, d ) => svc.Validate( d ) )
-				.StepAsync<ITestService>( ( svc, d ) => svc.ProcessAsync( d ) )
+				.StepResult( d => validationService.Validate( d ) )
+				.StepAsync( d => testService.ProcessAsync( d ) )
 				.Tap( _ => sideEffectCount++ )
 				.When(
 					dto => dto.Value > 5,
-					pipeline => pipeline.StepAsync<IEventService>(
-						async ( eventService, dto ) => {
+					pipeline => pipeline.StepAsync(
+						async dto => {
 							await eventService.PublishAsync( dto );
 							return dto;
 						} ) )
