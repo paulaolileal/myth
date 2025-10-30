@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
 using Myth.Guard.Test.Models;
 using Myth.Validation;
 
@@ -8,23 +7,20 @@ namespace Myth.Guard.Test;
 /// <summary>
 /// Tests for boolean and enum validation rules
 /// </summary>
-public class BooleanAndEnumRulesTests {
-	private readonly IServiceProvider _serviceProvider;
+public class BooleanAndEnumRulesTests : BaseTestFixture {
 	private readonly Validator _validator;
 
 	public BooleanAndEnumRulesTests( ) {
-		var services = new ServiceCollection( );
-		_serviceProvider = services.BuildServiceProvider( );
-		_validator = new Validator( _serviceProvider );
+		_validator = new Validator( ServiceProvider );
 	}
 
 	[Fact]
 	public async Task Boolean_WithValidValues_ShouldPass( ) {
 		// Arrange
 		var entity = new BooleanTestEntity {
-			IsActive = true, // Should be true
-			IsDeleted = false, // Should be false
-			IsOptional = true // Should not be null
+			IsActive = true, 
+			IsDeleted = false, 
+			IsOptional = true 
 		};
 
 		// Act
@@ -38,7 +34,7 @@ public class BooleanAndEnumRulesTests {
 	public async Task Boolean_IsTrue_WithFalseValue_ShouldFail( ) {
 		// Arrange
 		var entity = new BooleanTestEntity {
-			IsActive = false, // Should be true
+			IsActive = false,
 			IsDeleted = false,
 			IsOptional = true
 		};
@@ -56,7 +52,7 @@ public class BooleanAndEnumRulesTests {
 		// Arrange
 		var entity = new BooleanTestEntity {
 			IsActive = true,
-			IsDeleted = true, // Should be false
+			IsDeleted = true, 
 			IsOptional = true
 		};
 
@@ -74,7 +70,7 @@ public class BooleanAndEnumRulesTests {
 		var entity = new BooleanTestEntity {
 			IsActive = true,
 			IsDeleted = false,
-			IsOptional = null // Should not be null
+			IsOptional = null 
 		};
 
 		// Act
@@ -93,7 +89,7 @@ public class BooleanAndEnumRulesTests {
 		var entity = new BooleanTestEntity {
 			IsActive = true,
 			IsDeleted = false,
-			IsOptional = validValue // Any non-null value
+			IsOptional = validValue 
 		};
 
 		// Act
@@ -112,8 +108,8 @@ public class BooleanAndEnumRulesTests {
 			Age = 25,
 			BirthDate = DateTime.Now.AddYears( -25 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
-			Tags = new List<string> { "test" },
-			IsActive = true, // Valid for all contexts
+			Tags = ["test"],
+			IsActive = true, 
 			Role = UserRole.User,
 			Salary = 50000,
 			Score = 85.5
@@ -135,8 +131,8 @@ public class BooleanAndEnumRulesTests {
 			Age = 25,
 			BirthDate = DateTime.Now.AddYears( -25 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
-			Tags = new List<string> { "test" },
-			IsActive = false, // Should be true in Create context
+			Tags = ["test"],
+			IsActive = false, 
 			Role = UserRole.User,
 			Salary = 50000,
 			Score = 85.5
@@ -162,9 +158,9 @@ public class BooleanAndEnumRulesTests {
 			Age = 25,
 			BirthDate = DateTime.Now.AddYears( -25 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
-			Tags = new List<string> { "test" },
+			Tags = ["test"],
 			IsActive = true,
-			Role = validRole, // All valid enum values
+			Role = validRole,
 			Salary = 50000,
 			Score = 85.5
 		};
@@ -189,7 +185,7 @@ public class BooleanAndEnumRulesTests {
 			Age = 25,
 			BirthDate = DateTime.Now.AddYears( -25 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
-			Tags = new List<string> { "test" },
+			Tags = ["test"],
 			IsActive = true,
 			Role = ( UserRole )999, // Invalid enum value
 			Salary = 50000,
@@ -237,7 +233,7 @@ public class BooleanAndEnumRulesTests {
 		// Test the complex conditional logic in TestUser
 		// PhoneNumber should be required when PhoneType is Required AND IsVerified is false
 
-		// Arrange - Case 1: PhoneType.Required, IsVerified = false, PhoneNumber = null (should fail)
+		// Arrange 
 		var user1 = new TestUser {
 			Name = "TestUser",
 			Email = "test@example.com",
@@ -261,7 +257,7 @@ public class BooleanAndEnumRulesTests {
 		result1.IsValid.Should( ).BeFalse( );
 		result1.Errors.Should( ).Contain( e => e.Field == "PhoneNumber" );
 
-		// Arrange - Case 2: PhoneType.Required, IsVerified = true, PhoneNumber = null (should pass due to Unless)
+		// Arrange
 		var user2 = new TestUser {
 			Name = "TestUser",
 			Email = "test@example.com",
@@ -284,7 +280,7 @@ public class BooleanAndEnumRulesTests {
 		// Assert
 		result2.IsValid.Should( ).BeTrue( );
 
-		// Arrange - Case 3: PhoneType.Optional, IsVerified = false, PhoneNumber = null (should pass)
+		// Arrange 
 		var user3 = new TestUser {
 			Name = "TestUser",
 			Email = "test@example.com",
@@ -294,7 +290,7 @@ public class BooleanAndEnumRulesTests {
 			Tags = new List<string> { "test" },
 			IsActive = true,
 			Role = UserRole.User,
-			PhoneType = PhoneType.Optional, // When condition not met
+			PhoneType = PhoneType.Optional,
 			PhoneNumber = null,
 			IsVerified = false,
 			Salary = 50000,

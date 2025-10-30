@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
 using Myth.Guard.Test.Models;
 using Myth.Validation;
 
@@ -8,24 +7,21 @@ namespace Myth.Guard.Test;
 /// <summary>
 /// Tests for numeric validation rules
 /// </summary>
-public class NumericRulesTests {
-	private readonly IServiceProvider _serviceProvider;
+public class NumericRulesTests : BaseTestFixture {
 	private readonly Validator _validator;
 
 	public NumericRulesTests( ) {
-		var services = new ServiceCollection( );
-		_serviceProvider = services.BuildServiceProvider( );
-		_validator = new Validator( _serviceProvider );
+		_validator = new Validator( ServiceProvider );
 	}
 
 	[Fact]
 	public async Task IntValue_WithValidRange_ShouldPass( ) {
 		// Arrange
 		var entity = new NumericTestEntity {
-			IntValue = 50, // Valid: between 0 and 100
-			DecimalValue = 100.50m, // Valid: positive and <= 1000.99
-			DoubleValue = 0.5, // Valid: between 0.0 and 1.0
-			LongValue = 500L // Valid: not zero and >= -1000
+			IntValue = 50,														// Valid: between 0 and 100
+			DecimalValue = 100.50m,												// Valid: positive and <= 1000.99
+			DoubleValue = 0.5,													// Valid: between 0.0 and 1.0
+			LongValue = 500L													// Valid: not zero and >= -1000
 		};
 
 		// Act
@@ -36,9 +32,9 @@ public class NumericRulesTests {
 	}
 
 	[Theory]
-	[InlineData( -5 )] // Less than 0
-	[InlineData( 0 )] // Equal to 0 (should be greater than 0)
-	[InlineData( 150 )] // Greater than 100
+	[InlineData( -5 )]															// Less than 0
+	[InlineData( 0 )]															// Equal to 0 (should be greater than 0)
+	[InlineData( 150 )]															// Greater than 100
 	public async Task IntValue_GreaterThan_WithInvalidValues_ShouldFail( int invalidValue ) {
 		// Arrange
 		var entity = new NumericTestEntity { IntValue = invalidValue };
@@ -92,9 +88,9 @@ public class NumericRulesTests {
 	}
 
 	[Theory]
-	[InlineData( -0.1 )] // Negative
-	[InlineData( 0 )] // Zero (should be positive)
-	[InlineData( 1001.00 )] // Greater than 1000.99
+	[InlineData( -0.1 )]														// Negative
+	[InlineData( 0 )]															// Zero (should be positive)
+	[InlineData( 1001.00 )]														// Greater than 1000.99
 	public async Task DecimalValue_Positive_WithInvalidValues_ShouldFail( decimal invalidValue ) {
 		// Arrange
 		var entity = new NumericTestEntity { DecimalValue = invalidValue };
@@ -128,9 +124,9 @@ public class NumericRulesTests {
 	}
 
 	[Theory]
-	[InlineData( -0.1 )] // Less than 0.0
-	[InlineData( 1.1 )] // Greater than 1.0
-	[InlineData( 2.0 )] // Greater than 1.0
+	[InlineData( -0.1 )]														// Less than 0.0
+	[InlineData( 1.1 )]															// Greater than 1.0
+	[InlineData( 2.0 )]															// Greater than 1.0
 	public async Task DoubleValue_Between_WithInvalidValues_ShouldFail( double invalidValue ) {
 		// Arrange
 		var entity = new NumericTestEntity { DoubleValue = invalidValue };
@@ -144,7 +140,7 @@ public class NumericRulesTests {
 	}
 
 	[Theory]
-	[InlineData( -1000L )] // Minimum valid value
+	[InlineData( -1000L )]														// Minimum valid value
 	[InlineData( -500L )]
 	[InlineData( 100L )]
 	[InlineData( 1000L )]
@@ -165,8 +161,8 @@ public class NumericRulesTests {
 	}
 
 	[Theory]
-	[InlineData( 0L )] // Zero (should be not zero)
-	[InlineData( -1001L )] // Less than -1000
+	[InlineData( 0L )]															// Zero (should be not zero)
+	[InlineData( -1001L )]														// Less than -1000
 	public async Task LongValue_NotZeroAndGreaterOrEquals_WithInvalidValues_ShouldFail( long invalidValue ) {
 		// Arrange
 		var entity = new NumericTestEntity { LongValue = invalidValue };
@@ -185,14 +181,14 @@ public class NumericRulesTests {
 		var user = new TestUser {
 			Name = "TestUser",
 			Email = "test@example.com",
-			Age = 25, // Valid: > 0 and < 150
+			Age = 25,															// Valid: > 0 and < 150
 			BirthDate = DateTime.Now.AddYears( -25 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
 			Tags = new List<string> { "test" },
 			IsActive = true,
 			Role = UserRole.User,
-			Salary = 50000m, // Valid: >= 0 and < 1000000
-			Score = 85.5 // Valid: between 0 and 100
+			Salary = 50000m,													// Valid: >= 0 and < 1000000
+			Score = 85.5														// Valid: between 0 and 100
 		};
 
 		// Act
@@ -203,9 +199,9 @@ public class NumericRulesTests {
 	}
 
 	[Theory]
-	[InlineData( -1 )] // Negative age
-	[InlineData( 0 )] // Zero age
-	[InlineData( 200 )] // Too old
+	[InlineData( -1 )]															// Negative age
+	[InlineData( 0 )]															// Zero age
+	[InlineData( 200 )]															// Too old
 	public async Task TestUser_Age_WithInvalidAge_ShouldFail( int invalidAge ) {
 		// Arrange
 		var user = new TestUser {
@@ -230,9 +226,9 @@ public class NumericRulesTests {
 	}
 
 	[Theory]
-	[InlineData( -100 )] // Negative salary
-	[InlineData( 1000000 )] // Equal to limit (should be less than)
-	[InlineData( 1500000 )] // Over limit
+	[InlineData( -100 )]														// Negative salary
+	[InlineData( 1000000 )]														// Equal to limit (should be less than)
+	[InlineData( 1500000 )]														// Over limit
 	public async Task TestUser_Salary_WithInvalidSalary_ShouldFail( decimal invalidSalary ) {
 		// Arrange
 		var user = new TestUser {
@@ -257,8 +253,8 @@ public class NumericRulesTests {
 	}
 
 	[Theory]
-	[InlineData( -10.5 )] // Below range
-	[InlineData( 150.0 )] // Above range
+	[InlineData( -10.5 )]														// Below range
+	[InlineData( 150.0 )]														// Above range
 	public async Task TestUser_Score_WithInvalidScore_ShouldFail( double invalidScore ) {
 		// Arrange
 		var user = new TestUser {
@@ -283,9 +279,9 @@ public class NumericRulesTests {
 	}
 
 	[Theory]
-	[InlineData( 0 )] // Minimum valid
-	[InlineData( 50000 )] // Middle range
-	[InlineData( 999999.99 )] // Maximum valid
+	[InlineData( 0 )]															// Minimum valid
+	[InlineData( 50000 )]														// Middle range
+	[InlineData( 999999.99 )]													// Maximum valid
 	public async Task TestUser_Salary_WithValidSalary_ShouldPass( decimal validSalary ) {
 		// Arrange
 		var user = new TestUser {
@@ -309,9 +305,9 @@ public class NumericRulesTests {
 	}
 
 	[Theory]
-	[InlineData( 0.0 )] // Minimum valid
-	[InlineData( 50.5 )] // Middle range
-	[InlineData( 100.0 )] // Maximum valid
+	[InlineData( 0.0 )]															// Minimum valid
+	[InlineData( 50.5 )]														// Middle range
+	[InlineData( 100.0 )]														// Maximum valid
 	public async Task TestUser_Score_WithValidScore_ShouldPass( double validScore ) {
 		// Arrange
 		var user = new TestUser {

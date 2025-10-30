@@ -1,29 +1,26 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Myth.Extensions;
 using Myth.ServiceProvider;
 
-namespace Myth.Commons.Test.ServiceProvider {
+namespace Myth.Commons.Test {
 
 	/// <summary>
 	/// Integration test that simulates the exact scenario reported by the user
 	/// where Entity Framework repositories implementing only IAsyncDisposable
 	/// caused disposal errors in ScopedService
 	/// </summary>
-	public class EntityFrameworkIntegrationTest {
+	public class EntityFrameworkIntegrationTest : BaseTestFixture {
+
+		protected override void ConfigureServices( IServiceCollection services ) {
+			services.AddScoped<IWeatherForecastRepository, WeatherForecastRepository>( );
+		}
 
 		[Fact]
 		public async Task ScopedService_WithEntityFrameworkLikeRepository_ShouldNotThrowAsyncDisposableError( ) {
-			// Arrange - Simulate the user's exact scenario
-			var services = new ServiceCollection( );
-			services.AddScoped<IWeatherForecastRepository, WeatherForecastRepository>( );
-			services.AddScopedServiceProvider( );
+			// Arrange 
+			var scopedRepository = ServiceProvider.GetRequiredService<IScopedService<IWeatherForecastRepository>>( );
 
-			var serviceProvider = services.BuildServiceProvider( );
-			var scopedRepository = serviceProvider.GetRequiredService<IScopedService<IWeatherForecastRepository>>( );
-
-			// Act & Assert - This should NOT throw the error:
-			// 'WeatherForecastRepository' type only implements IAsyncDisposable. Use DisposeAsync to dispose the container.
+			// Act & Assert
 			var result = await scopedRepository.ExecuteAsync( async repo => {
 				return await repo.SearchPaginatedAsync( cancellationToken: CancellationToken.None );
 			} );
@@ -35,14 +32,9 @@ namespace Myth.Commons.Test.ServiceProvider {
 		[Fact]
 		public void SyncOperation_WithAsyncDisposableRepository_ShouldNotThrow( ) {
 			// Arrange
-			var services = new ServiceCollection( );
-			services.AddScoped<IWeatherForecastRepository, WeatherForecastRepository>( );
-			services.AddScopedServiceProvider( );
+			var scopedRepository = ServiceProvider.GetRequiredService<IScopedService<IWeatherForecastRepository>>( );
 
-			var serviceProvider = services.BuildServiceProvider( );
-			var scopedRepository = serviceProvider.GetRequiredService<IScopedService<IWeatherForecastRepository>>( );
-
-			// Act & Assert - This should handle disposal correctly even in sync context
+			// Act & Assert
 			var result = scopedRepository.Execute( repo => {
 				return repo.GetName( );
 			} );
@@ -53,7 +45,6 @@ namespace Myth.Commons.Test.ServiceProvider {
 
 	// Simulating the user's repository structure
 	public interface IWeatherForecastRepository {
-
 		Task<string> SearchPaginatedAsync( CancellationToken cancellationToken = default );
 
 		string GetName( );
@@ -67,15 +58,15 @@ namespace Myth.Commons.Test.ServiceProvider {
 		public bool IsDisposed { get; private set; }
 
 		public Task<string> SearchPaginatedAsync( CancellationToken cancellationToken = default ) {
-			if ( IsDisposed )
-				throw new ObjectDisposedException( nameof( WeatherForecastRepository ) );
-			return Task.FromResult( "simulated-paginated-result" );
+			return IsDisposed
+				? throw new ObjectDisposedException( nameof( WeatherForecastRepository ) )
+				: Task.FromResult( "simulated-paginated-result" );
 		}
 
 		public string GetName( ) {
-			if ( IsDisposed )
-				throw new ObjectDisposedException( nameof( WeatherForecastRepository ) );
-			return nameof( WeatherForecastRepository );
+			return IsDisposed
+				? throw new ObjectDisposedException( nameof( WeatherForecastRepository ) ) 
+				:  nameof( WeatherForecastRepository );
 		}
 
 		public ValueTask DisposeAsync( ) {

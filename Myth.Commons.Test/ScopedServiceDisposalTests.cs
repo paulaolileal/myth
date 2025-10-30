@@ -1,26 +1,25 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Myth.Extensions;
 using Myth.ServiceProvider;
 
-namespace Myth.Commons.Test.ServiceProvider {
+namespace Myth.Commons.Test {
 
 	/// <summary>
 	/// Tests for ScopedService disposal behavior with IDisposable and IAsyncDisposable services
 	/// </summary>
-	public class ScopedServiceDisposalTests {
+	public class ScopedServiceDisposalTests : BaseTestFixture {
+
+		protected override void ConfigureServices( IServiceCollection services ) {
+			services.AddScoped<IAsyncDisposableTestService, AsyncDisposableTestService>( );
+			services.AddScoped<IDisposableTestService, DisposableTestService>( );
+		}
 
 		[Fact]
 		public async Task ScopedService_WithAsyncDisposableService_ShouldDisposeCorrectly( ) {
 			// Arrange
-			var services = new ServiceCollection( );
-			services.AddScoped<IAsyncDisposableTestService, AsyncDisposableTestService>( );
-			services.AddScopedServiceProvider( );
+			var scopedService = ServiceProvider.GetRequiredService<IScopedService<IAsyncDisposableTestService>>( );
 
-			var serviceProvider = services.BuildServiceProvider( );
-			var scopedService = serviceProvider.GetRequiredService<IScopedService<IAsyncDisposableTestService>>( );
-
-			// Act & Assert - Should not throw exception
+			// Act & Assert
 			var result = await scopedService.ExecuteAsync( async service => {
 				await service.DoSomethingAsync( );
 				return "success";
@@ -28,22 +27,15 @@ namespace Myth.Commons.Test.ServiceProvider {
 
 			result.Should( ).Be( "success" );
 
-			// Verify disposal was called
-			var testService = serviceProvider.GetRequiredService<IAsyncDisposableTestService>( ) as AsyncDisposableTestService;
-			// Note: This is a different instance, but validates registration is correct
+			var testService = ServiceProvider.GetRequiredService<IAsyncDisposableTestService>( ) as AsyncDisposableTestService;
 		}
 
 		[Fact]
 		public void ScopedService_WithAsyncDisposableService_SyncExecution_ShouldDisposeCorrectly( ) {
 			// Arrange
-			var services = new ServiceCollection( );
-			services.AddScoped<IAsyncDisposableTestService, AsyncDisposableTestService>( );
-			services.AddScopedServiceProvider( );
+			var scopedService = ServiceProvider.GetRequiredService<IScopedService<IAsyncDisposableTestService>>( );
 
-			var serviceProvider = services.BuildServiceProvider( );
-			var scopedService = serviceProvider.GetRequiredService<IScopedService<IAsyncDisposableTestService>>( );
-
-			// Act & Assert - Should not throw exception
+			// Act & Assert
 			var result = scopedService.Execute( service => {
 				service.DoSomething( );
 				return "success";
@@ -55,14 +47,9 @@ namespace Myth.Commons.Test.ServiceProvider {
 		[Fact]
 		public async Task ScopedService_WithRegularDisposableService_ShouldDisposeCorrectly( ) {
 			// Arrange
-			var services = new ServiceCollection( );
-			services.AddScoped<IDisposableTestService, DisposableTestService>( );
-			services.AddScopedServiceProvider( );
+			var scopedService = ServiceProvider.GetRequiredService<IScopedService<IDisposableTestService>>( );
 
-			var serviceProvider = services.BuildServiceProvider( );
-			var scopedService = serviceProvider.GetRequiredService<IScopedService<IDisposableTestService>>( );
-
-			// Act & Assert - Should not throw exception
+			// Act & Assert
 			var result = await scopedService.ExecuteAsync( async service => {
 				await service.DoSomethingAsync( );
 				return "success";
@@ -74,14 +61,9 @@ namespace Myth.Commons.Test.ServiceProvider {
 		[Fact]
 		public void ScopedService_WithRegularDisposableService_SyncExecution_ShouldDisposeCorrectly( ) {
 			// Arrange
-			var services = new ServiceCollection( );
-			services.AddScoped<IDisposableTestService, DisposableTestService>( );
-			services.AddScopedServiceProvider( );
+			var scopedService = ServiceProvider.GetRequiredService<IScopedService<IDisposableTestService>>( );
 
-			var serviceProvider = services.BuildServiceProvider( );
-			var scopedService = serviceProvider.GetRequiredService<IScopedService<IDisposableTestService>>( );
-
-			// Act & Assert - Should not throw exception
+			// Act & Assert
 			var result = scopedService.Execute( service => {
 				service.DoSomething( );
 				return "success";
@@ -93,14 +75,12 @@ namespace Myth.Commons.Test.ServiceProvider {
 
 	// Test interfaces and implementations
 	public interface IAsyncDisposableTestService {
-
 		void DoSomething( );
 
 		Task DoSomethingAsync( );
 	}
 
 	public interface IDisposableTestService {
-
 		void DoSomething( );
 
 		Task DoSomethingAsync( );
@@ -115,9 +95,9 @@ namespace Myth.Commons.Test.ServiceProvider {
 		}
 
 		public Task DoSomethingAsync( ) {
-			if ( IsDisposed )
-				throw new ObjectDisposedException( nameof( AsyncDisposableTestService ) );
-			return Task.CompletedTask;
+			return IsDisposed 
+				? throw new ObjectDisposedException( nameof( AsyncDisposableTestService ) ) 
+				:  Task.CompletedTask;
 		}
 
 		public ValueTask DisposeAsync( ) {
@@ -135,9 +115,9 @@ namespace Myth.Commons.Test.ServiceProvider {
 		}
 
 		public Task DoSomethingAsync( ) {
-			if ( IsDisposed )
-				throw new ObjectDisposedException( nameof( DisposableTestService ) );
-			return Task.CompletedTask;
+			return IsDisposed
+				? throw new ObjectDisposedException( nameof( DisposableTestService ) ) 
+				:  Task.CompletedTask;
 		}
 
 		public void Dispose( ) {

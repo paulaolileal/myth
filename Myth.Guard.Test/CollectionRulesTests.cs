@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
 using Myth.Guard.Test.Models;
 using Myth.Validation;
 
@@ -8,14 +7,11 @@ namespace Myth.Guard.Test;
 /// <summary>
 /// Tests for collection validation rules
 /// </summary>
-public class CollectionRulesTests {
-	private readonly IServiceProvider _serviceProvider;
+public class CollectionRulesTests : BaseTestFixture {
 	private readonly Validator _validator;
 
 	public CollectionRulesTests( ) {
-		var services = new ServiceCollection( );
-		_serviceProvider = services.BuildServiceProvider( );
-		_validator = new Validator( _serviceProvider );
+		_validator = new Validator( ServiceProvider );
 	}
 
 	[Fact]
@@ -38,7 +34,7 @@ public class CollectionRulesTests {
 	public async Task NotEmpty_WithEmptyList_ShouldFail( ) {
 		// Arrange
 		var entity = new CollectionTestEntity {
-			Items = new List<string>( ), // Empty list
+			Items = new List<string>( ),
 			Tags = new[ ] { "tag1" },
 			Numbers = new[ ] { 1 }
 		};
@@ -88,7 +84,7 @@ public class CollectionRulesTests {
 	public async Task All_WithValidItems_ShouldPass( ) {
 		// Arrange
 		var entity = new CollectionTestEntity {
-			Items = new List<string> { "item1", "item2", "item3" }, // All items are not null/whitespace
+			Items = new List<string> { "item1", "item2", "item3" }, 
 			Tags = new[ ] { "tag1" },
 			Numbers = new[ ] { 1 }
 		};
@@ -141,7 +137,7 @@ public class CollectionRulesTests {
 		// Arrange
 		var entity = new CollectionTestEntity {
 			Items = new List<string> { "item1" },
-			Tags = new[ ] { "tag1", "tag2" }, // Count 2, greater than 0
+			Tags = new[ ] { "tag1", "tag2" }, 
 			Numbers = new[ ] { 1 }
 		};
 
@@ -157,7 +153,7 @@ public class CollectionRulesTests {
 		// Arrange
 		var entity = new CollectionTestEntity {
 			Items = new List<string> { "item1" },
-			Tags = Array.Empty<string>( ), // Count 0, not greater than 0
+			Tags = Array.Empty<string>( ), 
 			Numbers = new[ ] { 1 }
 		};
 
@@ -174,7 +170,7 @@ public class CollectionRulesTests {
 		// Arrange
 		var entity = new CollectionTestEntity {
 			Items = new List<string> { "item1" },
-			Tags = new[ ] { "tag1", "tag2", "tag3" }, // All unique
+			Tags = new[ ] { "tag1", "tag2", "tag3" }, 
 			Numbers = new[ ] { 1 }
 		};
 
@@ -190,7 +186,7 @@ public class CollectionRulesTests {
 		// Arrange
 		var entity = new CollectionTestEntity {
 			Items = new List<string> { "item1" },
-			Tags = new[ ] { "tag1", "tag2", "tag1" }, // Contains duplicate "tag1"
+			Tags = new[ ] { "tag1", "tag2", "tag1" },
 			Numbers = new[ ] { 1 }
 		};
 
@@ -208,7 +204,7 @@ public class CollectionRulesTests {
 		var entity = new CollectionTestEntity {
 			Items = new List<string> { "item1" },
 			Tags = new[ ] { "tag1" },
-			Numbers = new[ ] { 1, 0, 5 } // Contains 5 which is > 0
+			Numbers = new[ ] { 1, 0, 5 } 
 		};
 
 		// Act
@@ -224,7 +220,7 @@ public class CollectionRulesTests {
 		var entity = new CollectionTestEntity {
 			Items = new List<string> { "item1" },
 			Tags = new[ ] { "tag1" },
-			Numbers = new[ ] { -1, -2, 0 } // No positive numbers
+			Numbers = new[ ] { -1, -2, 0 }
 		};
 
 		// Act
@@ -241,7 +237,7 @@ public class CollectionRulesTests {
 		var entity = new CollectionTestEntity {
 			Items = new List<string> { "item1" },
 			Tags = new[ ] { "tag1" },
-			Numbers = new[ ] { 0, 1, 2 } // No negative numbers
+			Numbers = new[ ] { 0, 1, 2 }
 		};
 
 		// Act
@@ -257,7 +253,7 @@ public class CollectionRulesTests {
 		var entity = new CollectionTestEntity {
 			Items = new List<string> { "item1" },
 			Tags = new[ ] { "tag1" },
-			Numbers = new[ ] { 1, 2, -1 } // Contains -1 which is negative
+			Numbers = new[ ] { 1, 2, -1 } 
 		};
 
 		// Act
@@ -277,7 +273,7 @@ public class CollectionRulesTests {
 			Age = 25,
 			BirthDate = DateTime.Now.AddYears( -25 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
-			Tags = new List<string> { "developer", "remote", "senior" }, // Valid: not empty, count between 1-10, all non-whitespace
+			Tags = new List<string> { "developer", "remote", "senior" },
 			IsActive = true,
 			Role = UserRole.User,
 			Salary = 50000,
@@ -300,7 +296,7 @@ public class CollectionRulesTests {
 			Age = 25,
 			BirthDate = DateTime.Now.AddYears( -25 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
-			Tags = new List<string>( ), // Empty list
+			Tags = new List<string>( ), 
 			IsActive = true,
 			Role = UserRole.User,
 			Salary = 50000,
@@ -318,7 +314,7 @@ public class CollectionRulesTests {
 	[Fact]
 	public async Task TestUser_Tags_WithTooManyTags_ShouldFail( ) {
 		// Arrange
-		var tooManyTags = Enumerable.Range( 1, 11 ).Select( i => $"tag{i}" ).ToList( ); // 11 tags, exceeds max (10)
+		var tooManyTags = Enumerable.Range( 1, 11 ).Select( i => $"tag{i}" ).ToList( ); 
 
 		var user = new TestUser {
 			Name = "TestUser",
@@ -350,7 +346,7 @@ public class CollectionRulesTests {
 			Age = 25,
 			BirthDate = DateTime.Now.AddYears( -25 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
-			Tags = new List<string> { "valid", "", "   " }, // Contains empty and whitespace-only tags
+			Tags = new List<string> { "valid", "", "   " }, 
 			IsActive = true,
 			Role = UserRole.User,
 			Salary = 50000,

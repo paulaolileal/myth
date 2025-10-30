@@ -5,33 +5,17 @@ using Myth.Extensions;
 using Myth.Interfaces.Repositories.Results;
 using Myth.Morph.Test.Models;
 using Myth.Morph.Test.Models.Dtos;
-using Myth.Morph.Test.Service;
-using Myth.Repositories.Results;
 using System.Collections.ObjectModel;
 
 namespace Myth.Morph.Test {
 
-	public class MorphTests {
-		private readonly IServiceCollection _services;
-		private IServiceProvider _serviceProvider;
-		private readonly Faker _faker;
-
-		public MorphTests( ) {
-			_services = new ServiceCollection( );
-			_services.AddLogging( );
-			_services.AddSingleton<IDescriptionResolver, DescriptionResolver>( );
-			_services.AddMorph( config => {
-				config.AddGenericMorph( typeof( IPaginated<> ), typeof( Paginated<> ) );
-			} );
-			_serviceProvider = _services.BuildServiceProvider( );
-
-			_faker = new Faker( );
-		}
+	public class MorphTests : BaseTestFixture {
+		private readonly Faker _faker = new Faker( );
 
 		[Fact]
 		public void AddMorph_Should_RegisterBindRegistry( ) {
 			// Act
-			var registry = _serviceProvider.GetService<SchemaRegistry>( );
+			var registry = ServiceProvider.GetService<SchemaRegistry>( );
 
 			// Assert
 			registry.Should( ).NotBeNull( );
@@ -40,7 +24,7 @@ namespace Myth.Morph.Test {
 		[Fact]
 		public void BindRegistry_Should_RegisterGenericMorphpingList( ) {
 			// Arrange
-			var registry = _serviceProvider.GetRequiredService<SchemaRegistry>( );
+			var registry = ServiceProvider.GetRequiredService<SchemaRegistry>( );
 
 			// Assert
 			var hasMorphping = registry.TryResolveGenericConcrete( typeof( IList<string> ), out var concrete );
@@ -51,7 +35,7 @@ namespace Myth.Morph.Test {
 		[Fact]
 		public void BindRegistry_Should_RegisterGenericMorphpingCollection( ) {
 			// Arrange
-			var registry = _serviceProvider.GetRequiredService<SchemaRegistry>( );
+			var registry = ServiceProvider.GetRequiredService<SchemaRegistry>( );
 
 			// Assert
 			var hasMorphping = registry.TryResolveGenericConcrete( typeof( ICollection<string> ), out var concrete );
@@ -62,7 +46,7 @@ namespace Myth.Morph.Test {
 		[Fact]
 		public void BindRegistry_Should_RegisterGenericMorphpingDictionary( ) {
 			// Arrange
-			var registry = _serviceProvider.GetRequiredService<SchemaRegistry>( );
+			var registry = ServiceProvider.GetRequiredService<SchemaRegistry>( );
 
 			// Assert
 			var hasMorphping = registry.TryResolveGenericConcrete( typeof( IDictionary<string, string> ), out var concrete );
@@ -73,7 +57,7 @@ namespace Myth.Morph.Test {
 		[Fact]
 		public void BindRegistry_Should_RegisterGenericMorphpingSet( ) {
 			// Arrange
-			var registry = _serviceProvider.GetRequiredService<SchemaRegistry>( );
+			var registry = ServiceProvider.GetRequiredService<SchemaRegistry>( );
 
 			// Assert
 			var hasMorphping = registry.TryResolveGenericConcrete( typeof( ISet<string> ), out var concrete );
@@ -84,7 +68,7 @@ namespace Myth.Morph.Test {
 		[Fact]
 		public void BindRegistry_Should_RegisterGenericMorphpingReadOnlyCollection( ) {
 			// Arrange
-			var registry = _serviceProvider.GetRequiredService<SchemaRegistry>( );
+			var registry = ServiceProvider.GetRequiredService<SchemaRegistry>( );
 
 			// Assert
 			var hasMorphping = registry.TryResolveGenericConcrete( typeof( IReadOnlyCollection<string> ), out var concrete );
@@ -95,7 +79,7 @@ namespace Myth.Morph.Test {
 		[Fact]
 		public void BindRegistry_Should_RegisterGenericMorphpingReadOnlyList( ) {
 			// Arrange
-			var registry = _serviceProvider.GetRequiredService<SchemaRegistry>( );
+			var registry = ServiceProvider.GetRequiredService<SchemaRegistry>( );
 
 			// Assert
 			var hasMorphping = registry.TryResolveGenericConcrete( typeof( IReadOnlyList<string> ), out var concrete );
@@ -106,7 +90,7 @@ namespace Myth.Morph.Test {
 		[Fact]
 		public void BindRegistry_Should_RegisterGenericMorphpingReadOnlySet( ) {
 			// Arrange
-			var registry = _serviceProvider.GetRequiredService<SchemaRegistry>( );
+			var registry = ServiceProvider.GetRequiredService<SchemaRegistry>( );
 
 			// Assert
 			var hasMorphping = registry.TryResolveGenericConcrete( typeof( IReadOnlySet<string> ), out var concrete );
@@ -120,7 +104,7 @@ namespace Myth.Morph.Test {
 			BasicEntity? entity = null;
 
 			// Act
-			var result = entity.To<BasicDto>( _serviceProvider );
+			var result = entity.To<BasicDto>( ServiceProvider );
 
 			// Assert
 			result.Should( ).BeNull( );
@@ -145,7 +129,7 @@ namespace Myth.Morph.Test {
 			};
 
 			// Act
-			var result = entities.To<BasicDto>( _serviceProvider );
+			var result = entities.To<BasicDto>( ServiceProvider );
 
 			// Assert
 			result.Should( ).NotBeNull( );
@@ -187,7 +171,7 @@ namespace Myth.Morph.Test {
 			// Act
 			// Act
 			var paginatedEntities = entities.AsPaginated( );
-			var result = paginatedEntities.To<IPaginated<BasicDto>>( _serviceProvider );
+			var result = paginatedEntities.To<IPaginated<BasicDto>>( ServiceProvider );
 
 			// Assert
 			result.Should( ).NotBeNull( );
@@ -227,7 +211,7 @@ namespace Myth.Morph.Test {
 			};
 
 			// Act
-			var dto = entity.To<DtoWithNested>( _serviceProvider );
+			var dto = entity.To<DtoWithNested>( ServiceProvider );
 
 			// Assert
 			dto.Items.Should( ).HaveCount( 2 );
@@ -244,7 +228,7 @@ namespace Myth.Morph.Test {
 			};
 
 			// Act
-			var dto = derived.To<DerivedDto>( _serviceProvider );
+			var dto = derived.To<DerivedDto>( ServiceProvider );
 
 			// Assert
 			dto.BaseProperty.Should( ).Be( derived.BaseProperty );
@@ -261,7 +245,7 @@ namespace Myth.Morph.Test {
 			};
 
 			// Act
-			var result = source.To<DestEntity>( _serviceProvider );
+			var result = source.To<DestEntity>( ServiceProvider );
 
 			// Assert
 			result.Id.Should( ).Be( source.Id );
@@ -280,7 +264,7 @@ namespace Myth.Morph.Test {
 			};
 
 			// Act
-			var dto = await entity.ToAsync<DtoWithAsync>( _serviceProvider );
+			var dto = await entity.ToAsync<DtoWithAsync>( ServiceProvider );
 
 			// Assert
 			dto.Id.Should( ).Be( 1 );
@@ -295,8 +279,8 @@ namespace Myth.Morph.Test {
 			};
 
 			// Act
-			var canMorph = entity.CanBindTo<BasicDto>( _serviceProvider );
-			var cannotMorph = entity.CanBindTo<NonBindableDto>( _serviceProvider );
+			var canMorph = entity.CanBindTo<BasicDto>( ServiceProvider );
+			var cannotMorph = entity.CanBindTo<NonBindableDto>( ServiceProvider );
 
 			// Assert
 			canMorph.Should( ).BeTrue( );
@@ -318,7 +302,7 @@ namespace Myth.Morph.Test {
 			parent.Child = child;
 
 			// Act
-			var dto = parent.To<ParentDto>( _serviceProvider );
+			var dto = parent.To<ParentDto>( ServiceProvider );
 
 			// Assert
 			dto.Id.Should( ).Be( parent.Id );
@@ -336,7 +320,7 @@ namespace Myth.Morph.Test {
 			};
 
 			// Act
-			var dto = entity.To<DtoWithDependency>( _serviceProvider );
+			var dto = entity.To<DtoWithDependency>( ServiceProvider );
 
 			// Assert
 			dto.Id.Should( ).Be( entity.Id );
