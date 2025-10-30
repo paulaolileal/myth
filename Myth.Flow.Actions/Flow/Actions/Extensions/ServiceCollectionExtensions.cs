@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Myth.Builders;
 using Myth.Flow.Actions.Brokers;
 using Myth.Flow.Actions.Hosting;
+using Myth.Flow.Actions.Services;
 using Myth.Flow.Actions.Settings;
 using Myth.Flow.Resilience;
 using Myth.Interfaces;
@@ -26,6 +27,7 @@ public static class ServiceCollectionExtensions {
 	/// <param name="configure">Configuration action for Flow.Actions builder</param>
 	/// <returns>The service collection for method chaining</returns>
 	/// <exception cref="ArgumentNullException">Thrown when services or configure is null</exception>
+	[Obsolete( "Use AddFlow with FlowWithActionsBuilder for unified configuration of Flow and Flow.Actions." )]
 	public static IServiceCollection AddFlowActions(
 		this IServiceCollection services,
 		Action<FlowActionsBuilder> configure ) {
@@ -45,6 +47,73 @@ public static class ServiceCollectionExtensions {
 		RegisterHandlers( services, configuration );
 
 		services.AddHostedService<MessageBrokerHostedService>( );
+
+		return services;
+	}
+
+
+	/// <summary>
+	/// Adds both Myth.Flow and Myth.Flow.Actions services using a unified configuration builder.
+	/// This provides a seamless API where Flow.Actions is configured as an extension of Flow.
+	/// </summary>
+	/// <param name="services">The service collection to add services to</param>
+	/// <param name="configure">Configuration action using the unified builder</param>
+	/// <returns>The service collection for method chaining</returns>
+	/// <exception cref="ArgumentNullException">Thrown when services or configure is null</exception>
+	/// <example>
+	/// <code>
+	/// services.AddFlow( config => config
+	///     .UseLogging( )
+	///     .UseTelemetry( )
+	///     .UseRetry( 3 )
+	///     .UseActions( actions => actions
+	///         .UseInMemory( )
+	///         .ScanAssemblies( typeof( MyHandler ).Assembly )));
+	/// </code>
+	/// </example>
+	public static IServiceCollection AddFlow(
+		this IServiceCollection services,
+		Action<FlowWithActionsBuilder> configure ) {
+		ArgumentNullException.ThrowIfNull( services );
+		ArgumentNullException.ThrowIfNull( configure );
+
+		var builder = new FlowWithActionsBuilder( );
+		configure( builder );
+
+		// Build both configurations
+		var flowConfig = builder.BuildFlowConfiguration( );
+		var actionsConfig = builder.BuildActionsConfiguration( );
+
+		// Register Flow services first
+		RegisterFlowServices( services, flowConfig );
+
+		// Register Flow.Actions services
+		services.AddSingleton( actionsConfig );
+		RegisterCore( services, actionsConfig );
+		RegisterMessageBroker( services, actionsConfig );
+		RegisterCache( services, actionsConfig );
+		RegisterTelemetry( services, actionsConfig );
+		RegisterHandlers( services, actionsConfig );
+		services.AddHostedService<MessageBrokerHostedService>( );
+
+		return services;
+	}
+
+	/// <summary>
+	/// Registers the core Myth.Flow services with the provided configuration
+	/// </summary>
+	/// <param name="services">The service collection to add services to</param>
+	/// <param name="config">The PipelineConfiguration to use</param>
+	/// <returns>The updated service collection</returns>
+	private static IServiceCollection RegisterFlowServices( IServiceCollection services, Myth.Models.PipelineConfiguration config ) {
+		// Register configuration
+		services.AddSingleton( config );
+
+		// Register ActivitySource for telemetry
+		if ( config.EnableTelemetry ) {
+			services.AddSingleton( sp =>
+				config.ActivitySource ?? new System.Diagnostics.ActivitySource( "Myth.Flow" ) );
+		}
 
 		return services;
 	}
@@ -213,19 +282,16 @@ public static class ServiceCollectionExtensions {
 			var subscriptionManager = sp.GetRequiredService<IEventSubscriptionManager>( );
 			var registry = new EventHandlerRegistry( subscriptionManager );
 
-			foreach ( var (eventType, handlerType) in eventHandlers ) {
+			foreach ( var (eventType, handlerType) in eventHandlers )
 				registry.RegisterHandler( eventType, handlerType );
-
-				// Auto-subscribe handlers to EventBus if enabled
-				if ( configuration.AutoSubscribeEventHandlers ) {
-					var eventBus = sp.GetRequiredService<IEventBus>( );
-					var subscribeMethod = typeof( IEventBus ).GetMethod( nameof( IEventBus.Subscribe ) );
-					var genericSubscribeMethod = subscribeMethod!.MakeGenericMethod( eventType, handlerType );
-					genericSubscribeMethod.Invoke( eventBus, null );
-				}
-			}
 
 			return registry;
 		} );
+
+		// Register auto-subscription service if enabled
+		if ( configuration.AutoSubscribeEventHandlers ) {
+			services.AddSingleton( configuration );
+			services.AddHostedService<EventHandlerAutoSubscriptionService>( );
+		}
 	}
 }

@@ -13,7 +13,7 @@ namespace Myth.Builders {
 		/// <summary>
 		/// Initializes a new instance of the <see cref="FlowConfigurationBuilder"/> class.
 		/// </summary>
-		internal FlowConfigurationBuilder( ) {
+		public FlowConfigurationBuilder( ) {
 			_configuration = new PipelineConfiguration( );
 		}
 
@@ -122,7 +122,7 @@ namespace Myth.Builders {
 		/// Builds and returns the configured <see cref="PipelineConfiguration"/>.
 		/// </summary>
 		/// <returns>The configured <see cref="PipelineConfiguration"/> instance.</returns>
-		internal PipelineConfiguration Build( ) {
+		public PipelineConfiguration Build( ) {
 			return _configuration;
 		}
 	}

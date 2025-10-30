@@ -65,6 +65,7 @@ namespace Myth.Extensions {
 			return RegisterFlowServices( services, config );
 		}
 
+
 		/// <summary>
 		/// Registers the core Myth.Flow services with the provided configuration.
 		/// </summary>
