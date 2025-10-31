@@ -1,7 +1,7 @@
 <Solution>
   <Folder Name="/Commons/">
     <Project Path="Myth.Commons.Test/Myth.Commons.Test.csproj" />
-    <Project Path="Myth.Commons/Myth.Commons.csproj"/>
+    <Project Path="Myth.Commons/Myth.Commons.csproj" />
   </Folder>
   <Folder Name="/DependencyInjection/">
     <Project Path="Myth.DependencyInjection.Providers/Myth.DependencyInjection.Providers.csproj" />
@@ -44,5 +44,8 @@
   <Folder Name="/Specification/">
     <Project Path="Myth.Specification.Test/Myth.Specification.Test.csproj" />
     <Project Path="Myth.Specification/Myth.Specification.csproj" />
+  </Folder>
+  <Folder Name="/Testing/">
+    <Project Path="Myth.Testing/Myth.Testing.csproj" Id="3187477b-d58e-4632-8c41-6d8efe3bb99a" />
   </Folder>
 </Solution>
