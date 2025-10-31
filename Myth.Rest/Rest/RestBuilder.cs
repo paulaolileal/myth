@@ -58,7 +58,7 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 			PreRequestSettings( );
 
 			_request = async ( CancellationToken cancellationToken ) =>
-				await _configBuilder._httpClient.GetAsync( url, cancellationToken );
+				await _configBuilder.GetConfiguredHttpClient( ).GetAsync( url, cancellationToken );
 		} catch ( Exception exception ) {
 			_exception = exception;
 		}
@@ -74,7 +74,7 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
 
 			_request = async ( CancellationToken cancellationToken ) =>
-				await _configBuilder._httpClient.PostAsync( url, request, cancellationToken );
+				await _configBuilder.GetConfiguredHttpClient( ).PostAsync( url, request, cancellationToken );
 		} catch ( Exception exception ) {
 			_exception = exception;
 		}
@@ -90,7 +90,7 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
 
 			_request = async ( CancellationToken cancellationToken ) =>
-				await _configBuilder._httpClient.PutAsync( url, request, cancellationToken );
+				await _configBuilder.GetConfiguredHttpClient( ).PutAsync( url, request, cancellationToken );
 		} catch ( Exception exception ) {
 			_exception = exception;
 		}
@@ -103,7 +103,7 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 			PreRequestSettings( );
 
 			_request = async ( CancellationToken cancellationToken ) =>
-				await _configBuilder._httpClient.DeleteAsync( url, cancellationToken );
+				await _configBuilder.GetConfiguredHttpClient( ).DeleteAsync( url, cancellationToken );
 		} catch ( Exception exception ) {
 			_exception = exception;
 		}
@@ -119,7 +119,7 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 			var request = body.ToHttpContent( _configBuilder._serializationCaseStrategy );
 
 			_request = async ( CancellationToken cancellationToken ) =>
-				await _configBuilder._httpClient.PatchAsync( url, request, cancellationToken );
+				await _configBuilder.GetConfiguredHttpClient( ).PatchAsync( url, request, cancellationToken );
 		} catch ( Exception exception ) {
 			_exception = exception;
 		}
@@ -132,7 +132,7 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 			PreRequestSettings( );
 
 			_request = async ( CancellationToken cancellationToken ) =>
-				await _configBuilder._httpClient.GetAsync( url, cancellationToken: cancellationToken );
+				await _configBuilder.GetConfiguredHttpClient( ).GetAsync( url, cancellationToken: cancellationToken );
 		} catch ( Exception exception ) {
 			_exception = exception;
 		}
@@ -161,10 +161,11 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 			settings?.Invoke( uploadSettings );
 
 			_request = async ( CancellationToken cancellationToken ) => {
+				var httpClient = _configBuilder.GetConfiguredHttpClient( );
 				return uploadSettings.Method switch {
-					RestUploadSettings.UploadMethod.PUT => await _configBuilder._httpClient.PutAsync( url, request, cancellationToken ),
-					RestUploadSettings.UploadMethod.PATCH => await _configBuilder._httpClient.PatchAsync( url, request, cancellationToken ),
-					_ => await _configBuilder._httpClient.PostAsync( url, request, cancellationToken )
+					RestUploadSettings.UploadMethod.PUT => await httpClient.PutAsync( url, request, cancellationToken ),
+					RestUploadSettings.UploadMethod.PATCH => await httpClient.PatchAsync( url, request, cancellationToken ),
+					_ => await httpClient.PostAsync( url, request, cancellationToken )
 				};
 			};
 		} catch ( Exception exception ) {
@@ -439,21 +440,23 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 	}
 
 	protected void PreRequestSettings( ) {
+		var httpClient = _configBuilder.GetConfiguredHttpClient( );
+
 		var baseAddress = _configBuilder._baseUrl;
 		if ( !string.IsNullOrEmpty( baseAddress ) )
-			_configBuilder._httpClient.BaseAddress = new Uri( baseAddress );
+			httpClient.BaseAddress = new Uri( baseAddress );
 
 		var authorization = _configBuilder._authorizationHeader;
 		if ( authorization is not null )
-			_configBuilder._httpClient.DefaultRequestHeaders.Authorization = authorization;
+			httpClient.DefaultRequestHeaders.Authorization = authorization;
 
 		var timeout = _configBuilder._timeout;
 		if ( timeout is not null )
-			_configBuilder._httpClient.Timeout = timeout.Value;
+			httpClient.Timeout = timeout.Value;
 
 		var acceptableContentType = _configBuilder._acceptableContentType;
 		if ( !string.IsNullOrEmpty( acceptableContentType ) )
-			_configBuilder._httpClient
+			httpClient
 				.DefaultRequestHeaders
 				.Accept
 				.Add( new MediaTypeWithQualityHeaderValue( acceptableContentType ) );
@@ -461,10 +464,10 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 		var customHeaders = _configBuilder._customHeaders;
 		if ( customHeaders.Any( ) )
 			foreach ( var header in customHeaders ) {
-				if ( _configBuilder._httpClient.DefaultRequestHeaders.Contains( header.Key ) )
-					_configBuilder._httpClient.DefaultRequestHeaders.Remove( header.Key );
+				if ( httpClient.DefaultRequestHeaders.Contains( header.Key ) )
+					httpClient.DefaultRequestHeaders.Remove( header.Key );
 
-				_configBuilder._httpClient.DefaultRequestHeaders.Add( header.Key, header.Value );
+				httpClient.DefaultRequestHeaders.Add( header.Key, header.Value );
 			}
 	}
 
@@ -473,9 +476,11 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 		_responseMessage = null;
 		_exception = null;
 		_isFileOperation = false;
-		_configBuilder._httpClient.CancelPendingRequests( );
-		_configBuilder._httpClient.DefaultRequestHeaders.Clear( );
-		_configBuilder._httpClient.DefaultRequestHeaders.Accept.Clear( );
+
+		var httpClient = _configBuilder.GetConfiguredHttpClient( );
+		httpClient.CancelPendingRequests( );
+		httpClient.DefaultRequestHeaders.Clear( );
+		httpClient.DefaultRequestHeaders.Accept.Clear( );
 	}
 
 	#endregion [ Processing Methods ]
@@ -483,7 +488,7 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 	#region [ IDisposable Implementation ]
 
 	public void Dispose( ) {
-		_configBuilder._httpClient?.Dispose( );
+		_configBuilder?.Dispose( );
 		_responseMessage?.Dispose( );
 		GC.SuppressFinalize( this );
 	}
