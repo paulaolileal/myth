@@ -1,4 +1,5 @@
 ﻿using Myth.Interfaces.Results;
+using Myth.ValueObjects;
 using System.Linq.Expressions;
 
 namespace Myth.Interfaces.Repositories.Base;
@@ -128,6 +129,52 @@ public interface IReadRepositoryAsync<TEntity> : IRepository, IAsyncDisposable {
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>A entity</returns>
 	Task<TEntity?> LastOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
+
+	/// <summary>
+	/// Get the first element of collection that is satisfyed by predicate
+	/// </summary>
+	/// <param name="specification">Predicate based on specification</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>A entity</returns>
+	/// <exception cref="InvalidOperationException">Thrown when no element is found</exception>
+	Task<TEntity> FirstAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
+
+	/// <summary>
+	/// Get the first element of collection that is satisfyed by predicate
+	/// </summary>
+	/// <param name="predicate">Predicate based on expression</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>A entity</returns>
+	/// <exception cref="InvalidOperationException">Thrown when no element is found</exception>
+	Task<TEntity> FirstAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
+
+	/// <summary>
+	/// Get the last element of collection that is satisfyed by predicate
+	/// </summary>
+	/// <param name="specification">Predicate based on specification</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>A entity</returns>
+	/// <exception cref="InvalidOperationException">Thrown when no element is found</exception>
+	Task<TEntity> LastAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
+
+	/// <summary>
+	/// Get the last element of collection that is satisfyed by predicate
+	/// </summary>
+	/// <param name="predicate">Predicate based on expression</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>A entity</returns>
+	/// <exception cref="InvalidOperationException">Thrown when no element is found</exception>
+	Task<TEntity> LastAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default );
+
+	/// <summary>
+	/// Searchs for all elements that is satisfyed by predicate and paginate
+	/// </summary>
+	/// <param name="filterPredicate">Predicate based on expression</param>
+	/// <param name="pagination">Pagination object with page number and page size</param>
+	/// <param name="orderPredicate">Predicate for ordering</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>A IPaginated object with collection</returns>
+	Task<IPaginated<TEntity>> SearchPaginatedAsync( Expression<Func<TEntity, bool>> filterPredicate, Pagination pagination, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default );
 
 	/// <summary>
 	/// Searchs if all element is satisfyed by predicate

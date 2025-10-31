@@ -2,6 +2,7 @@
 using Myth.Interfaces;
 using Myth.Interfaces.Repositories.EntityFramework;
 using Myth.Interfaces.Results;
+using Myth.ValueObjects;
 using System.Linq.Expressions;
 
 namespace Myth.Repositories.EntityFramework;
@@ -134,6 +135,26 @@ public abstract class ReadWriteRepositoryAsync<TEntity>( BaseContext context ) :
 		_readRepository.FirstOrDefaultAsync( predicate, cancellationToken );
 
 	/// <summary>
+	/// Asynchronously returns the first entity that satisfies the given specification
+	/// </summary>
+	/// <param name="spec">The specification to filter by</param>
+	/// <param name="cancellationToken">A token to monitor for cancellation requests</param>
+	/// <returns>A task that represents the asynchronous operation. The task result is the first entity that satisfies the specification</returns>
+	/// <exception cref="InvalidOperationException">Thrown when no element is found</exception>
+	public virtual Task<TEntity> FirstAsync( ISpec<TEntity> spec, CancellationToken cancellationToken = default ) =>
+		_readRepository.FirstAsync( spec, cancellationToken );
+
+	/// <summary>
+	/// Asynchronously returns the first entity that satisfies the given predicate
+	/// </summary>
+	/// <param name="predicate">The predicate to filter by</param>
+	/// <param name="cancellationToken">A token to monitor for cancellation requests</param>
+	/// <returns>A task that represents the asynchronous operation. The task result is the first entity that satisfies the predicate</returns>
+	/// <exception cref="InvalidOperationException">Thrown when no element is found</exception>
+	public virtual Task<TEntity> FirstAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
+		_readRepository.FirstAsync( predicate, cancellationToken );
+
+	/// <summary>
 	/// Gets the name of the database provider being used
 	/// </summary>
 	/// <returns>The name of the database provider, or null if not available</returns>
@@ -156,6 +177,26 @@ public abstract class ReadWriteRepositoryAsync<TEntity>( BaseContext context ) :
 	/// <returns>A task that represents the asynchronous operation. The task result is the last entity that satisfies the predicate, or null if no entity is found</returns>
 	public virtual Task<TEntity?> LastOrDefaultAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
 		_readRepository.LastOrDefaultAsync( predicate, cancellationToken );
+
+	/// <summary>
+	/// Asynchronously returns the last entity that satisfies the given specification
+	/// </summary>
+	/// <param name="spec">The specification to filter by</param>
+	/// <param name="cancellationToken">A token to monitor for cancellation requests</param>
+	/// <returns>A task that represents the asynchronous operation. The task result is the last entity that satisfies the specification</returns>
+	/// <exception cref="InvalidOperationException">Thrown when no element is found</exception>
+	public virtual Task<TEntity> LastAsync( ISpec<TEntity> spec, CancellationToken cancellationToken = default ) =>
+		_readRepository.LastAsync( spec, cancellationToken );
+
+	/// <summary>
+	/// Asynchronously returns the last entity that satisfies the given predicate
+	/// </summary>
+	/// <param name="predicate">The predicate to filter by</param>
+	/// <param name="cancellationToken">A token to monitor for cancellation requests</param>
+	/// <returns>A task that represents the asynchronous operation. The task result is the last entity that satisfies the predicate</returns>
+	/// <exception cref="InvalidOperationException">Thrown when no element is found</exception>
+	public virtual Task<TEntity> LastAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
+		_readRepository.LastAsync( predicate, cancellationToken );
 
 	/// <summary>
 	/// Asynchronously removes an entity from the repository
@@ -214,6 +255,17 @@ public abstract class ReadWriteRepositoryAsync<TEntity>( BaseContext context ) :
 	/// <returns>A task that represents the asynchronous operation. The task result is a paginated collection of entities that satisfy the predicate</returns>
 	public virtual Task<IPaginated<TEntity>> SearchPaginatedAsync( Expression<Func<TEntity, bool>> predicate, int take = 0, int skip = 0, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default ) =>
 		_readRepository.SearchPaginatedAsync( predicate, take, skip, orderPredicate, cancellationToken );
+
+	/// <summary>
+	/// Asynchronously searches for entities that satisfy the given filter predicate with pagination using Pagination object
+	/// </summary>
+	/// <param name="filterPredicate">The predicate to filter by</param>
+	/// <param name="pagination">The pagination object with page number and page size</param>
+	/// <param name="orderPredicate">The predicate to order by (optional)</param>
+	/// <param name="cancellationToken">A token to monitor for cancellation requests</param>
+	/// <returns>A task that represents the asynchronous operation. The task result is a paginated collection of entities that satisfy the filter predicate</returns>
+	public virtual Task<IPaginated<TEntity>> SearchPaginatedAsync( Expression<Func<TEntity, bool>> filterPredicate, Pagination pagination, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default ) =>
+		_readRepository.SearchPaginatedAsync( filterPredicate, pagination, orderPredicate, cancellationToken );
 
 	/// <summary>
 	/// Asynchronously returns all entities in the repository

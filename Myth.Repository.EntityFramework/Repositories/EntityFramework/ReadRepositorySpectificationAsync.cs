@@ -105,6 +105,30 @@ public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity
 			.LastOrDefaultAsync( specification.Predicate, cancellationToken );
 
 	/// <summary>
+	/// Get the first element of collection that is satisfied by specification
+	/// </summary>
+	/// <param name="specification">Predicate based on specification</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>An entity</returns>
+	/// <exception cref="InvalidOperationException">Thrown when no element is found</exception>
+	public virtual Task<TEntity> FirstAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) =>
+		_context
+			.Set<TEntity>( )
+			.FirstAsync( specification.Predicate, cancellationToken );
+
+	/// <summary>
+	/// Get the last element of collection that is satisfied by specification
+	/// </summary>
+	/// <param name="specification">Predicate based on specification</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>An entity</returns>
+	/// <exception cref="InvalidOperationException">Thrown when no element is found</exception>
+	public virtual Task<TEntity> LastAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) =>
+		_context
+			.Set<TEntity>( )
+			.LastAsync( specification.Predicate, cancellationToken );
+
+	/// <summary>
 	/// Searches if all elements are satisfied by specification
 	/// </summary>
 	/// <param name="specification">Predicate based on specification</param>

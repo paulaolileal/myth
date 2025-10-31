@@ -2,6 +2,7 @@
 using Myth.Extensions;
 using Myth.Interfaces.Repositories.EntityFramework;
 using Myth.Interfaces.Results;
+using Myth.ValueObjects;
 using System.Linq.Expressions;
 
 namespace Myth.Repositories.EntityFramework;
@@ -51,7 +52,7 @@ public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity
 
 		var totalItems = await _context
 			.Set<TEntity>( )
-			.AsQueryable( )
+			.Where( filterPredicate )
 			.CountAsync( cancellationToken );
 
 		return items.AsPaginated( totalItems, take, skip );
@@ -122,4 +123,43 @@ public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity
 		_context
 			.Set<TEntity>( )
 			.LastOrDefaultAsync( predicate, cancellationToken );
+
+	/// <summary>
+	/// Returns the first element of the sequence that satisfies the predicate
+	/// </summary>
+	/// <param name="predicate">Expression predicate to filter entities</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>The first entity that satisfies the predicate</returns>
+	/// <exception cref="InvalidOperationException">Thrown when no element is found</exception>
+	public virtual Task<TEntity> FirstAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
+		_context
+			.Set<TEntity>( )
+			.FirstAsync( predicate, cancellationToken );
+
+	/// <summary>
+	/// Returns the last element of the sequence that satisfies the predicate
+	/// </summary>
+	/// <param name="predicate">Expression predicate to filter entities</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>The last entity that satisfies the predicate</returns>
+	/// <exception cref="InvalidOperationException">Thrown when no element is found</exception>
+	public virtual Task<TEntity> LastAsync( Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default ) =>
+		_context
+			.Set<TEntity>( )
+			.LastAsync( predicate, cancellationToken );
+
+	/// <summary>
+	/// Searches for all elements that are satisfied by filter predicate and returns paginated results
+	/// </summary>
+	/// <param name="filterPredicate">Predicate for filtering entities</param>
+	/// <param name="pagination">Pagination object with page number and page size</param>
+	/// <param name="orderPredicate">Optional predicate for ordering entities</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>A paginated object containing filtered entities</returns>
+	public virtual async Task<IPaginated<TEntity>> SearchPaginatedAsync( Expression<Func<TEntity, bool>> filterPredicate, Pagination pagination, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default ) {
+		var skip = pagination.PageNumber > 0 ? ( pagination.PageNumber - 1 ) * pagination.PageSize : 0;
+		var take = pagination.PageSize;
+
+		return await SearchPaginatedAsync( filterPredicate, take, skip, orderPredicate, cancellationToken );
+	}
 }
