@@ -1,6 +1,8 @@
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Myth.Flow.Test.Interfaces;
 using Myth.Flow.Test.Models;
+using Myth.ServiceProvider;
 using System;
 using System.Threading.Tasks;
 using Xunit;
@@ -8,26 +10,35 @@ using Xunit;
 namespace Myth.Flow.Test {
 
 	public class SynchronousStepTests {
+		private readonly Mock<ITestService> _mockService = new( );
+		private ITestService _service => _mockService.Object;
+
+		public SynchronousStepTests( ) {
+			var services = new ServiceCollection( );
+			var serviceProvider = services.BuildServiceProvider( );
+
+			MythServiceProvider.Initialize( serviceProvider );
+		}
 
 		[Fact]
 		public async Task Step_ShouldExecuteSuccessfully( ) {
 			// Arrange
 			var dto = new TestDto { Value = 1 };
-			var mockService = new Mock<ITestService>( );
-			mockService.Setup( s => s.Process( It.IsAny<TestDto>( ) ) )
+
+			_mockService
+				.Setup( s => s.Process( It.IsAny<TestDto>( ) ) )
 				.Returns( ( TestDto d ) => new TestDto { Value = d.Value + 1 } );
 
-			var service = mockService.Object;
-
-			// Act - Using direct service reference instead of service locator
-			var result = await Pipeline.Start( dto )
-				.Step( d => service.Process( d ) )
+			// Act
+			var result = await Pipeline
+				.Start( dto )
+				.Step( d => _service.Process( d ) )
 				.ExecuteAsync( );
 
 			// Assert
 			Assert.True( result.IsSuccess );
 			Assert.Equal( 2, result.Value!.Value );
-			mockService.Verify( s => s.Process( It.IsAny<TestDto>( ) ), Times.Once );
+			_mockService.Verify( s => s.Process( It.IsAny<TestDto>( ) ), Times.Once );
 		}
 
 		[Fact]
@@ -35,16 +46,15 @@ namespace Myth.Flow.Test {
 			// Arrange
 			var dto = new TestDto { Value = 1 };
 			var callbackInvoked = false;
-			var mockService = new Mock<ITestService>( );
-			mockService.Setup( s => s.Process( It.IsAny<TestDto>( ) ) )
+
+			_mockService
+				.Setup( s => s.Process( It.IsAny<TestDto>( ) ) )
 				.Returns( ( TestDto d ) => new TestDto { Value = d.Value + 1 } );
 
-			var service = mockService.Object;
-
-			// Act - Using direct service reference instead of service locator
+			// Act
 			var result = await Pipeline.Start( dto )
 				.Step(
-					d => service.Process( d ),
+					d => _service.Process( d ),
 					onSuccess: _ => callbackInvoked = true )
 				.ExecuteAsync( );
 
@@ -58,16 +68,15 @@ namespace Myth.Flow.Test {
 			// Arrange
 			var dto = new TestDto { Value = 1 };
 			Exception? capturedException = null;
-			var mockService = new Mock<ITestService>( );
-			mockService.Setup( s => s.Process( It.IsAny<TestDto>( ) ) )
+
+			_mockService
+				.Setup( s => s.Process( It.IsAny<TestDto>( ) ) )
 				.Throws( new InvalidOperationException( "Test error" ) );
 
-			var service = mockService.Object;
-
-			// Act - Using direct service reference instead of service locator
+			// Act
 			var result = await Pipeline.Start( dto )
 				.Step(
-					d => service.Process( d ),
+					d => _service.Process( d ),
 					onError: ex => capturedException = ex )
 				.ExecuteAsync( );
 
