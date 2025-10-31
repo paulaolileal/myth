@@ -1,54 +1,37 @@
-﻿using Bogus;
-using FluentAssertions;
+﻿using FluentAssertions;
+using Myth.Rest.Test.Base;
 using Myth.Rest.Test.Models;
 using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using WireMock.RequestBuilders;
-using WireMock.ResponseBuilders;
-using WireMock.Server;
 using Xunit;
 
 namespace Myth.Rest.Test {
 
-	public class RetryTests : IDisposable {
-		private readonly WireMockServer _server;
-		private readonly Faker _faker;
+	public class RetryTests : BaseTests, IDisposable {
 
 		public RetryTests( ) {
-			_server = WireMockServer.Start( 5006, true );
-
-			_faker = new Faker( "pt_BR" );
 		}
 
 		public void Dispose( ) {
-			_server.Stop( );
-			_server.Dispose( );
+			// No cleanup needed for TestServer
 		}
 
 		[Fact]
 		public async Task Retry_should_work_with_default( ) {
 			// Arrange
-			_server
-				.Given(
-					Request
-						.Create( )
-						.WithPath( "/retry" )
-						.UsingGet( ) )
-				.RespondWith(
-					Response
-						.Create( )
-						.WithBodyAsJson( new {
-							errorCode = _faker.Random.Int( 1000, 9999 ),
-							message = _faker.Lorem.Text( )
-						} )
-						.WithStatusCode( HttpStatusCode.InternalServerError ) );
+			var client = TestServer.Mock( settings => settings
+				.UseRoute( "/retry" )
+				.UseGet( )
+				.UseStatusCode( HttpStatusCode.InternalServerError )
+				.UseResponse( _errorFaker.Generate( ) ) );
 
 			// Act
 			var response = await Rest.Create( )
 				.Configure( config => config
 					.WithBaseUrl( "https://localhost:5006" )
+					.WithClient( client )
 					.WithRetry( )
 				)
 				.DoGet( "/retry" )
@@ -64,25 +47,17 @@ namespace Myth.Rest.Test {
 		[Fact]
 		public async Task Retry_should_work_with_random( ) {
 			// Arrange
-			_server
-				.Given(
-					Request
-						.Create( )
-						.WithPath( "/retry" )
-						.UsingGet( ) )
-				.RespondWith(
-					Response
-						.Create( )
-						.WithBodyAsJson( new {
-							errorCode = _faker.Random.Int( 1000, 9999 ),
-							message = _faker.Lorem.Text( )
-						} )
-						.WithStatusCode( HttpStatusCode.InternalServerError ) );
+			var client = TestServer.Mock( settings => settings
+				.UseRoute( "/retry" )
+				.UseGet( )
+				.UseStatusCode( HttpStatusCode.InternalServerError )
+				.UseResponse( _errorFaker.Generate( ) ) );
 
 			// Act
 			var response = await Rest.Create( )
 				.Configure( config => config
 					.WithBaseUrl( "https://localhost:5006" )
+					.WithClient( client )
 					.WithRetry( retry => retry
 						.WithMaxAttempts( 5 )
 						.UseRandom(
@@ -105,25 +80,17 @@ namespace Myth.Rest.Test {
 		[Fact]
 		public async Task Retry_should_work_with_exponential_backoff( ) {
 			// Arrange
-			_server
-				.Given(
-					Request
-						.Create( )
-						.WithPath( "/retry" )
-						.UsingGet( ) )
-				.RespondWith(
-					Response
-						.Create( )
-						.WithBodyAsJson( new {
-							errorCode = _faker.Random.Int( 1000, 9999 ),
-							message = _faker.Lorem.Text( )
-						} )
-						.WithStatusCode( HttpStatusCode.InternalServerError ) );
+			var client = TestServer.Mock( settings => settings
+				.UseRoute( "/retry" )
+				.UseGet( )
+				.UseStatusCode( HttpStatusCode.InternalServerError )
+				.UseResponse( _errorFaker.Generate( ) ) );
 
 			// Act
 			var response = await Rest.Create( )
 				.Configure( config => config
 					.WithBaseUrl( "https://localhost:5006" )
+					.WithClient( client )
 					.WithRetry( retry => retry
 						.WithMaxAttempts( 4 )
 						.UseExponentialBackoff(
@@ -151,25 +118,17 @@ namespace Myth.Rest.Test {
 		[Fact]
 		public async Task Retry_should_work_with_jitter( ) {
 			// Arrange
-			_server
-				.Given(
-					Request
-						.Create( )
-						.WithPath( "/retry" )
-						.UsingGet( ) )
-				.RespondWith(
-					Response
-						.Create( )
-						.WithBodyAsJson( new {
-							errorCode = _faker.Random.Int( 1000, 9999 ),
-							message = _faker.Lorem.Text( )
-						} )
-						.WithStatusCode( HttpStatusCode.InternalServerError ) );
+			var client = TestServer.Mock( settings => settings
+				.UseRoute( "/retry" )
+				.UseGet( )
+				.UseStatusCode( HttpStatusCode.InternalServerError )
+				.UseResponse( _errorFaker.Generate( ) ) );
 
 			// Act
 			var response = await Rest.Create( )
 				.Configure( config => config
 					.WithBaseUrl( "https://localhost:5006" )
+					.WithClient( client )
 					.WithRetry( retry => retry
 						.WithMaxAttempts( 3 )
 						.UseExponentialBackoffWithJitter(
@@ -194,25 +153,17 @@ namespace Myth.Rest.Test {
 		[Fact]
 		public async Task Retry_should_work_with_fixed_delay( ) {
 			// Arrange
-			_server
-				.Given(
-					Request
-						.Create( )
-						.WithPath( "/retry" )
-						.UsingGet( ) )
-				.RespondWith(
-					Response
-						.Create( )
-						.WithBodyAsJson( new {
-							errorCode = _faker.Random.Int( 1000, 9999 ),
-							message = _faker.Lorem.Text( )
-						} )
-						.WithStatusCode( HttpStatusCode.TooManyRequests ) );
+			var client = TestServer.Mock( settings => settings
+				.UseRoute( "/retry" )
+				.UseGet( )
+				.UseStatusCode( HttpStatusCode.TooManyRequests )
+				.UseResponse( _errorFaker.Generate( ) ) );
 
 			// Act
 			var response = await Rest.Create( )
 				.Configure( config => config
 					.WithBaseUrl( "https://localhost:5006" )
+					.WithClient( client )
 					.WithRetry( retry => retry
 						.WithMaxAttempts( 2 )
 						.UseFixedDelay( TimeSpan.FromSeconds( 3 ) )
@@ -232,25 +183,17 @@ namespace Myth.Rest.Test {
 		[Fact]
 		public async Task Retry_should_work_with_simple( ) {
 			// Arrange
-			_server
-				.Given(
-					Request
-						.Create( )
-						.WithPath( "/retry" )
-						.UsingGet( ) )
-				.RespondWith(
-					Response
-						.Create( )
-						.WithBodyAsJson( new {
-							errorCode = _faker.Random.Int( 1000, 9999 ),
-							message = _faker.Lorem.Text( )
-						} )
-						.WithStatusCode( HttpStatusCode.ServiceUnavailable ) );
+			var client = TestServer.Mock( settings => settings
+				.UseRoute( "/retry" )
+				.UseGet( )
+				.UseStatusCode( HttpStatusCode.ServiceUnavailable )
+				.UseResponse( _errorFaker.Generate( ) ) );
 
 			// Act
 			var response = await Rest.Create( )
 				.Configure( config => config
 					.WithBaseUrl( "https://localhost:5006" )
+					.WithClient( client )
 					.WithRetry( 3, TimeSpan.FromSeconds( 2 ), HttpStatusCode.ServiceUnavailable )
 				)
 				.DoGet( "/retry" )

@@ -26,7 +26,6 @@ test-job:
     - tags
   script:
     - dotnet test 
-      --filter FullyQualifiedName!~Rest 
       --configuration Release 
       --results-directory "Coverage" 
       --collect "XPlat Code Coverage"
