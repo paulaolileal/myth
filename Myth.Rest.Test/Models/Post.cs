@@ -2,14 +2,18 @@
 
 namespace Myth.Rest.Test.Models;
 
-public class Post : IPost {
+public class Post : IPost, ICloneable {
 	public long Id { get; set; }
 	public string Title { get; set; } = null!;
 	public string Body { get; set; } = null!;
 	public Guid UserId { get; set; }
-}
 
-public class Error {
-	public long ErrorCode { get; set; }
-	public string Message { get; set; } = null!;
+	public object Clone( ) => new Post {
+		Body = Body,
+		Id = Id,
+		Title = Title,
+		UserId = UserId
+	};
+
+	public Post Copy( ) => ( Post )Clone( );
 }
