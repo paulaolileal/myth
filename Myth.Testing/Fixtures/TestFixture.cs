@@ -1,13 +1,8 @@
 ﻿using Bogus;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace Myth.Testing.Fixtures {
+
 	/// <summary>
 	/// A shared test fixture for managing test resources across multiple test classes
 	/// </summary>

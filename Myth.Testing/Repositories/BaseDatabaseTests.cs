@@ -1,18 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Myth.Testing.Repositories {
+
 	/// <summary>
 	/// A base class to unit tests who needs database context
 	/// </summary>
 	/// <typeparam name="TContext">The DbContext type to be used in tests</typeparam>
 	public abstract class BaseDatabaseTests<TContext> : BaseTests where TContext : DbContext {
+
 		/// <summary>
 		/// Initializes a new instance of the BaseDatabaseTests class with database context
 		/// </summary>

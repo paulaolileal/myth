@@ -1,51 +1,147 @@
 ﻿using System.Net;
-using System.Net.Http;
 
-namespace Myth.Rest.Test.Base {
+namespace Myth.Testing.Mocks {
 
-	public class HttpClientSettings {
+	/// <summary>
+	/// Fluent builder for configuring mock HTTP endpoints
+	/// </summary>
+	/// <remarks>
+	/// Provides a fluent API for setting up mock HTTP responses including route, method, status code, and response body.
+	/// </remarks>
+	public class MockEndpointBuilder {
 		internal HttpMethod Method { get; set; } = HttpMethod.Get;
 		internal object? Response { get; set; }
-		internal string Route { get; set; } = null!;
-		internal HttpStatusCode StatusCode { get; set; }
+		internal string Route { get; set; } = "/";
+		internal HttpStatusCode StatusCode { get; set; } = HttpStatusCode.OK;
 
-		public HttpClientSettings UsePost( ) {
+		/// <summary>
+		/// Configure the endpoint to respond to POST requests
+		/// </summary>
+		/// <returns>The builder instance for fluent chaining</returns>
+		public MockEndpointBuilder UsingPost( ) {
 			Method = HttpMethod.Post;
 			return this;
 		}
 
-		public HttpClientSettings UseGet( ) {
+		/// <summary>
+		/// Configure the endpoint to respond to GET requests
+		/// </summary>
+		/// <returns>The builder instance for fluent chaining</returns>
+		public MockEndpointBuilder UsingGet( ) {
 			Method = HttpMethod.Get;
 			return this;
 		}
 
-		public HttpClientSettings UsePut( ) {
+		/// <summary>
+		/// Configure the endpoint to respond to PUT requests
+		/// </summary>
+		/// <returns>The builder instance for fluent chaining</returns>
+		public MockEndpointBuilder UsingPut( ) {
 			Method = HttpMethod.Put;
 			return this;
 		}
 
-		public HttpClientSettings UseDelete( ) {
+		/// <summary>
+		/// Configure the endpoint to respond to DELETE requests
+		/// </summary>
+		/// <returns>The builder instance for fluent chaining</returns>
+		public MockEndpointBuilder UsingDelete( ) {
 			Method = HttpMethod.Delete;
 			return this;
 		}
 
-		public HttpClientSettings UsePatch( ) {
+		/// <summary>
+		/// Configure the endpoint to respond to PATCH requests
+		/// </summary>
+		/// <returns>The builder instance for fluent chaining</returns>
+		public MockEndpointBuilder UsingPatch( ) {
 			Method = HttpMethod.Patch;
 			return this;
 		}
 
-		public HttpClientSettings UseResponse<T>( T response ) {
+		/// <summary>
+		/// Configure the endpoint to respond to a specific HTTP method
+		/// </summary>
+		/// <param name="method">The HTTP method</param>
+		/// <returns>The builder instance for fluent chaining</returns>
+		public MockEndpointBuilder UsingMethod( HttpMethod method ) {
+			Method = method;
+			return this;
+		}
+
+		/// <summary>
+		/// Set the JSON response body for the endpoint
+		/// </summary>
+		/// <typeparam name="T">The type of the response object</typeparam>
+		/// <param name="response">The response object that will be serialized to JSON</param>
+		/// <returns>The builder instance for fluent chaining</returns>
+		public MockEndpointBuilder WithJsonResponse<T>( T response ) {
 			Response = response;
 			return this;
 		}
 
-		public HttpClientSettings UseRoute( string route ) {
+		/// <summary>
+		/// Set the route pattern for the endpoint
+		/// </summary>
+		/// <param name="route">The route pattern (e.g., "/api/users/{id}")</param>
+		/// <returns>The builder instance for fluent chaining</returns>
+		public MockEndpointBuilder ForRoute( string route ) {
 			Route = route;
 			return this;
 		}
 
-		public HttpClientSettings UseStatusCode( HttpStatusCode statusCode ) {
+		/// <summary>
+		/// Set the HTTP status code for the response
+		/// </summary>
+		/// <param name="statusCode">The HTTP status code</param>
+		/// <returns>The builder instance for fluent chaining</returns>
+		public MockEndpointBuilder RespondWith( HttpStatusCode statusCode ) {
 			StatusCode = statusCode;
+			return this;
+		}
+
+		/// <summary>
+		/// Configure the endpoint to return a successful response (200 OK)
+		/// </summary>
+		/// <returns>The builder instance for fluent chaining</returns>
+		public MockEndpointBuilder RespondWithSuccess( ) {
+			StatusCode = HttpStatusCode.OK;
+			return this;
+		}
+
+		/// <summary>
+		/// Configure the endpoint to return a not found response (404 Not Found)
+		/// </summary>
+		/// <returns>The builder instance for fluent chaining</returns>
+		public MockEndpointBuilder RespondWithNotFound( ) {
+			StatusCode = HttpStatusCode.NotFound;
+			return this;
+		}
+
+		/// <summary>
+		/// Configure the endpoint to return a server error response (500 Internal Server Error)
+		/// </summary>
+		/// <returns>The builder instance for fluent chaining</returns>
+		public MockEndpointBuilder RespondWithServerError( ) {
+			StatusCode = HttpStatusCode.InternalServerError;
+			return this;
+		}
+
+		/// <summary>
+		/// Configure the endpoint to return a bad request response (400 Bad Request)
+		/// </summary>
+		/// <returns>The builder instance for fluent chaining</returns>
+		public MockEndpointBuilder RespondWithBadRequest( ) {
+			StatusCode = HttpStatusCode.BadRequest;
+			return this;
+		}
+
+		/// <summary>
+		/// Configure the endpoint to return an unauthorized response (401 Unauthorized)
+		/// </summary>
+		/// <returns>The builder instance for fluent chaining</returns>
+		public MockEndpointBuilder RespondWithUnauthorized( ) {
+			StatusCode = HttpStatusCode.Unauthorized;
 			return this;
 		}
 	}

@@ -1,15 +1,12 @@
 ﻿using FluentAssertions;
 using FluentAssertions.Primitives;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Myth.Testing.Extensions {
+
 	public static class FluentAssertionExtensions {
+
 		/// <summary>
 		/// Asserts if the http status is the expected status
 		/// </summary>

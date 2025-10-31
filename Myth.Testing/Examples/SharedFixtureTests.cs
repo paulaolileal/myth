@@ -1,18 +1,15 @@
 ﻿using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Myth.Testing.Fixtures;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Myth.Testing.Examples {
+
 	/// <summary>
 	/// Example fixture for sharing services across multiple test classes
 	/// </summary>
 	public class SharedServiceFixture : TestFixture {
+
 		/// <summary>
 		/// Configure shared services
 		/// </summary>

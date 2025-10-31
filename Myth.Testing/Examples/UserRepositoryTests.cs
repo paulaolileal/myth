@@ -1,16 +1,11 @@
 ﻿using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
 using Myth.Testing.Builders;
 using Myth.Testing.Extensions;
 using Myth.Testing.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Myth.Testing.Examples {
+
 	/// <summary>
 	/// Example test class demonstrating the use of BaseDatabaseTests with Entity Framework
 	/// </summary>
@@ -243,6 +238,7 @@ namespace Myth.Testing.Examples {
 	/// Example builder for UserEntity objects
 	/// </summary>
 	public class UserEntityBuilder : TestDataBuilder<UserEntity, UserEntityBuilder> {
+
 		/// <summary>
 		/// Initialize UserEntityBuilder with Faker
 		/// </summary>

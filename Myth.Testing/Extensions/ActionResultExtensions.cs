@@ -1,13 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Myth.Extensions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Myth.Testing.Extensions {
+
 	public static class ActionResultExtensions {
+
 		/// <summary>
 		/// Get the body of controller result
 		/// </summary>
@@ -20,7 +17,7 @@ namespace Myth.Testing.Extensions {
 				return objectResultResponse?.Value as T;
 
 			if ( response is ContentResult contentResultResponse )
-				return  contentResultResponse.Content?.FromJson<T>();
+				return contentResultResponse.Content?.FromJson<T>( );
 
 			throw new Exception( "Type is not valid!" );
 		}

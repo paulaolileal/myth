@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace Myth.Testing.Examples {
 
-namespace Myth.Testing.Examples {
 	/// <summary>
 	/// Example service for demonstrating testing patterns
 	/// </summary>
@@ -109,6 +104,7 @@ namespace Myth.Testing.Examples {
 	/// Example user model
 	/// </summary>
 	public class User {
+
 		/// <summary>
 		/// Gets or sets the user ID
 		/// </summary>

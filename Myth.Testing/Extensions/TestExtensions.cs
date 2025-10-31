@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Xunit;
+﻿using Xunit;
 
 namespace Myth.Testing.Extensions {
+
 	/// <summary>
 	/// Extension methods to improve testing experience
 	/// </summary>
 	public static class TestExtensions {
+
 		/// <summary>
 		/// Executes an async test action and handles common async patterns
 		/// </summary>

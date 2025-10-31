@@ -267,6 +267,45 @@ var config = GetRequiredService<IConfiguration>();
 var connectionString = config["Database:ConnectionString"];
 ```
 
+## HTTP Client Mocking
+
+Mock external HTTP dependencies for testing:
+
+```csharp
+// Single endpoint mock
+var httpClient = HttpClientMock.CreateClient(config => config
+    .ForRoute("/api/users/{id}")
+    .UsingGet()
+    .RespondWithSuccess()
+    .WithJsonResponse(new { Id = 1, Name = "John Doe" }));
+
+// Multiple endpoints mock
+var httpClient = HttpClientMock.CreateClientWithEndpoints(
+    config => config.ForRoute("/api/users").UsingGet().RespondWithSuccess(),
+    config => config.ForRoute("/api/users").UsingPost().RespondWith(HttpStatusCode.Created)
+);
+
+// Use in service tests
+public class ApiServiceTests : BaseTests
+{
+    [Fact]
+    public async Task GetUser_ShouldReturnUser()
+    {
+        var httpClient = HttpClientMock.CreateClient(config => config
+            .ForRoute("/api/users/1")
+            .UsingGet()
+            .RespondWithSuccess()
+            .WithJsonResponse(new User { Id = 1, Name = "John" }));
+
+        var service = new ApiService(httpClient);
+        var result = await service.GetUserAsync(1);
+
+        result.Should().NotBeNull();
+        result.Name.Should().Be("John");
+    }
+}
+```
+
 ## FluentAssertions Extensions
 
 Enhanced assertions for MVC/API testing:

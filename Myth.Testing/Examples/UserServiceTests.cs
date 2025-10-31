@@ -2,14 +2,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Myth.Testing.Builders;
 using Myth.Testing.Extensions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Myth.Testing.Examples {
+
 	/// <summary>
 	/// Example test class demonstrating the use of BaseTests with xUnit
 	/// </summary>
@@ -184,6 +180,7 @@ namespace Myth.Testing.Examples {
 	/// Example builder for User objects
 	/// </summary>
 	public class UserBuilder : TestDataBuilder<User, UserBuilder> {
+
 		/// <summary>
 		/// Initialize UserBuilder with Faker
 		/// </summary>

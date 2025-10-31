@@ -1,11 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Myth.Testing.Examples {
+
 	/// <summary>
 	/// Example repository using Entity Framework
 	/// </summary>
@@ -112,6 +108,7 @@ namespace Myth.Testing.Examples {
 	/// Example Entity Framework DbContext
 	/// </summary>
 	public class UserDbContext : DbContext {
+
 		/// <summary>
 		/// Initialize DbContext
 		/// </summary>
@@ -144,6 +141,7 @@ namespace Myth.Testing.Examples {
 	/// Example user entity for Entity Framework
 	/// </summary>
 	public class UserEntity {
+
 		/// <summary>
 		/// Gets or sets the user ID
 		/// </summary>
