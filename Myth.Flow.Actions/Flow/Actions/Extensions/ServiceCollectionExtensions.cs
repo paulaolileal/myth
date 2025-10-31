@@ -72,7 +72,7 @@ public static class ServiceCollectionExtensions {
 	/// <param name="services">The service collection to add services to</param>
 	/// <param name="config">The PipelineConfiguration to use</param>
 	/// <returns>The updated service collection</returns>
-	private static IServiceCollection RegisterFlowServices( IServiceCollection services, Myth.Models.PipelineConfiguration config ) {
+	private static IServiceCollection RegisterFlowServices( IServiceCollection services, PipelineConfiguration config ) {
 		// Register configuration
 		services.AddSingleton( config );
 
@@ -91,7 +91,16 @@ public static class ServiceCollectionExtensions {
 	/// <param name="services">The service collection</param>
 	/// <param name="configuration">The Flow.Actions configuration</param>
 	private static void RegisterCore( IServiceCollection services, FlowActionsConfiguration configuration ) {
-		services.TryAddSingleton<IDispatcher, Dispatcher>( );
+		services.TryAddSingleton<IDispatcher>( sp => {
+			var eventBus = sp.GetRequiredService<IEventBus>( );
+			var logger = sp.GetRequiredService<ILogger<Dispatcher>>( );
+			var activitySource = sp.GetService<ActivitySource>( ) ?? new ActivitySource( "Myth.Flow.Actions" );
+			var cacheProvider = sp.GetService<ICacheProvider>( );
+			var pipelineConfiguration = sp.GetService<Myth.Models.PipelineConfiguration>( );
+
+			return new Dispatcher( eventBus, logger, activitySource, cacheProvider, pipelineConfiguration );
+		} );
+
 		services.TryAddSingleton<IEventBus, EventBus>( );
 		services.TryAddSingleton<IEventSubscriptionManager, EventSubscriptionManager>( );
 	}

@@ -4,7 +4,7 @@ namespace Myth.Models {
 
 	/// <summary>
 	/// Configuration options for Myth.Flow pipelines.
-	/// Controls telemetry, logging, retry, and activity source settings.
+	/// Controls telemetry, logging, retry, exception filtering, and activity source settings.
 	/// </summary>
 	public sealed class PipelineConfiguration {
 
@@ -32,5 +32,12 @@ namespace Myth.Models {
 		/// Gets or sets the <see cref="ActivitySource"/> used for telemetry instrumentation.
 		/// </summary>
 		public ActivitySource? ActivitySource { get; set; }
+
+		/// <summary>
+		/// Gets or sets the collection of exception types that should be propagated without being handled by the pipeline.
+		/// By default, all exceptions are handled internally and returned as failure results.
+		/// Exception types specified here will be thrown and not caught by the pipeline execution.
+		/// </summary>
+		public HashSet<Type> ExceptionTypesToPropagate { get; set; } = new HashSet<Type>( );
 	}
 }

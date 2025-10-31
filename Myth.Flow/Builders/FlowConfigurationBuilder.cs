@@ -119,6 +119,49 @@ namespace Myth.Builders {
 		}
 
 		/// <summary>
+		/// Configures exception types that should be propagated without being handled by the pipeline.
+		/// By default, all exceptions are handled internally and returned as failure results.
+		/// Exception types specified here will be thrown and not caught by the pipeline execution.
+		/// </summary>
+		/// <param name="exceptionTypes">The exception types to propagate.</param>
+		/// <returns>The current <see cref="FlowConfigurationBuilder"/> instance for method chaining.</returns>
+		/// <exception cref="ArgumentNullException">Thrown when <paramref name="exceptionTypes"/> is null.</exception>
+		/// <example>
+		/// <code>
+		/// builder.UseExceptionFilter( typeof( ArgumentException ), typeof( InvalidOperationException ) );
+		/// </code>
+		/// </example>
+		public FlowConfigurationBuilder UseExceptionFilter( params Type[] exceptionTypes ) {
+			ArgumentNullException.ThrowIfNull( exceptionTypes );
+
+			foreach ( var exceptionType in exceptionTypes ) {
+				if ( exceptionType != null && typeof( Exception ).IsAssignableFrom( exceptionType ) ) {
+					_configuration.ExceptionTypesToPropagate.Add( exceptionType );
+				}
+			}
+
+			return this;
+		}
+
+		/// <summary>
+		/// Configures exception types that should be propagated without being handled by the pipeline.
+		/// By default, all exceptions are handled internally and returned as failure results.
+		/// Exception types specified here will be thrown and not caught by the pipeline execution.
+		/// </summary>
+		/// <typeparam name="TException">The exception type to propagate.</typeparam>
+		/// <returns>The current <see cref="FlowConfigurationBuilder"/> instance for method chaining.</returns>
+		/// <example>
+		/// <code>
+		/// builder.UseExceptionFilter&lt;ArgumentException&gt;( );
+		/// </code>
+		/// </example>
+		public FlowConfigurationBuilder UseExceptionFilter<TException>( ) where TException : Exception {
+			_configuration.ExceptionTypesToPropagate.Add( typeof( TException ) );
+
+			return this;
+		}
+
+		/// <summary>
 		/// Builds and returns the configured <see cref="PipelineConfiguration"/>.
 		/// </summary>
 		/// <returns>The configured <see cref="PipelineConfiguration"/> instance.</returns>

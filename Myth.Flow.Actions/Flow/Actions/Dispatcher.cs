@@ -18,16 +18,19 @@ internal sealed class Dispatcher : IDispatcher {
 	private readonly IEventBus _eventBus;
 	private readonly ILogger<Dispatcher> _logger;
 	private readonly ActivitySource _activitySource;
+	private readonly Myth.Models.PipelineConfiguration? _pipelineConfiguration;
 
 	public Dispatcher(
 		IEventBus eventBus,
 		ILogger<Dispatcher> logger,
 		ActivitySource activitySource,
-		ICacheProvider? cacheProvider = null ) {
+		ICacheProvider? cacheProvider = null,
+		Myth.Models.PipelineConfiguration? pipelineConfiguration = null ) {
 		_cacheProvider = cacheProvider;
 		_eventBus = eventBus;
 		_logger = logger;
 		_activitySource = activitySource;
+		_pipelineConfiguration = pipelineConfiguration;
 	}
 
 	/// <summary>
@@ -57,6 +60,10 @@ internal sealed class Dispatcher : IDispatcher {
 				typeof( TCommand ).Name, result.IsSuccess );
 
 			return result;
+		} catch ( Exception ex ) when ( ShouldPropagateException( ex ) ) {
+			activity?.SetStatus( ActivityStatusCode.Error, ex.Message );
+			_logger.LogError( ex, "Error dispatching command {CommandType} - exception propagated", typeof( TCommand ).Name );
+			throw;
 		} catch ( Exception ex ) {
 			activity?.SetStatus( ActivityStatusCode.Error, ex.Message );
 			_logger.LogError( ex, "Error dispatching command {CommandType}", typeof( TCommand ).Name );
@@ -92,6 +99,10 @@ internal sealed class Dispatcher : IDispatcher {
 				typeof( TCommand ).Name, result.IsSuccess );
 
 			return result;
+		} catch ( Exception ex ) when ( ShouldPropagateException( ex ) ) {
+			activity?.SetStatus( ActivityStatusCode.Error, ex.Message );
+			_logger.LogError( ex, "Error dispatching command {CommandType} - exception propagated", typeof( TCommand ).Name );
+			throw;
 		} catch ( Exception ex ) {
 			activity?.SetStatus( ActivityStatusCode.Error, ex.Message );
 			_logger.LogError( ex, "Error dispatching command {CommandType}", typeof( TCommand ).Name );
@@ -157,6 +168,10 @@ internal sealed class Dispatcher : IDispatcher {
 			activity?.SetTag( "cache.hit", false );
 
 			return result;
+		} catch ( Exception ex ) when ( ShouldPropagateException( ex ) ) {
+			activity?.SetStatus( ActivityStatusCode.Error, ex.Message );
+			_logger.LogError( ex, "Error dispatching query {QueryType} - exception propagated", typeof( TQuery ).Name );
+			throw;
 		} catch ( Exception ex ) {
 			activity?.SetStatus( ActivityStatusCode.Error, ex.Message );
 			_logger.LogError( ex, "Error dispatching query {QueryType}", typeof( TQuery ).Name );
@@ -228,5 +243,22 @@ internal sealed class Dispatcher : IDispatcher {
 		var bytes = Encoding.UTF8.GetBytes( input );
 		var hashBytes = sha256.ComputeHash( bytes );
 		return Convert.ToHexString( hashBytes )[ ..16 ]; // Primeiros 16 caracteres para performance
+	}
+
+	/// <summary>
+	/// Determines whether an exception should be propagated based on the configured exception filter.
+	/// </summary>
+	/// <param name="exception">The exception to evaluate.</param>
+	/// <returns>True if the exception should be propagated; otherwise, false.</returns>
+	private bool ShouldPropagateException( Exception exception ) {
+		if ( _pipelineConfiguration?.ExceptionTypesToPropagate.Count == 0 ) {
+			return false;
+		}
+
+		var exceptionType = exception.GetType( );
+
+		// Check if the exception type or any of its base types should be propagated
+		return _pipelineConfiguration?.ExceptionTypesToPropagate.Any( configuredType =>
+			configuredType.IsAssignableFrom( exceptionType ) ) ?? false;
 	}
 }

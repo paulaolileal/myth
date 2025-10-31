@@ -99,6 +99,40 @@ public sealed class FlowWithActionsBuilder {
 		return this;
 	}
 
+	/// <summary>
+	/// Configures exception types that should be propagated without being handled by the pipeline.
+	/// By default, all exceptions are handled internally and returned as failure results.
+	/// Exception types specified here will be thrown and not caught by the pipeline execution.
+	/// </summary>
+	/// <param name="exceptionTypes">The exception types to propagate</param>
+	/// <returns>The current builder instance for method chaining</returns>
+	/// <example>
+	/// <code>
+	/// builder.UseExceptionFilter( typeof( ArgumentException ), typeof( InvalidOperationException ) );
+	/// </code>
+	/// </example>
+	public FlowWithActionsBuilder UseExceptionFilter( params Type[] exceptionTypes ) {
+		_flowBuilder.UseExceptionFilter( exceptionTypes );
+		return this;
+	}
+
+	/// <summary>
+	/// Configures exception types that should be propagated without being handled by the pipeline.
+	/// By default, all exceptions are handled internally and returned as failure results.
+	/// Exception types specified here will be thrown and not caught by the pipeline execution.
+	/// </summary>
+	/// <typeparam name="TException">The exception type to propagate</typeparam>
+	/// <returns>The current builder instance for method chaining</returns>
+	/// <example>
+	/// <code>
+	/// builder.UseExceptionFilter&lt;ArgumentException&gt;( );
+	/// </code>
+	/// </example>
+	public FlowWithActionsBuilder UseExceptionFilter<TException>( ) where TException : Exception {
+		_flowBuilder.UseExceptionFilter<TException>( );
+		return this;
+	}
+
 	// Flow.Actions configuration methods - delegate to FlowActionsBuilder
 
 	/// <summary>

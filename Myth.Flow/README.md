@@ -138,14 +138,18 @@ public class OrderController : ControllerBase
 ## Basic Configuration
 
 ```csharp
-builder.Services.AddFlow(config =>
-{
-    config.EnableTelemetry = true;           // Enable OpenTelemetry tracing
-    config.EnableLogging = true;             // Enable logging
-    config.DefaultRetryAttempts = 3;         // Default retry attempts
-    config.DefaultBackoffMs = 100;           // Default backoff in milliseconds
-    config.ActivitySource = activitySource;  // Custom ActivitySource (optional)
-});
+// Simple configuration
+builder.Services.AddFlow();
+
+// Or with configuration options
+builder.Services.AddFlow(config => config
+    .UseTelemetry()                          // Enable OpenTelemetry tracing
+    .UseLogging()                            // Enable logging
+    .UseRetry(attempts: 3, backoffMs: 100)   // Default retry policy
+    .UseActivitySource("MyApp.Pipeline")     // Custom ActivitySource name
+    .UseExceptionFilter<ArgumentException>() // Propagate ArgumentException without handling
+    .UseExceptionFilter(typeof(InvalidOperationException)) // Propagate specific exception types
+);
 ```
 
 ## Pipeline Configuration
@@ -773,6 +777,45 @@ public class DataProcessor
 - `PipelineConfigurationException`: Configuration errors (missing services, invalid setup)
 
 Configuration exceptions are fail-fast and are always re-thrown to prevent silent failures.
+
+## Exception Filtering
+
+By default, all exceptions are handled internally by the pipeline and returned as failure results. However, you can configure specific exception types to be propagated (thrown) instead of being handled:
+
+```csharp
+// Configure during service registration
+builder.Services.AddFlow(config => config
+    .UseExceptionFilter<ArgumentException>()                    // Propagate ArgumentException
+    .UseExceptionFilter<InvalidOperationException>()            // Propagate InvalidOperationException
+    .UseExceptionFilter(typeof(UnauthorizedAccessException))    // Propagate using Type
+);
+
+// Example usage
+public class ValidationService
+{
+    public async Task<Result<UserContext>> ValidateAsync(UserContext context)
+    {
+        return await Pipeline.Start(context)
+            .StepAsync(ctx =>
+            {
+                if (string.IsNullOrEmpty(ctx.Email))
+                    throw new ArgumentException("Email is required"); // This will be propagated
+
+                if (ctx.Age < 0)
+                    throw new InvalidDataException("Invalid age");     // This will be handled
+
+                return Task.FromResult(ctx);
+            })
+            .ExecuteAsync(); // ArgumentException will be thrown, InvalidDataException will return failure result
+    }
+}
+```
+
+**Key Features:**
+- Exception inheritance is supported (e.g., `ArgumentNullException` inherits from `ArgumentException`)
+- Multiple exception types can be configured
+- Configuration applies to all pipelines in the application
+- `PipelineConfigurationException` and `OperationCanceledException` are always propagated regardless of configuration
 
 ## Success and Error Callbacks
 

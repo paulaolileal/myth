@@ -494,6 +494,13 @@ namespace Myth.Builders {
 			} catch ( PipelineConfigurationException ) {
 				// Always re-throw configuration exceptions (fail-fast)
 				throw;
+			} catch ( Exception ex ) when ( ShouldPropagateException( ex ) ) {
+				// Re-throw exceptions that should be propagated without handling
+				activity?.SetStatus( ActivityStatusCode.Error, ex.Message );
+
+				logger?.LogError( ex, "Pipeline execution failed with propagated exception" );
+
+				throw;
 			} catch ( Exception ex ) {
 				activity?.SetStatus( ActivityStatusCode.Error, ex.Message );
 
@@ -548,6 +555,9 @@ namespace Myth.Builders {
 				} catch ( OperationCanceledException ) {
 					// Re-throw cancellation without retry
 					throw;
+				} catch ( Exception ex ) when ( ShouldPropagateException( ex ) ) {
+					// Re-throw exceptions that should be propagated without handling
+					throw;
 				} catch ( Exception ex ) when ( attempts < step.RetryAttempts ) {
 					attempts++;
 
@@ -568,6 +578,23 @@ namespace Myth.Builders {
 			return await step
 				.Handler( context, cancellationToken )
 				.ConfigureAwait( false );
+		}
+
+		/// <summary>
+		/// Determines whether an exception should be propagated based on the configured exception filter.
+		/// </summary>
+		/// <param name="exception">The exception to evaluate.</param>
+		/// <returns>True if the exception should be propagated; otherwise, false.</returns>
+		private bool ShouldPropagateException( Exception exception ) {
+			if ( _configuration.ExceptionTypesToPropagate.Count == 0 ) {
+				return false;
+			}
+
+			var exceptionType = exception.GetType( );
+
+			// Check if the exception type or any of its base types should be propagated
+			return _configuration.ExceptionTypesToPropagate.Any( configuredType =>
+				configuredType.IsAssignableFrom( exceptionType ) );
 		}
 	}
 }

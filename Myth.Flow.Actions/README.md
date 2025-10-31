@@ -67,8 +67,22 @@ dotnet add package Microsoft.Extensions.Caching.StackExchangeRedis
 
 ```csharp
 using Myth.Flow.Actions.Extensions;
-using Myth.Flow.Actions.Settings;
 
+// New fluent API (recommended)
+builder.Services.AddFlow(config => config
+    .UseTelemetry()                                  // Enable pipeline telemetry
+    .UseLogging()                                    // Enable pipeline logging
+    .UseRetry(attempts: 3, backoffMs: 100)           // Default retry policy
+    .UseExceptionFilter<ArgumentException>()         // Propagate ArgumentException
+    .UseExceptionFilter<InvalidOperationException>() // Propagate InvalidOperationException
+    .UseActions(actions => actions
+        .UseInMemory()                               // InMemory message broker
+        .EnableCaching()                             // Enable query caching
+        .ScanAssemblies(typeof(Program).Assembly)    // Auto-discover handlers
+    )
+);
+
+// Alternative: Legacy configuration style
 builder.Services.AddFlowActions(config =>
 {
     config.BrokerType = MessageBrokerType.InMemory;
