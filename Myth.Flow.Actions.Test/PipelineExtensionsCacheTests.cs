@@ -23,11 +23,10 @@ public class PipelineExtensionsCacheTests : IDisposable {
 
 		var services = new ServiceCollection( );
 		services.AddLogging( );
-		services.AddFlow( );
-		services.AddFlowActions( options => {
-			options.UseInMemory( )
+		services.AddFlow( config => config.UseActions( actions => {
+			actions.UseInMemory( )
 				   .ScanAssemblies( typeof( TestQueryHandler ).Assembly );
-		} );
+		} ) );
 
 		// Replace the cache provider with our mock
 		services.AddSingleton<ICacheProvider>( _cacheProvider );

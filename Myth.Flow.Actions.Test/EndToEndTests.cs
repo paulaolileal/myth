@@ -13,9 +13,8 @@ namespace Myth.Flow.Actions.Test {
 
 		protected override void ConfigureServices( IServiceCollection services ) {
 			services.AddLogging( );
-			services.AddFlow( );
-			services.AddFlowActions( options => {
-				options.UseInMemory( )
+			services.AddFlow( config => config.UseActions( actions => {
+				actions.UseInMemory( )
 					   .EnableCaching( cache => {
 						   cache.ProviderType = CacheProviderType.Memory;
 						   cache.DefaultTtl = TimeSpan.FromMinutes( 10 );
@@ -25,7 +24,7 @@ namespace Myth.Flow.Actions.Test {
 						   retry.BackoffMs = 100;
 					   } )
 					   .ScanAssemblies( typeof( TestCommandHandler ).Assembly );
-			} );
+			} ) );
 		}
 
 		[Fact]

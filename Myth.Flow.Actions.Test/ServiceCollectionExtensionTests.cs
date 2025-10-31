@@ -17,7 +17,7 @@ namespace Myth.Flow.Actions.Test {
 			services.AddLogging( );
 
 			// Act
-			services.AddFlowActions( options => options.UseInMemory( ) );
+			services.AddFlow( config => config.UseActions( actions => actions.UseInMemory( ) ) );
 			var provider = services.BuildServiceProvider( );
 
 			// Assert
@@ -33,7 +33,7 @@ namespace Myth.Flow.Actions.Test {
 			services.AddLogging( );
 
 			// Act
-			services.AddFlowActions( options => options.UseInMemory( ) );
+			services.AddFlow( config => config.UseActions( actions => actions.UseInMemory( ) ) );
 			var provider = services.BuildServiceProvider( );
 
 			// Assert
@@ -48,12 +48,12 @@ namespace Myth.Flow.Actions.Test {
 			services.AddLogging( );
 
 			// Act
-			services.AddFlowActions( options => {
-				options.UseInMemory( )
+			services.AddFlow( config => config.UseActions( actions => {
+				actions.UseInMemory( )
 					   .EnableCaching( cache => {
 						   cache.ProviderType = CacheProviderType.Memory;
 					   } );
-			} );
+			} ) );
 			var provider = services.BuildServiceProvider( );
 
 			// Assert
@@ -67,10 +67,10 @@ namespace Myth.Flow.Actions.Test {
 			services.AddLogging( );
 
 			// Act
-			services.AddFlowActions( options => options
+			services.AddFlow( config => config.UseActions( actions => actions
 				.UseInMemory( )
 				.ScanAssemblies( typeof( TestCommandHandler ).Assembly )
-			);
+			) );
 			var provider = services.BuildServiceProvider( );
 
 			// Assert
@@ -88,7 +88,7 @@ namespace Myth.Flow.Actions.Test {
 			IServiceCollection services = null!;
 
 			// Act
-			var act = ( ) => services.AddFlowActions( o => o.UseInMemory( ) );
+			var act = ( ) => services.AddFlow( config => config.UseActions( actions => actions.UseInMemory( ) ) );
 
 			// Assert
 			act.Should( ).Throw<ArgumentNullException>( );
@@ -100,7 +100,7 @@ namespace Myth.Flow.Actions.Test {
 			var services = new ServiceCollection( );
 
 			// Act
-			var act = ( ) => services.AddFlowActions( null! );
+			var act = ( ) => services.AddFlow( null! );
 
 			// Assert
 			act.Should( ).Throw<ArgumentNullException>( );

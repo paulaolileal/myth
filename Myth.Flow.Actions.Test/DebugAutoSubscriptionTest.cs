@@ -15,11 +15,10 @@ namespace Myth.Flow.Actions.Test {
 
 		protected override void ConfigureServices( IServiceCollection services ) {
 			services.AddLogging( builder => builder.AddConsole( ).SetMinimumLevel( LogLevel.Debug ) );
-			services.AddFlow( );
-			services.AddFlowActions( config => config
+			services.AddFlow( config => config.UseActions( actions => actions
 				.UseInMemory( )
 				.ScanAssemblies( typeof( TestEventHandler ).Assembly )
-				.AutoSubscribeEventHandlers( true ) );
+				.AutoSubscribeEventHandlers( true ) ) );
 		}
 
 		[Fact]

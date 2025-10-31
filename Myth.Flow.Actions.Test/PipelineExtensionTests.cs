@@ -11,12 +11,11 @@ namespace Myth.Flow.Actions.Test {
 
 		protected override void ConfigureServices( IServiceCollection services ) {
 			services.AddLogging( );
-			services.AddFlow( );
-			services.AddFlowActions( options => {
-				options.UseInMemory( )
+			services.AddFlow( config => config.UseActions( actions => {
+				actions.UseInMemory( )
 					   .EnableCaching( cache => cache.ProviderType = CacheProviderType.Memory )
 					   .ScanAssemblies( typeof( TestCommandHandler ).Assembly );
-			} );
+			} ) );
 		}
 
 		[Fact]

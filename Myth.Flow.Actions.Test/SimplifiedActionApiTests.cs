@@ -12,8 +12,7 @@ namespace Myth.Flow.Actions.Test {
 	public class SimplifiedActionApiTests : BaseTestFixture {
 
 		protected override void ConfigureServices( IServiceCollection services ) {
-			services.AddFlow( );
-			services.AddFlowActions( options => options.UseInMemory( ) );
+			services.AddFlow( config => config.UseActions( actions => actions.UseInMemory( ) ) );
 		}
 
 		public class SimplifiedValidationService {

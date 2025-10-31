@@ -20,41 +20,8 @@ namespace Myth.Flow.Actions.Extensions;
 public static class ServiceCollectionExtensions {
 
 	/// <summary>
-	/// Adds Flow.Actions services to the service collection with CQRS, event bus, and message broker support.
-	/// Automatically initializes the global service provider using the centralized Myth system.
-	/// </summary>
-	/// <param name="services">The service collection to add services to</param>
-	/// <param name="configure">Configuration action for Flow.Actions builder</param>
-	/// <returns>The service collection for method chaining</returns>
-	/// <exception cref="ArgumentNullException">Thrown when services or configure is null</exception>
-	[Obsolete( "Use AddFlow with FlowWithActionsBuilder for unified configuration of Flow and Flow.Actions." )]
-	public static IServiceCollection AddFlowActions(
-		this IServiceCollection services,
-		Action<FlowActionsBuilder> configure ) {
-		ArgumentNullException.ThrowIfNull( services );
-		ArgumentNullException.ThrowIfNull( configure );
-
-		var builder = new FlowActionsBuilder( );
-		configure( builder );
-		var configuration = builder.Build( );
-
-		services.AddSingleton( configuration );
-
-		RegisterCore( services, configuration );
-		RegisterMessageBroker( services, configuration );
-		RegisterCache( services, configuration );
-		RegisterTelemetry( services, configuration );
-		RegisterHandlers( services, configuration );
-
-		services.AddHostedService<MessageBrokerHostedService>( );
-
-		return services;
-	}
-
-
-	/// <summary>
-	/// Adds both Myth.Flow and Myth.Flow.Actions services using a unified configuration builder.
-	/// This provides a seamless API where Flow.Actions is configured as an extension of Flow.
+	/// Adds Myth.Flow pipeline services and Myth.Flow.Actions CQRS services using a unified configuration builder.
+	/// This is the primary method for configuring Flow.Actions with CQRS, event handling, and message brokers.
 	/// </summary>
 	/// <param name="services">The service collection to add services to</param>
 	/// <param name="configure">Configuration action using the unified builder</param>
