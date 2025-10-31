@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Myth.Extensions;
-using Myth.Interfaces.Repositories.Results;
+using Myth.Interfaces.Results;
+using Myth.Models.Results;
 using Myth.Morph.Test.Service;
-using Myth.Repositories.Results;
 using Myth.ServiceProvider;
 
 namespace Myth.Morph.Test;

@@ -1,6 +1,7 @@
-﻿namespace Myth.Interfaces.Repositories.Results;
+﻿namespace Myth.Interfaces.Results;
 
 public interface IPaginated {
+
 	/// <summary>
 	/// The number of page
 	/// </summary>

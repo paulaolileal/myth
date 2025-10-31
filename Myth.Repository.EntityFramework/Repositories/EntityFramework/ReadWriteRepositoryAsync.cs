@@ -1,7 +1,7 @@
 ﻿using Myth.Contexts;
 using Myth.Interfaces;
 using Myth.Interfaces.Repositories.EntityFramework;
-using Myth.Interfaces.Repositories.Results;
+using Myth.Interfaces.Results;
 using System.Linq.Expressions;
 
 namespace Myth.Repositories.EntityFramework;

@@ -1,6 +1,6 @@
-﻿using Myth.Interfaces.Repositories.Results;
+﻿using Myth.Interfaces.Results;
 
-namespace Myth.Repositories.Results;
+namespace Myth.Models.Results;
 
 public class Paginated<TEntity>(
 	int pageNumber,
@@ -8,7 +8,6 @@ public class Paginated<TEntity>(
 	int totalItems,
 	int totalPages,
 	IEnumerable<TEntity> items ) : IPaginated<TEntity> {
-
 	public int PageNumber { get; private set; } = pageNumber;
 
 	public int PageSize { get; private set; } = pageSize;

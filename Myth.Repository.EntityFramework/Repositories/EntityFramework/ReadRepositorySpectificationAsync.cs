@@ -2,7 +2,7 @@
 using Myth.Extensions;
 using Myth.Interfaces;
 using Myth.Interfaces.Repositories.EntityFramework;
-using Myth.Interfaces.Repositories.Results;
+using Myth.Interfaces.Results;
 
 namespace Myth.Repositories.EntityFramework;
 
@@ -21,7 +21,7 @@ public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity
 			.Specify( specification )
 			.ToListAsync( cancellationToken );
 
-		return result.AsEnumerable();
+		return result.AsEnumerable( );
 	}
 
 	/// <summary>

@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Myth.Extensions;
 using Myth.Interfaces.Repositories.EntityFramework;
-using Myth.Interfaces.Repositories.Results;
+using Myth.Interfaces.Results;
 using System.Linq.Expressions;
 
 namespace Myth.Repositories.EntityFramework;
@@ -17,16 +17,16 @@ public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity
 	/// <returns>An enumerable collection of entities that satisfy the filter predicate</returns>
 	public virtual async Task<IEnumerable<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> filterPredicate, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default ) {
 		var query = _context
-			.Set<TEntity>()
-			.Where(filterPredicate)
-			.AsQueryable();
+			.Set<TEntity>( )
+			.Where( filterPredicate )
+			.AsQueryable( );
 
-		if (orderPredicate is not null)
-			query = query.OrderBy(orderPredicate);
+		if ( orderPredicate is not null )
+			query = query.OrderBy( orderPredicate );
 
 		var result = await query.ToListAsync( cancellationToken );
 
-		return result.AsEnumerable();
+		return result.AsEnumerable( );
 	}
 
 	/// <summary>
@@ -40,12 +40,12 @@ public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity
 	/// <returns>A paginated object containing filtered entities</returns>
 	public virtual async Task<IPaginated<TEntity>> SearchPaginatedAsync( Expression<Func<TEntity, bool>> filterPredicate, int take = 0, int skip = 0, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default ) {
 		var query = _context
-			.Set<TEntity>()
-			.Where(filterPredicate)
-			.AsQueryable();
+			.Set<TEntity>( )
+			.Where( filterPredicate )
+			.AsQueryable( );
 
-		if (orderPredicate is not null)
-			query = query.OrderBy(orderPredicate);
+		if ( orderPredicate is not null )
+			query = query.OrderBy( orderPredicate );
 
 		var items = await query.ToListAsync( cancellationToken );
 

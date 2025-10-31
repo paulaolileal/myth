@@ -2,7 +2,7 @@ using Bogus;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Myth.Extensions;
-using Myth.Interfaces.Repositories.Results;
+using Myth.Interfaces.Results;
 using Myth.Morph.Test.Models;
 using Myth.Morph.Test.Models.Dtos;
 using System.Collections.ObjectModel;

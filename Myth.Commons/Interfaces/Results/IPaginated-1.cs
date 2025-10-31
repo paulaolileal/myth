@@ -1,6 +1,7 @@
-﻿namespace Myth.Interfaces.Repositories.Results;
+﻿namespace Myth.Interfaces.Results;
 
 public interface IPaginated<T> : IPaginated {
+
 	/// <summary>
 	/// The items of page
 	/// </summary>

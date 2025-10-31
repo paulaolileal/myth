@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.DependencyInjection;
-using Myth.Interfaces.Repositories.Results;
-using Myth.Repositories.Results;
+using Myth.Interfaces.Results;
+using Myth.Models.Results;
 using Myth.ValueProviders;
 
 namespace Myth.Extensions;
