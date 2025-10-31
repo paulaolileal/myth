@@ -122,7 +122,7 @@ namespace Myth.Extensions {
 			// Fallback: Use interface name matching strategy
 			var matchedInterface = interfaces.FirstOrDefault( i => i.Name.Contains( repositoryType.Name ) );
 			if ( matchedInterface != null )
-				return new[ ] { matchedInterface };
+				return [ matchedInterface ];
 
 			throw new InvalidOperationException( $"The type {repositoryType.Name} must implement a interface with the same name" );
 		}
