@@ -250,14 +250,16 @@ public static class ServiceCollectionExtensions {
 		foreach ( var (interfaceType, implementationType) in handlerTypes )
 			services.AddTransient( interfaceType, implementationType );
 
-		var eventHandlers = scanner.ScanForEventHandlers( configuration.AssembliesToScan.ToArray( ) );
+		var eventHandlers = scanner
+			.ScanForEventHandlers( configuration.AssembliesToScan.ToArray( ) )
+			.DistinctBy(x => x.HandlerType);
 
 		foreach ( var (eventType, handlerType) in eventHandlers ) {
 			var eventHandlerInterface = typeof( IEventHandler<> ).MakeGenericType( eventType );
 
 			// Register both the interface and the concrete type
 			services.AddTransient( eventHandlerInterface, handlerType );
-			//services.AddTransient( handlerType );
+			services.AddTransient( handlerType );
 		}
 
 		services.AddSingleton<IEventHandlerRegistry>( sp => {
