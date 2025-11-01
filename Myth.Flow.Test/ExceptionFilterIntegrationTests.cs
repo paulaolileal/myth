@@ -8,6 +8,8 @@ using Xunit;
 
 namespace Myth.Flow.Test {
 
+	[Collection( "Sequential" )]
+	[CollectionDefinition( "Sequential", DisableParallelization = true )]
 	public class ExceptionFilterIntegrationTests : IDisposable {
 		private readonly IServiceProvider _serviceProvider;
 
