@@ -41,8 +41,8 @@
 		public bool ExponentialBackoff { get; set; } = true;
 
 		/// <summary>
-		/// Enable dead letter queue for failed messages
+		/// Use dead letter queue for failed messages
 		/// </summary>
-		public bool EnableDeadLetterQueue { get; set; } = true;
+		public bool UseDeadLetterQueue { get; set; } = true;
 	}
 }

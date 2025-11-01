@@ -1,7 +1,8 @@
 namespace Myth.Flow.Actions.Settings;
 
 /// <summary>
-/// Fluent builder for Flow.Actions configuration
+/// Fluent builder for Flow.Actions specific configuration.
+/// Telemetry and retry policies are inherited from Flow configuration and cannot be overridden.
 /// </summary>
 public sealed class FlowActionsBuilder {
 	private readonly FlowActionsConfiguration _configuration = new( );
@@ -76,34 +77,20 @@ public sealed class FlowActionsBuilder {
 	}
 
 	/// <summary>
-	/// Enables telemetry
+	/// Configures caching for query results
 	/// </summary>
-	public FlowActionsBuilder EnableTelemetry( bool enabled = true ) {
-		_configuration.TelemetryEnabled = enabled;
-		return this;
-	}
-
-	/// <summary>
-	/// Enables caching
-	/// </summary>
-	public FlowActionsBuilder EnableCaching( Action<CacheConfiguration>? configure = null ) {
+	/// <param name="configure">Optional configuration action for cache settings</param>
+	public FlowActionsBuilder UseCaching( Action<CacheConfiguration>? configure = null ) {
 		_configuration.CachingEnabled = true;
 		_configuration.CacheConfiguration = configure;
 		return this;
 	}
 
 	/// <summary>
-	/// Configures retry policy
+	/// Configures dead letter queue for failed message handling
 	/// </summary>
-	public FlowActionsBuilder EnableRetry( Action<RetryConfiguration> configure ) {
-		configure( _configuration.RetryConfig );
-		return this;
-	}
-
-	/// <summary>
-	/// Enables dead letter queue
-	/// </summary>
-	public FlowActionsBuilder EnableDeadLetterQueue( bool enabled = true ) {
+	/// <param name="enabled">Whether to enable dead letter queue</param>
+	public FlowActionsBuilder UseDeadLetterQueue( bool enabled = true ) {
 		_configuration.DeadLetterQueueEnabled = enabled;
 		return this;
 	}

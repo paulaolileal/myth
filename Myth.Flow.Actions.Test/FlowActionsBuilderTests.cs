@@ -53,26 +53,15 @@ namespace Myth.Flow.Actions.Test {
 			config.BrokerConfigurationFactory.Should( ).NotBeNull( );
 		}
 
+		// Telemetry tests removed - telemetry is now controlled by Flow configuration only
+
 		[Fact]
-		public void EnableTelemetry_ShouldSetFlag( ) {
+		public void UseCaching_ShouldSetFlag( ) {
 			// Arrange
 			var builder = new FlowActionsBuilder( );
 
 			// Act
-			builder.EnableTelemetry( true );
-			var config = builder.Build( );
-
-			// Assert
-			config.TelemetryEnabled.Should( ).BeTrue( );
-		}
-
-		[Fact]
-		public void EnableCaching_ShouldSetFlag( ) {
-			// Arrange
-			var builder = new FlowActionsBuilder( );
-
-			// Act
-			builder.EnableCaching( cache => {
+			builder.UseCaching( cache => {
 				cache.ProviderType = CacheProviderType.Memory;
 				cache.DefaultTtl = TimeSpan.FromMinutes( 5 );
 			} );
@@ -83,32 +72,15 @@ namespace Myth.Flow.Actions.Test {
 			config.CacheConfiguration.Should( ).NotBeNull( );
 		}
 
+		// Retry tests removed - retry policy is now controlled by Flow configuration only
+
 		[Fact]
-		public void EnableRetry_ShouldConfigureRetryPolicy( ) {
+		public void UseDeadLetterQueue_ShouldSetFlag( ) {
 			// Arrange
 			var builder = new FlowActionsBuilder( );
 
 			// Act
-			builder.EnableRetry( retry => {
-				retry.MaxAttempts = 5;
-				retry.BackoffMs = 2000;
-				retry.ExponentialBackoff = true;
-			} );
-			var config = builder.Build( );
-
-			// Assert
-			config.RetryConfig.MaxAttempts.Should( ).Be( 5 );
-			config.RetryConfig.BackoffMs.Should( ).Be( 2000 );
-			config.RetryConfig.ExponentialBackoff.Should( ).BeTrue( );
-		}
-
-		[Fact]
-		public void EnableDeadLetterQueue_ShouldSetFlag( ) {
-			// Arrange
-			var builder = new FlowActionsBuilder( );
-
-			// Act
-			builder.EnableDeadLetterQueue( );
+			builder.UseDeadLetterQueue( );
 			var config = builder.Build( );
 
 			// Assert
@@ -134,18 +106,14 @@ namespace Myth.Flow.Actions.Test {
 			// Arrange & Act
 			var config = new FlowActionsBuilder( )
 				.UseInMemory( )
-				.EnableTelemetry( )
-				.EnableCaching( )
-				.EnableRetry( r => r.MaxAttempts = 3 )
-				.EnableDeadLetterQueue( )
+				.UseCaching( )
+				.UseDeadLetterQueue( )
 				.ScanAssemblies( GetType( ).Assembly )
 				.Build( );
 
 			// Assert
 			config.BrokerType.Should( ).Be( MessageBrokerType.InMemory );
-			config.TelemetryEnabled.Should( ).BeTrue( );
 			config.CachingEnabled.Should( ).BeTrue( );
-			config.RetryConfig.MaxAttempts.Should( ).Be( 3 );
 			config.DeadLetterQueueEnabled.Should( ).BeTrue( );
 			config.AssembliesToScan.Should( ).NotBeEmpty( );
 		}

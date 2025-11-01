@@ -13,18 +13,17 @@ namespace Myth.Flow.Actions.Test {
 
 		protected override void ConfigureServices( IServiceCollection services ) {
 			services.AddLogging( );
-			services.AddFlow( config => config.UseActions( actions => {
-				actions.UseInMemory( )
-					   .EnableCaching( cache => {
-						   cache.ProviderType = CacheProviderType.Memory;
-						   cache.DefaultTtl = TimeSpan.FromMinutes( 10 );
-					   } )
-					   .EnableRetry( retry => {
-						   retry.MaxAttempts = 3;
-						   retry.BackoffMs = 100;
-					   } )
-					   .ScanAssemblies( typeof( TestCommandHandler ).Assembly );
-			} ) );
+			services.AddFlow( config => config
+				.UseTelemetry( )
+				.UseRetry( 3, 100 )
+				.UseActions( actions => {
+					actions.UseInMemory( )
+						   .UseCaching( cache => {
+							   cache.ProviderType = CacheProviderType.Memory;
+							   cache.DefaultTtl = TimeSpan.FromMinutes( 10 );
+						   } )
+						   .ScanAssemblies( typeof( TestCommandHandler ).Assembly );
+				} ) );
 		}
 
 		[Fact]

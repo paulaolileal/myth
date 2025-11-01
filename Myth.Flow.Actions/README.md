@@ -61,6 +61,22 @@ dotnet add package RabbitMQ.Client
 dotnet add package Microsoft.Extensions.Caching.StackExchangeRedis
 ```
 
+# 🏗️ Configuration Architecture
+
+**Flow.Actions follows a unified configuration approach where cross-cutting concerns are controlled by the base Flow configuration:**
+
+## Configuration Responsibility
+
+| **Flow Configuration** | **Actions Configuration** |
+|------------------------|----------------------------|
+| ✅ Telemetry (UseTelemetry/DisableTelemetry) | ✅ Message Brokers (UseInMemory/UseKafka/UseRabbitMQ) |
+| ✅ Retry Policies (UseRetry/DisableRetry) | ✅ Query Caching (UseCaching) |
+| ✅ Logging (UseLogging/DisableLogging) | ✅ Dead Letter Queue (UseDeadLetterQueue) |
+| ✅ Exception Filtering (UseExceptionFilter) | ✅ Handler Discovery (ScanAssemblies) |
+| ✅ Activity Sources (UseActivitySource) | ✅ Event Subscription (AutoSubscribeEventHandlers) |
+
+This design ensures **consistency** across the entire application and **prevents configuration conflicts** between pipeline and CQRS operations.
+
 # 🚀 Quick Start
 
 ## 1. Configure Services
@@ -77,19 +93,12 @@ builder.Services.AddFlow(config => config
     .UseExceptionFilter<InvalidOperationException>() // Propagate InvalidOperationException
     .UseActions(actions => actions
         .UseInMemory()                               // InMemory message broker
-        .EnableCaching()                             // Enable query caching
+        .UseCaching()                                // Actions-specific: Enable query caching
         .ScanAssemblies(typeof(Program).Assembly)    // Auto-discover handlers
     )
 );
 
-// Alternative: Legacy configuration style
-builder.Services.AddFlowActions(config =>
-{
-    config.BrokerType = MessageBrokerType.InMemory;
-    config.TelemetryEnabled = true;
-    config.CachingEnabled = true;
-    config.AssembliesToScan.Add(typeof(Program).Assembly);
-});
+// 🎯 Clear separation: Flow controls cross-cutting concerns, Actions controls domain-specific features
 ```
 
 ## 2. Define Commands, Queries, and Events
@@ -664,7 +673,7 @@ services.AddFlowActions(config =>
     config.BrokerType = MessageBrokerType.InMemory;
     config.BrokerConfigurationFactory = () => new InMemoryBrokerOptions
     {
-        EnableDeadLetterQueue = true,
+        UseDeadLetterQueue = true,
         MaxRetries = 3
     };
 });
@@ -851,7 +860,7 @@ public class UserPipelineTests
         services.AddFlowActions(config =>
         {
             config.UseInMemory()
-                   .EnableCaching(cache => cache.ProviderType = CacheProviderType.Memory)
+                   .UseCaching(cache => cache.ProviderType = CacheProviderType.Memory)
                    .ScanAssemblies(typeof(CreateUserCommand).Assembly);
         });
 

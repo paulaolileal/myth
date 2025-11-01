@@ -272,10 +272,13 @@ var result = await Pipeline.Start(context)
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddFlowActions(config => config
-    .UseBroker(MessageBrokerType.InMemory)
-    .EnableCaching()
-    .ScanAssemblies(typeof(Program).Assembly));
+builder.Services.AddFlow(config => config
+    .UseTelemetry()
+    .UseRetry(3, 1000)
+    .UseActions(actions => actions
+        .UseInMemory()
+        .UseCaching()
+        .ScanAssemblies(typeof(Program).Assembly)));
 
 var app = builder.BuildApp(); // Enables cross-library dependencies
 ```

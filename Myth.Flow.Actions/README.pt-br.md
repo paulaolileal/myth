@@ -61,6 +61,22 @@ dotnet add package RabbitMQ.Client
 dotnet add package Microsoft.Extensions.Caching.StackExchangeRedis
 ```
 
+# 🏗️ Arquitetura de Configuração
+
+**Flow.Actions segue uma abordagem unificada de configuração onde aspectos transversais são controlados pela configuração base do Flow:**
+
+## Responsabilidade de Configuração
+
+| **Configuração do Flow** | **Configuração do Actions** |
+|---------------------------|------------------------------|
+| ✅ Telemetria (UseTelemetry/DisableTelemetry) | ✅ Message Brokers (UseInMemory/UseKafka/UseRabbitMQ) |
+| ✅ Políticas de Retry (UseRetry/DisableRetry) | ✅ Cache de Queries (UseCaching) |
+| ✅ Logging (UseLogging/DisableLogging) | ✅ Dead Letter Queue (UseDeadLetterQueue) |
+| ✅ Filtros de Exceção (UseExceptionFilter) | ✅ Descoberta de Handlers (ScanAssemblies) |
+| ✅ Activity Sources (UseActivitySource) | ✅ Inscrição de Eventos (AutoSubscribeEventHandlers) |
+
+Este design garante **consistência** em toda a aplicação e **previne conflitos de configuração** entre operações de pipeline e CQRS.
+
 # 🚀 Início Rápido
 
 ## 1. Configurar Serviços
@@ -650,7 +666,7 @@ services.AddFlowActions(config =>
     config.BrokerType = MessageBrokerType.InMemory;
     config.BrokerConfigurationFactory = () => new InMemoryBrokerOptions
     {
-        EnableDeadLetterQueue = true,
+        UseDeadLetterQueue = true,
         MaxRetries = 3
     };
 });
@@ -837,7 +853,7 @@ public class UserPipelineTests
         services.AddFlowActions(config =>
         {
             config.UseInMemory()
-                   .EnableCaching(cache => cache.ProviderType = CacheProviderType.Memory)
+                   .UseCaching(cache => cache.ProviderType = CacheProviderType.Memory)
                    .ScanAssemblies(typeof(CreateUserCommand).Assembly);
         });
 

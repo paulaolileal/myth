@@ -86,7 +86,8 @@ public static class ServiceCollectionExtensions {
 	}
 
 	/// <summary>
-	/// Registers core Flow.Actions services including dispatcher and event bus
+	/// Registers core Flow.Actions services including dispatcher and event bus.
+	/// Dispatcher uses Flow configuration for telemetry and retry policies.
 	/// </summary>
 	/// <param name="services">The service collection</param>
 	/// <param name="configuration">The Flow.Actions configuration</param>
@@ -94,9 +95,13 @@ public static class ServiceCollectionExtensions {
 		services.TryAddSingleton<IDispatcher>( sp => {
 			var eventBus = sp.GetRequiredService<IEventBus>( );
 			var logger = sp.GetRequiredService<ILogger<Dispatcher>>( );
-			var activitySource = sp.GetService<ActivitySource>( ) ?? new ActivitySource( "Myth.Flow.Actions" );
 			var cacheProvider = sp.GetService<ICacheProvider>( );
-			var pipelineConfiguration = sp.GetService<Myth.Models.PipelineConfiguration>( );
+			var pipelineConfiguration = sp.GetRequiredService<Myth.Models.PipelineConfiguration>( );
+
+			// Use Flow's ActivitySource if available and telemetry is enabled, otherwise create Actions specific one
+			var activitySource = pipelineConfiguration.EnableTelemetry
+				? ( sp.GetService<ActivitySource>( ) ?? new ActivitySource( "Myth.Flow.Actions" ) )
+				: new ActivitySource( "Myth.Flow.Actions" ); // Inactive source
 
 			return new Dispatcher( eventBus, logger, activitySource, cacheProvider, pipelineConfiguration );
 		} );
@@ -122,7 +127,7 @@ public static class ServiceCollectionExtensions {
 
 			services.AddSingleton( inMemoryOptions );
 
-			if ( inMemoryOptions.EnableDeadLetterQueue ) {
+			if ( inMemoryOptions.UseDeadLetterQueue ) {
 				services.AddSingleton<DeadLetterQueue>( sp => {
 					var logger = sp.GetRequiredService<ILogger<DeadLetterQueue>>( );
 					return new DeadLetterQueue( logger, maxSize: 10000 );
@@ -133,7 +138,7 @@ public static class ServiceCollectionExtensions {
 				var subscriptionManager = sp.GetRequiredService<IEventSubscriptionManager>( );
 				var logger = sp.GetRequiredService<ILogger<InMemoryBroker>>( );
 				var activitySource = sp.GetService<ActivitySource>( ) ?? new ActivitySource( "Myth.Flow.Actions" );
-				var dlq = inMemoryOptions.EnableDeadLetterQueue ? sp.GetService<DeadLetterQueue>( ) : null;
+				var dlq = inMemoryOptions.UseDeadLetterQueue ? sp.GetService<DeadLetterQueue>( ) : null;
 
 				return new InMemoryBroker(
 					subscriptionManager,
@@ -220,13 +225,14 @@ public static class ServiceCollectionExtensions {
 	}
 
 	/// <summary>
-	/// Registers OpenTelemetry ActivitySource for distributed tracing if telemetry is enabled
+	/// Registers OpenTelemetry ActivitySource for distributed tracing using Flow configuration
 	/// </summary>
 	/// <param name="services">The service collection</param>
-	/// <param name="configuration">The Flow.Actions configuration</param>
+	/// <param name="configuration">The Flow.Actions configuration (not used for telemetry)</param>
 	private static void RegisterTelemetry( IServiceCollection services, FlowActionsConfiguration configuration ) {
-		if ( configuration.TelemetryEnabled )
-			services.TryAddSingleton( new ActivitySource( "Myth.Flow.Actions" ) );
+		// Telemetry is controlled by Flow configuration, not Actions
+		// We always register the Actions ActivitySource to be available, but usage depends on Flow config
+		services.TryAddSingleton( new ActivitySource( "Myth.Flow.Actions" ) );
 	}
 
 	/// <summary>

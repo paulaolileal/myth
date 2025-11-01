@@ -17,7 +17,9 @@ namespace Myth.Flow.Actions.Test {
 			services.AddLogging( );
 
 			// Act
-			services.AddFlow( config => config.UseActions( actions => actions.UseInMemory( ) ) );
+			services.AddFlow( config => config
+				.UseTelemetry( )
+				.UseActions( actions => actions.UseInMemory( ) ) );
 			var provider = services.BuildServiceProvider( );
 
 			// Assert
@@ -33,7 +35,9 @@ namespace Myth.Flow.Actions.Test {
 			services.AddLogging( );
 
 			// Act
-			services.AddFlow( config => config.UseActions( actions => actions.UseInMemory( ) ) );
+			services.AddFlow( config => config
+				.UseTelemetry( )
+				.UseActions( actions => actions.UseInMemory( ) ) );
 			var provider = services.BuildServiceProvider( );
 
 			// Assert
@@ -48,12 +52,14 @@ namespace Myth.Flow.Actions.Test {
 			services.AddLogging( );
 
 			// Act
-			services.AddFlow( config => config.UseActions( actions => {
-				actions.UseInMemory( )
-					   .EnableCaching( cache => {
-						   cache.ProviderType = CacheProviderType.Memory;
-					   } );
-			} ) );
+			services.AddFlow( config => config
+				.UseTelemetry( )
+				.UseActions( actions => {
+					actions.UseInMemory( )
+						   .UseCaching( cache => {
+							   cache.ProviderType = CacheProviderType.Memory;
+						   } );
+				} ) );
 			var provider = services.BuildServiceProvider( );
 
 			// Assert

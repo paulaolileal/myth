@@ -28,7 +28,7 @@ namespace Myth.Flow.Actions.Test {
 				MaxConcurrentHandlers = 10,
 				ChannelCapacity = 100,
 				MaxRetryAttempts = 3,
-				EnableDeadLetterQueue = false
+				UseDeadLetterQueue = false
 			};
 
 			_sut = new InMemoryBroker(
@@ -211,7 +211,7 @@ namespace Myth.Flow.Actions.Test {
 				WorkerCount = 1,
 				MaxRetryAttempts = 2,
 				RetryBackoffMs = 10,
-				EnableDeadLetterQueue = true
+				UseDeadLetterQueue = true
 			};
 
 			var broker = new InMemoryBroker(

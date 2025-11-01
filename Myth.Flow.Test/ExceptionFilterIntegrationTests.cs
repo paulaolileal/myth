@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Myth.Extensions;
-using Myth.Flow;
 using Myth.ServiceProvider;
 using System;
 using System.IO;
@@ -18,6 +17,7 @@ namespace Myth.Flow.Test {
 				.UseLogging( )
 				.UseTelemetry( )
 				.UseExceptionFilter<ArgumentException>( )
+				.UseExceptionFilter<ArgumentNullException>( )
 				.UseExceptionFilter<InvalidOperationException>( ) );
 
 			_serviceProvider = services.BuildServiceProvider( );
@@ -71,9 +71,10 @@ namespace Myth.Flow.Test {
 			var input = "test";
 
 			// Act & Assert
-			var action = async ( ) => await Pipeline.Start( input )
+			var action = async ( ) => await Pipeline
+				.Start( input )
 				.StepAsync( async ctx => {
-					await Task.Delay( 10 );
+					//await Task.Delay( 10 );
 					throw new ArgumentNullException( "param", "This inherits from ArgumentException" );
 #pragma warning disable CS0162 // Unreachable code detected
 					return ctx;

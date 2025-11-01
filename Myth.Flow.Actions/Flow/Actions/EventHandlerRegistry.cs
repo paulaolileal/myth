@@ -28,7 +28,7 @@ internal sealed class EventHandlerRegistry : IEventHandlerRegistry {
 
 		_registrations.AddOrUpdate(
 			eventType,
-			_ => new ConcurrentBag<Type> { handlerType },
+			_ => [ handlerType ],
 			( _, bag ) => {
 				if ( !bag.Contains( handlerType ) )
 					bag.Add( handlerType );
