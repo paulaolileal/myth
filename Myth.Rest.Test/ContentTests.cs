@@ -4,6 +4,7 @@ using Myth.Constants;
 using Myth.Exceptions;
 using Myth.Rest.Test.Base;
 using Myth.Rest.Test.Models;
+using Myth.Testing.Mocks;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -27,11 +28,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_be_success_if_status_code_is_success_and_body_doesnt_care( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-success" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( _postFaker.Generate( 5 ) ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-success" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( _postFaker.Generate( 5 ) ) );
 
 		// Act
 		var response = await _restClient
@@ -53,11 +54,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_return_list_of_items( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-success" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( _postFaker.Generate( 5 ) ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-success" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( _postFaker.Generate( 5 ) ) );
 
 		// Act
 		var response = await _restClient
@@ -91,11 +92,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_return_list_of_items_on_non_success( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-non-success" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.BadRequest )
-			.UseResponse( _postFaker.Generate( 5 ) ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-non-success" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.BadRequest )
+			.WithJsonResponse( _postFaker.Generate( 5 ) ) );
 
 		// Act
 		var response = await _restClient
@@ -127,11 +128,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_throw_exception_on_non_success_status_code( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-error" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.UnprocessableEntity )
-			.UseResponse( _errorFaker.Generate( ) ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-error" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.UnprocessableEntity )
+			.WithJsonResponse( _errorFaker.Generate( ) ) );
 
 		// Act
 		var action = async ( ) => await _restClient
@@ -156,11 +157,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_throw_exception_on_diffent_mapped_type( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-success" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( _postFaker.Generate( 5 ) ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-success" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( _postFaker.Generate( 5 ) ) );
 
 		// Act
 		var response = await _restClient
@@ -180,11 +181,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_throw_exception_on_non_success_specified_status_code( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-error-specified" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.UnprocessableEntity )
-			.UseResponse( _errorFaker.Generate( ) ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-error-specified" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.UnprocessableEntity )
+			.WithJsonResponse( _errorFaker.Generate( ) ) );
 
 		// Act
 		var action = async ( ) => await _restClient
@@ -209,11 +210,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_throw_exception_on_non_parsing_type_different( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-error-specified" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( _errorFaker.Generate( ) ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-error-specified" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( _errorFaker.Generate( ) ) );
 
 		// Act
 		var action = async ( ) => await _restClient
@@ -232,11 +233,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_return_result_for_mapped_non_success_status_code( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-non-success" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.UnprocessableEntity )
-			.UseResponse( _errorFaker.Generate( ) ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-non-success" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.UnprocessableEntity )
+			.WithJsonResponse( _errorFaker.Generate( ) ) );
 
 		// Act
 		var response = await _restClient
@@ -265,11 +266,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_return_result_for_all_types( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-success-all" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( new {
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-success-all" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( new {
 				isSuccess = true,
 				value = 200
 			} ) );
@@ -301,11 +302,11 @@ public class ContentTests : BaseTests {
 	[InlineData( HttpStatusCode.SeeOther )]
 	public async Task Get_should_return_result_for_many_types( HttpStatusCode statusCode ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-success-many" )
-			.UseGet( )
-			.UseStatusCode( statusCode )
-			.UseResponse( new {
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-success-many" )
+			.UsingGet( )
+			.RespondWith( statusCode )
+			.WithJsonResponse( new {
 				isSuccess = true,
 				value = 200
 			} ) );
@@ -335,11 +336,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_throw_for_success_when_mapped_for_throw( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-error-specified" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( new {
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-error-specified" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( new {
 				isSuccess = false,
 				value = 400
 			} ) );
@@ -365,11 +366,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_throw_for_all_status_codes( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-error-specified" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( new {
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-error-specified" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( new {
 				isSuccess = false,
 				value = 400
 			} ) );
@@ -397,11 +398,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_throw_for_non_mapped_status_codes( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-error-not-mapped" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( new {
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-error-not-mapped" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( new {
 				isSuccess = false,
 				value = 400
 			} ) );
@@ -421,11 +422,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_return_result_for_simple_request( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-success-simple" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( _postFaker.Generate( ) ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-success-simple" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( _postFaker.Generate( ) ) );
 
 		// Act
 		var response = await _restClient
@@ -449,11 +450,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_return_result_for_bearer_authorized_endpoint( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-bearer-authorization" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( _postFaker.Generate( ) ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-bearer-authorization" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( _postFaker.Generate( ) ) );
 
 		// Act
 		var response = await _restClient
@@ -481,11 +482,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_return_result_for_basic_authorized_endpoint( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-basic-authorization" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( _postFaker.Generate( ) ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-basic-authorization" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( _postFaker.Generate( ) ) );
 
 		// Act
 		var response = await _restClient
@@ -513,11 +514,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_return_result_using_more_header( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-headers" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( _postFaker.Generate( ) ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-headers" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( _postFaker.Generate( ) ) );
 
 		// Act
 		var response = await _restClient
@@ -546,11 +547,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_return_result_using_timeout( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-timeout" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( _postFaker.Generate( ) ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-timeout" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( _postFaker.Generate( ) ) );
 
 		// Act
 		var response = await _restClient
@@ -578,11 +579,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Get_should_return_result_using_http_client( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-http-client" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( _postFaker.Generate( ) ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-http-client" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( _postFaker.Generate( ) ) );
 
 		// Act
 		var response = await _restClient
@@ -610,11 +611,11 @@ public class ContentTests : BaseTests {
 	public async Task Get_should_return_result_using_snake_serialization( ) {
 		// Arrange
 		var snakePost = _postFaker.Generate( );
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-snake" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( new { id = snakePost.Id, title = snakePost.Title, body = snakePost.Body, user_id = snakePost.UserId } ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-snake" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( new { id = snakePost.Id, title = snakePost.Title, body = snakePost.Body, user_id = snakePost.UserId } ) );
 
 		// Act
 		var response = await _restClient
@@ -651,11 +652,11 @@ public class ContentTests : BaseTests {
 		var responseBody = request.Copy( );
 		responseBody.Id = _faker.Random.Number( );
 
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/post-success" )
-			.UsePost( )
-			.UseStatusCode( HttpStatusCode.Created )
-			.UseResponse( responseBody ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/post-success" )
+			.UsingPost( )
+			.RespondWith( HttpStatusCode.Created )
+			.WithJsonResponse( responseBody ) );
 
 		// Act
 		var response = await _restClient
@@ -694,11 +695,11 @@ public class ContentTests : BaseTests {
 		var responseBody = request.Copy( );
 		responseBody.Id = _faker.Random.Number( );
 
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/put-success" )
-			.UsePut( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( responseBody ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/put-success" )
+			.UsingPut( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( responseBody ) );
 
 		// Act
 		var response = await _restClient
@@ -735,11 +736,11 @@ public class ContentTests : BaseTests {
 		var responsePost = _postFaker.Generate( );
 		responsePost.Body = request.Body;
 
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/patch-success" )
-			.UsePatch( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( responsePost ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/patch-success" )
+			.UsingPatch( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( responsePost ) );
 
 		// Act
 		var response = await _restClient
@@ -769,10 +770,10 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Delete_should_remove_item( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/delete-success" )
-			.UseDelete( )
-			.UseStatusCode( HttpStatusCode.NoContent ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/delete-success" )
+			.UsingDelete( )
+			.RespondWith( HttpStatusCode.NoContent ) );
 
 		// Act
 		var response = await _restClient
@@ -794,10 +795,10 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Retry_should_retry_before_error( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-retry" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.InternalServerError ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-retry" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.InternalServerError ) );
 
 		// Act
 		var response = await _restClient
@@ -820,11 +821,11 @@ public class ContentTests : BaseTests {
 		// Arrange
 		var mockedPost = _postFaker.Generate( );
 
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/get-interface" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( mockedPost ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/get-interface" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( mockedPost ) );
 
 		// Act
 		var response = await _restClient
@@ -850,10 +851,10 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Fallback_value_should_should_be_used_in_case_of_errors( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/fallback" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.InternalServerError ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/fallback" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.InternalServerError ) );
 
 		// Act
 		var response = await _restClient
@@ -883,11 +884,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Not_throw_for_non_mapped_should_continue_map_if_the_response_is_mapped( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/notmapped" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( _postFaker.Generate( ) ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/notmapped" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( _postFaker.Generate( ) ) );
 
 		// Act
 		var response = await _restClient
@@ -911,11 +912,11 @@ public class ContentTests : BaseTests {
 	[Fact]
 	public async Task Not_throw_for_non_mapped_should_continue_map_if_the_response_is_not_mapped( ) {
 		// Arrange
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/notmapped" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.InternalServerError )
-			.UseResponse( new {
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/notmapped" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.InternalServerError )
+			.WithJsonResponse( new {
 				message = "Error"
 			} ) );
 

@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using Myth.Rest.Test.Base;
 using Myth.Rest.Test.Models;
+using Myth.Testing.Mocks;
 using System;
 using System.Net;
 using System.Net.Http;
@@ -21,11 +22,11 @@ namespace Myth.Rest.Test {
 		[Fact]
 		public async Task Retry_should_work_with_default( ) {
 			// Arrange
-			var client = TestServer.Mock( settings => settings
-				.UseRoute( "/retry" )
-				.UseGet( )
-				.UseStatusCode( HttpStatusCode.InternalServerError )
-				.UseResponse( _errorFaker.Generate( ) ) );
+			var client = HttpClientMock.CreateClient( settings => settings
+				.ForRoute( "/retry" )
+				.UsingGet( )
+				.RespondWith( HttpStatusCode.InternalServerError )
+				.WithJsonResponse( _errorFaker.Generate( ) ) );
 
 			// Act
 			var response = await Rest.Create( )
@@ -47,11 +48,11 @@ namespace Myth.Rest.Test {
 		[Fact]
 		public async Task Retry_should_work_with_random( ) {
 			// Arrange
-			var client = TestServer.Mock( settings => settings
-				.UseRoute( "/retry" )
-				.UseGet( )
-				.UseStatusCode( HttpStatusCode.InternalServerError )
-				.UseResponse( _errorFaker.Generate( ) ) );
+			var client = HttpClientMock.CreateClient( settings => settings
+				.ForRoute( "/retry" )
+				.UsingGet( )
+				.RespondWith( HttpStatusCode.InternalServerError )
+				.WithJsonResponse( _errorFaker.Generate( ) ) );
 
 			// Act
 			var response = await Rest.Create( )
@@ -80,11 +81,11 @@ namespace Myth.Rest.Test {
 		[Fact]
 		public async Task Retry_should_work_with_exponential_backoff( ) {
 			// Arrange
-			var client = TestServer.Mock( settings => settings
-				.UseRoute( "/retry" )
-				.UseGet( )
-				.UseStatusCode( HttpStatusCode.InternalServerError )
-				.UseResponse( _errorFaker.Generate( ) ) );
+			var client = HttpClientMock.CreateClient( settings => settings
+				.ForRoute( "/retry" )
+				.UsingGet( )
+				.RespondWith( HttpStatusCode.InternalServerError )
+				.WithJsonResponse( _errorFaker.Generate( ) ) );
 
 			// Act
 			var response = await Rest.Create( )
@@ -118,11 +119,11 @@ namespace Myth.Rest.Test {
 		[Fact]
 		public async Task Retry_should_work_with_jitter( ) {
 			// Arrange
-			var client = TestServer.Mock( settings => settings
-				.UseRoute( "/retry" )
-				.UseGet( )
-				.UseStatusCode( HttpStatusCode.InternalServerError )
-				.UseResponse( _errorFaker.Generate( ) ) );
+			var client = HttpClientMock.CreateClient( settings => settings
+				.ForRoute( "/retry" )
+				.UsingGet( )
+				.RespondWith( HttpStatusCode.InternalServerError )
+				.WithJsonResponse( _errorFaker.Generate( ) ) );
 
 			// Act
 			var response = await Rest.Create( )
@@ -153,11 +154,11 @@ namespace Myth.Rest.Test {
 		[Fact]
 		public async Task Retry_should_work_with_fixed_delay( ) {
 			// Arrange
-			var client = TestServer.Mock( settings => settings
-				.UseRoute( "/retry" )
-				.UseGet( )
-				.UseStatusCode( HttpStatusCode.TooManyRequests )
-				.UseResponse( _errorFaker.Generate( ) ) );
+			var client = HttpClientMock.CreateClient( settings => settings
+				.ForRoute( "/retry" )
+				.UsingGet( )
+				.RespondWith( HttpStatusCode.TooManyRequests )
+				.WithJsonResponse( _errorFaker.Generate( ) ) );
 
 			// Act
 			var response = await Rest.Create( )
@@ -183,11 +184,11 @@ namespace Myth.Rest.Test {
 		[Fact]
 		public async Task Retry_should_work_with_simple( ) {
 			// Arrange
-			var client = TestServer.Mock( settings => settings
-				.UseRoute( "/retry" )
-				.UseGet( )
-				.UseStatusCode( HttpStatusCode.ServiceUnavailable )
-				.UseResponse( _errorFaker.Generate( ) ) );
+			var client = HttpClientMock.CreateClient( settings => settings
+				.ForRoute( "/retry" )
+				.UsingGet( )
+				.RespondWith( HttpStatusCode.ServiceUnavailable )
+				.WithJsonResponse( _errorFaker.Generate( ) ) );
 
 			// Act
 			var response = await Rest.Create( )

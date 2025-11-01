@@ -4,6 +4,7 @@ using Myth.Exceptions;
 using Myth.Extensions;
 using Myth.Interfaces;
 using Myth.Rest.Test.Base;
+using Myth.Testing.Mocks;
 using System;
 using System.IO;
 using System.Net;
@@ -38,11 +39,11 @@ public class FileTests : BaseTests {
 		var fileName = "Test1.txt";
 		var path = Path.Combine( directory, fileName );
 
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/download-success" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( "This is a test file!" ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/download-success" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( "This is a test file!" ) );
 
 		// Act
 		var response = await _restDownloadClient
@@ -71,11 +72,11 @@ public class FileTests : BaseTests {
 
 		File.Create( path ).Dispose( );
 
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/download-success" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( "This is a test file!" ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/download-success" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( "This is a test file!" ) );
 
 		// Act
 		var response = await _restDownloadClient
@@ -102,11 +103,11 @@ public class FileTests : BaseTests {
 		var fileName = "Test2.txt";
 		var path = Path.Combine( directory, fileName );
 
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/download-success" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( "This is a test file!" ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/download-success" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( "This is a test file!" ) );
 
 		// Act
 		var response = await _restDownloadClient
@@ -135,11 +136,11 @@ public class FileTests : BaseTests {
 
 		File.Create( path ).Dispose( );
 
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/download-success" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( "This is a test file!" ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/download-success" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( "This is a test file!" ) );
 
 		// Act
 		var response = await _restDownloadClient
@@ -166,11 +167,11 @@ public class FileTests : BaseTests {
 
 		File.Create( path ).Dispose( );
 
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/download-error" )
-			.UseGet( )
-			.UseStatusCode( HttpStatusCode.NotFound )
-			.UseResponse( "This is a test file!" ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/download-error" )
+			.UsingGet( )
+			.RespondWith( HttpStatusCode.NotFound )
+			.WithJsonResponse( "This is a test file!" ) );
 
 		// Act
 		var action = async ( ) => await _restDownloadClient
@@ -202,11 +203,11 @@ public class FileTests : BaseTests {
 			ContentType = "text/plain"
 		};
 
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/test" )
-			.UsePost( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( new { success = true } ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/test" )
+			.UsingPost( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( new { success = true } ) );
 
 		// Act
 		var response = await _restUploadClient
@@ -242,11 +243,11 @@ public class FileTests : BaseTests {
 			ContentType = "text/plain"
 		};
 
-		var client = TestServer.Mock( settings => settings
-			.UseRoute( "/test" )
-			.UsePost( )
-			.UseStatusCode( HttpStatusCode.OK )
-			.UseResponse( new { success = true } ) );
+		var client = HttpClientMock.CreateClient( settings => settings
+			.ForRoute( "/test" )
+			.UsingPost( )
+			.RespondWith( HttpStatusCode.OK )
+			.WithJsonResponse( new { success = true } ) );
 
 		// Act
 		var response = await _restUploadClient

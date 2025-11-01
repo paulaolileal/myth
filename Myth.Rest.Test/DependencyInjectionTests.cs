@@ -4,6 +4,7 @@ using Myth.Constants;
 using Myth.DependencyInjection;
 using Myth.Interfaces;
 using Myth.Rest.Test.Base;
+using Myth.Testing.Mocks;
 using System;
 using System.IO;
 using System.Linq;
@@ -30,10 +31,10 @@ namespace Myth.Rest.Test {
 			// Arrange
 			var services = new ServiceCollection( );
 
-			var client = TestServer.Mock( settings => settings
-				.UseRoute( "/test" )
-				.UseGet( )
-				.UseStatusCode( HttpStatusCode.NoContent ) );
+			var client = HttpClientMock.CreateClient( settings => settings
+				.ForRoute( "/test" )
+				.UsingGet( )
+				.RespondWith( HttpStatusCode.NoContent ) );
 
 			// Act
 			services.AddRest( conf => conf
@@ -73,11 +74,11 @@ namespace Myth.Rest.Test {
 			var fileName = "Test1.txt";
 			var path = Path.Combine( directory, fileName );
 
-			var client = TestServer.Mock( settings => settings
-				.UseRoute( "/test" )
-				.UseGet( )
-				.UseStatusCode( HttpStatusCode.OK )
-				.UseResponse( "This is a test file!" ) );
+			var client = HttpClientMock.CreateClient( settings => settings
+				.ForRoute( "/test" )
+				.UsingGet( )
+				.RespondWith( HttpStatusCode.OK )
+				.WithJsonResponse( "This is a test file!" ) );
 
 			// Act
 			services.AddRest( conf => conf
