@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Myth.Testing.Test.Models;
 
-namespace Myth.Testing.Examples {
+namespace Myth.Testing.Test.Repositories {
 
 	/// <summary>
 	/// Example repository using Entity Framework
@@ -22,7 +23,7 @@ namespace Myth.Testing.Examples {
 		/// <param name="user">The user to create</param>
 		/// <param name="cancellationToken">Cancellation token</param>
 		/// <returns>The created user</returns>
-		public async Task<UserEntity> CreateAsync( UserEntity user, CancellationToken cancellationToken = default ) {
+		public async Task<User> CreateAsync( User user, CancellationToken cancellationToken = default ) {
 			if ( user is null )
 				throw new ArgumentNullException( nameof( user ) );
 
@@ -41,7 +42,7 @@ namespace Myth.Testing.Examples {
 		/// <param name="id">The user ID</param>
 		/// <param name="cancellationToken">Cancellation token</param>
 		/// <returns>The user if found, null otherwise</returns>
-		public async Task<UserEntity?> GetByIdAsync( Guid id, CancellationToken cancellationToken = default ) {
+		public async Task<User?> GetByIdAsync( Guid id, CancellationToken cancellationToken = default ) {
 			return await _context.Users.FindAsync( new object[ ] { id }, cancellationToken );
 		}
 
@@ -51,7 +52,7 @@ namespace Myth.Testing.Examples {
 		/// <param name="email">The user email</param>
 		/// <param name="cancellationToken">Cancellation token</param>
 		/// <returns>The user if found, null otherwise</returns>
-		public async Task<UserEntity?> GetByEmailAsync( string email, CancellationToken cancellationToken = default ) {
+		public async Task<User?> GetByEmailAsync( string email, CancellationToken cancellationToken = default ) {
 			if ( string.IsNullOrWhiteSpace( email ) )
 				return null;
 
@@ -64,7 +65,7 @@ namespace Myth.Testing.Examples {
 		/// </summary>
 		/// <param name="cancellationToken">Cancellation token</param>
 		/// <returns>All users</returns>
-		public async Task<List<UserEntity>> GetAllAsync( CancellationToken cancellationToken = default ) {
+		public async Task<List<User>> GetAllAsync( CancellationToken cancellationToken = default ) {
 			return await _context.Users.ToListAsync( cancellationToken );
 		}
 
@@ -74,7 +75,7 @@ namespace Myth.Testing.Examples {
 		/// <param name="user">The user to update</param>
 		/// <param name="cancellationToken">Cancellation token</param>
 		/// <returns>The updated user</returns>
-		public async Task<UserEntity> UpdateAsync( UserEntity user, CancellationToken cancellationToken = default ) {
+		public async Task<User> UpdateAsync( User user, CancellationToken cancellationToken = default ) {
 			if ( user is null )
 				throw new ArgumentNullException( nameof( user ) );
 
@@ -102,69 +103,5 @@ namespace Myth.Testing.Examples {
 
 			return true;
 		}
-	}
-
-	/// <summary>
-	/// Example Entity Framework DbContext
-	/// </summary>
-	public class UserDbContext : DbContext {
-
-		/// <summary>
-		/// Initialize DbContext
-		/// </summary>
-		/// <param name="options">DbContext options</param>
-		public UserDbContext( DbContextOptions<UserDbContext> options ) : base( options ) {
-		}
-
-		/// <summary>
-		/// Users DbSet
-		/// </summary>
-		public DbSet<UserEntity> Users { get; set; }
-
-		/// <summary>
-		/// Configure model
-		/// </summary>
-		/// <param name="modelBuilder">Model builder</param>
-		protected override void OnModelCreating( ModelBuilder modelBuilder ) {
-			modelBuilder.Entity<UserEntity>( entity => {
-				entity.HasKey( e => e.Id );
-				entity.Property( e => e.Name ).IsRequired( ).HasMaxLength( 100 );
-				entity.Property( e => e.Email ).IsRequired( ).HasMaxLength( 255 );
-				entity.HasIndex( e => e.Email ).IsUnique( );
-			} );
-
-			base.OnModelCreating( modelBuilder );
-		}
-	}
-
-	/// <summary>
-	/// Example user entity for Entity Framework
-	/// </summary>
-	public class UserEntity {
-
-		/// <summary>
-		/// Gets or sets the user ID
-		/// </summary>
-		public Guid Id { get; set; }
-
-		/// <summary>
-		/// Gets or sets the user name
-		/// </summary>
-		public string Name { get; set; } = string.Empty;
-
-		/// <summary>
-		/// Gets or sets the user email
-		/// </summary>
-		public string Email { get; set; } = string.Empty;
-
-		/// <summary>
-		/// Gets or sets the creation date
-		/// </summary>
-		public DateTime CreatedAt { get; set; }
-
-		/// <summary>
-		/// Gets or sets the last update date
-		/// </summary>
-		public DateTime? UpdatedAt { get; set; }
 	}
 }

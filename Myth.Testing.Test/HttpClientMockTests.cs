@@ -3,9 +3,8 @@ using Myth.Extensions;
 using Myth.Testing.Mocks;
 using System.Net;
 using System.Text;
-using Xunit;
 
-namespace Myth.Testing.Examples {
+namespace Myth.Testing.Test {
 
 	/// <summary>
 	/// Example tests demonstrating the use of HttpClientMock for testing HTTP-dependent services

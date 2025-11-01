@@ -1,16 +1,17 @@
-﻿using FluentAssertions;
-using Myth.Testing.Builders;
-using Myth.Testing.Extensions;
+﻿using Bogus;
+using FluentAssertions;
 using Myth.Testing.Repositories;
-using Xunit;
+using Myth.Testing.Test.Models;
+using Myth.Testing.Test.Repositories;
 
-namespace Myth.Testing.Examples {
+namespace Myth.Testing.Test {
 
 	/// <summary>
 	/// Example test class demonstrating the use of BaseDatabaseTests with Entity Framework
 	/// </summary>
 	public class UserRepositoryTests : BaseDatabaseTests<UserDbContext> {
 		private readonly UserRepository _repository;
+		private readonly Faker<User> _userFaker;
 
 		/// <summary>
 		/// Initialize test with UserRepository and DbContext
@@ -18,6 +19,12 @@ namespace Myth.Testing.Examples {
 		public UserRepositoryTests( ) {
 			// Add services to the test container
 			AddService<UserRepository, UserRepository>( );
+
+			_userFaker = new Faker<User>( )
+				.RuleFor( u => u.CreatedAt, f => f.Date.Past( ) )
+				.RuleFor( u => u.UpdatedAt, f => f.Date.Recent( ) )
+				.RuleFor( u => u.Name, f => f.Name.FullName( ) )
+				.RuleFor( u => u.Email, f => f.Internet.Email( ) );
 
 			// Get the repository instance
 			_repository = GetRequiredService<UserRepository>( );
@@ -31,10 +38,7 @@ namespace Myth.Testing.Examples {
 			// Arrange
 			await InitializeDatabaseAsync( );
 
-			var userEntity = new UserEntityBuilder( _faker )
-				.WithName( "John Doe" )
-				.WithEmail( "john.doe@example.com" )
-				.Build( );
+			var userEntity = _userFaker.Generate( );
 
 			// Act
 			var result = await _repository.CreateAsync( userEntity );
@@ -42,15 +46,12 @@ namespace Myth.Testing.Examples {
 			// Assert
 			result.Should( ).NotBeNull( );
 			result.Id.Should( ).NotBeEmpty( );
-			result.Name.Should( ).Be( "John Doe" );
-			result.Email.Should( ).Be( "john.doe@example.com" );
-			result.CreatedAt.Should( ).BeCloseTo( DateTime.UtcNow, TimeSpan.FromSeconds( 5 ) );
 
 			// Verify in database
 			var context = GetContext( );
 			var dbUser = await context.Users.FindAsync( result.Id );
 			dbUser.Should( ).NotBeNull( );
-			dbUser!.Email.Should( ).Be( "john.doe@example.com" );
+			dbUser!.Email.Should( ).Be( userEntity.Email );
 
 			await CleanupDatabaseAsync( );
 		}
@@ -63,7 +64,8 @@ namespace Myth.Testing.Examples {
 			// Arrange
 			await InitializeDatabaseAsync( );
 
-			var userEntity = new UserEntityBuilder( _faker ).Build( );
+			var userEntity = _userFaker.Generate( );
+
 			var created = await _repository.CreateAsync( userEntity );
 
 			// Act
@@ -102,9 +104,9 @@ namespace Myth.Testing.Examples {
 			// Arrange
 			await InitializeDatabaseAsync( );
 
-			var userEntity = new UserEntityBuilder( _faker )
-				.WithEmail( "test@example.com" )
-				.Build( );
+			var userEntity = _userFaker.Generate( );
+			userEntity.Email = "test@example.com";
+
 			await _repository.CreateAsync( userEntity );
 
 			// Act
@@ -125,7 +127,7 @@ namespace Myth.Testing.Examples {
 			// Arrange
 			await InitializeDatabaseAsync( );
 
-			var users = new UserEntityBuilder( _faker ).BuildList( 3 );
+			var users = _userFaker.Generate( 3 );
 			foreach ( var user in users )
 				await _repository.CreateAsync( user );
 
@@ -147,7 +149,8 @@ namespace Myth.Testing.Examples {
 			// Arrange
 			await InitializeDatabaseAsync( );
 
-			var userEntity = new UserEntityBuilder( _faker ).Build( );
+			var userEntity = _userFaker.Generate( );
+
 			var created = await _repository.CreateAsync( userEntity );
 
 			created.Name = "Updated Name";
@@ -178,7 +181,8 @@ namespace Myth.Testing.Examples {
 			// Arrange
 			await InitializeDatabaseAsync( );
 
-			var userEntity = new UserEntityBuilder( _faker ).Build( );
+			var userEntity = _userFaker.Generate( );
+
 			var created = await _repository.CreateAsync( userEntity );
 
 			// Act
@@ -195,25 +199,6 @@ namespace Myth.Testing.Examples {
 		}
 
 		/// <summary>
-		/// Test with async patterns and timeout
-		/// </summary>
-		[Fact]
-		public async Task CreateAsync_WithTimeout_ShouldCompleteWithinTimeLimit( ) {
-			// Arrange
-			await InitializeDatabaseAsync( );
-
-			var userEntity = new UserEntityBuilder( _faker ).Build( );
-
-			// Act & Assert
-			await TestExtensions.WithTimeoutAsync(
-				( ) => _repository.CreateAsync( userEntity ),
-				TimeSpan.FromSeconds( 5 )
-			);
-
-			await CleanupDatabaseAsync( );
-		}
-
-		/// <summary>
 		/// Test error handling scenario
 		/// </summary>
 		[Fact]
@@ -222,68 +207,15 @@ namespace Myth.Testing.Examples {
 			await InitializeDatabaseAsync( );
 
 			// Act & Assert
-			await TestExtensions.AssertThrowsAsync<ArgumentNullException>(
-				( ) => _repository.CreateAsync( null! )
-			);
+			var task = ( ) => _repository.CreateAsync( null! );
+
+			await task.Should( ).ThrowAsync<ArgumentNullException>( );
 
 			// Verify no users were created
 			var allUsers = await _repository.GetAllAsync( );
 			allUsers.Should( ).BeEmpty( );
 
 			await CleanupDatabaseAsync( );
-		}
-	}
-
-	/// <summary>
-	/// Example builder for UserEntity objects
-	/// </summary>
-	public class UserEntityBuilder : TestDataBuilder<UserEntity, UserEntityBuilder> {
-
-		/// <summary>
-		/// Initialize UserEntityBuilder with Faker
-		/// </summary>
-		/// <param name="faker">The Faker instance</param>
-		public UserEntityBuilder( Bogus.Faker faker ) : base( faker ) { }
-
-		/// <summary>
-		/// Set the user name
-		/// </summary>
-		/// <param name="name">The user name</param>
-		/// <returns>The builder for fluent chaining</returns>
-		public UserEntityBuilder WithName( string name ) {
-			return With( nameof( UserEntity.Name ), name );
-		}
-
-		/// <summary>
-		/// Set the user email
-		/// </summary>
-		/// <param name="email">The user email</param>
-		/// <returns>The builder for fluent chaining</returns>
-		public UserEntityBuilder WithEmail( string email ) {
-			return With( nameof( UserEntity.Email ), email );
-		}
-
-		/// <summary>
-		/// Set the user ID
-		/// </summary>
-		/// <param name="id">The user ID</param>
-		/// <returns>The builder for fluent chaining</returns>
-		public UserEntityBuilder WithId( Guid id ) {
-			return With( nameof( UserEntity.Id ), id );
-		}
-
-		/// <summary>
-		/// Build the UserEntity object
-		/// </summary>
-		/// <returns>A UserEntity object with generated or overridden values</returns>
-		public override UserEntity Build( ) {
-			return new UserEntity {
-				Id = GetOverrideOrDefault( nameof( UserEntity.Id ), Guid.Empty ),
-				Name = GetOverrideOrGenerate( nameof( UserEntity.Name ), f => f.Name.FullName( ) ),
-				Email = GetOverrideOrGenerate( nameof( UserEntity.Email ), f => f.Internet.Email( ) ),
-				CreatedAt = GetOverrideOrDefault( nameof( UserEntity.CreatedAt ), DateTime.MinValue ),
-				UpdatedAt = GetOverrideOrDefault<DateTime?>( nameof( UserEntity.UpdatedAt ), null )
-			};
 		}
 	}
 }

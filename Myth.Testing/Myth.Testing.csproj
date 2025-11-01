@@ -1,9 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<!-- Patform -->
 		<TargetFramework>net8.0</TargetFramework>
+		<Platforms>AnyCPU</Platforms>
+		<!-- Settings -->
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<RootNamespace>Myth</RootNamespace>
+		<!-- Package -->
+		<PackageId>Myth.Testing</PackageId>
+		<Authors>Paula Leal</Authors>
+		<PackageIcon>Logo.jpg</PackageIcon>
+		<Description>It is a .NET library for facilitate testing</Description>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<!-- Docs -->
+		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Testing</RepositoryUrl>
+		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Testing</PackageProjectUrl>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -30,6 +45,21 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Examples\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\Logo.jpg">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
 	</ItemGroup>
 
 </Project>
