@@ -9,6 +9,7 @@
 		<Nullable>enable</Nullable>
 		<RootNamespace>Myth</RootNamespace>
 		<!-- Package -->
+		<IsPackable>true</IsPackable>
 		<PackageId>Myth.Testing</PackageId>
 		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>

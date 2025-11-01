@@ -39,7 +39,7 @@ namespace Myth.Flow.Actions.Test {
 		}
 
 		[Fact]
-		public async Task PublishAsync_WithSubscribedHandlers_ShouldInvokeHandlers( ) {
+		public async Task PublishAsync_WithSubscribedHandlers_ShouldOnlyPublishToMessageBroker( ) {
 			// Arrange
 			var @event = new TestEvent { Message = "test" };
 			_sut.Subscribe<TestEvent, TestEventHandler>( );
@@ -48,10 +48,12 @@ namespace Myth.Flow.Actions.Test {
 			await _sut.PublishAsync( @event );
 
 			// Assert
+			// EventBus should only publish to message broker, not invoke handlers directly
+			await _messageBroker.Received( 1 ).PublishAsync( @event, Arg.Any<CancellationToken>( ) );
+
+			// Handlers should NOT be invoked directly by EventBus - they will be handled by the message broker
 			var handler = ServiceProvider.GetRequiredService<TestEventHandler>( );
-			handler.CallCount.Should( ).Be( 1 );
-			handler.LastEvent.Should( ).NotBeNull( );
-			handler.LastEvent!.Message.Should( ).Be( "test" );
+			handler.CallCount.Should( ).Be( 0 );
 		}
 
 		[Fact]
