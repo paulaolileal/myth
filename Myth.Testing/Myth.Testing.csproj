@@ -48,10 +48,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Examples\" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<None Include="..\Logo.jpg">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>

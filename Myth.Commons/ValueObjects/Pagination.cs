@@ -4,7 +4,8 @@ namespace Myth.ValueObjects;
 
 public class Pagination( int pageNumber, int pageSize ) : ValueObject {
 
-	public Pagination( ) : this( 1, 10 ) { }
+	public Pagination( ) : this( 1, 10 ) {
+	}
 
 	/// <summary>
 	/// Page number

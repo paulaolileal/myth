@@ -163,3 +163,51 @@ As seguintes funções estão disponíveis:
 - `Skip`
 - `Take`
 - `DistinctBy`
+- `WithPagination` - Método conveniente usando o value object Pagination
+
+### WithPagination
+
+Você também pode usar o método conveniente `WithPagination` que aceita um value object `Pagination` do `Myth.Commons`:
+
+```csharp
+using Myth.ValueObjects;
+
+var enumerable = Enumerable.Empty<Person>();
+var pagination = new Pagination(2, 10); // Página 2, 10 itens por página
+
+var spec = SpecBuilder<Person>
+	.Create()
+	.And(x => x.PersonId != null)
+	.Order(x => x.Name)
+	.WithPagination(pagination);
+
+var result = enumerable
+	.Specify(spec)
+	.ToList();
+```
+
+Isso substitui o cálculo manual:
+```csharp
+// Em vez de:
+.Skip((pagination.PageNumber - 1) * pagination.PageSize)
+.Take(pagination.PageSize)
+
+// Use:
+.WithPagination(pagination)
+```
+
+**Casos especiais:**
+- `Pagination.All` (-1, -1): Retorna todos os itens sem paginação
+- `PageNumber <= 0`: Tratado como página 1
+- `PageSize <= 0`: Retorna todos os itens sem paginação
+
+**Combinando com Skip/Take:**
+Você ainda pode combinar `WithPagination` com operações adicionais de `Skip` e `Take`:
+
+```csharp
+var spec = SpecBuilder<Person>
+	.Create()
+	.WithPagination(pagination)  // Skip 10, Take 10 (página 2)
+	.Skip(5)                     // Pula mais 5
+	.Take(3);                    // Limita a 3 itens no total
+```

@@ -1,5 +1,6 @@
 ﻿using Myth.Exceptions;
 using Myth.Interfaces;
+using Myth.ValueObjects;
 using System.Linq.Expressions;
 
 namespace Myth.Specifications;
@@ -143,6 +144,13 @@ public abstract class SpecBuilder<T> : ISpec<T> {
 	public ISpec<T> Skip( int amount ) => new SkipSpec<T>( this, amount );
 
 	public ISpec<T> Take( int amount ) => new TakeSpec<T>( this, amount );
+
+	/// <summary>
+	/// Applies pagination using the provided Pagination value object
+	/// </summary>
+	/// <param name="pagination">The pagination parameters containing PageNumber and PageSize</param>
+	/// <returns>A new specification with pagination applied</returns>
+	public ISpec<T> WithPagination( Pagination pagination ) => new PaginationSpec<T>( this, pagination );
 
 	public static implicit operator Expression<Func<T, bool>>( SpecBuilder<T> spec ) => spec.Predicate;
 }

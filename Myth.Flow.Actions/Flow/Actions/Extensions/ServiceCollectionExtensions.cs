@@ -257,7 +257,7 @@ public static class ServiceCollectionExtensions {
 
 			// Register both the interface and the concrete type
 			services.AddTransient( eventHandlerInterface, handlerType );
-			services.AddTransient( handlerType );
+			//services.AddTransient( handlerType );
 		}
 
 		services.AddSingleton<IEventHandlerRegistry>( sp => {
