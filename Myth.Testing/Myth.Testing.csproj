@@ -15,6 +15,9 @@
 		<PackageIcon>Logo.jpg</PackageIcon>
 		<Description>It is a .NET library for facilitate testing</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<!-- Test Project Configuration -->
+		<IsTestProject>false</IsTestProject>
+		<GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
 		<!-- Docs -->
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Testing</RepositoryUrl>
 		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Testing</PackageProjectUrl>

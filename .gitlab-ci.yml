@@ -30,7 +30,7 @@ build-job:
   artifacts:
     expire_in: 1 hour
     paths:
-      - "**/bin/Release/**"
+      - "**/bin/**"
       - "**/obj/**"
 
 test-job:
@@ -72,15 +72,13 @@ publish-job:
     - PACKAGE_VERSION=$(echo "$CI_COMMIT_TAG" | cut -d "v" -f2- )
     - mkdir -p nupkgs
     - |
-      # Pack all projects in parallel for better performance
+      # Pack all projects sequentially to ensure proper dependency resolution
       for project in $(ls **/*.csproj | grep -v '\.Test\.csproj$'); do
         echo "Packing $project..."
         dotnet pack "$project" \
           --configuration Release \
           --output nupkgs \
-          --no-build \
           --verbosity minimal \
-          /p:PackageVersion=${PACKAGE_VERSION} &
+          /p:PackageVersion=${PACKAGE_VERSION}
       done
-      wait  # Wait for all parallel pack operations to complete
     - dotnet nuget push "nupkgs/*.nupkg" --skip-duplicate --source $NUGET_API_URL --api-key $NUGET_API_KEY
