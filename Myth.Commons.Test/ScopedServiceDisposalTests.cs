@@ -75,12 +75,14 @@ namespace Myth.Commons.Test {
 
 	// Test interfaces and implementations
 	public interface IAsyncDisposableTestService {
+
 		void DoSomething( );
 
 		Task DoSomethingAsync( );
 	}
 
 	public interface IDisposableTestService {
+
 		void DoSomething( );
 
 		Task DoSomethingAsync( );
@@ -95,9 +97,9 @@ namespace Myth.Commons.Test {
 		}
 
 		public Task DoSomethingAsync( ) {
-			return IsDisposed 
-				? throw new ObjectDisposedException( nameof( AsyncDisposableTestService ) ) 
-				:  Task.CompletedTask;
+			return IsDisposed
+				? throw new ObjectDisposedException( nameof( AsyncDisposableTestService ) )
+				: Task.CompletedTask;
 		}
 
 		public ValueTask DisposeAsync( ) {
@@ -116,8 +118,8 @@ namespace Myth.Commons.Test {
 
 		public Task DoSomethingAsync( ) {
 			return IsDisposed
-				? throw new ObjectDisposedException( nameof( DisposableTestService ) ) 
-				:  Task.CompletedTask;
+				? throw new ObjectDisposedException( nameof( DisposableTestService ) )
+				: Task.CompletedTask;
 		}
 
 		public void Dispose( ) {

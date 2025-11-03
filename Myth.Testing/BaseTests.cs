@@ -14,10 +14,11 @@ namespace Myth.Testing {
 	/// <remarks>
 	/// A service collection is created and a configuration service
 	/// </remarks>
-	public abstract class BaseTests : IDisposable {
+	public abstract class BaseTests : IDisposable, IAsyncDisposable {
 		protected IServiceProvider _serviceProvider = null!;
 		protected readonly IServiceCollection _services;
 		protected readonly Faker _faker;
+		protected readonly CancellationToken _cancellationToken = CancellationToken.None;
 
 		private IDictionary<string, string> _configurationValues = new Dictionary<string, string> {
 			{"Test", "Test"},
@@ -228,8 +229,43 @@ namespace Myth.Testing {
 		/// <summary>
 		/// Dispose resources used by the test
 		/// </summary>
+		/// <remarks>
+		/// Properly disposes the service provider, handling both synchronous and asynchronous disposal patterns.
+		/// If the service provider supports async disposal, it will be disposed asynchronously in a blocking manner.
+		/// Otherwise, it will fall back to synchronous disposal.
+		/// </remarks>
 		public virtual void Dispose( ) {
-			( _serviceProvider as IDisposable )?.Dispose( );
+			try {
+				if ( _serviceProvider is IAsyncDisposable asyncDisposable ) {
+					asyncDisposable.DisposeAsync( ).AsTask( ).GetAwaiter( ).GetResult( );
+				} else if ( _serviceProvider is IDisposable disposable ) {
+					disposable.Dispose( );
+				}
+				GC.SuppressFinalize( this );
+			} catch {
+				// Suppress exceptions during disposal to prevent masking test failures
+			}
+		}
+
+		/// <summary>
+		/// Asynchronously dispose resources used by the test
+		/// </summary>
+		/// <returns>A ValueTask representing the asynchronous disposal operation</returns>
+		/// <remarks>
+		/// Provides proper async disposal of the service provider when called in an async context.
+		/// This method should be preferred over Dispose() when working in async scenarios.
+		/// </remarks>
+		public async ValueTask DisposeAsync( ) {
+			try {
+				if ( _serviceProvider is IAsyncDisposable asyncDisposable ) {
+					await asyncDisposable.DisposeAsync( ).ConfigureAwait( false );
+				} else if ( _serviceProvider is IDisposable disposable ) {
+					disposable.Dispose( );
+				}
+				GC.SuppressFinalize( this );
+			} catch {
+				// Suppress exceptions during disposal to prevent masking test failures
+			}
 		}
 	}
 }

@@ -1,7 +1,5 @@
 ﻿using Myth.Builders;
 using System;
-using System.Diagnostics;
-using System.Linq;
 using Xunit;
 
 namespace Myth.Flow.Test {

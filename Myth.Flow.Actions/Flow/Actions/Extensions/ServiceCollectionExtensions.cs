@@ -252,7 +252,7 @@ public static class ServiceCollectionExtensions {
 
 		var eventHandlers = scanner
 			.ScanForEventHandlers( configuration.AssembliesToScan.ToArray( ) )
-			.DistinctBy(x => x.HandlerType);
+			.DistinctBy( x => x.HandlerType );
 
 		foreach ( var (eventType, handlerType) in eventHandlers ) {
 			var eventHandlerInterface = typeof( IEventHandler<> ).MakeGenericType( eventType );

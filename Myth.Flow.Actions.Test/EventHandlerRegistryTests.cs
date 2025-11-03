@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Myth.Flow.Actions;
 using Myth.Flow.Actions.Test.Models;
 using Myth.Interfaces;
 

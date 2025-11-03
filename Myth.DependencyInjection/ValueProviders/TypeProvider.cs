@@ -36,7 +36,7 @@ public static class TypeProvider {
 			foreach ( var item in files ) {
 				try {
 					var assembly = Assembly.LoadFrom( item );
-					if ( !assembly.IsDynamic)
+					if ( !assembly.IsDynamic )
 						assembliesFromFile.Add( assembly );
 				} catch ( Exception ) { continue; }
 			}

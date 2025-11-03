@@ -131,7 +131,7 @@ namespace Myth.Builders {
 		/// builder.UseExceptionFilter( typeof( ArgumentException ), typeof( InvalidOperationException ) );
 		/// </code>
 		/// </example>
-		public FlowConfigurationBuilder UseExceptionFilter( params Type[] exceptionTypes ) {
+		public FlowConfigurationBuilder UseExceptionFilter( params Type[ ] exceptionTypes ) {
 			ArgumentNullException.ThrowIfNull( exceptionTypes );
 
 			foreach ( var exceptionType in exceptionTypes ) {

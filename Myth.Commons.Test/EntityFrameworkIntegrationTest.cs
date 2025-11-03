@@ -17,7 +17,7 @@ namespace Myth.Commons.Test {
 
 		[Fact]
 		public async Task ScopedService_WithEntityFrameworkLikeRepository_ShouldNotThrowAsyncDisposableError( ) {
-			// Arrange 
+			// Arrange
 			var scopedRepository = ServiceProvider.GetRequiredService<IScopedService<IWeatherForecastRepository>>( );
 
 			// Act & Assert
@@ -45,6 +45,7 @@ namespace Myth.Commons.Test {
 
 	// Simulating the user's repository structure
 	public interface IWeatherForecastRepository {
+
 		Task<string> SearchPaginatedAsync( CancellationToken cancellationToken = default );
 
 		string GetName( );
@@ -65,8 +66,8 @@ namespace Myth.Commons.Test {
 
 		public string GetName( ) {
 			return IsDisposed
-				? throw new ObjectDisposedException( nameof( WeatherForecastRepository ) ) 
-				:  nameof( WeatherForecastRepository );
+				? throw new ObjectDisposedException( nameof( WeatherForecastRepository ) )
+				: nameof( WeatherForecastRepository );
 		}
 
 		public ValueTask DisposeAsync( ) {

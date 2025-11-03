@@ -1,5 +1,4 @@
 using Myth.Builders;
-using Myth.Flow.Actions.Settings;
 using Myth.Models;
 
 namespace Myth.Flow.Actions.Settings;
@@ -111,7 +110,7 @@ public sealed class FlowWithActionsBuilder {
 	/// builder.UseExceptionFilter( typeof( ArgumentException ), typeof( InvalidOperationException ) );
 	/// </code>
 	/// </example>
-	public FlowWithActionsBuilder UseExceptionFilter( params Type[] exceptionTypes ) {
+	public FlowWithActionsBuilder UseExceptionFilter( params Type[ ] exceptionTypes ) {
 		_flowBuilder.UseExceptionFilter( exceptionTypes );
 		return this;
 	}

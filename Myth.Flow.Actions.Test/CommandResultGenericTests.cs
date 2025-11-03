@@ -2,6 +2,7 @@ using FluentAssertions;
 using Myth.Models;
 
 namespace Myth.Flow.Actions.Test {
+
 	public class CommandResultGenericTests {
 
 		[Fact]

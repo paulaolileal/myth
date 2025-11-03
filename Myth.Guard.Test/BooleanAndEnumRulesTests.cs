@@ -18,9 +18,9 @@ public class BooleanAndEnumRulesTests : BaseTestFixture {
 	public async Task Boolean_WithValidValues_ShouldPass( ) {
 		// Arrange
 		var entity = new BooleanTestEntity {
-			IsActive = true, 
-			IsDeleted = false, 
-			IsOptional = true 
+			IsActive = true,
+			IsDeleted = false,
+			IsOptional = true
 		};
 
 		// Act
@@ -52,7 +52,7 @@ public class BooleanAndEnumRulesTests : BaseTestFixture {
 		// Arrange
 		var entity = new BooleanTestEntity {
 			IsActive = true,
-			IsDeleted = true, 
+			IsDeleted = true,
 			IsOptional = true
 		};
 
@@ -70,7 +70,7 @@ public class BooleanAndEnumRulesTests : BaseTestFixture {
 		var entity = new BooleanTestEntity {
 			IsActive = true,
 			IsDeleted = false,
-			IsOptional = null 
+			IsOptional = null
 		};
 
 		// Act
@@ -89,7 +89,7 @@ public class BooleanAndEnumRulesTests : BaseTestFixture {
 		var entity = new BooleanTestEntity {
 			IsActive = true,
 			IsDeleted = false,
-			IsOptional = validValue 
+			IsOptional = validValue
 		};
 
 		// Act
@@ -108,8 +108,8 @@ public class BooleanAndEnumRulesTests : BaseTestFixture {
 			Age = 25,
 			BirthDate = DateTime.Now.AddYears( -25 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
-			Tags = ["test"],
-			IsActive = true, 
+			Tags = [ "test" ],
+			IsActive = true,
 			Role = UserRole.User,
 			Salary = 50000,
 			Score = 85.5
@@ -131,8 +131,8 @@ public class BooleanAndEnumRulesTests : BaseTestFixture {
 			Age = 25,
 			BirthDate = DateTime.Now.AddYears( -25 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
-			Tags = ["test"],
-			IsActive = false, 
+			Tags = [ "test" ],
+			IsActive = false,
 			Role = UserRole.User,
 			Salary = 50000,
 			Score = 85.5
@@ -158,7 +158,7 @@ public class BooleanAndEnumRulesTests : BaseTestFixture {
 			Age = 25,
 			BirthDate = DateTime.Now.AddYears( -25 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
-			Tags = ["test"],
+			Tags = [ "test" ],
 			IsActive = true,
 			Role = validRole,
 			Salary = 50000,
@@ -185,7 +185,7 @@ public class BooleanAndEnumRulesTests : BaseTestFixture {
 			Age = 25,
 			BirthDate = DateTime.Now.AddYears( -25 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
-			Tags = ["test"],
+			Tags = [ "test" ],
 			IsActive = true,
 			Role = ( UserRole )999, // Invalid enum value
 			Salary = 50000,
@@ -233,7 +233,7 @@ public class BooleanAndEnumRulesTests : BaseTestFixture {
 		// Test the complex conditional logic in TestUser
 		// PhoneNumber should be required when PhoneType is Required AND IsVerified is false
 
-		// Arrange 
+		// Arrange
 		var user1 = new TestUser {
 			Name = "TestUser",
 			Email = "test@example.com",
@@ -280,7 +280,7 @@ public class BooleanAndEnumRulesTests : BaseTestFixture {
 		// Assert
 		result2.IsValid.Should( ).BeTrue( );
 
-		// Arrange 
+		// Arrange
 		var user3 = new TestUser {
 			Name = "TestUser",
 			Email = "test@example.com",

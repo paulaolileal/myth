@@ -84,7 +84,7 @@ public class CollectionRulesTests : BaseTestFixture {
 	public async Task All_WithValidItems_ShouldPass( ) {
 		// Arrange
 		var entity = new CollectionTestEntity {
-			Items = new List<string> { "item1", "item2", "item3" }, 
+			Items = new List<string> { "item1", "item2", "item3" },
 			Tags = new[ ] { "tag1" },
 			Numbers = new[ ] { 1 }
 		};
@@ -137,7 +137,7 @@ public class CollectionRulesTests : BaseTestFixture {
 		// Arrange
 		var entity = new CollectionTestEntity {
 			Items = new List<string> { "item1" },
-			Tags = new[ ] { "tag1", "tag2" }, 
+			Tags = new[ ] { "tag1", "tag2" },
 			Numbers = new[ ] { 1 }
 		};
 
@@ -153,7 +153,7 @@ public class CollectionRulesTests : BaseTestFixture {
 		// Arrange
 		var entity = new CollectionTestEntity {
 			Items = new List<string> { "item1" },
-			Tags = Array.Empty<string>( ), 
+			Tags = Array.Empty<string>( ),
 			Numbers = new[ ] { 1 }
 		};
 
@@ -170,7 +170,7 @@ public class CollectionRulesTests : BaseTestFixture {
 		// Arrange
 		var entity = new CollectionTestEntity {
 			Items = new List<string> { "item1" },
-			Tags = new[ ] { "tag1", "tag2", "tag3" }, 
+			Tags = new[ ] { "tag1", "tag2", "tag3" },
 			Numbers = new[ ] { 1 }
 		};
 
@@ -204,7 +204,7 @@ public class CollectionRulesTests : BaseTestFixture {
 		var entity = new CollectionTestEntity {
 			Items = new List<string> { "item1" },
 			Tags = new[ ] { "tag1" },
-			Numbers = new[ ] { 1, 0, 5 } 
+			Numbers = new[ ] { 1, 0, 5 }
 		};
 
 		// Act
@@ -253,7 +253,7 @@ public class CollectionRulesTests : BaseTestFixture {
 		var entity = new CollectionTestEntity {
 			Items = new List<string> { "item1" },
 			Tags = new[ ] { "tag1" },
-			Numbers = new[ ] { 1, 2, -1 } 
+			Numbers = new[ ] { 1, 2, -1 }
 		};
 
 		// Act
@@ -296,7 +296,7 @@ public class CollectionRulesTests : BaseTestFixture {
 			Age = 25,
 			BirthDate = DateTime.Now.AddYears( -25 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
-			Tags = new List<string>( ), 
+			Tags = new List<string>( ),
 			IsActive = true,
 			Role = UserRole.User,
 			Salary = 50000,
@@ -314,7 +314,7 @@ public class CollectionRulesTests : BaseTestFixture {
 	[Fact]
 	public async Task TestUser_Tags_WithTooManyTags_ShouldFail( ) {
 		// Arrange
-		var tooManyTags = Enumerable.Range( 1, 11 ).Select( i => $"tag{i}" ).ToList( ); 
+		var tooManyTags = Enumerable.Range( 1, 11 ).Select( i => $"tag{i}" ).ToList( );
 
 		var user = new TestUser {
 			Name = "TestUser",
@@ -346,7 +346,7 @@ public class CollectionRulesTests : BaseTestFixture {
 			Age = 25,
 			BirthDate = DateTime.Now.AddYears( -25 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
-			Tags = new List<string> { "valid", "", "   " }, 
+			Tags = new List<string> { "valid", "", "   " },
 			IsActive = true,
 			Role = UserRole.User,
 			Salary = 50000,

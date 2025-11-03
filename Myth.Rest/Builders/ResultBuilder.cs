@@ -9,23 +9,23 @@ public class ResultBuilder {
 	private bool _shouldMap = true;
 	public bool ShouldMap => _shouldMap;
 
-	public ResultBuilder() {
-		_resultMapping = [];
+	public ResultBuilder( ) {
+		_resultMapping = [ ];
 	}
 
 	/// <summary>
 	/// Clear all type mappings
 	/// </summary>
-	public void Clear() => _resultMapping.Clear();
+	public void Clear( ) => _resultMapping.Clear( );
 
-	internal dynamic TryGet(HttpStatusCode statusCode, dynamic content, out Type? type) =>
-		_resultMapping.TryGet(statusCode, content, out type);
+	internal dynamic TryGet( HttpStatusCode statusCode, dynamic content, out Type? type ) =>
+		_resultMapping.TryGet( statusCode, content, out type );
 
 	/// <summary>
 	/// Set to ignore mapping types
 	/// </summary>
 	/// <returns></returns>
-	public ResultBuilder DoNotMap() {
+	public ResultBuilder DoNotMap( ) {
 		_shouldMap = false;
 		return this;
 	}
@@ -36,8 +36,8 @@ public class ResultBuilder {
 	/// <typeparam name="TResult">The type</typeparam>
 	/// <param name="condition">A condition to check before the mapping</param>
 	/// <returns>This object</returns>
-	public ResultBuilder UseTypeForSuccess<TResult>(Func<dynamic, bool>? condition = null) =>
-		UseTypeForSuccess(typeof(TResult), condition);
+	public ResultBuilder UseTypeForSuccess<TResult>( Func<dynamic, bool>? condition = null ) =>
+		UseTypeForSuccess( typeof( TResult ), condition );
 
 	/// <summary>
 	/// Set the same type for all success status code
@@ -45,10 +45,10 @@ public class ResultBuilder {
 	/// <param name="type">The type</param>
 	/// <param name="condition">A condition to check before the mapping</param>
 	/// <returns>This object</returns>
-	public ResultBuilder UseTypeForSuccess(Type type, Func<dynamic, bool>? condition = null) {
-		foreach (var statusCode in Enum.GetValues<HttpStatusCode>()) {
-			if (statusCode.IsSuccess())
-				UseTypeFor(statusCode, type, condition);
+	public ResultBuilder UseTypeForSuccess( Type type, Func<dynamic, bool>? condition = null ) {
+		foreach ( var statusCode in Enum.GetValues<HttpStatusCode>( ) ) {
+			if ( statusCode.IsSuccess( ) )
+				UseTypeFor( statusCode, type, condition );
 		}
 
 		return this;
@@ -60,8 +60,8 @@ public class ResultBuilder {
 	/// <typeparam name="TResult">The type</typeparam>
 	/// <param name="condition">A condition to check before the mapping</param>
 	/// <returns>This object</returns>
-	public ResultBuilder UseTypeForNonSuccess<TResult>(Func<dynamic, bool>? condition = null) =>
-		UseTypeForNonSuccess(typeof(TResult), condition);
+	public ResultBuilder UseTypeForNonSuccess<TResult>( Func<dynamic, bool>? condition = null ) =>
+		UseTypeForNonSuccess( typeof( TResult ), condition );
 
 	/// <summary>
 	/// Set the same type for all non success status code
@@ -69,10 +69,10 @@ public class ResultBuilder {
 	/// <param name="type">The type</param>
 	/// <param name="condition">A condition to check before the mapping</param>
 	/// <returns>This object</returns>
-	public ResultBuilder UseTypeForNonSuccess(Type type, Func<dynamic, bool>? condition = null) {
-		foreach (var statusCode in Enum.GetValues<HttpStatusCode>()) {
-			if (!statusCode.IsSuccess())
-				UseTypeFor(statusCode, type, condition);
+	public ResultBuilder UseTypeForNonSuccess( Type type, Func<dynamic, bool>? condition = null ) {
+		foreach ( var statusCode in Enum.GetValues<HttpStatusCode>( ) ) {
+			if ( !statusCode.IsSuccess( ) )
+				UseTypeFor( statusCode, type, condition );
 		}
 
 		return this;
@@ -85,8 +85,8 @@ public class ResultBuilder {
 	/// <param name="statusCode">A status code</param>
 	/// <param name="condition">A condition to check before the mapping</param>
 	/// <returns>This object</returns>
-	public ResultBuilder UseTypeFor<TResult>(HttpStatusCode statusCode, Func<dynamic, bool>? condition = null) =>
-		UseTypeFor(statusCode, typeof(TResult), condition);
+	public ResultBuilder UseTypeFor<TResult>( HttpStatusCode statusCode, Func<dynamic, bool>? condition = null ) =>
+		UseTypeFor( statusCode, typeof( TResult ), condition );
 
 	/// <summary>
 	/// Set a type for a specific status code
@@ -95,8 +95,8 @@ public class ResultBuilder {
 	/// <param name="type">The type</param>
 	/// <param name="condition">A condition to check before the mapping</param>
 	/// <returns>This object</returns>
-	public ResultBuilder UseTypeFor(HttpStatusCode statusCode, Type type, Func<dynamic, bool>? condition = null) {
-		_resultMapping.Add(statusCode, type, condition);
+	public ResultBuilder UseTypeFor( HttpStatusCode statusCode, Type type, Func<dynamic, bool>? condition = null ) {
+		_resultMapping.Add( statusCode, type, condition );
 		return this;
 	}
 
@@ -106,8 +106,8 @@ public class ResultBuilder {
 	/// <param name="statusCode">A status code</param>
 	/// <param name="condition">A condition to check before the mapping</param>
 	/// <returns>This object</returns>
-	public ResultBuilder UseEmptyFor(HttpStatusCode statusCode, Func<dynamic, bool>? condition = null) {
-		_resultMapping.Add(statusCode, typeof(string), condition);
+	public ResultBuilder UseEmptyFor( HttpStatusCode statusCode, Func<dynamic, bool>? condition = null ) {
+		_resultMapping.Add( statusCode, typeof( string ), condition );
 		return this;
 	}
 
@@ -118,9 +118,9 @@ public class ResultBuilder {
 	/// <param name="type">The type</param>
 	/// <param name="condition">A condition to check before the mapping</param>
 	/// <returns>This object</returns>
-	public ResultBuilder UseTypeFor(IEnumerable<HttpStatusCode> statusCodes, Type type, Func<dynamic, bool>? condition = null) {
-		foreach (var statusCode in statusCodes)
-			_resultMapping.Add(statusCode, type, condition);
+	public ResultBuilder UseTypeFor( IEnumerable<HttpStatusCode> statusCodes, Type type, Func<dynamic, bool>? condition = null ) {
+		foreach ( var statusCode in statusCodes )
+			_resultMapping.Add( statusCode, type, condition );
 
 		return this;
 	}
@@ -132,8 +132,8 @@ public class ResultBuilder {
 	/// <param name="statusCodes">A list of status codes</param>
 	/// <param name="condition">A condition to check before the mapping</param>
 	/// <returns>This object</returns>
-	public ResultBuilder UseTypeFor<TResult>(IEnumerable<HttpStatusCode> statusCodes, Func<dynamic, bool>? condition = null) =>
-		UseTypeFor(statusCodes, typeof(TResult), condition);
+	public ResultBuilder UseTypeFor<TResult>( IEnumerable<HttpStatusCode> statusCodes, Func<dynamic, bool>? condition = null ) =>
+		UseTypeFor( statusCodes, typeof( TResult ), condition );
 
 	/// <summary>
 	/// Set the same type for all status codes
@@ -141,8 +141,8 @@ public class ResultBuilder {
 	/// <typeparam name="TResult">The type</typeparam>
 	/// <param name="condition">A condition to check before the mapping</param>
 	/// <returns>This object</returns>
-	public ResultBuilder UseTypeForAll<TResult>(Func<dynamic, bool>? condition = null) =>
-		UseTypeForAll(typeof(TResult), condition);
+	public ResultBuilder UseTypeForAll<TResult>( Func<dynamic, bool>? condition = null ) =>
+		UseTypeForAll( typeof( TResult ), condition );
 
 	/// <summary>
 	/// Set the same type for all status codes
@@ -150,9 +150,9 @@ public class ResultBuilder {
 	/// <param name="type">The type</param>
 	/// <param name="condition">A condition to check before the mapping</param>
 	/// <returns>This object</returns>
-	public ResultBuilder UseTypeForAll(Type type, Func<dynamic, bool>? condition = null) {
-		foreach (var statusCode in Enum.GetValues<HttpStatusCode>())
-			_resultMapping.Add(statusCode, type, condition);
+	public ResultBuilder UseTypeForAll( Type type, Func<dynamic, bool>? condition = null ) {
+		foreach ( var statusCode in Enum.GetValues<HttpStatusCode>( ) )
+			_resultMapping.Add( statusCode, type, condition );
 
 		return this;
 	}

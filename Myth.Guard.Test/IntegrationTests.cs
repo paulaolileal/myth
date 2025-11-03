@@ -59,19 +59,19 @@ public class IntegrationTests : BaseTestFixture {
 	public async Task CompleteValidationFlow_WithInvalidEntity_ShouldReturnAllErrors( ) {
 		// Arrange - Create an entity that violates multiple rules
 		var user = new TestUser {
-			Name = "A",																	// Too short (< 2 chars), but let's make it just 1 char to test minimum length
-			Email = "invalid-email-format",												// Invalid email
-			Age = -5,																	// Negative age
-			BirthDate = DateTime.Now.AddYears( 5 ),										// Future birth date
-			RegistrationDate = DateOnly.FromDateTime( DateTime.Today.AddDays( 5 ) ),	// Future registration
-			Tags = new List<string>( ),													// Empty tags
+			Name = "A",                                                                 // Too short (< 2 chars), but let's make it just 1 char to test minimum length
+			Email = "invalid-email-format",                                             // Invalid email
+			Age = -5,                                                                   // Negative age
+			BirthDate = DateTime.Now.AddYears( 5 ),                                     // Future birth date
+			RegistrationDate = DateOnly.FromDateTime( DateTime.Today.AddDays( 5 ) ),    // Future registration
+			Tags = new List<string>( ),                                                 // Empty tags
 			IsActive = true,
-			Role = ( UserRole )999,														// Invalid enum value
+			Role = ( UserRole )999,                                                     // Invalid enum value
 			PhoneType = PhoneType.Required,
-			PhoneNumber = null,															// Required but null
+			PhoneNumber = null,                                                         // Required but null
 			IsVerified = false,
-			Salary = -1000m,															// Negative salary
-			Score = 150.0																// Score > 100
+			Salary = -1000m,                                                            // Negative salary
+			Score = 150.0                                                               // Score > 100
 		};
 
 		// Act
@@ -80,7 +80,7 @@ public class IntegrationTests : BaseTestFixture {
 		// Assert
 		result.IsValid.Should( ).BeFalse( );
 		result.Errors.Should( ).NotBeEmpty( );
-		result.Errors.Count.Should( ).BeGreaterThan( 5 );					
+		result.Errors.Count.Should( ).BeGreaterThan( 5 );
 
 		// Verify specific error fields
 		var errorFields = result.Errors.Select( e => e.Field ).ToList( );
@@ -101,12 +101,12 @@ public class IntegrationTests : BaseTestFixture {
 		// Arrange - User valid for general use but has context-specific issues
 		var user = new TestUser {
 			Name = "ContextTestUser",
-			Email = "taken@example.com",												// This email is "taken" according to TestUserService
-			Age = 16,																	// Valid globally, but invalid for Update context (< 18)
+			Email = "taken@example.com",                                                // This email is "taken" according to TestUserService
+			Age = 16,                                                                   // Valid globally, but invalid for Update context (< 18)
 			BirthDate = DateTime.Now.AddYears( -16 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
 			Tags = new List<string> { "young" },
-			IsActive = false,															// Invalid for Create context (should be true)
+			IsActive = false,                                                           // Invalid for Create context (should be true)
 			Role = UserRole.User,
 			Salary = 5000m,
 			Score = 75.0
@@ -139,7 +139,7 @@ public class IntegrationTests : BaseTestFixture {
 		// Arrange
 		var userWithTakenEmail = new TestUser {
 			Name = "AsyncTestUser",
-			Email = "taken@example.com",												 // This email is marked as taken in TestUserService
+			Email = "taken@example.com",                                                 // This email is marked as taken in TestUserService
 			Age = 25,
 			BirthDate = DateTime.Now.AddYears( -25 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
@@ -152,7 +152,7 @@ public class IntegrationTests : BaseTestFixture {
 
 		var userWithAvailableEmail = new TestUser {
 			Name = "Jose",
-			Email = "available@example.com",											// This email is available
+			Email = "available@example.com",                                            // This email is available
 			Age = 25,
 			BirthDate = DateTime.Now.AddYears( -25 ),
 			RegistrationDate = DateOnly.FromDateTime( DateTime.Today ),
