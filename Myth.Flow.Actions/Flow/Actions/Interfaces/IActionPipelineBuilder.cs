@@ -1,0 +1,115 @@
+using Myth.Models;
+
+namespace Myth.Flow.Actions.Interfaces;
+
+/// <summary>
+/// Pipeline builder for Action-First pattern without context boilerplate
+/// </summary>
+/// <typeparam name="TCurrent">The current request type in the pipeline</typeparam>
+public interface IActionPipelineBuilder<TCurrent> {
+
+	/// <summary>
+	/// Adds a synchronous step to the pipeline.
+	/// </summary>
+	/// <param name="handler">Step handler function that takes the current state and returns a new state.</param>
+	/// <param name="onSuccess">Optional callback on success.</param>
+	/// <param name="onError">Optional error handler for this step.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	IActionPipelineBuilder<TCurrent> Step(
+		Func<ActionPipelineState<TCurrent>, ActionPipelineState<TCurrent>> handler,
+		Action<ActionPipelineState<TCurrent>>? onSuccess = null,
+		Action<Exception>? onError = null );
+
+	/// <summary>
+	/// Adds an asynchronous step to the pipeline.
+	/// </summary>
+	/// <param name="handler">Async step handler function that takes the current state and returns a new state.</param>
+	/// <param name="onSuccess">Optional callback on success.</param>
+	/// <param name="onError">Optional error handler for this step.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	IActionPipelineBuilder<TCurrent> StepAsync(
+		Func<ActionPipelineState<TCurrent>, Task<ActionPipelineState<TCurrent>>> handler,
+		Action<ActionPipelineState<TCurrent>>? onSuccess = null,
+		Action<Exception>? onError = null );
+
+	/// <summary>
+	/// Adds an asynchronous step to the pipeline with cancellation token support.
+	/// </summary>
+	/// <param name="handler">Async step handler function that takes the current state and cancellation token, returns a new state.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	IActionPipelineBuilder<TCurrent> StepAsync(
+		Func<ActionPipelineState<TCurrent>, CancellationToken, Task<ActionPipelineState<TCurrent>>> handler );
+
+	/// <summary>
+	/// Adds a synchronous step to the pipeline that returns a <see cref="Result{T}"/>.
+	/// Throws <see cref="Exceptions.PipelineException"/> if the result is failure.
+	/// </summary>
+	/// <param name="handler">Step handler returning a <see cref="Result{T}"/>.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	IActionPipelineBuilder<TCurrent> StepResult(
+		Func<ActionPipelineState<TCurrent>, Result<ActionPipelineState<TCurrent>>> handler );
+
+	/// <summary>
+	/// Adds an asynchronous step to the pipeline that returns a <see cref="Result{T}"/>.
+	/// Throws <see cref="Exceptions.PipelineException"/> if the result is failure.
+	/// </summary>
+	/// <param name="handler">Async step handler returning a <see cref="Result{T}"/>.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	IActionPipelineBuilder<TCurrent> StepResultAsync(
+		Func<ActionPipelineState<TCurrent>, Task<Result<ActionPipelineState<TCurrent>>>> handler );
+
+	/// <summary>
+	/// Adds an asynchronous step to the pipeline that returns a <see cref="Result{T}"/> with cancellation token support.
+	/// Throws <see cref="Exceptions.PipelineException"/> if the result is failure.
+	/// </summary>
+	/// <param name="handler">Async step handler returning a <see cref="Result{T}"/>.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	IActionPipelineBuilder<TCurrent> StepResultAsync(
+		Func<ActionPipelineState<TCurrent>, CancellationToken, Task<Result<ActionPipelineState<TCurrent>>>> handler );
+
+	/// <summary>
+	/// Adds a tap step to the pipeline that executes a side-effect action on the context.
+	/// </summary>
+	/// <param name="action">Action to execute on the context.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	IActionPipelineBuilder<TCurrent> Tap( Action<ActionPipelineState<TCurrent>> action );
+
+	/// <summary>
+	/// Adds an asynchronous tap step to the pipeline that executes a side-effect async action on the context.
+	/// </summary>
+	/// <param name="action">Async action to execute on the context.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	IActionPipelineBuilder<TCurrent> TapAsync( Func<ActionPipelineState<TCurrent>, Task> action );
+
+	/// <summary>
+	/// Adds a conditional step to the pipeline. Executes the configured pipeline if the predicate returns true.
+	/// </summary>
+	/// <param name="predicate">Predicate to determine if the conditional pipeline should run.</param>
+	/// <param name="configurePipeline">Action to configure the conditional pipeline.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	IActionPipelineBuilder<TCurrent> When(
+		Func<ActionPipelineState<TCurrent>, bool> predicate,
+		Action<IActionPipelineBuilder<TCurrent>> configurePipeline );
+
+	/// <summary>
+	/// Enables telemetry for the pipeline execution with the specified operation name.
+	/// </summary>
+	/// <param name="operationName">Telemetry operation name.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	IActionPipelineBuilder<TCurrent> WithTelemetry( string operationName );
+
+	/// <summary>
+	/// Configures retry attempts and backoff for subsequent steps in the pipeline.
+	/// </summary>
+	/// <param name="maxAttempts">Maximum number of retry attempts.</param>
+	/// <param name="backoffMs">Backoff in milliseconds between retries.</param>
+	/// <returns>The current <see cref="IActionPipelineBuilder{TCurrent}"/> instance.</returns>
+	IActionPipelineBuilder<TCurrent> WithRetry( int maxAttempts, int backoffMs = 100 );
+
+	/// <summary>
+	/// Executes the pipeline and returns the result
+	/// </summary>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>Pipeline execution result</returns>
+	Task<Result<TCurrent>> ExecuteAsync( CancellationToken cancellationToken = default );
+}

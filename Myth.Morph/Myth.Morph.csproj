@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<!-- Patform -->
 		<TargetFramework>net8.0</TargetFramework>
-		<Platforms>x64</Platforms>
+		<Platforms>AnyCPU</Platforms>
 		<!-- Settings -->
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
@@ -12,7 +12,7 @@
 		<PackageId>Myth.Morph</PackageId>
 		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>
-		<Description>A fluent .NET library for schema-based object transformation with self-defining morphable types</Description>
+		<Description>Schema-based object transformation with self-defining morphable types. Supports automatic property mapping, async transformations, service provider integration, and complex object binding scenarios.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Morph</RepositoryUrl>
@@ -24,6 +24,10 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

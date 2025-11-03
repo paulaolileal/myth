@@ -1,6 +1,5 @@
 ﻿using Myth.Exceptions;
 using Myth.Extensions;
-using Newtonsoft.Json;
 using System.Net;
 using System.Text;
 
@@ -57,7 +56,7 @@ public class RestResponse(
 	public object? Result { get; private set; }
 
 	public dynamic DynamicResult { get; private set; } =
-		isFileResponse ? new { } : JsonConvert.DeserializeObject<dynamic>( rawMessage )!;
+		isFileResponse ? new { } : rawMessage.FromJson<dynamic>( )!;
 
 	internal void SetTypedResult( Type type, object result ) {
 		ResultType = type;

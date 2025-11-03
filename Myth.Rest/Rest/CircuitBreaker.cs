@@ -9,7 +9,7 @@ namespace Myth.Rest {
 		private readonly int _failureThreshold;
 		private readonly TimeSpan _timeout;
 		private readonly TimeSpan _halfOpenRetryTimeout;
-		private readonly object _lock = new();
+		private readonly object _lock = new( );
 
 		private CircuitBreakerState _state = CircuitBreakerState.Closed;
 		private int _failureCount = 0;
@@ -22,10 +22,10 @@ namespace Myth.Rest {
 		/// <param name="failureThreshold">Number of failures before opening</param>
 		/// <param name="timeout">Timeout before attempting half-open</param>
 		/// <param name="halfOpenRetryTimeout">Timeout for half-open retry attempts</param>
-		public CircuitBreaker(int failureThreshold = 5, TimeSpan timeout = default, TimeSpan halfOpenRetryTimeout = default) {
+		public CircuitBreaker( int failureThreshold = 5, TimeSpan timeout = default, TimeSpan halfOpenRetryTimeout = default ) {
 			_failureThreshold = failureThreshold > 0 ? failureThreshold : 5;
-			_timeout = timeout == default ? TimeSpan.FromMinutes(1) : timeout;
-			_halfOpenRetryTimeout = halfOpenRetryTimeout == default ? TimeSpan.FromSeconds(30) : halfOpenRetryTimeout;
+			_timeout = timeout == default ? TimeSpan.FromMinutes( 1 ) : timeout;
+			_halfOpenRetryTimeout = halfOpenRetryTimeout == default ? TimeSpan.FromSeconds( 30 ) : halfOpenRetryTimeout;
 		}
 
 		/// <summary>
@@ -33,7 +33,7 @@ namespace Myth.Rest {
 		/// </summary>
 		public CircuitBreakerState State {
 			get {
-				lock (_lock) {
+				lock ( _lock ) {
 					return _state;
 				}
 			}
@@ -42,17 +42,16 @@ namespace Myth.Rest {
 		/// <summary>
 		/// Execute an operation through the circuit breaker
 		/// </summary>
-		public async Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default) {
-			if (!CanExecute())
-				throw new CircuitBreakerOpenException($"Circuit breaker is {_state}. Next attempt allowed at: {_nextAttemptTime}");
+		public async Task<T> ExecuteAsync<T>( Func<CancellationToken, Task<T>> operation, CancellationToken cancellationToken = default ) {
+			if ( !CanExecute( ) )
+				throw new CircuitBreakerOpenException( $"Circuit breaker is {_state}. Next attempt allowed at: {_nextAttemptTime}" );
 
 			try {
-				var result = await operation(cancellationToken);
-				RecordSuccess();
+				var result = await operation( cancellationToken );
+				RecordSuccess( );
 				return result;
-			}
-			catch (Exception ex) {
-				RecordFailure(ex);
+			} catch ( Exception ex ) {
+				RecordFailure( ex );
 				throw;
 			}
 		}
@@ -60,24 +59,24 @@ namespace Myth.Rest {
 		/// <summary>
 		/// Check if the circuit breaker allows execution
 		/// </summary>
-		public bool CanExecute() {
-			lock (_lock) {
-				switch (_state) {
+		public bool CanExecute( ) {
+			lock ( _lock ) {
+				switch ( _state ) {
 					case CircuitBreakerState.Closed:
-						return true;
+					return true;
 
 					case CircuitBreakerState.Open:
-						if (DateTime.UtcNow >= _nextAttemptTime) {
-							_state = CircuitBreakerState.HalfOpen;
-							return true;
-						}
-						return false;
+					if ( DateTime.UtcNow >= _nextAttemptTime ) {
+						_state = CircuitBreakerState.HalfOpen;
+						return true;
+					}
+					return false;
 
 					case CircuitBreakerState.HalfOpen:
-						return true;
+					return true;
 
 					default:
-						return false;
+					return false;
 				}
 			}
 		}
@@ -85,8 +84,8 @@ namespace Myth.Rest {
 		/// <summary>
 		/// Record a successful execution
 		/// </summary>
-		public void RecordSuccess() {
-			lock (_lock) {
+		public void RecordSuccess( ) {
+			lock ( _lock ) {
 				_failureCount = 0;
 				_lastFailureTime = DateTime.MinValue;
 				_state = CircuitBreakerState.Closed;
@@ -96,22 +95,21 @@ namespace Myth.Rest {
 		/// <summary>
 		/// Record a failed execution
 		/// </summary>
-		public void RecordFailure(Exception exception) {
-			lock (_lock) {
+		public void RecordFailure( Exception exception ) {
+			lock ( _lock ) {
 				_failureCount++;
 				_lastFailureTime = DateTime.UtcNow;
 
-				if (_state == CircuitBreakerState.HalfOpen) {
+				if ( _state == CircuitBreakerState.HalfOpen ) {
 					// In half-open state, any failure immediately opens the circuit
 					_state = CircuitBreakerState.Open;
 
-					_nextAttemptTime = DateTime.UtcNow.Add(_timeout);
-				}
-				else if (_failureCount >= _failureThreshold) {
+					_nextAttemptTime = DateTime.UtcNow.Add( _timeout );
+				} else if ( _failureCount >= _failureThreshold ) {
 					// Threshold reached, open the circuit
 					_state = CircuitBreakerState.Open;
 
-					_nextAttemptTime = DateTime.UtcNow.Add(_timeout);
+					_nextAttemptTime = DateTime.UtcNow.Add( _timeout );
 				}
 			}
 		}
@@ -119,8 +117,8 @@ namespace Myth.Rest {
 		/// <summary>
 		/// Reset the circuit breaker to closed state
 		/// </summary>
-		public void Reset() {
-			lock (_lock) {
+		public void Reset( ) {
+			lock ( _lock ) {
 				_failureCount = 0;
 				_lastFailureTime = DateTime.MinValue;
 				_nextAttemptTime = DateTime.MinValue;

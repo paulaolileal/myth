@@ -1,5 +1,5 @@
-﻿using Myth.Interfaces.Repositories.Results;
-using Myth.Repositories.Results;
+﻿using Myth.Interfaces.Results;
+using Myth.Models.Results;
 using Myth.ValueObjects;
 
 namespace Myth.Extensions;

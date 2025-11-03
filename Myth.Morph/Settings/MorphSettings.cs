@@ -1,4 +1,6 @@
-﻿using System.Collections.ObjectModel;
+﻿using Myth.Interfaces.Results;
+using Myth.Models.Results;
+using System.Collections.ObjectModel;
 using System.Reflection;
 
 namespace Myth.Settings {
@@ -34,6 +36,7 @@ namespace Myth.Settings {
 				(typeof(IReadOnlyCollection<>), typeof(ReadOnlyCollection<>)),
 				(typeof(IReadOnlyList<>), typeof(List<>)),
 				(typeof(IReadOnlySet<>), typeof(HashSet<>)),
+				(typeof(IPaginated<>), typeof(Paginated<>)),
 			];
 
 		/// <summary>

@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<!-- Patform -->
 		<TargetFramework>net8.0</TargetFramework>
-		<Platforms>x64</Platforms>
+		<Platforms>AnyCPU</Platforms>
 		<!-- Settings -->
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
@@ -12,7 +12,7 @@
 		<PackageId>Myth.DependencyInjection</PackageId>
 		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>
-		<Description>It is a .NET library for working with dependency injection, types and assemblies.</Description>
+		<Description>Type discovery and convention-based service registration with automatic assembly scanning, interface mapping, and plugin architecture support for simplified dependency injection configuration.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.DependencyInjection</RepositoryUrl>

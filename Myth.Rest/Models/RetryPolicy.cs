@@ -109,7 +109,7 @@ namespace Myth.Models {
 		}
 
 		/// <summary>
-		/// Define the max amount of retries 
+		/// Define the max amount of retries
 		/// </summary>
 		public RetryPolicy WithMaxAttempts( int maxAttempts ) {
 			ArgumentOutOfRangeException.ThrowIfNegativeOrZero( maxAttempts, nameof( maxAttempts ) );
@@ -118,7 +118,7 @@ namespace Myth.Models {
 		}
 
 		/// <summary>
-		/// Defines the status codes for retrying 
+		/// Defines the status codes for retrying
 		/// </summary>
 		public RetryPolicy ForStatusCodes( params HttpStatusCode[ ] statusCodes ) {
 			StatusCodes = statusCodes;

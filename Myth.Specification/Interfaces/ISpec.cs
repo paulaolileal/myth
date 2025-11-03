@@ -1,8 +1,10 @@
-﻿using System.Linq.Expressions;
+﻿using Myth.ValueObjects;
+using System.Linq.Expressions;
 
 namespace Myth.Interfaces;
 
 public interface ISpec<T> {
+
 	/// <summary>
 	/// The predicate
 	/// </summary>
@@ -48,7 +50,7 @@ public interface ISpec<T> {
 	IQueryable<T> Prepare( IQueryable<T> query );
 
 	/// <summary>
-	/// Add a filter function aggregation 
+	/// Add a filter function aggregation
 	/// </summary>
 	/// <param name="query">The collection</param>
 	/// <returns>A queryable collection</returns>
@@ -167,6 +169,13 @@ public interface ISpec<T> {
 	/// <param name="amount">Number of elements</param>
 	/// <returns>This object</returns>
 	ISpec<T> Take( int amount );
+
+	/// <summary>
+	/// Apply pagination using the provided Pagination value object
+	/// </summary>
+	/// <param name="pagination">The pagination parameters containing PageNumber and PageSize</param>
+	/// <returns>This object</returns>
+	ISpec<T> WithPagination( Pagination pagination );
 
 	/// <summary>
 	/// Add a sort specification in ascending order

@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
-		<Platforms>x64</Platforms>
+		<Platforms>AnyCPU</Platforms>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<IsPackable>false</IsPackable>
@@ -24,7 +24,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
+	  <ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

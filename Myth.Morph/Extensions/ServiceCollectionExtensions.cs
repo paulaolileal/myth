@@ -19,7 +19,7 @@ namespace Myth.Extensions {
 		/// This method registers the necessary services for Morph, including generic type mappings,
 		/// instance-based mapping profiles, and automatic mappings for generic types with identical definitions. If no
 		/// assemblies are specified in <paramref name="settings"/>, the method uses all assemblies loaded in the current
-		/// application domain.
+		/// application domain. Automatically initializes the global service provider using the centralized Myth system.
 		/// </remarks>
 		/// <param name="services">The <see cref="IServiceCollection"/> to which the Morph services will be added.</param>
 		/// <param name="settings">An optional delegate to configure <see cref="MorphSettings"/>. If not provided, default settings are used.</param>
@@ -54,8 +54,6 @@ namespace Myth.Extensions {
 				logger?.LogInformation( "SchemaRegistry initialization completed successfully" );
 				return registry;
 			} );
-
-			DefaultProvider.EnsureProvider( services.BuildServiceProvider( ) );
 
 			return services;
 		}

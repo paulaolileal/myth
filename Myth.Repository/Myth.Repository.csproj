@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<!-- Patform -->
 		<TargetFramework>net8.0</TargetFramework>
-		<Platforms>x64</Platforms>
+		<Platforms>AnyCPU</Platforms>
 		<!-- Settings -->
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
@@ -12,7 +12,7 @@
 		<PackageId>Myth.Repository</PackageId>
 		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>
-		<Description>It is a .NET library for defining database access repositories.</Description>
+		<Description>Generic repository pattern interfaces with async support, specification integration, and pagination. Provides read/write separation, CRUD operations, and extensible repository contracts for clean data access architecture.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Repository</RepositoryUrl>
@@ -39,6 +39,10 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
 		<ProjectReference Include="..\Myth.Specification\Myth.Specification.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="ValueObjects\" />
 	</ItemGroup>
 
 </Project>

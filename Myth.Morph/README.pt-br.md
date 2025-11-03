@@ -1,4 +1,4 @@
-﻿# Myth.Morph
+# Myth.Morph
 
 [![NuGet Version](https://img.shields.io/nuget/v/Myth.Morph?style=for-the-badge&logo=nuget)](https://www.nuget.org/packages/Myth.Morph/) [![NuGet Version](https://img.shields.io/nuget/vpre/Myth.Morph?style=for-the-badge&logo=nuget&color=rgb(255%2C%20185%2C%200))](https://www.nuget.org/packages/Myth.Morph/absoluteLatest)
 
@@ -6,171 +6,262 @@
 
 [![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg?style=for-the-badge)](/README.pt-br.md) [![en](https://img.shields.io/badge/lang-en-red.svg?style=for-the-badge)](/README.md)
 
-Uma biblioteca .NET poderosa para transformação e mapeamento de objetos. Myth.Morph fornece um sistema flexível e extensível para conversão entre diferentes tipos com suporte para mapeamentos baseados em convenção e personalizados.
+Uma biblioteca .NET leve para transformação de objetos projetada para arquitetura limpa e Domain-Driven Design. Myth.Morph fornece uma abordagem declarativa baseada em esquemas para mapeamento de objetos com zero overhead de reflexão durante a transformação e integração completa com injeção de dependência.
 
-O objetivo principal é simplificar cenários de mapeamento de objetos fornecendo alta flexibilidade e desempenho através de integração com injeção de dependência e configuração baseada em esquemas.
+## Por que Myth.Morph?
 
-# ⭐ Funcionalidades
+Diferente de bibliotecas de mapeamento pesadas que dependem de reflexão em tempo de execução e convenções, Myth.Morph oferece controle explícito sobre transformações mantendo seu código limpo e sustentável:
 
-- **Simples e Intuitivo**: Métodos de extensão fáceis de usar para transformação de objetos
-- **Mapeamento Flexível**: Suporte para mapeamentos automáticos, personalizados e baseados em instância
-- **Integração com Injeção de Dependência**: Integração completa com Microsoft.Extensions.DependencyInjection
-- **Suporte a Tipos Genéricos**: Mapeamento automático para coleções genéricas e interfaces
-- **Operações Assíncronas**: Suporte integrado para binding assíncrono de propriedades
-- **Integração com Logging**: Logging abrangente através do Microsoft.Extensions.Logging
-- **Segurança de Exceções**: Tratamento detalhado de exceções com tipos de exceção personalizados
-- **Configuração Baseada em Esquema**: API fluente para configurar mapeamentos complexos
+- **Mapeamentos autodocumentados**: Transformações são definidas onde pertencem - no tipo de origem
+- **Type-safe**: Verificação em tempo de compilação para bindings de propriedades
+- **Integrado com DI**: Acesso ao service provider para transformações complexas e operações assíncronas
+- **Foco em performance**: Compilação de esquema na inicialização, zero reflexão durante mapeamento
+- **Separação limpa**: Mantenha DTOs, entidades e view models claramente separados com regras de transformação explícitas
 
-# 🕶️ Como Usar
+Perfeito para aplicações CQRS, Arquitetura Limpa e DDD onde transformações explícitas importam.
 
-## 🚀 Início Rápido
+## Funcionalidades
 
-### Instalação e Configuração
+- **Configuração de Esquema Declarativa**: Defina transformações usando API fluente com segurança em tempo de compilação
+- **Mapeamento Automático de Propriedades**: Mapeamento baseado em convenção para nomes de propriedades correspondentes
+- **Binding Manual**: Quatro estratégias de binding para máxima flexibilidade
+- **Suporte Assíncrono**: Suporte de primeira classe para async/await em transformações I/O-bound
+- **Injeção de Dependência**: Acesso completo ao service provider na lógica de transformação
+- **Coleções Genéricas**: Mapeamento automático de coleções com transformação de elementos
+- **Objetos Aninhados**: Suporte para transformação recursiva de grafos de objetos complexos
+- **Ignorar Propriedades**: Exclusão explícita de propriedades do mapeamento
+- **Logging Abrangente**: Logging de trace detalhado para depuração de transformações
 
-Primeiro, registre o Myth.Morph no seu container de injeção de dependência:
+## Instalação
+
+```bash
+dotnet add package Myth.Morph
+```
+
+## Início Rápido
+
+### 1. Registrar Serviços
 
 ```csharp
+// Em Program.cs ou Startup.cs
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddMorph();
+
+var app = builder.BuildApp(); // Use BuildApp() ao invés de Build()
+```
+
+Para aplicações console:
+
+```csharp
+var services = new ServiceCollection();
 services.AddMorph();
+
+var provider = services.BuildWithGlobalProvider();
 ```
 
-### Uso Básico
+### 2. Definir Transformações
 
-Transforme objetos usando os métodos de extensão:
-
-```csharp
-// Transformação simples
-var destino = origem.To<TipoDestino>();
-
-// Transformar com service provider personalizado
-var destino = origem.To<TipoDestino>(serviceProvider);
-
-// Transformar coleções
-var listaDestino = listaOrigem.To<TipoDestino>();
-
-// Transformação assíncrona
-var destino = await origem.ToAsync<TipoDestino>();
-```
-
-### Verificar se o Mapeamento Existe
+Implemente `IMorphable<TDestination>` no seu tipo de origem:
 
 ```csharp
-// Verificar se um mapeamento existe
-bool podeMapear = origem.CanBindTo<TipoDestino>();
-
-// Verificação type-safe
-bool podeMapear = origem.CanBindTo<TipoOrigem, TipoDestino>();
-```
-
-## 📋 Mapeamento Baseado em Instância
-
-Crie mapeamentos personalizados implementando a interface `IMorphable<TDestination>`:
-
-```csharp
-public class UsuarioDto : IMorphable<Usuario>
-{
-    public string Nome { get; set; }
+public class CreateUserDto : IMorphable<User> {
+    public string Name { get; set; }
     public string Email { get; set; }
-    public DateTime DataNascimento { get; set; }
-    
-    public void MorphTo(Schema<Usuario> schema)
-    {
+    public DateTime BirthDate { get; set; }
+
+    public void MorphTo( Schema<User> schema ) {
         schema
-            .Bind(u => u.NomeCompleto, () => Nome)
-            .Bind(u => u.EnderecoEmail, () => Email)
-            .Bind(u => u.Idade, sp => CalcularIdade(DataNascimento))
-            .BindAsync(u => u.Perfil, async sp => 
-            {
-                var servicoPerfil = sp.GetService<IServicoPerfil>();
-                return await servicoPerfil.ObterPerfilAsync(Email);
-            })
-            .Ignore(u => u.IdInterno);
+            .Bind(u => u.FullName, () => Name)
+            .Bind(u => u.EmailAddress, () => Email)
+            .Bind(u => u.Age, () => DateTime.Today.Year - BirthDate.Year);
     }
-    
-    private int CalcularIdade(DateTime dataNascimento) 
-        => DateTime.Today.Year - dataNascimento.Year;
 }
 ```
 
-## ⚙️ Configuração Avançada de Esquema
-
-### Bindings Síncronos
+### 3. Transformar Objetos
 
 ```csharp
-public void MorphTo(Schema<Destino> schema)
-{
-    // Bind com resolvedor de service provider
-    schema.Bind(d => d.Propriedade, sp => 
-    {
-        var servico = sp.GetService<IMeuServico>();
-        return servico.ObterValor();
-    });
-    
-    // Bind com resolvedor direto
-    schema.Bind(d => d.Propriedade, () => "Valor Direto");
-    
-    // Ignorar propriedades
-    schema.Ignore(d => d.PropriedadeIndesejada);
+var dto = new CreateUserDto {
+    Name = "João Silva",
+    Email = "joao@exemplo.com",
+    BirthDate = new DateTime(1990, 1, 1)
+};
+
+var user = dto.To<User>();
+```
+
+## Estratégias de Binding
+
+Myth.Morph fornece quatro estratégias de binding para lidar com diferentes cenários de transformação.
+
+### 1. Binding Direto de Valor
+
+Mapear uma propriedade para um valor computado:
+
+```csharp
+public void MorphTo( Schema<User> schema ) {
+    schema.Bind(u => u.FullName, () => $"{FirstName} {LastName}");
 }
 ```
 
-### Bindings Assíncronos
+### 2. Binding com Service Provider
+
+Acessar serviços do container DI para transformações complexas:
 
 ```csharp
-public void MorphTo(Schema<Destino> schema)
-{
-    // Binding assíncrono com service provider
-    schema.BindAsync(d => d.PropriedadeAssincrona, async sp =>
-    {
-        var servico = sp.GetService<IServicoAssincrono>();
-        return await servico.ObterDadosAsync();
-    });
-    
-    // Binding assíncrono com resolvedor direto
-    schema.BindAsync(d => d.PropriedadeAssincrona, async () =>
-    {
-        await Task.Delay(100);
-        return "Valor Assíncrono";
+public void MorphTo( Schema<Order> schema ) {
+    schema.Bind(o => o.Customer, sp => {
+        var customerService = sp.GetRequiredService<ICustomerService>();
+        return customerService.GetCustomerById(CustomerId);
     });
 }
 ```
 
-## 🔧 Opções de Configuração
+### 3. Binding Assíncrono Direto
 
-### Configuração de Assembly
+Para operações assíncronas sem service provider:
 
 ```csharp
-services.AddMorph(settings =>
-{
-    // Adicionar assemblies específicos
+public void MorphTo( Schema<User> schema ) {
+    schema.BindAsync(u => u.Avatar, async () => {
+        await Task.Delay(100); // Simular trabalho assíncrono
+        return "default-avatar.png";
+    });
+}
+```
+
+### 4. Binding Assíncrono com Service Provider
+
+Combinar operações assíncronas com DI:
+
+```csharp
+public void MorphTo( Schema<Product> schema ) {
+    schema.BindAsync(p => p.Reviews, async sp => {
+        var reviewService = sp.GetRequiredService<IReviewService>();
+        return await reviewService.GetReviewsAsync(ProductId);
+    });
+}
+```
+
+## Mapeamento Automático de Propriedades
+
+Propriedades com nomes correspondentes e tipos compatíveis são mapeadas automaticamente:
+
+```csharp
+public class UserDto : IMorphable<User> {
+    public string Name { get; set; }      // Auto-mapeia para User.Name
+    public string Email { get; set; }     // Auto-mapeia para User.Email
+    public int Age { get; set; }          // Auto-mapeia para User.Age
+
+    public void MorphTo( Schema<User> schema ) {
+        // Apenas defina mapeamentos customizados - mapeamento automático cuida do resto
+        schema.Ignore(u => u.InternalId);
+    }
+}
+```
+
+### Funcionalidades do Mapeamento Automático
+
+- **Correspondência de nomes**: Propriedades com nomes idênticos são mapeadas automaticamente
+- **Conversão de tipos**: Lida com conversões de tipos primitivos (int para long, etc.)
+- **Objetos aninhados**: Transforma recursivamente objetos aninhados usando mapeamentos registrados
+- **Tratamento de null**: Lida com segurança valores null e tipos nullable
+- **Mapeamento de coleções**: Mapeia automaticamente tipos de coleção compatíveis
+
+## Ignorando Propriedades
+
+Excluir propriedades de mapeamento manual e automático:
+
+```csharp
+public void MorphTo( Schema<User> schema ) {
+    schema
+        .Ignore(u => u.InternalId)
+        .Ignore(u => u.CreatedBy)
+        .Ignore(u => u.ModifiedBy);
+}
+```
+
+## Transformações de Coleções
+
+Transformar coleções com métodos de extensão type-safe:
+
+```csharp
+// Transformar enumerable
+IEnumerable<UserDto> dtos = GetUserDtos();
+IEnumerable<User> users = dtos.To<User>();
+
+// Transformar com service provider
+IEnumerable<User> users = dtos.To<User>(serviceProvider);
+
+// Transformação assíncrona de coleção
+IEnumerable<User> users = await dtos.ToAsync<User>();
+
+// Transformação type-safe de coleção
+List<UserDto> dtoList = GetUserDtos();
+IEnumerable<User> users = dtoList.To<UserDto, User>();
+```
+
+## Mapeamento de Objetos Aninhados
+
+Myth.Morph lida automaticamente com transformações aninhadas:
+
+```csharp
+public class OrderDto : IMorphable<Order> {
+    public int OrderId { get; set; }
+    public List<OrderItemDto> Items { get; set; }
+
+    public void MorphTo( Schema<Order> schema ) {
+        schema
+            .Bind(o => o.Id, () => OrderId)
+            .BindAsync(o => o.Items, async sp =>
+                // Transformação de coleção aninhada
+                await Items.ToAsync<OrderItem>(sp)
+            );
+    }
+}
+
+// OrderItemDto também implementa IMorphable<OrderItem>
+public class OrderItemDto : IMorphable<OrderItem> {
+    public string ProductName { get; set; }
+    public decimal Price { get; set; }
+
+    public void MorphTo( Schema<OrderItem> schema ) {
+        // Mapeamento automático cuida das propriedades
+    }
+}
+```
+
+## Configuração Avançada
+
+### Escaneamento de Assembly Customizado
+
+Limitar assemblies escaneados para implementações IMorphable:
+
+```csharp
+services.AddMorph(settings => {
     settings.AddAssembly(Assembly.GetExecutingAssembly());
-    settings.AddAssemblies(assembly1, assembly2);
-    
-    // Limpar e adicionar assemblies personalizados
-    settings.ClearAssemblies()
-            .AddAssembly(assemblyPersonalizado);
+    settings.AddAssemblies(typeof(UserDto).Assembly, typeof(OrderDto).Assembly);
 });
 ```
 
 ### Mapeamentos de Tipos Genéricos
 
+Registrar mapeamentos entre interfaces genéricas e tipos concretos:
+
 ```csharp
-services.AddMorph(settings =>
-{
-    // Adicionar mapeamentos personalizados de interface para concreto
-    settings.AddGenericMorph(typeof(IMinhaInterface<>), typeof(MinhaImplementacao<>));
-    
+services.AddMorph(settings => {
+    settings.AddGenericMorph(typeof(IList<>), typeof(List<>));
+    settings.AddGenericMorph(typeof(ICustomCollection<>), typeof(CustomCollection<>));
+
     // Mapeamento genérico type-safe
-    settings.AddGenericMapping<IColecaoPersonalizada<>, ColecaoPersonalizada<>>();
-    
-    // Limpar mapeamentos padrão e adicionar personalizados
-    settings.ClearGenericMappings()
-            .AddGenericMapping<IList<>, ArrayList>();
+    settings.AddGenericMapping<IMyInterface<>, MyImplementation<>>();
 });
 ```
 
 ### Mapeamentos Genéricos Padrão
 
-A biblioteca inclui estes mapeamentos padrão:
+Myth.Morph inclui estes mapeamentos padrão:
 
 - `IList<>` → `List<>`
 - `ICollection<>` → `List<>`
@@ -180,190 +271,329 @@ A biblioteca inclui estes mapeamentos padrão:
 - `IReadOnlyList<>` → `List<>`
 - `IReadOnlySet<>` → `HashSet<>`
 
-## 🏗️ Exemplos de Mapeamento Complexo
-
-### Integração com Padrão Repository
+### Limpar Mapeamentos Padrão
 
 ```csharp
-public class ServicoUsuario
-{
-    private readonly IServiceProvider _serviceProvider;
-    
-    public ServicoUsuario(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-    
-    public async Task<UsuarioDto> ObterUsuarioAsync(int idUsuario)
-    {
-        var usuario = await ObterUsuarioDoBanco(idUsuario);
-        return usuario.To<UsuarioDto>(_serviceProvider);
-    }
-    
-    public async Task<IEnumerable<UsuarioDto>> ObterUsuariosAsync()
-    {
-        var usuarios = await ObterUsuariosDoBanco();
-        return await usuarios.ToAsync<UsuarioDto>(_serviceProvider);
-    }
-}
+services.AddMorph(settings => {
+    settings.ClearGenericMappings()
+            .AddGenericMapping<IList<>, ArrayList>(); // Usar mapeamento customizado
+});
 ```
 
-### Transformação de Objetos Complexos
+## Exemplos do Mundo Real
+
+### Comando CQRS para Entidade
 
 ```csharp
-public class PedidoDto : IMorphable<Pedido>
-{
-    public int Id { get; set; }
-    public string NomeCliente { get; set; }
-    public List<ItemPedidoDto> Itens { get; set; }
-    public decimal ValorTotal { get; set; }
-    
-    public void MorphTo(Schema<Pedido> schema)
-    {
+public class CreateProductCommand : IMorphable<Product> {
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+    public string CategoryId { get; set; }
+
+    public void MorphTo( Schema<Product> schema ) {
         schema
-            .Bind(p => p.IdPedido, () => Id)
-            .Bind(p => p.Cliente, sp =>
-            {
-                var servicoCliente = sp.GetService<IServicoCliente>();
-                return servicoCliente.ObterClientePorNome(NomeCliente);
+            .Bind(p => p.Name, () => Name)
+            .Bind(p => p.Price, () => Price)
+            .Bind(p => p.Category, sp => {
+                var categoryRepo = sp.GetRequiredService<ICategoryRepository>();
+                return categoryRepo.GetById(CategoryId);
             })
-            .BindAsync(p => p.ItensPedido, async sp =>
-            {
-                // Transformar coleção assincronamente
-                return await Itens.ToAsync<ItemPedido>(sp);
-            })
-            .Bind(p => p.Total, () => ValorTotal)
-            .BindAsync(p => p.InfoEntrega, async sp =>
-            {
-                var servicoEntrega = sp.GetService<IServicoEntrega>();
-                return await servicoEntrega.CalcularEntregaAsync(Id);
-            })
-            .Ignore(p => p.NotasInternas);
+            .Bind(p => p.CreatedAt, () => DateTime.UtcNow)
+            .Bind(p => p.IsActive, () => true);
     }
 }
 ```
 
-## 🎯 Casos de Uso
-
-### Transformação de Respostas de API
+### Resposta de API para Modelo de Domínio
 
 ```csharp
-// Transformar respostas de API para modelos de domínio
-public async Task<Usuario> ObterUsuarioDaApi(int idUsuario)
-{
-    var respostaApi = await httpClient.GetAsync($"users/{idUsuario}");
-    var usuarioDto = await respostaApi.Content.ReadFromJsonAsync<UsuarioApiDto>();
-    
-    return usuarioDto.To<Usuario>();
+public class UserApiResponse : IMorphable<User> {
+    public string Id { get; set; }
+    public string FullName { get; set; }
+    public string EmailAddress { get; set; }
+
+    public void MorphTo( Schema<User> schema ) {
+        schema
+            .Bind(u => u.UserId, () => Guid.Parse(Id))
+            .Bind(u => u.Name, () => FullName)
+            .Bind(u => u.Email, () => EmailAddress)
+            .BindAsync(u => u.Preferences, async sp => {
+                var prefService = sp.GetRequiredService<IPreferenceService>();
+                return await prefService.GetUserPreferencesAsync(Id);
+            });
+    }
 }
 ```
 
-### Mapeamento de Entidades de Banco de Dados
+### Entidade para DTO com Propriedades Computadas
 
 ```csharp
-// Transformar entidades de banco para DTOs
-public async Task<IEnumerable<ProdutoDto>> ObterProdutosAsync()
-{
-    var entidades = await dbContext.Produtos.ToListAsync();
-    return entidades.To<ProdutoDto>();
+public class Product {
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
+
+public class ProductDto : IMorphable<Product> {
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+    public string DisplayName { get; set; }
+
+    public void MorphTo( Schema<Product> schema ) {
+        // Id, Name, Price auto-mapeados
+        schema.Ignore(p => p.CreatedAt);
+    }
+}
+
+// Transformação reversa
+var product = new Product { Id = 1, Name = "Widget", Price = 99.99m };
+var dto = product.To<ProductDto>();
 ```
 
 ### Integração com Event Sourcing
 
 ```csharp
-public class UsuarioCriadoEvento : IMorphable<Usuario>
-{
-    public string IdUsuario { get; set; }
-    public string Nome { get; set; }
+public class UserRegisteredEvent : IMorphable<User> {
+    public Guid UserId { get; set; }
     public string Email { get; set; }
-    public DateTime CriadoEm { get; set; }
-    
-    public void MorphTo(Schema<Usuario> schema)
-    {
+    public string Name { get; set; }
+    public DateTime RegisteredAt { get; set; }
+
+    public void MorphTo( Schema<User> schema ) {
         schema
-            .Bind(u => u.Id, () => IdUsuario)
-            .Bind(u => u.NomeCompleto, () => Nome)
-            .Bind(u => u.EnderecoEmail, () => Email)
-            .Bind(u => u.DataCriacao, () => CriadoEm)
-            .Bind(u => u.Ativo, () => true);
+            .Bind(u => u.Id, () => UserId)
+            .Bind(u => u.Email, () => Email)
+            .Bind(u => u.FullName, () => Name)
+            .Bind(u => u.CreatedDate, () => RegisteredAt)
+            .Bind(u => u.IsActive, () => true)
+            .Bind(u => u.EmailVerified, () => false);
     }
 }
 ```
 
-# 🚨 Tratamento de Exceções
-
-A biblioteca fornece tratamento detalhado de exceções:
-
-## Tipos de Exceção
-
-- **`BinderNotFoundException`**: Lançada quando não existe mapeamento entre tipos de origem e destino
-- **`BindException`**: Lançada quando operações de binding de propriedade ou campo falham
-- **`InvalidMorphConfigurationException`**: Lançada quando o sistema Morph não está configurado adequadamente
-
-## Exemplo de Tratamento de Exceções
+### Integração com Padrão Repository
 
 ```csharp
-try
-{
-    var resultado = origem.To<TipoDestino>();
-}
-catch (BinderNotFoundException ex)
-{
-    // Tratar mapeamento ausente
-    logger.LogError($"Nenhum mapeamento encontrado: {ex.Message}");
-}
-catch (BindException ex)
-{
-    // Tratar erro de binding
-    logger.LogError($"Falha no binding: {ex.Message}");
-}
-catch (InvalidMorphConfigurationException ex)
-{
-    // Tratar erro de configuração
-    logger.LogError($"Problema de configuração: {ex.Message}");
+public class ProductService {
+    private readonly IProductRepository _repository;
+    private readonly IServiceProvider _serviceProvider;
+
+    public ProductService( IProductRepository repository, IServiceProvider serviceProvider ) {
+        _repository = repository;
+        _serviceProvider = serviceProvider;
+    }
+
+    public async Task<ProductDto> GetProductAsync( int productId ) {
+        var product = await _repository.GetByIdAsync(productId);
+        return product.To<ProductDto>(_serviceProvider);
+    }
+
+    public async Task<IEnumerable<ProductDto>> GetAllProductsAsync() {
+        var products = await _repository.GetAllAsync();
+        return await products.ToAsync<ProductDto>(_serviceProvider);
+    }
+
+    public async Task<Product> CreateProductAsync( CreateProductDto dto ) {
+        var product = dto.To<Product>(_serviceProvider);
+        return await _repository.AddAsync(product);
+    }
 }
 ```
 
-# 📊 Dicas de Performance
+## Verificando Disponibilidade de Mapeamento
 
-1. **Reutilize o Service Provider**: Passe a mesma instância do service provider ao transformar múltiplos objetos
-2. **Transformação de Coleções**: Use métodos de coleção específicos por tipo para melhor performance
-3. **Escaneamento de Assemblies**: Limite assemblies na configuração para reduzir tempo de inicialização
-4. **Operações Assíncronas**: Use métodos assíncronos para operações I/O-bound nos bindings
+Verificar se um mapeamento existe antes de tentar transformação:
 
-# 🛠️ Solução de Problemas
-
-## Problemas Comuns
-
-### Erro "ServiceProvider not configured"
 ```csharp
-// Certifique-se de que AddMorph() foi chamado na configuração de DI
-services.AddMorph();
-```
+var dto = new UserDto();
 
-### Erro "No mapping found"
-```csharp
-// Verifique se o tipo de origem implementa IMorphable<TDestination>
-public class MinhaOrigem : IMorphable<MeuDestino>
-{
-    public void MorphTo(Schema<MeuDestino> schema) { /* implementação */ }
+// Verificar se mapeamento existe
+if (dto.CanBindTo<User>()) {
+    var user = dto.To<User>();
+}
+
+// Verificação type-safe
+if (dto.CanBindTo<UserDto, User>()) {
+    var user = dto.To<User>();
 }
 ```
 
-### Problemas de Mapeamento de Coleções Genéricas
+## Tratamento de Exceções
+
+Myth.Morph fornece exceções específicas para diferentes cenários de erro:
+
+### Tipos de Exceção
+
+- **`BinderNotFoundException`**: Nenhum mapeamento registrado entre tipos de origem e destino
+- **`BindException`**: Operação de binding de propriedade ou campo falhou
+- **`InvalidMorphConfigurationException`**: SchemaRegistry não configurado adequadamente no DI
+
+### Exemplo
+
 ```csharp
-// Registre mapeamentos genéricos apropriados
-services.AddMorph(settings =>
-{
-    settings.AddGenericMapping<IMinhaColecao<>, MinhaColecao<>>();
+try {
+    var user = dto.To<User>();
+} catch ( BinderNotFoundException ex ) {
+    logger.LogError("Nenhum mapeamento encontrado de {Source} para {Dest}", ex.SourceType, ex.DestType);
+} catch ( BindException ex ) {
+    logger.LogError("Falha no binding de propriedade: {Message}", ex.Message);
+} catch ( InvalidMorphConfigurationException ex ) {
+    logger.LogError("Morph não configurado: {Message}", ex.Message);
+}
+```
+
+## Considerações de Performance
+
+### Melhores Práticas
+
+1. **Reutilizar Service Provider**: Passar a mesma instância do service provider ao transformar múltiplos objetos
+
+```csharp
+var users = new List<User>();
+foreach (var dto in dtos) {
+    users.Add(dto.To<User>(serviceProvider)); // Reutilizar provider
+}
+```
+
+2. **Usar Async para I/O**: Sempre usar bindings assíncronos para chamadas de banco de dados ou API
+
+```csharp
+schema.BindAsync(u => u.Profile, async sp => {
+    var service = sp.GetRequiredService<IProfileService>();
+    return await service.GetProfileAsync(UserId); // I/O Assíncrono
 });
 ```
 
-# 📝 Contribuindo
+3. **Limitar Escaneamento de Assembly**: Reduzir tempo de inicialização especificando assemblies
 
-Agradecemos contribuições! Por favor, leia nossas diretrizes de contribuição e sinta-se à vontade para enviar pull requests.
+```csharp
+services.AddMorph(settings => {
+    settings.ClearAssemblies()
+            .AddAssembly(typeof(MyDto).Assembly);
+});
+```
 
-# 📄 Licença
+4. **Processar Coleções em Lote**: Transformar coleções em bulk ao invés de individualmente
+
+```csharp
+// Bom
+var users = dtos.To<User>();
+
+// Evitar
+var users = dtos.Select(d => d.To<User>()).ToList();
+```
+
+## Logging
+
+Myth.Morph fornece logging abrangente em diferentes níveis:
+
+- **Information**: Inicialização do registry, escaneamento de assemblies
+- **Debug**: Execuções de mapeamento, resolução de tipos
+- **Trace**: Bindings de propriedades, mapeamentos automáticos
+- **Warning**: Carregamento parcial de tipos, falhas de mapeamento
+- **Error**: Problemas de configuração, exceções de binding
+
+Habilitar logging na sua aplicação:
+
+```csharp
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
+```
+
+## Solução de Problemas
+
+### Erro "ServiceProvider not configured"
+
+```csharp
+// Garantir que AddMorph() é chamado e BuildApp() é usado
+services.AddMorph();
+var app = builder.BuildApp(); // Não builder.Build()
+```
+
+### Erro "No mapping found"
+
+```csharp
+// Garantir que a origem implementa IMorphable<TDestination>
+public class MyDto : IMorphable<MyEntity> {
+    public void MorphTo( Schema<MyEntity> schema ) { }
+}
+```
+
+### Erro "SchemaRegistry not found in DI"
+
+```csharp
+// Faltando registro AddMorph()
+services.AddMorph(); // Adicionar isso
+```
+
+### Mapeamento Não Funcionando para Coleções Genéricas
+
+```csharp
+// Registrar mapeamento genérico se necessário
+services.AddMorph(settings => {
+    settings.AddGenericMapping<IMyCollection<>, MyCollection<>>();
+});
+```
+
+### Propriedade Não Sendo Mapeada
+
+Verificar estes problemas comuns:
+
+1. Nome de propriedade não corresponde (sensível a maiúsculas)
+2. Propriedade não gravável (sem setter)
+3. Propriedade explicitamente ignorada
+4. Incompatibilidade de tipo
+
+## Integração com Outras Bibliotecas Myth
+
+### Com Myth.Flow
+
+```csharp
+var result = await Pipeline.Start(createUserDto)
+    .Step((dto, sp) => dto.To<User>(sp))
+    .StepAsync<IUserRepository>((repo, user) => repo.AddAsync(user))
+    .ExecuteAsync();
+```
+
+### Com Myth.Guard
+
+```csharp
+public class CreateUserDto : IMorphable<User>, IValidatable<CreateUserDto> {
+    public string Name { get; set; }
+    public string Email { get; set; }
+
+    public void Validate( ValidationBuilder<CreateUserDto> builder, ValidationContextKey? context ) {
+        builder.For(Name, x => x.NotEmpty().MinimumLength(3));
+        builder.For(Email, x => x.Email());
+    }
+
+    public void MorphTo( Schema<User> schema ) {
+        schema.Bind(u => u.FullName, () => Name);
+        schema.Bind(u => u.EmailAddress, () => Email);
+    }
+}
+
+// Usar no controller
+await _validator.ValidateAsync(dto);
+var user = dto.To<User>();
+```
+
+### Com Myth.Repository
+
+```csharp
+public class UserRepository : IUserRepository {
+    public async Task<UserDto> GetUserDtoAsync( int userId ) {
+        var user = await _dbContext.Users.FindAsync(userId);
+        return user.To<UserDto>();
+    }
+}
+```
+
+## Contribuindo
+
+Contribuições são bem-vindas! Por favor, leia nossas diretrizes de contribuição e sinta-se à vontade para enviar pull requests.
+
+## Licença
 
 Este projeto é licenciado sob a Licença Apache 2.0 - veja o arquivo LICENSE para detalhes.

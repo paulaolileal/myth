@@ -9,32 +9,54 @@ default:
 variables:
   NUGET_API_KEY: $NUGET_API_KEY
   NUGET_API_URL: $NUGET_API_URL
+  NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .nuget/
 
 build-job:
   stage: build
   only:
-    - branches 
+    - branches
     - tags
   script:
-    - dotnet build 
+    - dotnet restore --verbosity minimal
+    - dotnet build
       --configuration Release
+      --no-restore
+      --verbosity minimal
+  artifacts:
+    expire_in: 1 hour
+    paths:
+      - "**/bin/**"
+      - "**/obj/**"
 
 test-job:
   stage: test
   only:
-    - branches 
+    - branches
     - tags
   script:
-    - dotnet test 
-      --filter FullyQualifiedName!~Rest 
-      --configuration Release 
-      --results-directory "Coverage" 
+    - dotnet test
+      --configuration Release
+      --no-build
+      --no-restore
+      --verbosity minimal
+      --results-directory "Coverage"
       --collect "XPlat Code Coverage"
+      --logger "trx;LogFileName=test-results.trx"
+      --filter "FullyQualifiedName!~Rest"
   artifacts:
+    expire_in: 1 week
     reports:
+      junit: Coverage/*.trx
       coverage_report:
         coverage_format: cobertura
         path: Coverage/*/coverage.cobertura.xml
+    paths:
+      - Coverage/
   dependencies:
     - build-job
 
@@ -48,10 +70,15 @@ publish-job:
     - test-job
   script:
     - PACKAGE_VERSION=$(echo "$CI_COMMIT_TAG" | cut -d "v" -f2- )
-    - for project in $(ls **/*.csproj | grep -v 'Test.csproj$'); do
-        dotnet pack $project 
-          --configuration Release 
-          --output nupkgs 
-          /p:PackageVersion=${PACKAGE_VERSION};
+    - mkdir -p nupkgs
+    - |
+      # Pack all projects sequentially to ensure proper dependency resolution
+      for project in $(ls **/*.csproj | grep -v '\.Test\.csproj$'); do
+        echo "Packing $project..."
+        dotnet pack "$project" \
+          --configuration Release \
+          --output nupkgs \
+          --verbosity minimal \
+          /p:PackageVersion=${PACKAGE_VERSION}
       done
-    - dotnet nuget push "nupkgs/*.nupkg" --skip-duplicate --source $NUGET_API_URL --api-key $NUGET_API_KEY;
+    - dotnet nuget push "nupkgs/*.nupkg" --skip-duplicate --source $NUGET_API_URL --api-key $NUGET_API_KEY

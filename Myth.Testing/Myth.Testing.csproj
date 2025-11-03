@@ -1,0 +1,65 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- Patform -->
+		<TargetFramework>net8.0</TargetFramework>
+		<Platforms>AnyCPU</Platforms>
+		<!-- Settings -->
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>Myth</RootNamespace>
+		<!-- Package -->
+		<IsPackable>true</IsPackable>
+		<PackageId>Myth.Testing</PackageId>
+		<Authors>Paula Leal</Authors>
+		<PackageIcon>Logo.jpg</PackageIcon>
+		<Description>Testing utilities, mocks, and base test classes for comprehensive unit and integration testing. Includes Bogus data generation, FluentAssertions, Moq, xUnit, and Entity Framework in-memory testing support.</Description>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<!-- Test Project Configuration -->
+		<IsTestProject>false</IsTestProject>
+		<GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+		<!-- Docs -->
+		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Testing</RepositoryUrl>
+		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Testing</PackageProjectUrl>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Bogus" Version="35.6.5" />
+		<PackageReference Include="FluentAssertions" Version="8.8.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.3.0" />
+		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.21" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.21" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.21" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="8.0.21" />
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+		<PackageReference Include="Moq" Version="4.20.72" />
+		<PackageReference Include="xunit" Version="2.9.2" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+		<PackageReference Include="coverlet.collector" Version="6.0.2">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\Logo.jpg">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+</Project>
