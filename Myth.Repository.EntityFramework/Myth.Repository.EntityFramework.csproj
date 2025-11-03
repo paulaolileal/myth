@@ -12,7 +12,7 @@
 		<PackageId>Myth.Repository.EntityFramework</PackageId>
 		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>
-		<Description>It is a .NET library for defining database access repositories using Entity Framework.</Description>
+		<Description>Entity Framework Core implementations of repository pattern with Unit of Work, specification support, expression handling, and transaction management for robust data access with EF Core.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Repository.EntityFramework</RepositoryUrl>

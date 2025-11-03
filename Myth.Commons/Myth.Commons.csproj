@@ -12,7 +12,7 @@
 		<PackageId>Myth.Commons</PackageId>
 		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>
-		<Description>It is a .NET library for common functionalities across various applications.</Description>
+		<Description>Essential utilities, value objects, JSON extensions, and global service provider management for building clean architecture applications. Includes type-safe constants, value objects, string utilities, and centralized dependency injection.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Commons</RepositoryUrl>

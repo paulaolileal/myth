@@ -6,20 +6,21 @@
 
 [![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg?style=for-the-badge)](/README.pt-br.md) [![en](https://img.shields.io/badge/lang-en-red.svg?style=for-the-badge)](/README.md)
 
-A powerful .NET library for building maintainable and testable data processing pipelines with a fluent, chainable interface. Built with enterprise-grade features including automatic retry policies, OpenTelemetry integration, dependency injection, and comprehensive error handling.
+A powerful .NET library for building maintainable and testable data processing pipelines with a fluent, chainable interface. Built with enterprise-grade features including automatic retry policies, OpenTelemetry integration, global service provider integration, and comprehensive error handling.
 
 # ⭐ Features
 
 - **Fluent Interface**: Simple, chainable API design for readable code
 - **Type Safety**: Strong typing with context transformation support
 - **Automatic Retry**: Configurable retry policies with exponential backoff
-- **OpenTelemetry Integration**: Built-in tracing and observability
-- **Constructor Injection**: Clean dependency injection via constructors (no service locator)
+- **OpenTelemetry Integration**: Built-in distributed tracing and observability
+- **Global Service Provider**: Seamless integration with Myth.Commons centralized DI container
 - **Result Pattern**: Railway-oriented programming with `Result<T>`
-- **Error Handling**: Comprehensive error handling with custom exceptions
+- **Error Handling**: Comprehensive error handling with exception filtering
 - **Conditional Execution**: Execute steps based on context predicates
 - **Side Effects**: Tap into pipeline for logging, metrics, and events
-- **Async/Await**: First-class async support throughout
+- **Async/Await**: First-class async support with CancellationToken
+- **Zero Boilerplate**: No service locator pattern - clean, straightforward code
 
 # 📦 Installation
 
@@ -69,23 +70,44 @@ public class OrderService
 }
 ```
 
-## Dependency Injection Setup
+## Setup
 
-### Program.cs (Minimal API)
+### ASP.NET Core Applications
+
+For ASP.NET Core applications, use `builder.BuildApp()` instead of `builder.Build()` to automatically initialize the global service provider:
 
 ```csharp
-builder.Services.AddFlow(config =>
-{
-    config.EnableTelemetry = true;
-    config.EnableLogging = true;
-    config.DefaultRetryAttempts = 3;
-    config.DefaultBackoffMs = 100;
-});
+var builder = WebApplication.CreateBuilder(args);
 
-// Register your services
+builder.Services.AddFlow(config => config
+    .UseTelemetry()
+    .UseLogging()
+    .UseRetry(3, 100));
+
 builder.Services.AddScoped<ValidationService>();
 builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<InventoryService>();
+
+var app = builder.BuildApp();
+
+app.Run();
+```
+
+### Console Applications
+
+For console applications or background services, use `services.BuildWithGlobalProvider()`:
+
+```csharp
+var services = new ServiceCollection();
+
+services.AddFlow(config => config
+    .UseTelemetry()
+    .UseRetry(3, 100));
+
+services.AddScoped<ValidationService>();
+services.AddScoped<ProcessingService>();
+
+var serviceProvider = services.BuildWithGlobalProvider();
 ```
 
 ### Using in Controllers/Services
@@ -138,21 +160,32 @@ public class OrderController : ControllerBase
 ## Basic Configuration
 
 ```csharp
-// Simple configuration
 builder.Services.AddFlow();
-
-// Or with configuration options
-builder.Services.AddFlow(config => config
-    .UseTelemetry()                          // Enable OpenTelemetry tracing
-    .UseLogging()                            // Enable logging
-    .UseRetry(attempts: 3, backoffMs: 100)   // Default retry policy
-    .UseActivitySource("MyApp.Pipeline")     // Custom ActivitySource name
-    .UseExceptionFilter<ArgumentException>() // Propagate ArgumentException without handling
-    .UseExceptionFilter(typeof(InvalidOperationException)) // Propagate specific exception types
-);
 ```
 
-## Pipeline Configuration
+## Advanced Configuration with Fluent Builder
+
+```csharp
+builder.Services.AddFlow(config => config
+    .UseTelemetry()
+    .UseLogging()
+    .UseRetry(3, 100)
+    .UseActivitySource("MyApp.Pipeline")
+    .UseExceptionFilter<ArgumentException>()
+    .UseExceptionFilter<InvalidOperationException>());
+```
+
+### Configuration Options
+
+- **UseTelemetry()** / **DisableTelemetry()**: Enable/disable OpenTelemetry distributed tracing
+- **UseLogging()** / **DisableLogging()**: Enable/disable Microsoft.Extensions.Logging integration
+- **UseRetry(attempts, backoffMs)** / **DisableRetry()**: Configure default retry policy with exponential backoff
+- **UseActivitySource(name, version?)**: Set custom ActivitySource for telemetry
+- **UseExceptionFilter\<TException>()**: Configure exception types to propagate without handling
+
+## Per-Pipeline Configuration
+
+Override global settings for specific pipelines:
 
 ```csharp
 public class MyService
@@ -166,15 +199,34 @@ public class MyService
 
     public async Task<Result<MyContext>> ExecuteAsync(MyContext context)
     {
-        var result = await Pipeline.Start(context)
-            .WithTelemetry("OperationName")          // Set operation name for tracing
-            .WithRetry(maxAttempts: 5, backoffMs: 200) // Configure retry for subsequent steps
+        return await Pipeline.Start(context)
+            .WithTelemetry("OperationName")
+            .WithRetry(maxAttempts: 5, backoffMs: 200)
             .StepAsync(ctx => _processingService.ProcessAsync(ctx))
             .ExecuteAsync();
-
-        return result;
     }
 }
+```
+
+## Pipeline.Start Options
+
+### Start with Default Configuration
+
+```csharp
+var result = await Pipeline.Start(context)
+    .StepAsync(ctx => ProcessAsync(ctx))
+    .ExecuteAsync();
+```
+
+### Start with Custom Configuration
+
+```csharp
+var result = await Pipeline.Start(context, config => {
+    config.EnableTelemetry = true;
+    config.DefaultRetryAttempts = 5;
+})
+    .StepAsync(ctx => ProcessAsync(ctx))
+    .ExecuteAsync();
 ```
 
 # 🔄 Pipeline Steps
@@ -230,6 +282,8 @@ public class MyService
 
 ## Steps with Result Pattern
 
+Use `StepResult` and `StepResultAsync` for operations that can succeed or fail:
+
 ```csharp
 public class OrderProcessor
 {
@@ -249,7 +303,7 @@ public class OrderProcessor
 }
 ```
 
-The `Result<T>` pattern allows steps to return success or failure:
+The `Result<T>` pattern allows steps to return success or failure. Failed results are automatically converted to exceptions:
 
 ```csharp
 public async Task<Result<OrderContext>> ValidateAsync(OrderContext context)
@@ -264,17 +318,42 @@ public async Task<Result<OrderContext>> ValidateAsync(OrderContext context)
 }
 ```
 
-## Context Transformation
+## Steps with CancellationToken Support
 
-Transform the pipeline context to a different type:
+Pass cancellation tokens for operations that support cancellation:
 
 ```csharp
-.Transform<OutputContext>(ctx => new OutputContext
+public async Task<Result<MyContext>> ProcessAsync(MyContext context, CancellationToken ct)
 {
-    Id = ctx.Entity.Id,
-    Name = ctx.Entity.Name
-})
+    return await Pipeline.Start(context)
+        .StepAsync((ctx, token) => LongRunningOperationAsync(ctx, token))
+        .StepResultAsync((ctx, token) => ValidateAsync(ctx, token))
+        .ExecuteAsync(ct);
+}
+```
 
+## Context Transformation
+
+Transform the pipeline context to a different type. All previous steps are executed before transformation:
+
+```csharp
+public async Task<Result<OrderResponse>> ProcessOrderAsync(OrderContext context)
+{
+    return await Pipeline.Start(context)
+        .StepResultAsync(ctx => _validationService.ValidateAsync(ctx))
+        .StepResultAsync(ctx => _creationService.CreateAsync(ctx))
+        .Transform<OrderResponse>(ctx => new OrderResponse
+        {
+            Id = ctx.Entity.Id,
+            Name = ctx.Entity.Name
+        })
+        .ExecuteAsync();
+}
+```
+
+### Async Transformation
+
+```csharp
 .TransformAsync<OutputContext>(async ctx =>
 {
     var data = await _service.GetDataAsync(ctx.Id);
@@ -284,7 +363,7 @@ Transform the pipeline context to a different type:
 
 ## Side Effects (Tap)
 
-Execute actions without modifying the context:
+Execute actions without modifying the context. Perfect for logging, metrics, and event publishing:
 
 ```csharp
 public class OrderProcessor
@@ -306,24 +385,15 @@ public class OrderProcessor
     public async Task<Result<OrderContext>> ProcessAsync(OrderContext context)
     {
         return await Pipeline.Start(context)
-            // Simple tap
             .Tap(ctx => Console.WriteLine($"Processing: {ctx.Id}"))
-
-            // Async tap with logger
-            .TapAsync(async ctx =>
-                await _logger.LogAsync($"Step completed: {ctx.Id}"))
-
-            // Tap with event publishing
-            .TapAsync(ctx =>
-                _eventPublisher.PublishAsync(new OrderCreated(ctx.OrderId)))
-
-            // Tap with metrics
-            .Tap(ctx =>
-                _metricsService.IncrementCounter("orders_created"))
+            .TapAsync(ctx => _eventPublisher.PublishAsync(new OrderCreated(ctx.OrderId)))
+            .Tap(ctx => _metricsService.IncrementCounter("orders_created"))
             .ExecuteAsync();
     }
 }
 ```
+
+**Note**: Tap steps don't support retry logic and exceptions are propagated immediately.
 
 ## Conditional Execution
 
@@ -356,29 +426,33 @@ public class OrderProcessor
 
 # 🔁 Retry Policies
 
-Configure retry behavior for resilient pipelines:
+Configure retry behavior for resilient pipelines with exponential backoff.
 
 ## Global Retry Configuration
 
 ```csharp
-builder.Services.AddFlow(config =>
-{
-    config.DefaultRetryAttempts = 3;
-    config.DefaultBackoffMs = 100;
-});
+builder.Services.AddFlow(config => config
+    .UseRetry(3, 100));
 ```
 
 ## Per-Pipeline Retry
 
+Override global retry settings for specific pipelines:
+
 ```csharp
-.WithRetry(maxAttempts: 5, backoffMs: 200)
+var result = await Pipeline.Start(context)
+    .WithRetry(maxAttempts: 5, backoffMs: 200)
+    .StepAsync(ctx => UnreliableOperationAsync(ctx))
+    .ExecuteAsync();
 ```
 
-Retry behavior:
-- Exponential backoff: delay = backoffMs × attemptNumber
-- Retries only on exceptions (not on `Result.Failure`)
-- `OperationCanceledException` is never retried
-- Individual steps inherit the retry configuration
+## Retry Behavior
+
+- **Exponential backoff**: `delay = backoffMs × attemptNumber`
+- **Retries only on exceptions**: `Result.Failure` does not trigger retry
+- **Never retries**: `OperationCanceledException` and configured exception filters
+- **Per-step configuration**: Steps added after `.WithRetry()` inherit that configuration
+- **Default**: No retry (attempts = 0)
 
 ## Retry Example
 
@@ -394,23 +468,27 @@ public class ApiIntegrationService
 
     public async Task<Result<ApiContext>> CallApiAsync(ApiContext context)
     {
-        var result = await Pipeline.Start(context)
+        return await Pipeline.Start(context)
             .WithRetry(maxAttempts: 3, backoffMs: 100)
-            .StepAsync(ctx => _externalApiService.CallUnreliableApiAsync(ctx)) // Will retry on exceptions
+            .StepAsync(ctx => _externalApiService.CallUnreliableApiAsync(ctx))
             .ExecuteAsync();
-
-        return result;
     }
 }
 ```
+
+**Retry attempts**: 1st retry after 100ms, 2nd after 200ms, 3rd after 300ms
 
 # 📊 Observability & Telemetry
 
 ## OpenTelemetry Integration
 
-The library automatically creates activities for distributed tracing:
+Myth.Flow uses the standard `System.Diagnostics.ActivitySource` for distributed tracing:
 
 ```csharp
+builder.Services.AddFlow(config => config
+    .UseTelemetry()
+    .UseActivitySource("MyApp.Pipeline", "1.0.0"));
+
 public class UserService
 {
     private readonly ValidationService _validationService;
@@ -426,20 +504,23 @@ public class UserService
 
     public async Task<Result<UserContext>> CreateUserAsync(UserContext context)
     {
-        var result = await Pipeline.Start(context)
+        return await Pipeline.Start(context)
             .WithTelemetry("CreateUser")
             .StepResultAsync(ctx => _validationService.ValidateAsync(ctx))
             .StepResultAsync(ctx => _creationService.CreateAsync(ctx))
             .ExecuteAsync();
-
-        return result;
     }
 }
 ```
 
-Each step creates a child activity with tags:
-- `pipeline.input.type`: Context type name
-- Step-specific tags and timing information
+### Activity Structure
+
+- **Root Activity**: Created with the operation name from `.WithTelemetry()`
+- **Step Activities**: Child activities named `Step_{index}_{stepName}`
+- **Tags**:
+  - `pipeline.input.type`: Context type name
+  - Step-specific timing and metadata
+- **Status**: `Ok` for success, `Error` with message for failures
 
 ## Logging Integration
 
@@ -903,18 +984,20 @@ public async Task ProcessData_WithValidContext_ShouldExecuteAllSteps()
 
 # 📋 Best Practices
 
-1. **Use Constructor Injection**: Inject all required services via constructor for better testability and maintainability
+1. **Use BuildApp() or BuildWithGlobalProvider()**: Initialize the global service provider for seamless DI
 2. **Use Result Pattern**: Return `Result<T>` from services for explicit error handling
-3. **Configure Dependency Injection**: Register all services in Program.cs/Startup.cs
-4. **Enable Telemetry**: Use `WithTelemetry()` for production observability
-5. **Configure Retry Policies**: Set appropriate retry policies for unreliable operations
-6. **Separate Concerns**: Keep steps focused on single responsibilities
-7. **Use Tap for Side Effects**: Keep side effects (logging, metrics, events) separate from main flow
+3. **Configure Dependencies**: Register all services in Program.cs/Startup.cs before building
+4. **Enable Telemetry**: Use `WithTelemetry()` for production observability and distributed tracing
+5. **Configure Retry Policies**: Set appropriate retry policies for unreliable operations (APIs, databases)
+6. **Separate Concerns**: Keep each step focused on a single responsibility
+7. **Use Tap for Side Effects**: Keep logging, metrics, and events separate from the main flow
 8. **Handle Errors Gracefully**: Always check `IsSuccess` before accessing `Value`
-9. **Add Observability**: Integrate logging and metrics for production monitoring
+9. **Use CancellationToken**: Pass cancellation tokens for long-running operations
 10. **Test Pipeline Steps**: Test individual services and complete pipelines separately
 11. **Use Conditional Execution**: Keep conditional logic readable with `When()`
-12. **Avoid Service Locator**: Don't resolve services inside pipeline steps; use constructor injection instead
+12. **Configure Exception Filters**: Use `.UseExceptionFilter<T>()` for business exceptions that should propagate
+13. **Keep Context Immutable**: Avoid mutating context objects; create new instances when needed
+14. **Use Transform for Type Changes**: Transform context types when crossing architectural boundaries
 
 # 📊 Response Information
 
@@ -934,66 +1017,41 @@ if (result.IsSuccess)
 }
 ```
 
-# 🔄 Migration Guide
+# 🌐 Global Service Provider
 
-## Moving from Service Locator Pattern
+Myth.Flow uses the Myth.Commons centralized service provider for seamless cross-library dependency resolution.
 
-If you're upgrading from an earlier version that used the service locator pattern, here's how to migrate your code:
+## How It Works
 
-### Old Pattern (Service Locator - Deprecated)
+When you call `builder.BuildApp()` (ASP.NET Core) or `services.BuildWithGlobalProvider()` (console apps), the global service provider is automatically initialized. This allows `Pipeline.Start()` to access all registered services without manual configuration.
 
 ```csharp
-var result = await Pipeline.Start(context)
-    .StepAsync<ValidationService>((svc, ctx) => svc.ValidateAsync(ctx))
-    .StepAsync<ProcessingService>((svc, ctx) => svc.ProcessAsync(ctx))
-    .ExecuteAsync();
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddFlow();
+builder.Services.AddScoped<ValidationService>();
+builder.Services.AddScoped<ProcessingService>();
+
+var app = builder.BuildApp();
 ```
 
-### New Pattern (Constructor Injection - Recommended)
+Now all pipelines can access these services:
 
 ```csharp
-public class MyPipeline
+public async Task<Result<MyContext>> ProcessAsync(MyContext context)
 {
-    private readonly ValidationService _validationService;
-    private readonly ProcessingService _processingService;
-
-    public MyPipeline(
-        ValidationService validationService,
-        ProcessingService processingService)
-    {
-        _validationService = validationService;
-        _processingService = processingService;
-    }
-
-    public async Task<Result<MyContext>> ExecuteAsync(MyContext context)
-    {
-        var result = await Pipeline.Start(context)
-            .StepAsync(ctx => _validationService.ValidateAsync(ctx))
-            .StepAsync(ctx => _processingService.ProcessAsync(ctx))
-            .ExecuteAsync();
-
-        return result;
-    }
+    return await Pipeline.Start(context)
+        .StepAsync(ctx => ProcessDataAsync(ctx))
+        .ExecuteAsync();
 }
 ```
 
-### Benefits of Constructor Injection
+## Benefits
 
-1. **Better Testability**: Easy to mock dependencies in unit tests
-2. **Explicit Dependencies**: Clear what services are required
-3. **Compile-Time Safety**: Missing dependencies caught at startup, not runtime
-4. **SOLID Principles**: Follows Dependency Inversion Principle
-5. **IDE Support**: Better IntelliSense and code navigation
-6. **No Hidden Dependencies**: All dependencies visible in constructor
-
-### Migration Steps
-
-1. **Identify Services**: Find all `.Step<TService>()`, `.StepAsync<TService>()`, `.Tap<TService>()` calls
-2. **Add Constructor Parameters**: Add these services as constructor parameters
-3. **Store as Fields**: Save constructor parameters as private readonly fields
-4. **Update Pipeline Calls**: Remove `<TService>` generic parameter and use injected fields
-5. **Register Services**: Ensure all services are registered in DI container
-6. **Test**: Verify your pipelines work with the new injection approach
+- **Zero Configuration**: No need to pass service providers around
+- **Cross-Library Integration**: Works seamlessly with Myth.Guard, Myth.Flow.Actions, etc.
+- **Clean Code**: No service locator anti-pattern in your business logic
+- **Type Safety**: Services are resolved at startup, not runtime
 
 # 📄 License
 

@@ -13,7 +13,7 @@
 		<PackageId>Myth.Testing</PackageId>
 		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>
-		<Description>It is a .NET library for facilitate testing</Description>
+		<Description>Testing utilities, mocks, and base test classes for comprehensive unit and integration testing. Includes Bogus data generation, FluentAssertions, Moq, xUnit, and Entity Framework in-memory testing support.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Test Project Configuration -->
 		<IsTestProject>false</IsTestProject>

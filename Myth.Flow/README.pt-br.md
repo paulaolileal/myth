@@ -6,20 +6,21 @@
 
 [![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg?style=for-the-badge)](/README.pt-br.md) [![en](https://img.shields.io/badge/lang-en-red.svg?style=for-the-badge)](/README.md)
 
-Uma poderosa biblioteca .NET para construir pipelines de processamento de dados manuteníveis e testáveis com uma interface fluente e encadeável. Construída com recursos de nível empresarial incluindo políticas de retry automáticas, integração com OpenTelemetry, injeção de dependência e tratamento abrangente de erros.
+Uma poderosa biblioteca .NET para construir pipelines de processamento de dados manuteníveis e testáveis com uma interface fluente e encadeável. Construída com recursos de nível empresarial incluindo políticas de retry automáticas, integração com OpenTelemetry, service provider global e tratamento abrangente de erros.
 
 # ⭐ Recursos
 
 - **Interface Fluente**: Design de API simples e encadeável para código legível
 - **Segurança de Tipos**: Tipagem forte com suporte a transformação de contexto
 - **Retry Automático**: Políticas de retry configuráveis com backoff exponencial
-- **Integração OpenTelemetry**: Rastreamento e observabilidade integrados
-- **Injeção via Construtor**: Injeção de dependência limpa via construtores (sem service locator)
+- **Integração OpenTelemetry**: Rastreamento distribuído e observabilidade integrados
+- **Service Provider Global**: Integração perfeita com o container DI centralizado do Myth.Commons
 - **Padrão Result**: Programação orientada a railway com `Result<T>`
-- **Tratamento de Erros**: Tratamento abrangente de erros com exceções customizadas
+- **Tratamento de Erros**: Tratamento abrangente de erros com filtragem de exceções
 - **Execução Condicional**: Execute etapas baseadas em predicados do contexto
 - **Efeitos Colaterais**: Intercepte o pipeline para logging, métricas e eventos
-- **Async/Await**: Suporte async de primeira classe em toda biblioteca
+- **Async/Await**: Suporte async de primeira classe com CancellationToken
+- **Zero Boilerplate**: Sem padrão service locator - código limpo e direto
 
 # 📦 Instalação
 
@@ -69,23 +70,44 @@ public class OrderService
 }
 ```
 
-## Configuração com Injeção de Dependência
+## Configuração
 
-### Program.cs (Minimal API)
+### Aplicações ASP.NET Core
+
+Para aplicações ASP.NET Core, use `builder.BuildApp()` ao invés de `builder.Build()` para inicializar automaticamente o service provider global:
 
 ```csharp
-builder.Services.AddFlow(config =>
-{
-    config.EnableTelemetry = true;
-    config.EnableLogging = true;
-    config.DefaultRetryAttempts = 3;
-    config.DefaultBackoffMs = 100;
-});
+var builder = WebApplication.CreateBuilder(args);
 
-// Registre seus serviços
+builder.Services.AddFlow(config => config
+    .UseTelemetry()
+    .UseLogging()
+    .UseRetry(3, 100));
+
 builder.Services.AddScoped<ValidationService>();
 builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<InventoryService>();
+
+var app = builder.BuildApp();
+
+app.Run();
+```
+
+### Aplicações Console
+
+Para aplicações console ou serviços em background, use `services.BuildWithGlobalProvider()`:
+
+```csharp
+var services = new ServiceCollection();
+
+services.AddFlow(config => config
+    .UseTelemetry()
+    .UseRetry(3, 100));
+
+services.AddScoped<ValidationService>();
+services.AddScoped<ProcessingService>();
+
+var serviceProvider = services.BuildWithGlobalProvider();
 ```
 
 ### Usando em Controllers/Services
@@ -138,23 +160,72 @@ public class OrderController : ControllerBase
 ## Configuração Básica
 
 ```csharp
-builder.Services.AddFlow(config =>
-{
-    config.EnableTelemetry = true;           // Habilita rastreamento OpenTelemetry
-    config.EnableLogging = true;             // Habilita logging
-    config.DefaultRetryAttempts = 3;         // Tentativas de retry padrão
-    config.DefaultBackoffMs = 100;           // Backoff padrão em milissegundos
-    config.ActivitySource = activitySource;  // ActivitySource customizado (opcional)
-});
+builder.Services.AddFlow();
 ```
 
-## Configuração do Pipeline
+## Configuração Avançada com Fluent Builder
+
+```csharp
+builder.Services.AddFlow(config => config
+    .UseTelemetry()
+    .UseLogging()
+    .UseRetry(3, 100)
+    .UseActivitySource("MyApp.Pipeline")
+    .UseExceptionFilter<ArgumentException>()
+    .UseExceptionFilter<InvalidOperationException>());
+```
+
+### Opções de Configuração
+
+- **UseTelemetry()** / **DisableTelemetry()**: Habilita/desabilita rastreamento distribuído OpenTelemetry
+- **UseLogging()** / **DisableLogging()**: Habilita/desabilita integração com Microsoft.Extensions.Logging
+- **UseRetry(attempts, backoffMs)** / **DisableRetry()**: Configura política de retry padrão com backoff exponencial
+- **UseActivitySource(name, version?)**: Define ActivitySource customizado para telemetria
+- **UseExceptionFilter\<TException>()**: Configura tipos de exceção para propagar sem tratamento
+
+## Configuração por Pipeline
+
+Sobrescreva configurações globais para pipelines específicos:
+
+```csharp
+public class MyService
+{
+    private readonly ProcessingService _processingService;
+
+    public MyService(ProcessingService processingService)
+    {
+        _processingService = processingService;
+    }
+
+    public async Task<Result<MyContext>> ExecuteAsync(MyContext context)
+    {
+        return await Pipeline.Start(context)
+            .WithTelemetry("OperationName")
+            .WithRetry(maxAttempts: 5, backoffMs: 200)
+            .StepAsync(ctx => _processingService.ProcessAsync(ctx))
+            .ExecuteAsync();
+    }
+}
+```
+
+## Opções do Pipeline.Start
+
+### Start com Configuração Padrão
 
 ```csharp
 var result = await Pipeline.Start(context)
-    .WithTelemetry("OperationName")          // Define nome da operação para rastreamento
-    .WithRetry(maxAttempts: 5, backoffMs: 200) // Configura retry para etapas subsequentes
-    .StepAsync<MyService>((svc, ctx) => svc.ProcessAsync(ctx))
+    .StepAsync(ctx => ProcessAsync(ctx))
+    .ExecuteAsync();
+```
+
+### Start com Configuração Customizada
+
+```csharp
+var result = await Pipeline.Start(context, config => {
+    config.EnableTelemetry = true;
+    config.DefaultRetryAttempts = 5;
+})
+    .StepAsync(ctx => ProcessAsync(ctx))
     .ExecuteAsync();
 ```
 
@@ -588,18 +659,20 @@ public async Task CreateUser_WithValidData_ShouldSucceed()
 
 # 📋 Melhores Práticas
 
-1. **Use Injeção via Construtor**: Injete todos os serviços necessários via construtor para melhor testabilidade e manutenibilidade
+1. **Use BuildApp() ou BuildWithGlobalProvider()**: Inicialize o service provider global para DI perfeita
 2. **Use o Padrão Result**: Retorne `Result<T>` dos serviços para tratamento explícito de erros
-3. **Configure Injeção de Dependência**: Registre todos os serviços em Program.cs/Startup.cs
-4. **Habilite Telemetria**: Use `WithTelemetry()` para observabilidade em produção
-5. **Configure Políticas de Retry**: Defina políticas de retry apropriadas para operações não confiáveis
-6. **Separe Responsabilidades**: Mantenha as etapas focadas em responsabilidades únicas
-7. **Use Tap para Efeitos Colaterais**: Mantenha efeitos colaterais (logging, métricas, eventos) separados do fluxo principal
+3. **Configure Dependências**: Registre todos os serviços em Program.cs/Startup.cs antes de fazer build
+4. **Habilite Telemetria**: Use `WithTelemetry()` para observabilidade e rastreamento distribuído em produção
+5. **Configure Políticas de Retry**: Defina políticas de retry apropriadas para operações não confiáveis (APIs, bancos de dados)
+6. **Separe Responsabilidades**: Mantenha cada etapa focada em uma única responsabilidade
+7. **Use Tap para Efeitos Colaterais**: Mantenha logging, métricas e eventos separados do fluxo principal
 8. **Trate Erros com Graça**: Sempre verifique `IsSuccess` antes de acessar `Value`
-9. **Adicione Observabilidade**: Integre logging e métricas para monitoramento em produção
+9. **Use CancellationToken**: Passe tokens de cancelamento para operações de longa duração
 10. **Teste Etapas do Pipeline**: Teste serviços individuais e pipelines completos separadamente
 11. **Use Execução Condicional**: Mantenha lógica condicional legível com `When()`
-12. **Evite Service Locator**: Não resolva serviços dentro das etapas do pipeline; use injeção via construtor
+12. **Configure Filtros de Exceção**: Use `.UseExceptionFilter<T>()` para exceções de negócio que devem propagar
+13. **Mantenha Contexto Imutável**: Evite mutar objetos de contexto; crie novas instâncias quando necessário
+14. **Use Transform para Mudanças de Tipo**: Transforme tipos de contexto ao cruzar limites arquiteturais
 
 # 📊 Informações da Resposta
 
@@ -802,70 +875,41 @@ public async Task<Result<UserResponse>> RegisterUserAsync(RegisterUserRequest re
 }
 ```
 
-# 🔄 Guia de Migração
+# 🌐 Service Provider Global
 
-## Migrando do Padrão Service Locator
+Myth.Flow usa o service provider centralizado do Myth.Commons para resolução de dependências perfeita entre bibliotecas.
 
-Se você está atualizando de uma versão anterior que usava o padrão service locator, veja como migrar seu código:
+## Como Funciona
 
-### Padrão Antigo (Service Locator - Descontinuado)
+Quando você chama `builder.BuildApp()` (ASP.NET Core) ou `services.BuildWithGlobalProvider()` (apps console), o service provider global é automaticamente inicializado. Isso permite que `Pipeline.Start()` acesse todos os serviços registrados sem configuração manual.
 
 ```csharp
-var result = await Pipeline.Start(context)
-    .StepAsync<ValidationService>((svc, ctx) => svc.ValidateAsync(ctx))
-    .StepAsync<ProcessingService>((svc, ctx) => svc.ProcessAsync(ctx))
-    .ExecuteAsync();
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddFlow();
+builder.Services.AddScoped<ValidationService>();
+builder.Services.AddScoped<ProcessingService>();
+
+var app = builder.BuildApp();
 ```
 
-### Padrão Novo (Injeção via Construtor - Recomendado)
+Agora todos os pipelines podem acessar esses serviços:
 
 ```csharp
-public class MyPipeline
+public async Task<Result<MyContext>> ProcessAsync(MyContext context)
 {
-    private readonly ValidationService _validationService;
-    private readonly ProcessingService _processingService;
-
-    public MyPipeline(
-        ValidationService validationService,
-        ProcessingService processingService)
-    {
-        _validationService = validationService;
-        _processingService = processingService;
-    }
-
-    public async Task<Result<MyContext>> ExecuteAsync(MyContext context)
-    {
-        var result = await Pipeline.Start(context)
-            .StepAsync(ctx => _validationService.ValidateAsync(ctx))
-            .StepAsync(ctx => _processingService.ProcessAsync(ctx))
-            .ExecuteAsync();
-
-        return result;
-    }
+    return await Pipeline.Start(context)
+        .StepAsync(ctx => ProcessDataAsync(ctx))
+        .ExecuteAsync();
 }
 ```
 
-### Benefícios da Injeção via Construtor
+## Benefícios
 
-1. **Melhor Testabilidade**: Fácil fazer mock de dependências em testes unitários
-2. **Dependências Explícitas**: Fica claro quais serviços são necessários
-3. **Segurança em Tempo de Compilação**: Dependências faltando são detectadas no startup, não em runtime
-4. **Princípios SOLID**: Segue o Princípio de Inversão de Dependência
-5. **Suporte de IDE**: Melhor IntelliSense e navegação de código
-6. **Sem Dependências Ocultas**: Todas as dependências visíveis no construtor
-
-### Passos de Migração
-
-1. **Identifique Serviços**: Encontre todas as chamadas `.Step<TService>()`, `.StepAsync<TService>()`, `.Tap<TService>()`
-2. **Adicione Parâmetros no Construtor**: Adicione esses serviços como parâmetros do construtor
-3. **Armazene como Campos**: Salve os parâmetros do construtor como campos privados readonly
-4. **Atualize Chamadas do Pipeline**: Remova o parâmetro genérico `<TService>` e use os campos injetados
-5. **Registre Serviços**: Garanta que todos os serviços estejam registrados no container DI
-6. **Teste**: Verifique se seus pipelines funcionam com a nova abordagem de injeção
-
-# 📖 Documentação Adicional
-
-Para mais informações sobre configuração avançada, padrões de uso e exemplos, consulte a [documentação completa](https://github.com/yourusername/Myth.Flow/wiki).
+- **Zero Configuração**: Não é necessário passar service providers
+- **Integração Entre Bibliotecas**: Funciona perfeitamente com Myth.Guard, Myth.Flow.Actions, etc.
+- **Código Limpo**: Sem anti-pattern de service locator na lógica de negócio
+- **Segurança de Tipos**: Serviços são resolvidos no startup, não em runtime
 
 # 📄 Licença
 

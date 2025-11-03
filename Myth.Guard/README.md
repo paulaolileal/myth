@@ -4,32 +4,36 @@
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge)](https://opensource.org/licenses/Apache-2.0)
 
-[![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg?style=for-the-badge)](/README.pt-br.md) [![en](https://img.shields.io/badge/lang-en-red.svg?style=for-the-badge)](/README.md)
+[![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg?style=for-the-badge)](README.pt-br.md) [![en](https://img.shields.io/badge/lang-en-red.svg?style=for-the-badge)](README.md)
 
-A powerful .NET library for building maintainable and type-safe validation systems with a fluent, declarative API. Built with enterprise-grade features including context-aware validation, async service provider integration, automatic ASP.NET Core middleware, and comprehensive error handling.
+A powerful, fluent .NET validation library designed for enterprise applications. Built with clean architecture principles, Myth.Guard provides declarative validation with context-awareness, async service integration, and automatic ASP.NET Core middleware.
 
-# ⭐ Features
+## Why Myth.Guard?
 
-- **Fluent Interface**: Declarative, chainable API for readable validation code
-- **Type Safety**: Strong typing with comprehensive rule coverage for all .NET types
-- **Context-Aware Validation**: Different validation rules per operation (Create, Update, Delete, etc.)
-- **Async Service Integration**: Access dependency injection container in validation rules
-- **ASP.NET Core Middleware**: Automatic validation exception handling with structured responses
-- **400+ Validation Rules**: Extensive built-in rules for strings, numbers, collections, dates, and more
+Most validation libraries force you to choose between attribute-based validation (inflexible) or imperative validation code (verbose and scattered). Myth.Guard offers a third way: **declarative, fluent validation that lives with your entities**, promoting Domain-Driven Design while keeping validation logic maintainable and testable.
+
+## Key Features
+
+- **Declarative Fluent API**: Write readable validation rules with chainable methods
+- **Context-Aware Validation**: Different rules for Create, Update, Delete operations on the same entity
+- **Async Service Integration**: Access dependency injection for database or API validation
+- **Automatic Error Handling**: ASP.NET Core middleware with structured JSON responses
+- **100+ Built-in Rules**: Comprehensive validation for strings, numbers, collections, dates, booleans, enums
+- **Nullable Type Support**: Full support for nullable value types with dedicated rules
 - **Custom Rules**: Easy extensibility with `Respect()` and `RespectAsync()` methods
-- **Conditional Validation**: Execute rules based on entity or field conditions
-- **Error Aggregation**: Collect all validation errors before failing
-- **HTTP Status Customization**: Configure HTTP status codes per validation rule
+- **Conditional Validation**: Field-level and entity-level conditional rules
+- **Stop on Failure**: Optimize validation by stopping after critical failures
+- **HTTP Status Customization**: Configure appropriate status codes per validation error
 
-# 📦 Installation
+## Installation
 
 ```bash
 dotnet add package Myth.Guard
 ```
 
-# 🚀 Quick Start
+## Quick Start
 
-## Basic Usage
+### 1. Define Validation on Your Entity
 
 ```csharp
 public class CreateUserDto : IValidatable<CreateUserDto>
@@ -39,91 +43,64 @@ public class CreateUserDto : IValidatable<CreateUserDto>
     public int Age { get; set; }
     public List<string> Tags { get; set; }
 
-    public void Validate(ValidationBuilder<CreateUserDto> builder, ValidationContextKey? context = null)
+    public void Validate( ValidationBuilder<CreateUserDto> builder, ValidationContextKey? context = null )
     {
-        builder.For(Name, x => x.NotEmpty().MinimumLength(2).MaximumLength(100));
-        builder.For(Email, x => x.NotEmpty().Email());
-        builder.For(Age, x => x.GreaterThan(0).LessThan(150));
-        builder.For(Tags, x => x.NotEmpty().CountBetween(1, 10));
+        builder.For( Name, x => x.NotEmpty().MinimumLength( 2 ).MaximumLength( 100 ) );
+        builder.For( Email, x => x.NotEmpty().Email() );
+        builder.For( Age, x => x.GreaterThan( 0 ).LessThan( 150 ) );
+        builder.For( Tags, x => x.NotEmpty().CountBetween( 1, 10 ) );
     }
 }
-
-// Validate and throw exception on failure
-await validator.ValidateAsync(dto);
-
-// Or validate and return result
-var result = await validator.ValidateAndReturnAsync(dto);
-if (!result.IsValid)
-{
-    // Handle validation errors
-}
 ```
 
-## Dependency Injection Setup
-
-### Program.cs (Minimal API)
+### 2. Configure Services and Middleware
 
 ```csharp
+var builder = WebApplication.CreateBuilder( args );
+
 builder.Services.AddGuard();
 
-// Register your services for async validation
-builder.Services.AddScoped<IUserService, UserService>();
-```
-
-### Add Middleware
-
-```csharp
 var app = builder.Build();
 
 app.UseGuard(); // Adds automatic validation exception handling
 
 app.MapControllers();
+app.Run();
 ```
 
-### Using in Controllers/Services
+### 3. Use in Controllers
 
 ```csharp
 public class UserController : ControllerBase
 {
     private readonly IValidator _validator;
 
-    public UserController(IValidator validator)
+    public UserController( IValidator validator )
     {
         _validator = validator;
     }
 
-    [HttpPost("users")]
-    public async Task<IActionResult> CreateUser([FromBody] CreateUserDto request)
+    [HttpPost( "users" )]
+    public async Task<IActionResult> CreateUser( [FromBody] CreateUserDto request )
     {
         // Validate and throw ValidationException on failure
-        await _validator.ValidateAsync(request, ValidationContextKey.Create);
+        await _validator.ValidateAsync( request, ValidationContextKey.Create );
 
         // Or validate and check result without throwing
-        var result = await _validator.ValidateAndReturnAsync(request, ValidationContextKey.Create);
-        if (!result.IsValid)
-        {
-            return BadRequest(new { errors = result.Errors });
-        }
+        var result = await _validator.ValidateAndReturnAsync( request, ValidationContextKey.Create );
+
+        if ( !result.IsValid )
+            return BadRequest( new { errors = result.Errors } );
 
         // Process user creation...
-        return Ok(new { message = "User created successfully" });
+        return Ok( new { message = "User created successfully" } );
     }
 }
 ```
 
-# 🔧 Configuration
+### Automatic Error Response
 
-## Basic Configuration
-
-```csharp
-// Simple setup - no additional configuration needed
-builder.Services.AddGuard();
-app.UseGuard();
-```
-
-## Error Response Format
-
-The middleware automatically formats validation errors into structured JSON responses:
+With `app.UseGuard()` middleware, validation exceptions are automatically formatted:
 
 ```json
 {
@@ -136,149 +113,176 @@ The middleware automatically formats validation errors into structured JSON resp
         },
         {
             "field": "age",
-            "message": "Value must be greater than 18",
+            "message": "Value must be greater than 0",
             "code": "VIOLATION"
         }
     ]
 }
 ```
 
-# 📋 Validation Rules
+## Validation Rules Reference
 
-## String Rules
+### String Rules
 
 ```csharp
-builder.For(Email, x => x
+builder.For( Email, x => x
     .NotEmpty()
     .Email()
-    .MaximumLength(254));
+    .MaximumLength( 254 ) );
 
-builder.For(Name, x => x
+builder.For( Name, x => x
     .NotEmpty()
-    .MinimumLength(2)
-    .MaximumLength(100)
-    .OnlyLetters());
+    .MinimumLength( 2 )
+    .MaximumLength( 100 )
+    .OnlyLetters() );
 
-builder.For(Password, x => x
+builder.For( Password, x => x
     .NotEmpty()
-    .MinimumLength(8)
-    .Matches(new Regex(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$"))
-    .WithMessage("Password must contain uppercase, lowercase, and digit"));
+    .MinimumLength( 8 )
+    .Matches( new Regex( @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$" ) )
+    .WithMessage( "Password must contain uppercase, lowercase, and digit" ) );
 
-builder.For(PhoneNumber, x => x
+builder.For( PhoneNumber, x => x
     .NotEmpty()
-    .Matches(new Regex(@"^\+\d{1,3}\d{10,14}$"))
-    .WithMessage("Invalid phone number format"));
+    .Matches( new Regex( @"^\+\d{1,3}\d{10,14}$" ) ) );
 ```
 
 **Available String Rules:**
-- `NotEmpty()`, `MinimumLength(int)`, `MaximumLength(int)`, `LengthBetween(int, int)`
+- `NotEmpty()` - Not null, empty, or whitespace
+- `MinimumLength(int)`, `MaximumLength(int)`, `LengthBetween(int, int)` - Length validation
 - `Email()`, `Url()` - Format validation
 - `OnlyLetters()`, `OnlyNumbers()`, `Alphanumeric()` - Character type validation
 - `StartsWith(string)`, `EndsWith(string)`, `Contains(string)` - Substring checks
 - `Matches(Regex)` - Regex pattern matching
 - `EqualsTo(string)`, `BeOneOf(params string[])` - Enumeration checks
+- `AvailableCharacters(params char[])`, `ForbiddenCharacters(params char[])` - Character whitelist/blacklist
+- `NoSymbols(char[]?)` - Symbol validation
 
-## Numeric Rules
+### Numeric Rules
 
 ```csharp
-builder.For(Age, x => x
-    .GreaterThan(0)
-    .LessThan(150));
+builder.For( Age, x => x
+    .GreaterThan( 0 )
+    .LessThan( 150 ) );
 
-builder.For(Salary, x => x
-    .GreaterOrEquals(0)
-    .LessThan(1000000m));
+builder.For( Salary, x => x
+    .GreaterOrEquals( 0 )
+    .LessThan( 1000000m ) );
 
-builder.For(Score, x => x
-    .Between(0, 100)
-    .When(score => score.HasValue));
+builder.For( Score, x => x
+    .Between( 0, 100 )
+    .When( score => score.HasValue ) );
 
-builder.For(Quantity, x => x
+builder.For( Quantity, x => x
     .Positive()
-    .NotZero());
+    .NotZero() );
 ```
 
-**Available Numeric Rules (int, long, decimal, double, etc.):**
-- `GreaterThan(T)`, `GreaterOrEquals(T)`, `LessThan(T)`, `LessOrEquals(T)`
-- `Between(T min, T max)` - Range validation
-- `Positive()`, `Negative()`, `Zero()`, `NotZero()`
+**Available Numeric Rules** (int, long, decimal, double, float, etc.):
+- `GreaterThan(T)`, `GreaterOrEquals(T)` - Minimum value validation
+- `LessThan(T)`, `LessOrEquals(T)` - Maximum value validation
+- `Between(T min, T max)` - Range validation (inclusive)
+- `Positive()`, `Negative()` - Sign validation
+- `Zero()`, `NotZero()` - Zero value checks
 
-## Collection Rules
+### Collection Rules
 
 ```csharp
-builder.For(Tags, x => x
+builder.For( Tags, x => x
     .NotEmpty()
-    .CountBetween(1, 10)
-    .All(tag => !string.IsNullOrWhiteSpace(tag))
-    .Distinct());
+    .CountBetween( 1, 10 )
+    .All( tag => !string.IsNullOrWhiteSpace( tag ) )
+    .Distinct() );
 
-builder.For(UserRoles, x => x
+builder.For( UserRoles, x => x
     .NotEmpty()
-    .Any(role => role == "Admin" || role == "User")
-    .None(role => role == "Banned"));
+    .Any( role => role == "Admin" || role == "User" )
+    .None( role => role == "Banned" ) );
+
+builder.For( Products, x => x
+    .DistinctBy( p => p.Sku ) );
 ```
 
 **Available Collection Rules:**
-- `NotEmpty()` - Collection not empty
-- `CountBetween(int min, int max)`, `CountGreaterThan(int)`, `CountLessThan(int)`
-- `All<T>(Func<T, bool> predicate)` - All elements match condition
-- `Any<T>(Func<T, bool> predicate)` - At least one matches
-- `None<T>(Func<T, bool> predicate)` - No elements match
-- `Distinct<T>()`, `DistinctBy<T, TKey>(Func<T, TKey> keySelector)` - Duplicate detection
+- `NotEmpty()` - Collection not null and has elements
+- `CountBetween(int, int)`, `CountGreaterThan(int)`, `CountLessThan(int)` - Size validation
+- `All<T>(Func<T, bool>)` - All elements match condition
+- `Any<T>(Func<T, bool>)` - At least one matches
+- `None<T>(Func<T, bool>)` - No elements match
+- `Distinct<T>()` - No duplicates (using default equality)
+- `DistinctBy<T, TKey>(Func<T, TKey>)` - No duplicates by key
 
-## DateTime Rules
+### DateTime and DateOnly Rules
 
 ```csharp
-builder.For(BirthDate, x => x
+builder.For( BirthDate, x => x
     .Past()
-    .After(new DateTime(1900, 1, 1)));
+    .After( new DateTime( 1900, 1, 1 ) ) );
 
-builder.For(ScheduledDate, x => x
+builder.For( ScheduledDate, x => x
     .Future()
-    .Before(DateTime.Now.AddYears(1)));
+    .Before( DateTime.Now.AddYears( 1 ) ) );
 
-builder.For(AppointmentDate, x => x
-    .Between(DateTime.Today, DateTime.Today.AddDays(30)));
+builder.For( AppointmentDate, x => x
+    .Between( DateTime.Today, DateTime.Today.AddDays( 30 ) ) );
+
+builder.For( EventDate, x => x.Today() );
 ```
 
-**Available DateTime Rules:**
-- `Past()`, `Future()`, `Today()`
-- `After(DateTime)`, `Before(DateTime)`, `Between(DateTime, DateTime)`
-- `AfterOrEquals(DateTime)`, `BeforeOrEquals(DateTime)`
+**Available DateTime/DateOnly Rules:**
+- `Past()`, `Future()`, `Today()` - Temporal validation
+- `After(DateTime)`, `Before(DateTime)` - Comparison (exclusive)
+- `AfterOrEquals(DateTime)`, `BeforeOrEquals(DateTime)` - Comparison (inclusive)
+- `Between(DateTime, DateTime)` - Date range (inclusive)
 
-## Boolean and Enum Rules
+### Boolean and Enum Rules
 
 ```csharp
-builder.For(IsActive, x => x.IsTrue());
-builder.For(IsDeleted, x => x.IsFalse());
+builder.For( IsActive, x => x.IsTrue() );
+builder.For( IsDeleted, x => x.IsFalse() );
 
-builder.For(Role, x => x.BeInEnum<UserRole>());
-builder.For(Status, x => x.BeOneOf(Status.Active, Status.Pending));
+builder.For( Role, x => x.BeInEnum<UserRole>() );
+builder.For( Status, x => x.BeOneOf( Status.Active, Status.Pending ) );
 ```
 
-## Generic Rules (All Types)
+### Generic Rules (All Types)
 
 ```csharp
-builder.For(UserId, x => x
+builder.For( UserId, x => x
     .NotNull()
-    .NotDefault());
+    .NotDefault() );
 
-builder.For(Email, x => x
+builder.For( Email, x => x
     .NotNull()
-    .NotEqualsTo("admin@example.com"));
+    .NotEqualsTo( "admin@example.com" ) );
 ```
 
 **Available Generic Rules:**
-- `NotNull()`, `BeNull()`
-- `EqualsTo(T)`, `NotEqualsTo(T)`
-- `BeDefault()`, `NotDefault()`
-- `Respect(Func<T, bool> predicate)` - Custom sync validation
-- `RespectAsync(Func<T, CancellationToken, IServiceProvider, Task<bool>> predicate)` - Custom async validation
+- `NotNull()`, `BeNull()` - Null checks
+- `EqualsTo(T)`, `NotEqualsTo(T)` - Value comparison
+- `BeDefault()`, `NotDefault()` - Default value checks
+- `Respect(Func<T, bool>)` - Custom sync validation
+- `RespectAsync(Func<T, CancellationToken, IServiceProvider, Task<bool>>)` - Custom async validation
 
-# 🎯 Context-Aware Validation
+### Nullable Type Support
 
-One of the most powerful features is context-specific validation rules:
+All numeric, DateTime, and boolean rules have nullable versions:
+
+```csharp
+builder.For( OptionalAge, x => x
+    .GreaterThan( 18 )
+    .When( age => age.HasValue ) );
+
+builder.For( OptionalDate, x => x
+    .Future()
+    .When( date => date.HasValue ) );
+
+builder.For( OptionalFlag, x => x.IsTrue() );
+```
+
+## Context-Aware Validation
+
+Define different validation rules for different operations:
 
 ```csharp
 public class UserDto : IValidatable<UserDto>
@@ -288,56 +292,56 @@ public class UserDto : IValidatable<UserDto>
     public bool IsActive { get; set; }
     public string Password { get; set; }
 
-    public void Validate(ValidationBuilder<UserDto> builder, ValidationContextKey? context = null)
+    public void Validate( ValidationBuilder<UserDto> builder, ValidationContextKey? context = null )
     {
         // Global rules (apply to all contexts)
-        builder.For(Email, x => x.NotEmpty().Email());
-        builder.For(Age, x => x.GreaterThan(0).LessThan(150));
+        builder.For( Email, x => x.NotEmpty().Email() );
+        builder.For( Age, x => x.GreaterThan( 0 ).LessThan( 150 ) );
 
         // Create-specific rules
-        builder.InContext(ValidationContextKey.Create, b =>
+        builder.InContext( ValidationContextKey.Create, b =>
         {
-            b.For(Email, x => x
-                .RespectAsync(async (email, ct, sp) =>
+            b.For( Email, x => x
+                .RespectAsync( async ( email, ct, sp ) =>
                 {
                     var userService = sp.GetRequiredService<IUserService>();
-                    return await userService.IsEmailAvailableAsync(email, ct);
-                })
-                .WithMessage("Email already exists")
-                .WithCode("EMAIL_EXISTS")
-                .WithStatusCode(HttpStatusCode.Conflict));
+                    return await userService.IsEmailAvailableAsync( email, ct );
+                } )
+                .WithMessage( "Email already exists" )
+                .WithCode( "EMAIL_EXISTS" )
+                .WithStatusCode( HttpStatusCode.Conflict ) );
 
-            b.For(Password, x => x
+            b.For( Password, x => x
                 .NotEmpty()
-                .MinimumLength(8)
-                .Matches(new Regex(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$")));
+                .MinimumLength( 8 )
+                .Matches( new Regex( @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$" ) ) );
 
-            b.For(IsActive, x => x.IsTrue());
-        });
+            b.For( IsActive, x => x.IsTrue() );
+        } );
 
         // Update-specific rules
-        builder.InContext(ValidationContextKey.Update, b =>
+        builder.InContext( ValidationContextKey.Update, b =>
         {
-            b.For(Age, x => x.GreaterOrEquals(18));
+            b.For( Age, x => x.GreaterOrEquals( 18 ) );
             // Password is optional on update
-        });
+        } );
 
         // Delete-specific rules
-        builder.InContext(ValidationContextKey.Delete, b =>
+        builder.InContext( ValidationContextKey.Delete, b =>
         {
-            b.For(IsActive, x => x.IsFalse()
-                .WithMessage("Cannot delete active user"));
-        });
+            b.For( IsActive, x => x.IsFalse()
+                .WithMessage( "Cannot delete active user" ) );
+        } );
     }
 }
 
 // Usage with different contexts
-await validator.ValidateAsync(user, ValidationContextKey.Create);
-await validator.ValidateAsync(user, ValidationContextKey.Update);
-await validator.ValidateAsync(user, ValidationContextKey.Delete);
+await validator.ValidateAsync( user, ValidationContextKey.Create );
+await validator.ValidateAsync( user, ValidationContextKey.Update );
+await validator.ValidateAsync( user, ValidationContextKey.Delete );
 ```
 
-## Pre-defined Contexts
+### Pre-defined Contexts
 
 ```csharp
 ValidationContextKey.Default     // Default context
@@ -351,43 +355,43 @@ ValidationContextKey.Activate    // For activation operations
 ValidationContextKey.Deactivate  // For deactivation operations
 
 // Custom contexts
-ValidationContextKey.Custom("MyCustomContext")
+ValidationContextKey.Custom( "BulkImport" )
 ```
 
-# 🔄 Conditional Validation
+## Conditional Validation
 
-Execute validation rules based on conditions:
+Execute rules based on conditions:
 
-## Field-Level Conditions
+### Field-Level Conditions
 
 ```csharp
-builder.For(PhoneNumber, x => x
+builder.For( PhoneNumber, x => x
     .NotEmpty()
-    .When(phone => !string.IsNullOrEmpty(phone)) // Only validate if not empty
-    .Matches(new Regex(@"^\+\d{1,3}\d{10,14}$")));
+    .When( phone => !string.IsNullOrEmpty( phone ) ) // Only validate if not empty
+    .Matches( new Regex( @"^\+\d{1,3}\d{10,14}$" ) ) );
 
-builder.For(Password, x => x
+builder.For( Password, x => x
     .NotEmpty()
-    .Unless(pwd => IsExternalUser) // Skip for external users
-    .MinimumLength(8));
+    .Unless( pwd => IsExternalUser ) // Skip for external users
+    .MinimumLength( 8 ) );
 ```
 
-## Entity-Level Conditions
+### Entity-Level Conditions
 
 ```csharp
-builder.For(PhoneNumber, x => x
+builder.For( PhoneNumber, x => x
     .NotEmpty()
-    .When<string, UserDto>(user => user.PhoneType == PhoneType.Required)
-    .Unless<string, UserDto>(user => user.IsVerified));
+    .When<string, UserDto>( user => user.PhoneType == PhoneType.Required )
+    .Unless<string, UserDto>( user => user.IsVerified ) );
 
-builder.For(Salary, x => x
-    .GreaterThan(0)
-    .When<decimal, EmployeeDto>(emp => emp.EmploymentType == EmploymentType.FullTime));
+builder.For( Salary, x => x
+    .GreaterThan( 0 )
+    .When<decimal, EmployeeDto>( emp => emp.EmploymentType == EmploymentType.FullTime ) );
 ```
 
-# 🔁 Async Validation with Service Provider
+## Async Validation with Service Provider
 
-Access dependency injection container for database or API validation:
+Access dependency injection for database or API validation:
 
 ```csharp
 public class CreateOrderDto : IValidatable<CreateOrderDto>
@@ -396,91 +400,91 @@ public class CreateOrderDto : IValidatable<CreateOrderDto>
     public int Quantity { get; set; }
     public string CustomerEmail { get; set; }
 
-    public void Validate(ValidationBuilder<CreateOrderDto> builder, ValidationContextKey? context = null)
+    public void Validate( ValidationBuilder<CreateOrderDto> builder, ValidationContextKey? context = null )
     {
-        builder.For(ProductId, x => x
-            .GreaterThan(0)
-            .RespectAsync(async (productId, ct, sp) =>
+        builder.For( ProductId, x => x
+            .GreaterThan( 0 )
+            .RespectAsync( async ( productId, ct, sp ) =>
             {
                 var productService = sp.GetRequiredService<IProductService>();
-                return await productService.ExistsAsync(productId, ct);
-            })
-            .WithMessage("Product does not exist")
-            .WithCode("PRODUCT_NOT_FOUND"));
+                return await productService.ExistsAsync( productId, ct );
+            } )
+            .WithMessage( "Product does not exist" )
+            .WithCode( "PRODUCT_NOT_FOUND" ) );
 
-        builder.For(Quantity, x => x
-            .GreaterThan(0)
-            .RespectAsync(async (quantity, ct, sp) =>
+        builder.For( Quantity, x => x
+            .GreaterThan( 0 )
+            .RespectAsync( async ( quantity, ct, sp ) =>
             {
                 var productService = sp.GetRequiredService<IProductService>();
-                var stock = await productService.GetStockAsync(ProductId, ct);
+                var stock = await productService.GetStockAsync( ProductId, ct );
                 return quantity <= stock;
-            })
-            .WithMessage("Insufficient stock")
-            .WithCode("INSUFFICIENT_STOCK"));
+            } )
+            .WithMessage( "Insufficient stock" )
+            .WithCode( "INSUFFICIENT_STOCK" ) );
 
-        builder.For(CustomerEmail, x => x
+        builder.For( CustomerEmail, x => x
             .NotEmpty()
             .Email()
-            .RespectAsync(async (email, ct, sp) =>
+            .RespectAsync( async ( email, ct, sp ) =>
             {
                 var customerService = sp.GetRequiredService<ICustomerService>();
-                return await customerService.IsActiveCustomerAsync(email, ct);
-            })
-            .WithMessage("Customer not found or inactive")
-            .WithCode("CUSTOMER_INACTIVE")
-            .WithStatusCode(HttpStatusCode.NotFound));
+                return await customerService.IsActiveCustomerAsync( email, ct );
+            } )
+            .WithMessage( "Customer not found or inactive" )
+            .WithCode( "CUSTOMER_INACTIVE" )
+            .WithStatusCode( HttpStatusCode.NotFound ) );
     }
 }
 ```
 
-# 🎨 Advanced Features
+## Advanced Features
 
-## Custom Error Messages
+### Custom Error Messages
 
 ```csharp
 // Static message
-builder.For(Age, x => x
-    .GreaterThan(18)
-    .WithMessage("User must be at least 18 years old"));
+builder.For( Age, x => x
+    .GreaterThan( 18 )
+    .WithMessage( "User must be at least 18 years old" ) );
 
 // Dynamic message using field value
-builder.For(Age, x => x
-    .GreaterThan(18)
-    .WithMessage(age => $"User must be at least 18 years old, but is {age}"));
+builder.For( Age, x => x
+    .GreaterThan( 18 )
+    .WithMessage( age => $"User must be at least 18 years old, but is {age}" ) );
 
 // Custom error code
-builder.For(Email, x => x
+builder.For( Email, x => x
     .Email()
-    .WithCode("INVALID_EMAIL_FORMAT"));
+    .WithCode( "INVALID_EMAIL_FORMAT" ) );
 
 // Custom HTTP status code
-builder.For(UserId, x => x
-    .RespectAsync(async (id, ct, sp) =>
+builder.For( UserId, x => x
+    .RespectAsync( async ( id, ct, sp ) =>
     {
         var userService = sp.GetRequiredService<IUserService>();
-        return await userService.ExistsAsync(id, ct);
-    })
-    .WithMessage("User not found")
-    .WithCode("USER_NOT_FOUND")
-    .WithStatusCode(HttpStatusCode.NotFound)); // Returns 404 instead of 400
+        return await userService.ExistsAsync( id, ct );
+    } )
+    .WithMessage( "User not found" )
+    .WithCode( "USER_NOT_FOUND" )
+    .WithStatusCode( HttpStatusCode.NotFound ) ); // Returns 404 instead of 400
 ```
 
-## Stop on Failure
+### Stop on Failure
 
 Stop validating a field after the first failure:
 
 ```csharp
-builder.For(Password, x => x
+builder.For( Password, x => x
     .NotEmpty()
     .SetStopOnFailure() // Don't check other rules if empty
-    .MinimumLength(8)
-    .Matches(new Regex(@"[A-Z]"))
-    .Matches(new Regex(@"[a-z]"))
-    .Matches(new Regex(@"\d")));
+    .MinimumLength( 8 )
+    .Matches( new Regex( @"[A-Z]" ) )
+    .Matches( new Regex( @"[a-z]" ) )
+    .Matches( new Regex( @"\d" ) ) );
 ```
 
-## Complex Business Rules
+### Complex Business Rules
 
 ```csharp
 public class OrderDto : IValidatable<OrderDto>
@@ -490,89 +494,89 @@ public class OrderDto : IValidatable<OrderDto>
     public List<OrderItem> Items { get; set; }
     public string CouponCode { get; set; }
 
-    public void Validate(ValidationBuilder<OrderDto> builder, ValidationContextKey? context = null)
+    public void Validate( ValidationBuilder<OrderDto> builder, ValidationContextKey? context = null )
     {
-        builder.For(Amount, x => x
-            .GreaterThan(0)
-            .When<decimal, OrderDto>(order => order.Items?.Any() == true));
+        builder.For( Amount, x => x
+            .GreaterThan( 0 )
+            .When<decimal, OrderDto>( order => order.Items?.Any() == true ) );
 
         // Premium customers can have higher order amounts
-        builder.For(Amount, x => x
-            .LessThan(10000)
-            .Unless<decimal, OrderDto>(order => order.CustomerType == "Premium"));
+        builder.For( Amount, x => x
+            .LessThan( 10000 )
+            .Unless<decimal, OrderDto>( order => order.CustomerType == "Premium" ) );
 
-        builder.For(Items, x => x
+        builder.For( Items, x => x
             .NotEmpty()
-            .CountBetween(1, 50)
-            .All(item => item.Quantity > 0)
-            .All(item => item.Price > 0));
+            .CountBetween( 1, 50 )
+            .All( item => item.Quantity > 0 )
+            .All( item => item.Price > 0 ) );
 
         // Coupon validation
-        builder.For(CouponCode, x => x
-            .RespectAsync(async (coupon, ct, sp) =>
+        builder.For( CouponCode, x => x
+            .RespectAsync( async ( coupon, ct, sp ) =>
             {
-                if (string.IsNullOrEmpty(coupon)) return true; // Optional
+                if ( string.IsNullOrEmpty( coupon ) ) return true; // Optional
 
                 var couponService = sp.GetRequiredService<ICouponService>();
-                var isValid = await couponService.IsValidAsync(coupon, ct);
-                var isApplicable = await couponService.IsApplicableToOrderAsync(coupon, Amount, ct);
+                var isValid = await couponService.IsValidAsync( coupon, ct );
+                var isApplicable = await couponService.IsApplicableToOrderAsync( coupon, Amount, ct );
+
                 return isValid && isApplicable;
-            })
-            .WithMessage("Invalid or inapplicable coupon code")
-            .WithCode("INVALID_COUPON"));
+            } )
+            .WithMessage( "Invalid or inapplicable coupon code" )
+            .WithCode( "INVALID_COUPON" ) );
     }
 }
 ```
 
-# ❌ Error Handling
+## Error Handling
 
-## Validation Result
+### Validation Result
 
 ```csharp
-var result = await validator.ValidateAndReturnAsync(dto);
+var result = await validator.ValidateAndReturnAsync( dto );
 
-Console.WriteLine($"Is Valid: {result.IsValid}");
-Console.WriteLine($"Status Code: {result.StatusCode}");
+Console.WriteLine( $"Is Valid: {result.IsValid}" );
+Console.WriteLine( $"Status Code: {result.StatusCode}" );
 
-if (!result.IsValid)
+if ( !result.IsValid )
 {
-    foreach (var error in result.Errors)
+    foreach ( var error in result.Errors )
     {
-        Console.WriteLine($"Field: {error.Field}");
-        Console.WriteLine($"Message: {error.Message}");
-        Console.WriteLine($"Code: {error.Code}");
-        Console.WriteLine($"Status: {error.StatusCode}");
+        Console.WriteLine( $"Field: {error.Field}" );
+        Console.WriteLine( $"Message: {error.Message}" );
+        Console.WriteLine( $"Code: {error.Code}" );
+        Console.WriteLine( $"Status: {error.StatusCode}" );
     }
 }
 ```
 
-## Exception Handling
+### Exception Handling
 
 ```csharp
 try
 {
-    await validator.ValidateAsync(dto, ValidationContextKey.Create);
+    await validator.ValidateAsync( dto, ValidationContextKey.Create );
 }
-catch (ValidationException ex)
+catch ( ValidationException ex )
 {
     var errors = ex.ValidationResult.Errors;
     var statusCode = ex.ValidationResult.StatusCode;
 
-    // Log errors or transform to custom response
-    return BadRequest(new
+    return BadRequest( new
     {
         message = "Validation failed",
-        errors = errors.Select(e => new
+        errors = errors.Select( e => new
         {
             field = e.Field,
             message = e.Message,
             code = e.Code
-        })
-    });
+        } )
+    } );
 }
 ```
 
-## Middleware Error Response
+### Middleware Error Response
 
 When using `app.UseGuard()`, validation exceptions are automatically caught and formatted:
 
@@ -594,9 +598,9 @@ When using `app.UseGuard()`, validation exceptions are automatically caught and 
 }
 ```
 
-HTTP Status Code: The highest status code from all validation errors (e.g., if one error has `409 Conflict`, the response will be `409`).
+**HTTP Status Code**: The highest status code from all validation errors (e.g., if one error has `409 Conflict`, the response will be `409`).
 
-# 🧪 Testing
+## Testing
 
 The validation design makes testing straightforward:
 
@@ -606,7 +610,7 @@ public async Task CreateUser_WithInvalidEmail_ShouldFail()
 {
     // Arrange
     var services = new ServiceCollection();
-    services.AddScoped<IUserService>(sp => mockUserService.Object);
+    services.AddScoped<IUserService>( sp => mockUserService.Object );
     services.AddGuard();
 
     var serviceProvider = services.BuildServiceProvider();
@@ -621,19 +625,19 @@ public async Task CreateUser_WithInvalidEmail_ShouldFail()
 
     // Act & Assert
     var exception = await Assert.ThrowsAsync<ValidationException>(
-        () => validator.ValidateAsync(dto, ValidationContextKey.Create));
+        () => validator.ValidateAsync( dto, ValidationContextKey.Create ) );
 
-    exception.ValidationResult.Errors.Should().HaveCount(1);
-    exception.ValidationResult.Errors.First().Field.Should().Be("Email");
-    exception.ValidationResult.Errors.First().Code.Should().Be("VIOLATION");
+    exception.ValidationResult.Errors.Should().HaveCount( 1 );
+    exception.ValidationResult.Errors.First().Field.Should().Be( "Email" );
+    exception.ValidationResult.Errors.First().Code.Should().Be( "VIOLATION" );
 }
 
 [Fact]
 public async Task CreateUser_WithExistingEmail_ShouldReturnConflict()
 {
     // Arrange
-    mockUserService.Setup(x => x.IsEmailAvailableAsync("existing@test.com", It.IsAny<CancellationToken>()))
-               .ReturnsAsync(false);
+    mockUserService.Setup( x => x.IsEmailAvailableAsync( "existing@test.com", It.IsAny<CancellationToken>() ) )
+               .ReturnsAsync( false );
 
     var dto = new CreateUserDto
     {
@@ -643,123 +647,31 @@ public async Task CreateUser_WithExistingEmail_ShouldReturnConflict()
     };
 
     // Act
-    var result = await validator.ValidateAndReturnAsync(dto, ValidationContextKey.Create);
+    var result = await validator.ValidateAndReturnAsync( dto, ValidationContextKey.Create );
 
     // Assert
     result.IsValid.Should().BeFalse();
-    result.StatusCode.Should().Be(HttpStatusCode.Conflict);
-    result.Errors.Should().ContainSingle(e => e.Code == "EMAIL_EXISTS");
+    result.StatusCode.Should().Be( HttpStatusCode.Conflict );
+    result.Errors.Should().ContainSingle( e => e.Code == "EMAIL_EXISTS" );
 }
 ```
 
-## Testing Custom Rules
-
-```csharp
-[Fact]
-public async Task ValidateOrderAmount_WithPremiumCustomer_ShouldAllowHigherAmount()
-{
-    // Arrange
-    var order = new OrderDto
-    {
-        Amount = 15000, // Above normal limit
-        CustomerType = "Premium",
-        Items = new List<OrderItem> { new() { Quantity = 1, Price = 15000 } }
-    };
-
-    // Act
-    var result = await validator.ValidateAndReturnAsync(order);
-
-    // Assert
-    result.IsValid.Should().BeTrue();
-}
-```
-
-# 📋 Best Practices
+## Best Practices
 
 1. **Use Context-Aware Validation**: Leverage `ValidationContextKey` for operation-specific rules
-2. **Configure Dependency Injection**: Always use DI for service access in async validation
+2. **Keep Validation Close to Entities**: Implement `IValidatable<T>` on DTOs for better maintainability
 3. **Add Middleware**: Use `app.UseGuard()` for automatic exception handling
-4. **Separate Concerns**: Keep validation rules focused and business-logic free
-5. **Use Async Rules Sparingly**: Only for database/API checks that require external services
-6. **Handle Errors Gracefully**: Always check `IsValid` before accessing validated data
-7. **Use Custom Status Codes**: Set appropriate HTTP status codes for different validation failures
-8. **Test Validation Logic**: Test both positive and negative validation scenarios
-9. **Stop on Critical Failures**: Use `SetStopOnFailure()` for rules that prevent further validation
-10. **Use Meaningful Error Messages**: Provide clear, actionable error messages for users
+4. **Async Rules Sparingly**: Only for database/API checks requiring external services
+5. **Meaningful Error Messages**: Provide clear, actionable messages for users
+6. **Use Custom Status Codes**: Set appropriate HTTP codes for different validation failures
+7. **Stop on Critical Failures**: Use `SetStopOnFailure()` for rules preventing further validation
+8. **Test Validation Logic**: Test both positive and negative scenarios
+9. **Separate Concerns**: Keep validation focused, avoid business logic in validators
+10. **DDD Integration**: Use validation as part of your domain model's invariants
 
-# 🏗️ Advanced Patterns
+## Architecture Patterns
 
-## Multi-Step Validation Pipeline
-
-```csharp
-public class ComplexOrderDto : IValidatable<ComplexOrderDto>
-{
-    public CustomerInfo Customer { get; set; }
-    public List<OrderItem> Items { get; set; }
-    public PaymentInfo Payment { get; set; }
-    public ShippingInfo Shipping { get; set; }
-
-    public void Validate(ValidationBuilder<ComplexOrderDto> builder, ValidationContextKey? context = null)
-    {
-        // Customer validation
-        builder.For(Customer, x => x.NotNull());
-        builder.For(Customer?.Email, x => x
-            .NotEmpty()
-            .Email()
-            .RespectAsync(async (email, ct, sp) =>
-            {
-                var customerService = sp.GetRequiredService<ICustomerService>();
-                return await customerService.IsActiveAsync(email, ct);
-            })
-            .WithMessage("Customer not found or inactive"));
-
-        // Items validation
-        builder.For(Items, x => x
-            .NotEmpty()
-            .CountBetween(1, 100)
-            .All(item => item.Quantity > 0)
-            .All(item => item.Price > 0));
-
-        // Payment validation
-        builder.For(Payment?.CardNumber, x => x
-            .NotEmpty()
-            .Matches(new Regex(@"^\d{13,19}$"))
-            .RespectAsync(async (cardNumber, ct, sp) =>
-            {
-                var paymentService = sp.GetRequiredService<IPaymentService>();
-                return await paymentService.ValidateCardAsync(cardNumber, ct);
-            })
-            .WithMessage("Invalid payment card"));
-
-        // Shipping validation
-        builder.For(Shipping?.Address, x => x
-            .NotEmpty()
-            .MinimumLength(10)
-            .RespectAsync(async (address, ct, sp) =>
-            {
-                var shippingService = sp.GetRequiredService<IShippingService>();
-                return await shippingService.CanDeliverToAsync(address, ct);
-            })
-            .WithMessage("Delivery not available to this address"));
-
-        // Cross-field validation
-        builder.InContext(ValidationContextKey.Create, b =>
-        {
-            // Total amount must match items
-            b.For(Payment?.Amount, x => x
-                .EqualsTo(Items?.Sum(i => i.Price * i.Quantity))
-                .WithMessage("Payment amount doesn't match order total"));
-
-            // Express shipping requires premium customer
-            b.For(Shipping?.Type, x => x
-                .Respect(type => type != "Express" || Customer?.Type == "Premium")
-                .WithMessage("Express shipping only available for premium customers"));
-        });
-    }
-}
-```
-
-## Repository Pattern Integration
+### Repository Pattern Integration
 
 ```csharp
 public class UserRepository
@@ -767,16 +679,15 @@ public class UserRepository
     private readonly IValidator _validator;
     private readonly IDbContext _context;
 
-    public UserRepository(IValidator validator, IDbContext context)
+    public UserRepository( IValidator validator, IDbContext context )
     {
         _validator = validator;
         _context = context;
     }
 
-    public async Task<User> CreateAsync(CreateUserDto dto)
+    public async Task<User> CreateAsync( CreateUserDto dto )
     {
-        // Validate before creation
-        await _validator.ValidateAsync(dto, ValidationContextKey.Create);
+        await _validator.ValidateAsync( dto, ValidationContextKey.Create );
 
         var user = new User
         {
@@ -785,32 +696,32 @@ public class UserRepository
             Age = dto.Age
         };
 
-        _context.Users.Add(user);
+        _context.Users.Add( user );
         await _context.SaveChangesAsync();
 
         return user;
     }
 
-    public async Task<User> UpdateAsync(int id, UpdateUserDto dto)
+    public async Task<User> UpdateAsync( int id, UpdateUserDto dto )
     {
-        var user = await _context.Users.FindAsync(id);
-        if (user == null)
-            throw new NotFoundException("User not found");
+        var user = await _context.Users.FindAsync( id );
 
-        // Validate before update
-        await _validator.ValidateAsync(dto, ValidationContextKey.Update);
+        if ( user == null )
+            throw new NotFoundException( "User not found" );
+
+        await _validator.ValidateAsync( dto, ValidationContextKey.Update );
 
         user.Name = dto.Name;
         user.Age = dto.Age;
-        // Email typically not updated
 
         await _context.SaveChangesAsync();
+
         return user;
     }
 }
 ```
 
-## CQRS Command Validation
+### CQRS Command Validation
 
 ```csharp
 public class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand>
@@ -818,48 +729,46 @@ public class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand>
     private readonly IValidator _validator;
     private readonly IOrderRepository _repository;
 
-    public CreateOrderCommandHandler(IValidator validator, IOrderRepository repository)
+    public CreateOrderCommandHandler( IValidator validator, IOrderRepository repository )
     {
         _validator = validator;
         _repository = repository;
     }
 
-    public async Task<CommandResult> HandleAsync(CreateOrderCommand command)
+    public async Task<CommandResult> HandleAsync( CreateOrderCommand command )
     {
         try
         {
-            // Validate command
-            await _validator.ValidateAsync(command.OrderData, ValidationContextKey.Create);
+            await _validator.ValidateAsync( command.OrderData, ValidationContextKey.Create );
 
-            // Process order
-            var order = await _repository.CreateAsync(command.OrderData);
+            var order = await _repository.CreateAsync( command.OrderData );
 
             return CommandResult.Success();
         }
-        catch (ValidationException ex)
+        catch ( ValidationException ex )
         {
-            return CommandResult.Failure(ex.ValidationResult.Errors);
+            return CommandResult.Failure( ex.ValidationResult.Errors );
         }
     }
 }
 ```
 
-# 📊 Performance Considerations
+## Performance Considerations
 
 1. **Async Rules**: Use `RespectAsync()` only when necessary (database/API calls)
 2. **Stop on Failure**: Use `SetStopOnFailure()` for expensive validation rules
 3. **Context Filtering**: Use specific contexts to avoid unnecessary rule execution
 4. **Service Caching**: Cache expensive service calls in async validation rules
-5. **Reflection Overhead**: The library uses reflection to extract field values - minimal performance impact for typical use cases
+5. **Reflection Overhead**: Minimal performance impact for typical use cases
 
-# 📄 License
+## License
 
 This project is licensed under the Apache License 2.0 - see the LICENSE file for details.
 
-# 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-# 📧 Support
+## Support
 
-For issues, questions, or contributions, please visit the [GitHub repository](https://github.com/paulaolileal/myth).
+For issues, questions, or contributions, please visit the [GitLab repository](https://gitlab.com/dotnet-myth/myth).

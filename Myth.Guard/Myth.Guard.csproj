@@ -12,7 +12,7 @@
 		<PackageId>Myth.Guard</PackageId>
 		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>
-		<Description>A fluent .NET library for validation and data integritys</Description>
+		<Description>Fluent validation library with 100+ rules, context-aware validation, async service integration, and ASP.NET Core middleware. Supports nullable types, custom error messages, and comprehensive field validation.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Guard</RepositoryUrl>

@@ -12,7 +12,7 @@
 		<PackageId>Myth.Specification</PackageId>
 		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>
-		<Description>It is a .NET library for constructing _queries_ in a very readable way, keeping the business rules in mind.</Description>
+		<Description>Query specification pattern for encapsulating business rules in readable, composable, and testable specifications. Supports filtering, sorting, pagination, and conditional logic for clean query construction.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Specification</RepositoryUrl>

@@ -12,7 +12,7 @@
 		<PackageId>Myth.Flow</PackageId>
 		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>
-		<Description>A fluent .NET library for pipeline orchestration with Result pattern</Description>
+		<Description>Fluent pipeline orchestration with Result pattern, OpenTelemetry integration, retry policies, and global service provider support for building robust data processing workflows.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Flow</RepositoryUrl>

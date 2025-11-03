@@ -12,7 +12,7 @@
 		<PackageId>Myth.DependencyInjection.Providers</PackageId>
 		<Authors>Paula Leal</Authors>
 		<PackageIcon>Logo.jpg</PackageIcon>
-		<Description>It is a .NET library to perform dependency injection for pre-configured third-party libraries.</Description>
+		<Description>Pre-configured integrations for Swagger/OpenAPI documentation, AutoMapper object mapping, and API versioning. Provides production-ready defaults and fluent configuration for ASP.NET Core applications.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
 		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.DependencyInjection.Providers</RepositoryUrl>
