@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Myth.ServiceProvider;
 using Myth.Testing.Mocks;
 
 namespace Myth.Testing {
@@ -24,6 +25,14 @@ namespace Myth.Testing {
 			{"Test", "Test"},
 			{"Test:TestChild", "TestChild"}
 		};
+
+		/// <summary>
+		/// Rebuilds the service provider and updates the global MythServiceProvider
+		/// </summary>
+		protected void RebuildServiceProvider( ) {
+			_serviceProvider = _services.BuildServiceProvider( );
+			MythServiceProvider.Initialize( _serviceProvider );
+		}
 
 		public BaseTests( string fakerCulture = "en_US" ) {
 			_services = new ServiceCollection( );
@@ -58,7 +67,7 @@ namespace Myth.Testing {
 
 			AddConfiguration( );
 
-			_serviceProvider = _services.BuildServiceProvider( );
+			RebuildServiceProvider( );
 		}
 
 		/// <summary>
@@ -114,7 +123,7 @@ namespace Myth.Testing {
 			_services.Add( service );
 
 			if ( reBuildOnAdd )
-				_serviceProvider = _services.BuildServiceProvider( );
+				RebuildServiceProvider( );
 		}
 
 		/// <summary>
@@ -133,7 +142,7 @@ namespace Myth.Testing {
 			_services.Add( service );
 
 			if ( reBuildOnAdd )
-				_serviceProvider = _services.BuildServiceProvider( );
+				RebuildServiceProvider( );
 		}
 
 		/// <summary>
@@ -143,7 +152,7 @@ namespace Myth.Testing {
 		public virtual void AddServices( Action<IServiceCollection> services ) {
 			services.Invoke( _services );
 
-			_serviceProvider = _services.BuildServiceProvider( );
+			RebuildServiceProvider( );
 		}
 
 		/// <summary>
@@ -184,7 +193,7 @@ namespace Myth.Testing {
 			configure?.Invoke( _services );
 
 			if ( reBuildOnAdd )
-				_serviceProvider = _services.BuildServiceProvider( );
+				RebuildServiceProvider( );
 		}
 
 		/// <summary>
@@ -194,8 +203,7 @@ namespace Myth.Testing {
 		/// <param name="implementation">The new implementation instance</param>
 		/// <param name="reBuildOnAdd">Whether to rebuild the service provider</param>
 		public virtual void ReplaceService<TInterface>( TInterface implementation, bool reBuildOnAdd = true ) where TInterface : class {
-			if ( implementation is null )
-				throw new ArgumentNullException( nameof( implementation ) );
+			ArgumentNullException.ThrowIfNull( implementation );
 
 			// Remove existing registrations
 			var existingDescriptors = _services.Where( s => s.ServiceType == typeof( TInterface ) ).ToList( );
@@ -206,7 +214,7 @@ namespace Myth.Testing {
 			_services.AddSingleton( implementation );
 
 			if ( reBuildOnAdd )
-				_serviceProvider = _services.BuildServiceProvider( );
+				RebuildServiceProvider( );
 		}
 
 		/// <summary>
@@ -241,6 +249,8 @@ namespace Myth.Testing {
 				} else if ( _serviceProvider is IDisposable disposable ) {
 					disposable.Dispose( );
 				}
+
+				MythServiceProvider.Reset( );
 				GC.SuppressFinalize( this );
 			} catch {
 				// Suppress exceptions during disposal to prevent masking test failures
@@ -262,6 +272,8 @@ namespace Myth.Testing {
 				} else if ( _serviceProvider is IDisposable disposable ) {
 					disposable.Dispose( );
 				}
+
+				MythServiceProvider.Reset( );
 				GC.SuppressFinalize( this );
 			} catch {
 				// Suppress exceptions during disposal to prevent masking test failures

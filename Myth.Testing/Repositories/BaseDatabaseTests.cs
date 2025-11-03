@@ -33,7 +33,7 @@ namespace Myth.Testing.Repositories {
 						contextLifetime: ServiceLifetime.Scoped,
 						optionsLifetime: ServiceLifetime.Singleton );
 
-			_serviceProvider = _services.BuildServiceProvider( );
+			RebuildServiceProvider( );
 		}
 
 		/// <summary>
