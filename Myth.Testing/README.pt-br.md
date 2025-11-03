@@ -27,7 +27,7 @@ Uma biblioteca abrangente de testes construída sobre xUnit que fornece classes 
 - 🧪 **Classes Base de Teste**: Classes base pré-configuradas para testes unitários e de banco de dados
 - 🔄 **Padrões Assíncronos**: Suporte integrado para testes assíncronos com gerenciamento de timeout
 - 🗄️ **Testes de Banco de Dados**: Integração Entity Framework com bancos de dados em memória
-- 🏗️ **Construtores de Dados de Teste**: API fluente para construir dados de teste com integração Faker
+- 🏗️ **Geração de Dados de Teste**: Bogus (Faker) integrado para criação de dados de teste realistas
 - 🔧 **Container de Serviços**: Suporte à injeção de dependência para testes
 - 📊 **FluentAssertions**: Extensões de asserção aprimoradas para melhor legibilidade dos testes
 - 🎯 **Integração xUnit**: Framework de teste moderno com suporte a fixtures
@@ -57,11 +57,16 @@ public class UserServiceTests : BaseTests
     [Fact]
     public async Task CreateUser_WithValidData_ShouldSucceed()
     {
-        // Arrange
-        var user = new UserBuilder(_faker)
-            .WithName("João Silva")
-            .WithEmail("joao@exemplo.com")
-            .Build();
+        // Arrange - Criar dados de teste usando Bogus faker
+        var user = new User
+        {
+            Id = _faker.Random.Guid(),
+            Name = "João Silva",
+            Email = "joao@exemplo.com",
+            Age = _faker.Random.Int(18, 65),
+            IsActive = true,
+            CreatedDate = DateTime.UtcNow
+        };
 
         // Act
         var result = await _userService.CreateUserAsync(user);
@@ -92,7 +97,13 @@ public class UserRepositoryTests : BaseDatabaseTests<UserDbContext>
         // Arrange
         await InitializeDatabaseAsync();
 
-        var user = new UserEntityBuilder(_faker).Build();
+        var user = new UserEntity
+        {
+            Name = _faker.Name.FullName(),
+            Email = _faker.Internet.Email(),
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
 
         // Act
         var result = await _repository.CreateAsync(user);
@@ -161,34 +172,78 @@ public class DatabaseTests : BaseDatabaseTests<MyDbContext>
 }
 ```
 
-### Construtores de Dados de Teste
+### Geração de Dados de Teste
 
-API fluente para criação de dados de teste:
+O Myth.Testing inclui uma instância **Bogus (Faker)** pré-configurada disponível através do campo `_faker` em todas as classes de teste. Use-a diretamente para gerar dados de teste realistas:
 
+**Categorias do Faker Disponíveis:**
+- `_faker.Name` - Nomes e informações pessoais
+- `_faker.Internet` - Endereços de email, URLs, nomes de usuário
+- `_faker.Address` - Endereços, cidades, códigos postais
+- `_faker.Phone` - Números de telefone
+- `_faker.Commerce` - Nomes de produtos, preços
+- `_faker.Date` - Datas e horários
+- `_faker.Lorem` - Texto Lorem ipsum
+- `_faker.Random` - Valores aleatórios (números, booleanos, enums)
+
+**Exemplos de Uso:**
 ```csharp
-public class UserBuilder : TestDataBuilder<User, UserBuilder>
+public class UserServiceTests : BaseTests
 {
-    public UserBuilder(Faker faker) : base(faker) { }
-
-    public UserBuilder WithName(string name) => With(nameof(User.Name), name);
-    public UserBuilder WithEmail(string email) => With(nameof(User.Email), email);
-
-    public override User Build()
+    [Fact]
+    public void CreateTestData_Examples()
     {
-        return new User
+        // Criação simples de objeto
+        var user = new User
         {
-            Name = GetOverrideOrGenerate(nameof(User.Name), f => f.Name.FullName()),
-            Email = GetOverrideOrGenerate(nameof(User.Email), f => f.Internet.Email())
+            Id = _faker.Random.Guid(),
+            Name = _faker.Name.FullName(),
+            Email = _faker.Internet.Email(),
+            Age = _faker.Random.Int(18, 65),
+            IsActive = _faker.Random.Bool(),
+            CreatedDate = _faker.Date.Recent()
         };
+
+        // Coleções
+        var users = new List<User>();
+        for (int i = 0; i < 10; i++)
+        {
+            users.Add(new User
+            {
+                Id = _faker.Random.Guid(),
+                Name = _faker.Name.FullName(),
+                Email = _faker.Internet.Email(),
+                Age = _faker.Random.Int(18, 65),
+                IsActive = i % 2 == 0, // Mistura de ativo/inativo
+                CreatedDate = _faker.Date.Past()
+            });
+        }
     }
 }
 
-// Uso
-var user = new UserBuilder(_faker)
-    .WithName("João Silva")
-    .Build();
+// Padrão de Métodos Helper
+public static class TestDataHelper
+{
+    public static User CreateValidUser(Faker faker) => new()
+    {
+        Id = faker.Random.Guid(),
+        Name = faker.Name.FullName(),
+        Email = faker.Internet.Email(),
+        Age = faker.Random.Int(18, 65),
+        IsActive = true,
+        CreatedDate = DateTime.UtcNow
+    };
 
-var users = new UserBuilder(_faker).BuildList(5);
+    public static List<User> CreateUserList(Faker faker, int count)
+    {
+        var users = new List<User>();
+        for (int i = 0; i < count; i++)
+        {
+            users.Add(CreateValidUser(faker));
+        }
+        return users;
+    }
+}
 ```
 
 ### TestFixture
@@ -365,7 +420,13 @@ public class UserServiceTests : BaseTests
     public async Task Method_Scenario_ExpectedBehavior()
     {
         // Arrange
-        var input = new UserBuilder(_faker).Build();
+        var input = new User
+        {
+            Id = _faker.Random.Guid(),
+            Name = _faker.Name.FullName(),
+            Email = _faker.Internet.Email(),
+            Age = _faker.Random.Int(18, 65)
+        };
 
         // Act
         var result = await _service.CreateUserAsync(input);

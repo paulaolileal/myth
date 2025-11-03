@@ -8,7 +8,7 @@ Myth.Testing is a powerful testing library built on xUnit that provides pre-conf
 
 - 🧪 **Base Test Classes**: Pre-configured `BaseTests` and `BaseDatabaseTests<T>` with dependency injection
 - 🗄️ **Entity Framework Testing**: In-memory database support with automatic setup/cleanup
-- 🏗️ **Test Data Builders**: Fluent API for creating test data with Bogus (Faker) integration
+- 🏗️ **Test Data Generation**: Integrated Bogus (Faker) for realistic test data creation
 - 🔧 **Service Container**: Full dependency injection support with service management utilities
 - 🌐 **HTTP Client Mocking**: Built-in HTTP mocking for external API testing
 - 📊 **FluentAssertions Extensions**: Enhanced assertion methods for MVC/API responses
@@ -64,12 +64,14 @@ public class UserServiceTests : BaseTests
     [Fact]
     public async Task CreateUser_WithValidData_ShouldSucceed()
     {
-        // Arrange
-        var user = new UserBuilder(_faker)
-            .WithName("John Doe")
-            .WithEmail("john@example.com")
-            .WithAge(25)
-            .Build();
+        // Arrange - Create test data using Bogus faker
+        var user = new User
+        {
+            Id = _faker.Random.Guid(),
+            Name = _faker.Name.FullName(),
+            Email = _faker.Internet.Email(),
+            Age = _faker.Random.Int(18, 65)
+        };
 
         _mockRepository
             .Setup(r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
@@ -81,7 +83,7 @@ public class UserServiceTests : BaseTests
         // Assert
         result.Should().NotBeNull();
         result.Id.Should().NotBeEmpty();
-        result.Name.Should().Be("John Doe");
+        result.Name.Should().Be(user.Name);
 
         _mockRepository.Verify(r => r.CreateAsync(user, default), Times.Once);
     }
@@ -93,9 +95,12 @@ public class UserServiceTests : BaseTests
     public async Task CreateUser_WithInvalidName_ShouldThrow(string invalidName)
     {
         // Arrange
-        var user = new UserBuilder(_faker)
-            .WithName(invalidName)
-            .Build();
+        var user = new User
+        {
+            Id = _faker.Random.Guid(),
+            Name = invalidName,
+            Email = _faker.Internet.Email()
+        };
 
         // Act & Assert
         await _userService.Invoking(s => s.CreateUserAsync(user))
@@ -125,10 +130,13 @@ public class UserRepositoryTests : BaseDatabaseTests<UserDbContext>
         // Arrange
         await InitializeDatabaseAsync();
 
-        var user = new UserEntityBuilder(_faker)
-            .WithName("John Doe")
-            .WithEmail("john@example.com")
-            .Build();
+        var user = new UserEntity
+        {
+            Name = _faker.Name.FullName(),
+            Email = _faker.Internet.Email(),
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
 
         // Act
         var result = await _repository.CreateAsync(user);
@@ -140,8 +148,8 @@ public class UserRepositoryTests : BaseDatabaseTests<UserDbContext>
         // Verify persistence
         var dbUser = await GetContext().Users.FindAsync(result.Id);
         dbUser.Should().NotBeNull();
-        dbUser.Name.Should().Be("John Doe");
-        dbUser.Email.Should().Be("john@example.com");
+        dbUser.Name.Should().Be(user.Name);
+        dbUser.Email.Should().Be(user.Email);
 
         await CleanupDatabaseAsync();
     }
@@ -152,14 +160,16 @@ public class UserRepositoryTests : BaseDatabaseTests<UserDbContext>
         // Arrange
         await InitializeDatabaseAsync();
 
-        var users = new UserEntityBuilder(_faker)
-            .BuildList(10)
-            .ToList();
-
-        // Make some users active, others inactive
-        for (int i = 0; i < users.Count; i++)
+        var users = new List<UserEntity>();
+        for (int i = 0; i < 10; i++)
         {
-            users[i].IsActive = i % 2 == 0;
+            users.Add(new UserEntity
+            {
+                Name = _faker.Name.FullName(),
+                Email = _faker.Internet.Email(),
+                IsActive = i % 2 == 0,
+                CreatedAt = DateTime.UtcNow
+            });
         }
 
         await GetContext().Users.AddRangeAsync(users);
@@ -321,7 +331,13 @@ public class UserRepositoryTests : BaseDatabaseTests<UserDbContext>
         try
         {
             // Arrange
-            var user = new UserEntityBuilder(_faker).Build();
+            var user = new UserEntity
+            {
+                Name = _faker.Name.FullName(),
+                Email = _faker.Internet.Email(),
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
 
             // Act
             var result = await _repository.CreateAsync(user);
@@ -347,8 +363,17 @@ public class UserRepositoryTests : BaseDatabaseTests<UserDbContext>
         await InitializeDatabaseAsync();
 
         // Seed test data
-        var users = new UserEntityBuilder(_faker)
-            .BuildList(5);
+        var users = new List<UserEntity>();
+        for (int i = 0; i < 5; i++)
+        {
+            users.Add(new UserEntity
+            {
+                Name = _faker.Name.FullName(),
+                Email = _faker.Internet.Email(),
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
 
         var context = GetContext();
         await context.Users.AddRangeAsync(users);
@@ -374,136 +399,116 @@ TContext GetContext()
 // All service management and configuration methods
 ```
 
-### Test Data Builders
+### Test Data Generation
 
-Fluent API for creating consistent, realistic test data using Bogus (Faker):
+Myth.Testing includes a pre-configured **Bogus (Faker)** instance available through the `_faker` field in all test classes. Use it directly to generate realistic test data:
 
-**Base TestDataBuilder Class:**
-```csharp
-public abstract class TestDataBuilder<TEntity, TBuilder>
-    where TBuilder : TestDataBuilder<TEntity, TBuilder>
-{
-    protected readonly Faker _faker;
-    private readonly Dictionary<string, object> _overrides = new();
-
-    protected TestDataBuilder(Faker faker)
-    {
-        _faker = faker;
-    }
-
-    // Fluent API methods
-    protected TBuilder With(string propertyName, object value);
-    protected TValue GetOverrideOrGenerate<TValue>(string propertyName, Func<Faker, TValue> generator);
-
-    // Build methods
-    public abstract TEntity Build();
-    public List<TEntity> BuildList(int count);
-}
-```
-
-**Creating Custom Builders:**
-```csharp
-public class UserBuilder : TestDataBuilder<User, UserBuilder>
-{
-    public UserBuilder(Faker faker) : base(faker) { }
-
-    // Fluent methods for specific properties
-    public UserBuilder WithName(string name) => With(nameof(User.Name), name);
-    public UserBuilder WithEmail(string email) => With(nameof(User.Email), email);
-    public UserBuilder WithAge(int age) => With(nameof(User.Age), age);
-    public UserBuilder WithIsActive(bool isActive) => With(nameof(User.IsActive), isActive);
-    public UserBuilder WithCreatedDate(DateTime date) => With(nameof(User.CreatedDate), date);
-
-    // Complex object builders
-    public UserBuilder WithAddress(Address address) => With(nameof(User.Address), address);
-    public UserBuilder WithRandomAddress() => With(nameof(User.Address), GenerateAddress());
-
-    public override User Build()
-    {
-        return new User
-        {
-            Id = GetOverrideOrGenerate(nameof(User.Id), f => f.Random.Guid()),
-            Name = GetOverrideOrGenerate(nameof(User.Name), f => f.Name.FullName()),
-            Email = GetOverrideOrGenerate(nameof(User.Email), f => f.Internet.Email()),
-            Age = GetOverrideOrGenerate(nameof(User.Age), f => f.Random.Int(18, 65)),
-            IsActive = GetOverrideOrGenerate(nameof(User.IsActive), f => f.Random.Bool()),
-            CreatedDate = GetOverrideOrGenerate(nameof(User.CreatedDate), f => f.Date.Recent()),
-            Address = GetOverrideOrGenerate(nameof(User.Address), f => GenerateAddress())
-        };
-    }
-
-    private Address GenerateAddress()
-    {
-        return new Address
-        {
-            Street = _faker.Address.StreetAddress(),
-            City = _faker.Address.City(),
-            State = _faker.Address.State(),
-            ZipCode = _faker.Address.ZipCode(),
-            Country = _faker.Address.Country()
-        };
-    }
-}
-
-// Entity Framework builder for database entities
-public class UserEntityBuilder : TestDataBuilder<UserEntity, UserEntityBuilder>
-{
-    public UserEntityBuilder(Faker faker) : base(faker) { }
-
-    public UserEntityBuilder WithName(string name) => With(nameof(UserEntity.Name), name);
-    public UserEntityBuilder WithEmail(string email) => With(nameof(UserEntity.Email), email);
-
-    public override UserEntity Build()
-    {
-        return new UserEntity
-        {
-            // Don't set Id for new entities (let EF generate)
-            Name = GetOverrideOrGenerate(nameof(UserEntity.Name), f => f.Name.FullName()),
-            Email = GetOverrideOrGenerate(nameof(UserEntity.Email), f => f.Internet.Email()),
-            IsActive = GetOverrideOrGenerate(nameof(UserEntity.IsActive), f => true),
-            CreatedAt = GetOverrideOrGenerate(nameof(UserEntity.CreatedAt), f => DateTime.UtcNow)
-        };
-    }
-}
-```
+**Available Faker Categories:**
+- `_faker.Name` - Names and personal information
+- `_faker.Internet` - Email addresses, URLs, usernames
+- `_faker.Address` - Street addresses, cities, postal codes
+- `_faker.Phone` - Phone numbers
+- `_faker.Commerce` - Product names, prices
+- `_faker.Date` - Dates and times
+- `_faker.Lorem` - Lorem ipsum text
+- `_faker.Random` - Random values (numbers, booleans, enums)
 
 **Usage Examples:**
 ```csharp
-// Simple usage
-var user = new UserBuilder(_faker)
-    .WithName("John Doe")
-    .WithEmail("john@example.com")
-    .Build();
-
-// Complex scenarios
-var activeUser = new UserBuilder(_faker)
-    .WithIsActive(true)
-    .WithAge(30)
-    .WithRandomAddress()
-    .Build();
-
-// Multiple entities
-var users = new UserBuilder(_faker)
-    .BuildList(10);
-
-// Mixed properties
-var testUsers = new List<User>();
-for (int i = 0; i < 5; i++)
+public class UserServiceTests : BaseTests
 {
-    var user = new UserBuilder(_faker)
-        .WithAge(20 + i)
-        .WithIsActive(i % 2 == 0)
-        .Build();
-    testUsers.Add(user);
+    [Fact]
+    public void CreateTestData_Examples()
+    {
+        // Simple object creation
+        var user = new User
+        {
+            Id = _faker.Random.Guid(),
+            Name = _faker.Name.FullName(),
+            Email = _faker.Internet.Email(),
+            Age = _faker.Random.Int(18, 65),
+            IsActive = _faker.Random.Bool(),
+            CreatedDate = _faker.Date.Recent()
+        };
+
+        // Collections
+        var users = new List<User>();
+        for (int i = 0; i < 10; i++)
+        {
+            users.Add(new User
+            {
+                Id = _faker.Random.Guid(),
+                Name = _faker.Name.FullName(),
+                Email = _faker.Internet.Email(),
+                Age = _faker.Random.Int(18, 65),
+                IsActive = i % 2 == 0, // Mix of active/inactive
+                CreatedDate = _faker.Date.Past()
+            });
+        }
+
+        // Complex objects
+        var userWithAddress = new User
+        {
+            Name = _faker.Name.FullName(),
+            Email = _faker.Internet.Email(),
+            Address = new Address
+            {
+                Street = _faker.Address.StreetAddress(),
+                City = _faker.Address.City(),
+                State = _faker.Address.State(),
+                ZipCode = _faker.Address.ZipCode(),
+                Country = _faker.Address.Country()
+            }
+        };
+    }
+}
+```
+
+**Helper Methods Pattern:**
+Create static helper methods for common test data scenarios:
+
+```csharp
+public static class TestDataHelper
+{
+    public static User CreateValidUser(Faker faker) => new()
+    {
+        Id = faker.Random.Guid(),
+        Name = faker.Name.FullName(),
+        Email = faker.Internet.Email(),
+        Age = faker.Random.Int(18, 65),
+        IsActive = true,
+        CreatedDate = DateTime.UtcNow
+    };
+
+    public static List<User> CreateUserList(Faker faker, int count, bool allActive = false)
+    {
+        var users = new List<User>();
+        for (int i = 0; i < count; i++)
+        {
+            users.Add(new User
+            {
+                Id = faker.Random.Guid(),
+                Name = faker.Name.FullName(),
+                Email = faker.Internet.Email(),
+                Age = faker.Random.Int(18, 65),
+                IsActive = allActive || i % 2 == 0,
+                CreatedDate = faker.Date.Past()
+            });
+        }
+        return users;
+    }
 }
 
-// Database entities
-var dbUsers = new UserEntityBuilder(_faker)
-    .BuildList(3)
-    .ToList();
-
-await context.Users.AddRangeAsync(dbUsers);
-await context.SaveChangesAsync();
+// Usage in tests
+public class UserServiceTests : BaseTests
+{
+    [Fact]
+    public void TestMethod()
+    {
+        var user = TestDataHelper.CreateValidUser(_faker);
+        var users = TestDataHelper.CreateUserList(_faker, 5, allActive: true);
+    }
+}
 ```
 
 ### TestFixture Class
@@ -561,8 +566,17 @@ public class DatabaseFixture : TestFixture
 
         if (!await context.Users.AnyAsync())
         {
-            var users = new UserEntityBuilder(Faker)
-                .BuildList(10);
+            var users = new List<UserEntity>();
+            for (int i = 0; i < 10; i++)
+            {
+                users.Add(new UserEntity
+                {
+                    Name = Faker.Name.FullName(),
+                    Email = Faker.Internet.Email(),
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
 
             await context.Users.AddRangeAsync(users);
             await context.SaveChangesAsync();
@@ -1392,7 +1406,17 @@ public class FluentAssertionsExtensionsTests : BaseTests
     [Fact]
     public void Collections_ShouldHaveEnhancedAssertions()
     {
-        var users = new UserBuilder(_faker).BuildList(5);
+        var users = new List<User>();
+        for (int i = 0; i < 5; i++)
+        {
+            users.Add(new User
+            {
+                Id = _faker.Random.Guid(),
+                Name = _faker.Name.FullName(),
+                Email = _faker.Internet.Email(),
+                Age = _faker.Random.Int(18, 65)
+            });
+        }
 
         // Enhanced collection assertions
         users.Should().HaveCountGreaterThan(0);
@@ -1485,10 +1509,15 @@ namespace MyApp.Tests.Services
         public async Task CreateUser_WithValidData_ShouldSucceedAndSendEmail()
         {
             // Arrange
-            var userDto = new UserBuilder(_faker)
-                .WithName("John Doe")
-                .WithEmail("john@example.com")
-                .Build();
+            var userDto = new User
+            {
+                Id = _faker.Random.Guid(),
+                Name = "John Doe",
+                Email = "john@example.com",
+                Age = _faker.Random.Int(18, 65),
+                IsActive = true,
+                CreatedDate = DateTime.UtcNow
+            };
 
             _mockRepository
                 .Setup(r => r.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
@@ -1518,9 +1547,13 @@ namespace MyApp.Tests.Services
         public async Task CreateUser_WithInvalidName_ShouldThrowValidationException(string invalidName)
         {
             // Arrange
-            var userDto = new UserBuilder(_faker)
-                .WithName(invalidName)
-                .Build();
+            var userDto = new User
+            {
+                Id = _faker.Random.Guid(),
+                Name = invalidName,
+                Email = _faker.Internet.Email(),
+                Age = _faker.Random.Int(18, 65)
+            };
 
             // Act & Assert
             var exception = await _service.Invoking(s => s.CreateUserAsync(userDto))
@@ -2226,21 +2259,42 @@ public static class TestDataSets
 {
     public static class Users
     {
-        public static User ValidUser(Faker faker) => new UserBuilder(faker)
-            .WithName(faker.Name.FullName())
-            .WithEmail(faker.Internet.Email())
-            .WithAge(faker.Random.Int(18, 65))
-            .Build();
+        public static User ValidUser(Faker faker) => new()
+        {
+            Id = faker.Random.Guid(),
+            Name = faker.Name.FullName(),
+            Email = faker.Internet.Email(),
+            Age = faker.Random.Int(18, 65),
+            IsActive = true,
+            CreatedDate = DateTime.UtcNow
+        };
 
-        public static User AdminUser(Faker faker) => new UserBuilder(faker)
-            .WithRole("Admin")
-            .WithIsActive(true)
-            .Build();
+        public static User AdminUser(Faker faker) => new()
+        {
+            Id = faker.Random.Guid(),
+            Name = faker.Name.FullName(),
+            Email = faker.Internet.Email(),
+            Role = "Admin",
+            IsActive = true,
+            CreatedDate = DateTime.UtcNow
+        };
 
-        public static List<User> ActiveUsers(Faker faker, int count = 5) =>
-            new UserBuilder(faker)
-                .WithIsActive(true)
-                .BuildList(count);
+        public static List<User> ActiveUsers(Faker faker, int count = 5)
+        {
+            var users = new List<User>();
+            for (int i = 0; i < count; i++)
+            {
+                users.Add(new User
+                {
+                    Id = faker.Random.Guid(),
+                    Name = faker.Name.FullName(),
+                    Email = faker.Internet.Email(),
+                    IsActive = true,
+                    CreatedDate = faker.Date.Past()
+                });
+            }
+            return users;
+        }
     }
 }
 
