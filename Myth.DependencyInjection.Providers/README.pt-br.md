@@ -6,26 +6,36 @@
 
 [![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg?style=for-the-badge)](/README.pt-br.md) [![en](https://img.shields.io/badge/lang-en-red.svg?style=for-the-badge)](/README.md)
 
-Uma biblioteca .NET que fornece configuração pré-pronta de injeção de dependências para bibliotecas terceiras comumente utilizadas em aplicações ASP.NET Core. Simplifica a integração de versionamento de API, documentação Swagger/OpenAPI e AutoMapper com padrões prontos para produção.
+Uma biblioteca .NET que fornece configuração pré-pronta de injeção de dependências para bibliotecas terceiras comumente utilizadas em aplicações ASP.NET Core. Simplifica a integração de versionamento de API, documentação Swagger/OpenAPI avançada com interface moderna, e AutoMapper com padrões prontos para produção.
 
 ## Por que Myth.DependencyInjection.Providers?
 
 Aplicações modernas ASP.NET Core requerem configuração consistente em múltiplos projetos para versionamento, documentação de API e mapeamento de objetos. Esta biblioteca elimina código de configuração repetitivo fornecendo:
 
 - Versionamento de API pronto para produção com suporte a múltiplos leitores (URL, header, media type)
-- Documentação Swagger/OpenAPI versionada com geração automática de endpoints
+- **Documentação Swagger/OpenAPI avançada** com navegação hierárquica, busca em tempo real e interface moderna
+- Documentação versionada com geração automática de endpoints e experiência de desenvolvedor aprimorada
 - Integração com AutoMapper incluindo suporte a paginação
 - Métodos de extensão para mapeamento simplificado de objetos em toda sua aplicação
-- Configuração mínima com padrões sensatos
+- Configuração mínima com padrões sensatos e opções de personalização poderosas
 
 ## Funcionalidades
 
 - **Versionamento de API**: Versionamento completo com suporte a URL segment, header e media type
-- **Swagger/OpenAPI**: Documentação versionada com descoberta automática de endpoints e comentários XML
+- **Swagger/OpenAPI Avançado**: Interface de documentação moderna com experiência de desenvolvedor aprimorada
+  - 🌲 **TreeView Hierárquica** - Endpoints organizados por tags com suporte a múltiplos níveis
+  - 🔍 **Busca em Tempo Real** - Filtros dinâmicos por nome, método, descrição e caminho
+  - 🎨 **Tema Claro/Escuro** - Detecção automática com alternância manual e persistência de preferência
+  - ⚡ **Execução Direta** - Teste de API com um clique sem botão "Try it out"
+  - 💾 **Cache Persistente** - Salva parâmetros e corpos de requisição entre sessões do navegador
+  - 🔐 **Autenticação Avançada** - Suporte a Bearer, Basic e API Key com seleção via dropdown
+  - ⌨️ **Atalhos de Teclado** - Recursos para usuários avançados (Ctrl+Enter, Ctrl+F, etc.)
+  - 📊 **Monitoramento de Performance** - Timing de requisições, códigos de status coloridos e feedback visual
+  - ✨ **UX Aprimorada** - JSON beautify, colapso de modelos, validação e histórico de requisições
 - **Integração AutoMapper**: Configuração simplificada com mapeamentos de tipos de paginação e acesso global
 - **Extensões de Mapeamento de Tipos**: Métodos de extensão estáticos para transformações de objetos convenientes
-- **Suporte a Autenticação Básica**: Configuração integrada de autorização no Swagger
-- **Experiência do Desenvolvedor**: APIs fluentes e código boilerplate mínimo
+- **Integração de Autenticação**: Validação de autenticação ASP.NET Core e armazenamento seguro de credenciais
+- **Experiência do Desenvolvedor**: APIs fluentes, código boilerplate mínimo e 100% de compatibilidade retroativa
 
 ## Instalação
 
@@ -46,15 +56,31 @@ builder.Services.AddControllers( );
 
 builder.Services.AddVersioning( 1.0 );
 
-builder.Services.AddSwaggerVersioned( settings => {
-    settings.Title = "Minha API";
-    settings.Description = "Uma API abrangente para gerenciamento de recursos";
-    settings.ContactName = "Equipe de API";
-    settings.ContactEmail = "api@minhaempresa.com";
-    settings.ContactUrl = "https://minhaempresa.com/api";
-    settings.DeprecatedDescription = "Esta versão da API foi descontinuada e será removida em breve";
+// Configuração básica (100% compatível com versões anteriores)
+builder.Services.AddDocs( settings => {
+    settings.UseTitle( "Minha API" )
+           .UseDescription( "Uma API abrangente para gerenciamento de recursos" )
+           .UseContact( "Equipe de API", "api@minhaempresa.com", "https://minhaempresa.com/api" )
+           .UseBearerAuthorization( );
+} );
 
-    settings.Options.UseBasicAuthorization( );
+// OU com funcionalidades avançadas habilitadas
+builder.Services.AddDocs( settings => {
+    settings.UseTitle( "Documentação Avançada da API" )
+           .UseDescription( "API com interface moderna e experiência de desenvolvedor aprimorada" )
+           .UseContact( "Equipe de API", "api@minhaempresa.com", "https://minhaempresa.com/api" )
+
+           // Habilitar todas as funcionalidades avançadas com padrões sensatos
+           .UseAdvancedFeatures( )
+
+           // Ou configurar individualmente
+           .UseTreeView( enableHierarchy: true, tagSeparator: "/" )
+           .UseSearch( enableRealTime: true )
+           .UseTheme( SwaggerTheme.Auto, allowUserToggle: true )
+           .UseCache( enablePersistence: true, expirationMinutes: 60 )
+           .UseAuthentication( enableDropdown: true, validateTokens: false )
+           .UseUI( enableDirectExecution: true, enableKeyboardShortcuts: true )
+           .UsePerformance( enableTiming: true, enableStatusColors: true );
 } );
 
 builder.Services.AddTypeMapping( conf => {
@@ -64,7 +90,12 @@ builder.Services.AddTypeMapping( conf => {
 
 var app = builder.Build( );
 
-app.UseSwaggerVersioned( );
+// Opcional: Proteger Swagger com autenticação em produção
+if ( app.Environment.IsProduction( ) ) {
+    app.UseSwaggerAuthentication( );
+}
+
+app.UseDocs( );
 app.UseAuthorization( );
 app.MapControllers( );
 
@@ -139,34 +170,222 @@ public class LegacyController : ControllerBase {
 }
 ```
 
-## Documentação Swagger/OpenAPI
+## Documentação Swagger/OpenAPI Avançada
 
-### Configuração Básica
+### Interface Moderna com Funcionalidades Aprimoradas
+
+A biblioteca fornece uma interface Swagger UI completamente redesenhada com funcionalidades modernas que melhoram significativamente a experiência do desenvolvedor, mantendo 100% de compatibilidade retroativa.
+
+#### Configuração Básica (Compatível com Versões Anteriores)
 
 ```csharp
+// Configuração tradicional ainda funciona exatamente igual
+services.AddDocs( settings => {
+    settings.UseTitle( "API E-Commerce" )
+           .UseDescription( "API RESTful para operações de e-commerce" )
+           .UseContact( "Equipe de Desenvolvimento", "dev@ecommerce.com", "https://ecommerce.com/docs" )
+           .UseBearerAuthorization( );
+} );
+
+app.UseDocs( );
+```
+
+#### Configuração Avançada com Funcionalidades Modernas
+
+```csharp
+services.AddDocs( settings => {
+    settings.UseTitle( "API E-Commerce Moderna" )
+           .UseDescription( "API com funcionalidades avançadas de documentação" )
+           .UseContact( "Equipe de API", "api@ecommerce.com", "https://ecommerce.com/docs" )
+
+           // Autenticação com suporte a dropdown
+           .UseAuthentication(
+               enableDropdown: true,        // Mostrar seletor de método de auth
+               validateTokens: true,        // Validar contra ASP.NET Core auth
+               requireAuth: false           // Exigir auth para acessar Swagger
+           )
+           .UseBearerAuthorization( )       // Método principal de auth
+
+           // Navegação hierárquica
+           .UseTreeView(
+               enableHierarchy: true,       // Agrupar endpoints por tags
+               tagSeparator: "/"            // Suporte a categorias aninhadas
+           )
+
+           // Busca em tempo real
+           .UseSearch(
+               enableRealTime: true,        // Buscar conforme digita
+               searchFields: SearchFields.Name | SearchFields.Description | SearchFields.Path
+           )
+
+           // Suporte a temas
+           .UseTheme(
+               defaultTheme: SwaggerTheme.Auto,  // Respeitar preferência do sistema
+               allowUserToggle: true             // Mostrar botão de alternância de tema
+           )
+
+           // Cache persistente
+           .UseCache(
+               enablePersistence: true,     // Salvar dados entre sessões
+               expirationMinutes: 120,      // Expiração do cache
+               enableHistory: true          // Manter histórico de requisições
+           )
+
+           // UX aprimorada
+           .UseUI(
+               enableKeyboardShortcuts: true,   // Ctrl+Enter, Ctrl+F, etc.
+               enableDirectExecution: true,     // Sem botão "Try it out"
+               enableJsonBeautify: true,        // Auto-formatar JSON
+               enableModelCollapse: true        // Seções de modelo colapsáveis
+           )
+
+           // Monitoramento de performance
+           .UsePerformance(
+               enableTiming: true,          // Mostrar timing de requisições
+               enableStatusColors: true,    // Colorir códigos de status HTTP
+               enableProgressIndicators: true
+           );
+} );
+
+// Opcional: Proteger Swagger em produção
+if ( app.Environment.IsProduction( ) ) {
+    app.UseSwaggerAuthentication( );  // Exigir auth para acessar Swagger
+}
+
+app.UseDocs( );
+```
+
+#### Configuração Rápida com Todas as Funcionalidades
+
+```csharp
+services.AddDocs( settings => {
+    settings.UseTitle( "Minha API Avançada" )
+           .UseDescription( "API com todas as funcionalidades modernas habilitadas" )
+           .UseContact( "Equipe Dev", "dev@empresa.com", "https://empresa.com" )
+           .UseBearerAuthorization( )
+           .UseAdvancedFeatures( );  // Habilita tudo com padrões sensatos
+} );
+```
+
+### Organização Hierárquica com Tags
+
+Para aproveitar a funcionalidade TreeView, organize seus endpoints usando tags hierárquicas:
+
+```csharp
+[ApiController]
+[Route( "api/[controller]" )]
+public class UsersController : ControllerBase {
+
+    [HttpGet]
+    [Tags( "Usuários/Gerenciamento" )]        // Cria: Usuários → Gerenciamento
+    public IActionResult GetUsers( ) { }
+
+    [HttpPost]
+    [Tags( "Usuários/Gerenciamento/Criar" )] // Cria: Usuários → Gerenciamento → Criar
+    public IActionResult CreateUser( ) { }
+
+    [HttpGet( "profile" )]
+    [Tags( "Usuários/Perfil" )]               // Cria: Usuários → Perfil
+    public IActionResult GetProfile( ) { }
+
+    [HttpPut( "profile/avatar" )]
+    [Tags( "Usuários/Perfil/Avatar" )]        // Cria: Usuários → Perfil → Avatar
+    public IActionResult UpdateAvatar( ) { }
+}
+```
+
+Isso cria uma estrutura hierárquica na interface do Swagger:
+```
+📋 Endpoints da API
+└── 🔹 Usuários (4)
+    ├── 📁 Gerenciamento (2)
+    │   └── 📁 Criar (1)
+    └── 📁 Perfil (2)
+        └── 📁 Avatar (1)
+```
+
+### Métodos de Autenticação
+
+#### Autenticação por API Key
+
+```csharp
+services.AddDocs( settings => {
+    settings.UseApiKeyAuthorization( )
+           .UseAuthentication( enableDropdown: true );
+} );
+```
+
+#### Múltiplos Métodos de Autenticação
+
+```csharp
+services.AddDocs( settings => {
+    settings.UseTitle( "API Segura" )
+           .UseAuthentication(
+               enableDropdown: true,        // Mostrar dropdown para alternar métodos
+               validateTokens: true,        // Validar tokens no servidor
+               requireAuth: app.Environment.IsProduction()  // Exigir auth apenas em prod
+           )
+           .UseBearerAuthorization( );     // Método padrão
+} );
+```
+
+### Visão Geral das Funcionalidades Principais
+
+#### 🔍 **Busca em Tempo Real**
+- Buscar endpoints por nome, método HTTP, descrição ou caminho
+- Resultados instantâneos com destaque
+- Navegar diretamente para endpoints correspondentes
+- Campos de busca e debouncing configuráveis
+
+#### 🌲 **TreeView Hierárquica**
+- Organizar endpoints por tags com níveis de aninhamento ilimitados
+- Expandir/colapsar seções individualmente
+- Mostrar contagem de endpoints por categoria
+- Estrutura de navegação limpa e intuitiva
+
+#### ⚡ **Execução Direta**
+- Sem botão "Try it out" - executar requisições diretamente
+- Botões específicos por método (🔍 Buscar, 📤 Criar, 🗑️ Excluir)
+- Validação de campos obrigatórios antes da execução
+- Indicadores visuais de carregamento e feedback de progresso
+
+#### 💾 **Cache Persistente**
+- Salvar parâmetros e corpos de requisição entre sessões do navegador
+- Controles de cache individuais por endpoint (Carregar/Salvar/Limpar)
+- Histórico de requisições com retenção configurável
+- Armazenamento seguro e isolado por domínio
+
+#### ⌨️ **Atalhos de Teclado**
+- `Ctrl+Enter`: Executar requisição atual
+- `Ctrl+F`: Focar na caixa de busca
+- `Ctrl+Shift+T`: Alternar tema
+- `Ctrl+Shift+F`: Beautificar JSON
+- `Ctrl+Delete`: Limpar formulário atual
+
+#### 📊 **Monitoramento de Performance**
+- Exibição de timing de requisições em tempo real
+- Códigos de status HTTP coloridos
+- Informações de tamanho de resposta e cabeçalhos
+- Histórico de requisições com métricas de performance
+
+#### 🎨 **Temas Modernos**
+- Modo escuro/claro automático baseado na preferência do sistema
+- Alternância manual de tema com persistência
+- Transições suaves e esquemas de cores modernos
+- Suporte a alto contraste e acessibilidade
+
+### Compatibilidade com API Legada
+
+As novas funcionalidades avançadas são totalmente compatíveis com versões anteriores. O código existente continua funcionando sem alterações:
+
+```csharp
+// Isso ainda funciona exatamente igual
 services.AddSwaggerVersioned( settings => {
-    settings.Title = "API E-Commerce";
-    settings.Description = "API RESTful para operações de e-commerce";
-    settings.ContactName = "Equipe de Desenvolvimento";
-    settings.ContactEmail = "dev@ecommerce.com";
-    settings.ContactUrl = "https://ecommerce.com/docs";
+    settings.Title = "API Legada";
+    settings.Options.UseBasicAuthorization( );
 } );
 
 app.UseSwaggerVersioned( );
-```
-
-### Com Autenticação Básica
-
-```csharp
-services.AddSwaggerVersioned( settings => {
-    settings.Title = "API Segura";
-    settings.Description = "API com autenticação básica";
-    settings.ContactName = "Equipe de Segurança";
-    settings.ContactEmail = "security@empresa.com";
-    settings.ContactUrl = "https://empresa.com/security";
-
-    settings.Options.UseBasicAuthorization( );
-} );
 ```
 
 ### Documentação XML
@@ -378,7 +597,57 @@ public class GetUserQueryHandler : IQueryHandler<GetUserQuery, UserDto> {
 
 ## Referência de Configuração
 
-### Propriedades do SwaggerSettings
+### Métodos de Configuração Avançada do Swagger
+
+| Método | Parâmetros | Descrição |
+|--------|------------|-----------|
+| `UseTitle(string)` | title | Título da API exibido na UI do Swagger |
+| `UseDescription(string)` | description | Descrição e propósito da API |
+| `UseContact(string, string, string)` | name, email, url | Informações de contato |
+| `UseBearerAuthorization()` | - | Habilitar autenticação JWT Bearer |
+| `UseBasicAuthorization()` | - | Habilitar autenticação Basic |
+| `UseApiKeyAuthorization()` | - | Habilitar autenticação por API Key |
+| `UseAdvancedFeatures()` | - | Habilitar todas as funcionalidades avançadas com padrões |
+
+#### Configuração de Funcionalidades Avançadas
+
+| Método | Parâmetros | Descrição |
+|--------|------------|-----------|
+| `UseTreeView(bool, string)` | enableHierarchy, tagSeparator | Organização hierárquica de endpoints |
+| `UseSearch(bool, SearchFields)` | enableRealTime, searchFields | Configuração de busca em tempo real |
+| `UseTheme(SwaggerTheme, bool)` | defaultTheme, allowUserToggle | Configurações de tema e aparência |
+| `UseCache(bool, int, bool)` | enablePersistence, expirationMinutes, enableHistory | Configuração de cache persistente |
+| `UseAuthentication(bool, bool, bool)` | enableDropdown, validateTokens, requireAuth | Configurações avançadas de autenticação |
+| `UseUI(bool, bool, bool, bool)` | enableKeyboardShortcuts, enableDirectExecution, enableJsonBeautify, enableModelCollapse | Melhorias de UI/UX |
+| `UsePerformance(bool, bool, bool)` | enableTiming, enableStatusColors, enableProgressIndicators | Monitoramento de performance |
+
+#### Exemplos de Configuração
+
+**Configuração Mínima:**
+```csharp
+settings.UseTitle("Minha API").UseBearerAuthorization();
+```
+
+**Configuração para Produção:**
+```csharp
+settings.UseTitle("API de Produção")
+       .UseDescription("API segura com funcionalidades avançadas")
+       .UseContact("Equipe de API", "api@empresa.com", "https://docs.empresa.com")
+       .UseAuthentication(enableDropdown: true, validateTokens: true, requireAuth: true)
+       .UseAdvancedFeatures();
+```
+
+**Seleção de Funcionalidades Personalizada:**
+```csharp
+settings.UseTitle("API Personalizada")
+       .UseTreeView(enableHierarchy: true, tagSeparator: "::")
+       .UseSearch(enableRealTime: false)  // Desabilitar busca em tempo real
+       .UseTheme(SwaggerTheme.Dark, allowUserToggle: false)  // Forçar tema escuro
+       .UseCache(enablePersistence: false)  // Desabilitar cache
+       .UseUI(enableDirectExecution: false);  // Manter botão "Try it out"
+```
+
+### Propriedades do SwaggerSettings Legado (Ainda Suportadas)
 
 | Propriedade | Tipo | Descrição | Obrigatório |
 |-------------|------|-----------|-------------|

@@ -6,26 +6,36 @@
 
 [![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg?style=for-the-badge)](/README.pt-br.md) [![en](https://img.shields.io/badge/lang-en-red.svg?style=for-the-badge)](/README.md)
 
-A .NET library that provides pre-configured dependency injection setup for common third-party libraries used in ASP.NET Core applications. Simplifies the integration of API versioning, Swagger/OpenAPI documentation, and AutoMapper with production-ready defaults.
+A .NET library that provides pre-configured dependency injection setup for common third-party libraries used in ASP.NET Core applications. Simplifies the integration of API versioning, advanced Swagger/OpenAPI documentation with modern UI features, and AutoMapper with production-ready defaults.
 
 ## Why Myth.DependencyInjection.Providers?
 
 Modern ASP.NET Core applications require consistent setup across multiple projects for versioning, API documentation, and object mapping. This library eliminates boilerplate configuration by providing:
 
 - Production-ready API versioning with multiple reader support (URL, header, media type)
-- Versioned Swagger/OpenAPI documentation with automatic endpoint generation
+- **Advanced Swagger/OpenAPI documentation** with hierarchical navigation, real-time search, and modern UI
+- Versioned documentation with automatic endpoint generation and enhanced developer experience
 - AutoMapper integration with built-in pagination support
 - Extension methods for simplified object mapping throughout your application
-- Minimal configuration with sensible defaults
+- Minimal configuration with sensible defaults and powerful customization options
 
 ## Features
 
 - **API Versioning**: Full-featured versioning with URL segment, header, and media type support
-- **Swagger/OpenAPI**: Versioned documentation with automatic endpoint discovery and XML comments
+- **Advanced Swagger/OpenAPI**: Modern documentation UI with enhanced developer experience
+  - 🌲 **Hierarchical TreeView** - Endpoints organized by tags with multi-level support
+  - 🔍 **Real-time Search** - Dynamic filtering by name, method, description, and path
+  - 🎨 **Light/Dark Theme** - Auto-detection with manual toggle and preference persistence
+  - ⚡ **Direct Execution** - One-click API testing without "Try it out" button
+  - 💾 **Persistent Cache** - Save parameters and request bodies across browser sessions
+  - 🔐 **Advanced Authentication** - Bearer, Basic, and API Key support with dropdown selection
+  - ⌨️ **Keyboard Shortcuts** - Power user features (Ctrl+Enter, Ctrl+F, etc.)
+  - 📊 **Performance Monitoring** - Request timing, colored status codes, and visual feedback
+  - ✨ **Enhanced UX** - JSON beautify, model collapse, validation, and request history
 - **AutoMapper Integration**: Simplified configuration with pagination type mappings and global access
 - **Type Mapping Extensions**: Static extension methods for convenient object transformations
-- **Basic Authentication Support**: Built-in Swagger authorization configuration
-- **Developer Experience**: Fluent APIs and minimal boilerplate
+- **Authentication Integration**: ASP.NET Core authentication validation and secure credential storage
+- **Developer Experience**: Fluent APIs, minimal boilerplate, and 100% backward compatibility
 
 ## Installation
 
@@ -46,15 +56,31 @@ builder.Services.AddControllers( );
 
 builder.Services.AddVersioning( 1.0 );
 
-builder.Services.AddSwaggerVersioned( settings => {
-    settings.Title = "My API";
-    settings.Description = "A comprehensive API for managing resources";
-    settings.ContactName = "API Team";
-    settings.ContactEmail = "api@mycompany.com";
-    settings.ContactUrl = "https://mycompany.com/api";
-    settings.DeprecatedDescription = "This API version has been deprecated and will be removed soon";
+// Basic configuration (100% backward compatible)
+builder.Services.AddDocs( settings => {
+    settings.UseTitle( "My API" )
+           .UseDescription( "A comprehensive API for managing resources" )
+           .UseContact( "API Team", "api@mycompany.com", "https://mycompany.com/api" )
+           .UseBearerAuthorization( );
+} );
 
-    settings.Options.UseBasicAuthorization( );
+// OR with advanced features enabled
+builder.Services.AddDocs( settings => {
+    settings.UseTitle( "Advanced API Documentation" )
+           .UseDescription( "API with modern UI and enhanced developer experience" )
+           .UseContact( "API Team", "api@mycompany.com", "https://mycompany.com/api" )
+
+           // Enable all advanced features with sensible defaults
+           .UseAdvancedFeatures( )
+
+           // Or configure individually
+           .UseTreeView( enableHierarchy: true, tagSeparator: "/" )
+           .UseSearch( enableRealTime: true )
+           .UseTheme( SwaggerTheme.Auto, allowUserToggle: true )
+           .UseCache( enablePersistence: true, expirationMinutes: 60 )
+           .UseAuthentication( enableDropdown: true, validateTokens: false )
+           .UseUI( enableDirectExecution: true, enableKeyboardShortcuts: true )
+           .UsePerformance( enableTiming: true, enableStatusColors: true );
 } );
 
 builder.Services.AddTypeMapping( conf => {
@@ -64,7 +90,12 @@ builder.Services.AddTypeMapping( conf => {
 
 var app = builder.Build( );
 
-app.UseSwaggerVersioned( );
+// Optional: Protect Swagger with authentication in production
+if ( app.Environment.IsProduction( ) ) {
+    app.UseSwaggerAuthentication( );
+}
+
+app.UseDocs( );
 app.UseAuthorization( );
 app.MapControllers( );
 
@@ -139,34 +170,222 @@ public class LegacyController : ControllerBase {
 }
 ```
 
-## Swagger/OpenAPI Documentation
+## Advanced Swagger/OpenAPI Documentation
 
-### Basic Configuration
+### Modern UI with Enhanced Features
+
+The library provides a completely redesigned Swagger UI with modern features that significantly improve the developer experience while maintaining 100% backward compatibility.
+
+#### Basic Configuration (Backward Compatible)
 
 ```csharp
+// Traditional configuration still works exactly the same
+services.AddDocs( settings => {
+    settings.UseTitle( "E-Commerce API" )
+           .UseDescription( "RESTful API for e-commerce operations" )
+           .UseContact( "Development Team", "dev@ecommerce.com", "https://ecommerce.com/docs" )
+           .UseBearerAuthorization( );
+} );
+
+app.UseDocs( );
+```
+
+#### Advanced Configuration with Modern Features
+
+```csharp
+services.AddDocs( settings => {
+    settings.UseTitle( "Modern E-Commerce API" )
+           .UseDescription( "API with advanced documentation features" )
+           .UseContact( "API Team", "api@ecommerce.com", "https://ecommerce.com/docs" )
+
+           // Authentication with dropdown support
+           .UseAuthentication(
+               enableDropdown: true,        // Show auth method selector
+               validateTokens: true,        // Validate against ASP.NET Core auth
+               requireAuth: false           // Require auth to access Swagger
+           )
+           .UseBearerAuthorization( )       // Primary auth method
+
+           // Hierarchical navigation
+           .UseTreeView(
+               enableHierarchy: true,       // Group endpoints by tags
+               tagSeparator: "/"            // Support nested categories
+           )
+
+           // Real-time search
+           .UseSearch(
+               enableRealTime: true,        // Search as you type
+               searchFields: SearchFields.Name | SearchFields.Description | SearchFields.Path
+           )
+
+           // Theme support
+           .UseTheme(
+               defaultTheme: SwaggerTheme.Auto,  // Respect system preference
+               allowUserToggle: true             // Show theme toggle button
+           )
+
+           // Persistent cache
+           .UseCache(
+               enablePersistence: true,     // Save data across sessions
+               expirationMinutes: 120,      // Cache expiration
+               enableHistory: true          // Keep request history
+           )
+
+           // Enhanced UX
+           .UseUI(
+               enableKeyboardShortcuts: true,   // Ctrl+Enter, Ctrl+F, etc.
+               enableDirectExecution: true,     // No "Try it out" button
+               enableJsonBeautify: true,        // Auto-format JSON
+               enableModelCollapse: true        // Collapsible model sections
+           )
+
+           // Performance monitoring
+           .UsePerformance(
+               enableTiming: true,          // Show request timing
+               enableStatusColors: true,    // Color-code HTTP status
+               enableProgressIndicators: true
+           );
+} );
+
+// Optional: Protect Swagger in production
+if ( app.Environment.IsProduction( ) ) {
+    app.UseSwaggerAuthentication( );  // Require auth to access Swagger
+}
+
+app.UseDocs( );
+```
+
+#### Quick Setup with All Features
+
+```csharp
+services.AddDocs( settings => {
+    settings.UseTitle( "My Advanced API" )
+           .UseDescription( "API with all modern features enabled" )
+           .UseContact( "Dev Team", "dev@company.com", "https://company.com" )
+           .UseBearerAuthorization( )
+           .UseAdvancedFeatures( );  // Enable everything with sensible defaults
+} );
+```
+
+### Hierarchical Organization with Tags
+
+To take advantage of the TreeView feature, organize your endpoints using hierarchical tags:
+
+```csharp
+[ApiController]
+[Route( "api/[controller]" )]
+public class UsersController : ControllerBase {
+
+    [HttpGet]
+    [Tags( "Users/Management" )]        // Creates: Users → Management
+    public IActionResult GetUsers( ) { }
+
+    [HttpPost]
+    [Tags( "Users/Management/Create" )] // Creates: Users → Management → Create
+    public IActionResult CreateUser( ) { }
+
+    [HttpGet( "profile" )]
+    [Tags( "Users/Profile" )]           // Creates: Users → Profile
+    public IActionResult GetProfile( ) { }
+
+    [HttpPut( "profile/avatar" )]
+    [Tags( "Users/Profile/Avatar" )]    // Creates: Users → Profile → Avatar
+    public IActionResult UpdateAvatar( ) { }
+}
+```
+
+This creates a hierarchical structure in the Swagger UI:
+```
+📋 API Endpoints
+└── 🔹 Users (4)
+    ├── 📁 Management (2)
+    │   └── 📁 Create (1)
+    └── 📁 Profile (2)
+        └── 📁 Avatar (1)
+```
+
+### Authentication Methods
+
+#### API Key Authentication
+
+```csharp
+services.AddDocs( settings => {
+    settings.UseApiKeyAuthorization( )
+           .UseAuthentication( enableDropdown: true );
+} );
+```
+
+#### Multiple Authentication Methods
+
+```csharp
+services.AddDocs( settings => {
+    settings.UseTitle( "Secure API" )
+           .UseAuthentication(
+               enableDropdown: true,        // Show dropdown to switch methods
+               validateTokens: true,        // Validate tokens server-side
+               requireAuth: app.Environment.IsProduction()  // Require auth in prod only
+           )
+           .UseBearerAuthorization( );     // Default method
+} );
+```
+
+### Key Features Overview
+
+#### 🔍 **Real-Time Search**
+- Search endpoints by name, HTTP method, description, or path
+- Instant results with highlighting
+- Navigate directly to matching endpoints
+- Configurable search fields and debouncing
+
+#### 🌲 **Hierarchical TreeView**
+- Organize endpoints by tags with unlimited nesting levels
+- Expand/collapse sections individually
+- Show endpoint counts per category
+- Clean, intuitive navigation structure
+
+#### ⚡ **Direct Execution**
+- No "Try it out" button - execute requests directly
+- Method-specific buttons (🔍 Fetch, 📤 Create, 🗑️ Delete)
+- Validation of required fields before execution
+- Visual loading indicators and progress feedback
+
+#### 💾 **Persistent Cache**
+- Save request parameters and bodies across browser sessions
+- Individual cache controls per endpoint (Load/Save/Clear)
+- Request history with configurable retention
+- Secure, domain-isolated storage
+
+#### ⌨️ **Keyboard Shortcuts**
+- `Ctrl+Enter`: Execute current request
+- `Ctrl+F`: Focus search box
+- `Ctrl+Shift+T`: Toggle theme
+- `Ctrl+Shift+F`: Beautify JSON
+- `Ctrl+Delete`: Clear current form
+
+#### 📊 **Performance Monitoring**
+- Real-time request timing display
+- Color-coded HTTP status codes
+- Response size and header information
+- Request history with performance metrics
+
+#### 🎨 **Modern Theming**
+- Automatic dark/light mode based on system preference
+- Manual theme toggle with persistence
+- Smooth transitions and modern color schemes
+- High contrast and accessibility support
+
+### Legacy API Compatibility
+
+The new advanced features are fully backward compatible. Existing code continues to work without changes:
+
+```csharp
+// This still works exactly the same
 services.AddSwaggerVersioned( settings => {
-    settings.Title = "E-Commerce API";
-    settings.Description = "RESTful API for e-commerce operations";
-    settings.ContactName = "Development Team";
-    settings.ContactEmail = "dev@ecommerce.com";
-    settings.ContactUrl = "https://ecommerce.com/docs";
+    settings.Title = "Legacy API";
+    settings.Options.UseBasicAuthorization( );
 } );
 
 app.UseSwaggerVersioned( );
-```
-
-### With Basic Authentication
-
-```csharp
-services.AddSwaggerVersioned( settings => {
-    settings.Title = "Secure API";
-    settings.Description = "API with basic authentication";
-    settings.ContactName = "Security Team";
-    settings.ContactEmail = "security@company.com";
-    settings.ContactUrl = "https://company.com/security";
-
-    settings.Options.UseBasicAuthorization( );
-} );
 ```
 
 ### XML Documentation
@@ -378,7 +597,57 @@ public class GetUserQueryHandler : IQueryHandler<GetUserQuery, UserDto> {
 
 ## Configuration Reference
 
-### SwaggerSettings Properties
+### Advanced Swagger Configuration Methods
+
+| Method | Parameters | Description |
+|--------|------------|-------------|
+| `UseTitle(string)` | title | API title displayed in Swagger UI |
+| `UseDescription(string)` | description | API description and purpose |
+| `UseContact(string, string, string)` | name, email, url | Contact information |
+| `UseBearerAuthorization()` | - | Enable JWT Bearer authentication |
+| `UseBasicAuthorization()` | - | Enable Basic authentication |
+| `UseApiKeyAuthorization()` | - | Enable API Key authentication |
+| `UseAdvancedFeatures()` | - | Enable all advanced features with defaults |
+
+#### Advanced Feature Configuration
+
+| Method | Parameters | Description |
+|--------|------------|-------------|
+| `UseTreeView(bool, string)` | enableHierarchy, tagSeparator | Hierarchical endpoint organization |
+| `UseSearch(bool, SearchFields)` | enableRealTime, searchFields | Real-time search configuration |
+| `UseTheme(SwaggerTheme, bool)` | defaultTheme, allowUserToggle | Theme and appearance settings |
+| `UseCache(bool, int, bool)` | enablePersistence, expirationMinutes, enableHistory | Persistent cache configuration |
+| `UseAuthentication(bool, bool, bool)` | enableDropdown, validateTokens, requireAuth | Advanced authentication settings |
+| `UseUI(bool, bool, bool, bool)` | enableKeyboardShortcuts, enableDirectExecution, enableJsonBeautify, enableModelCollapse | UI/UX enhancements |
+| `UsePerformance(bool, bool, bool)` | enableTiming, enableStatusColors, enableProgressIndicators | Performance monitoring |
+
+#### Configuration Examples
+
+**Minimal Configuration:**
+```csharp
+settings.UseTitle("My API").UseBearerAuthorization();
+```
+
+**Production-Ready Configuration:**
+```csharp
+settings.UseTitle("Production API")
+       .UseDescription("Secure API with advanced features")
+       .UseContact("API Team", "api@company.com", "https://docs.company.com")
+       .UseAuthentication(enableDropdown: true, validateTokens: true, requireAuth: true)
+       .UseAdvancedFeatures();
+```
+
+**Custom Feature Selection:**
+```csharp
+settings.UseTitle("Custom API")
+       .UseTreeView(enableHierarchy: true, tagSeparator: "::")
+       .UseSearch(enableRealTime: false)  // Disable real-time search
+       .UseTheme(SwaggerTheme.Dark, allowUserToggle: false)  // Force dark theme
+       .UseCache(enablePersistence: false)  // Disable cache
+       .UseUI(enableDirectExecution: false);  // Keep "Try it out" button
+```
+
+### Legacy SwaggerSettings Properties (Still Supported)
 
 | Property | Type | Description | Required |
 |----------|------|-------------|----------|
