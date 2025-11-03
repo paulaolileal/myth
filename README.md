@@ -91,9 +91,13 @@ public class CreateUserCommand : IValidatable<CreateUserCommand>, ICommand<UserD
 // Command Handler with Pipeline
 public class CreateUserCommandHandler : ICommandHandler<CreateUserCommand, UserDto> {
     private readonly IUserRepository _repository;
+    private readonly IValidator _validator;
+    private readonly IDispatcher _dispatcher;
 
-    public CreateUserCommandHandler(IUserRepository repository) {
+    public CreateUserCommandHandler(IUserRepository repository, IValidator validator, IDispatcher dispatcher) {
         _repository = repository;
+        _validator = validator;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult<UserDto>> HandleAsync(CreateUserCommand command, CancellationToken cancellationToken) {
@@ -102,18 +106,16 @@ public class CreateUserCommandHandler : ICommandHandler<CreateUserCommand, UserD
             .WithRetry(maxAttempts: 3)
 
             // Validate command
-            .StepResultAsync<IValidator>((validator, cmd) =>
-                validator.ValidateAndReturnAsync(cmd, ValidationContextKey.Create))
+            .StepResultAsync(cmd => _validator.ValidateAndReturnAsync(cmd, ValidationContextKey.Create))
 
             // Transform to entity
             .Transform<UserEntity>(cmd => cmd.To<UserEntity>())
 
             // Save to repository
-            .StepAsync<IUserRepository>((repo, entity) => repo.AddAsync(entity))
+            .StepAsync(entity => _repository.AddAsync(entity))
 
             // Publish domain event
-            .TapAsync<IDispatcher>((dispatcher, entity) =>
-                dispatcher.PublishEventAsync(new UserCreatedEvent { UserId = entity.Id }))
+            .TapAsync(entity => _dispatcher.PublishEventAsync(new UserCreatedEvent { UserId = entity.Id }))
 
             // Transform to DTO
             .Transform<UserDto>(entity => entity.To<UserDto>())
@@ -169,13 +171,22 @@ public class Order : IValidatable<Order> {
 
 // Application Layer
 public class OrderService : IOrderService {
+    private readonly IValidator _validator;
+    private readonly IOrderRepository _orderRepository;
+    private readonly IDispatcher _dispatcher;
+
+    public OrderService(IValidator validator, IOrderRepository orderRepository, IDispatcher dispatcher) {
+        _validator = validator;
+        _orderRepository = orderRepository;
+        _dispatcher = dispatcher;
+    }
+
     public async Task<OrderDto> ProcessOrderAsync(CreateOrderCommand command) {
         return await Pipeline.Start(command)
-            .StepResultAsync<IValidator>((v, cmd) => v.ValidateAndReturnAsync(cmd))
+            .StepResultAsync(cmd => _validator.ValidateAndReturnAsync(cmd))
             .Transform<Order>(cmd => new Order(cmd.CustomerId, cmd.Items))
-            .StepAsync<IOrderRepository>((repo, order) => repo.AddAsync(order))
-            .TapAsync<IDispatcher>((dispatcher, order) =>
-                dispatcher.PublishEventAsync(new OrderCreatedEvent(order.Id)))
+            .StepAsync(order => _orderRepository.AddAsync(order))
+            .TapAsync(order => _dispatcher.PublishEventAsync(new OrderCreatedEvent(order.Id)))
             .Transform<OrderDto>(order => order.To<OrderDto>())
             .ExecuteAsync();
     }
@@ -264,32 +275,39 @@ public async Task<IPaginated<OrderDto>> GetCustomerOrdersAsync(CustomerId custom
 ### E-Commerce Microservice
 ```csharp
 public class ProductCatalogService {
+    private readonly IValidator _validator;
+    private readonly IProductRepository _productRepository;
+    private readonly IDispatcher _dispatcher;
+
+    public ProductCatalogService(IValidator validator, IProductRepository productRepository, IDispatcher dispatcher) {
+        _validator = validator;
+        _productRepository = productRepository;
+        _dispatcher = dispatcher;
+    }
+
     public async Task<ProductDto> UpdateProductAsync(UpdateProductCommand command) {
         return await Pipeline.Start(command)
             // Validate command with business rules
-            .StepResultAsync<IValidator>((validator, cmd) =>
-                validator.ValidateAndReturnAsync(cmd, ValidationContextKey.Update))
+            .StepResultAsync(cmd => _validator.ValidateAndReturnAsync(cmd, ValidationContextKey.Update))
 
             // Load existing product using specification
-            .StepAsync<IProductRepository>((repo, cmd) =>
-                repo.FirstOrDefaultAsync(ProductSpecifications.ById(cmd.ProductId)))
+            .StepAsync(cmd => _productRepository.FirstOrDefaultAsync(ProductSpecifications.ById(cmd.ProductId)))
 
             // Apply business logic
-            .Step<Product>((product, cmd) => {
+            .Step((product, cmd) => {
                 product.UpdateDetails(cmd.Name, cmd.Description, cmd.Price);
                 return product;
             })
 
             // Save changes
-            .StepAsync<IProductRepository>((repo, product) => repo.UpdateAsync(product))
+            .StepAsync(product => _productRepository.UpdateAsync(product))
 
             // Publish integration event
-            .TapAsync<IDispatcher>((dispatcher, product) =>
-                dispatcher.PublishEventAsync(new ProductUpdatedEvent {
-                    ProductId = product.Id,
-                    Name = product.Name,
-                    Price = product.Price
-                }))
+            .TapAsync(product => _dispatcher.PublishEventAsync(new ProductUpdatedEvent {
+                ProductId = product.Id,
+                Name = product.Name,
+                Price = product.Price
+            }))
 
             // Transform to DTO
             .Transform<ProductDto>(product => product.To<ProductDto>())
@@ -307,19 +325,28 @@ public class OrderEventHandlers :
     IEventHandler<PaymentProcessedEvent>,
     IEventHandler<InventoryReservedEvent> {
 
+    private readonly IInventoryService _inventoryService;
+    private readonly IPaymentService _paymentService;
+    private readonly IEmailService _emailService;
+    private readonly IDispatcher _dispatcher;
+
+    public OrderEventHandlers(IInventoryService inventoryService, IPaymentService paymentService, IEmailService emailService, IDispatcher dispatcher) {
+        _inventoryService = inventoryService;
+        _paymentService = paymentService;
+        _emailService = emailService;
+        _dispatcher = dispatcher;
+    }
+
     public async Task HandleAsync(OrderCreatedEvent @event, CancellationToken cancellationToken) {
         await Pipeline.Start(@event)
             // Reserve inventory
-            .TapAsync<IInventoryService>((service, evt) =>
-                service.ReserveItemsAsync(evt.OrderId, evt.Items))
+            .TapAsync(evt => _inventoryService.ReserveItemsAsync(evt.OrderId, evt.Items))
 
             // Process payment
-            .TapAsync<IPaymentService>((service, evt) =>
-                service.ProcessPaymentAsync(evt.OrderId, evt.TotalAmount))
+            .TapAsync(evt => _paymentService.ProcessPaymentAsync(evt.OrderId, evt.TotalAmount))
 
             // Send confirmation email
-            .TapAsync<IEmailService>((service, evt) =>
-                service.SendOrderConfirmationAsync(evt.CustomerId, evt.OrderId))
+            .TapAsync(evt => _emailService.SendOrderConfirmationAsync(evt.CustomerId, evt.OrderId))
 
             .ExecuteAsync(cancellationToken);
     }
