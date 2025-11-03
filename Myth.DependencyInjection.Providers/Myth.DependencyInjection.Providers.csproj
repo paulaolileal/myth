@@ -45,4 +45,10 @@
 		<ProjectReference Include="..\Myth.Repository\Myth.Repository.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<EmbeddedResource Include="Extensions\Documentations\UI\Assets\swagger-advanced.css" />
+		<EmbeddedResource Include="Extensions\Documentations\UI\Assets\swagger-advanced.js" />
+		<EmbeddedResource Include="Extensions\Documentations\UI\Assets\swagger-advanced.html" />
+	</ItemGroup>
+
 </Project>

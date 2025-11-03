@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Myth.DependencyInjection.Test.Models;
 using Myth.Extensions;
+using Myth.Extensions.Mapping;
+using Myth.Extensions.Swagger;
 using Myth.ValueProviders;
 
 namespace Myth.DependencyInjection.Test;
@@ -19,14 +21,13 @@ public class ProvidersTests {
 		services.AddVersioning( 1 );
 
 		// Act
-		var action = ( ) => services.AddSwaggerVersioned( settings => {
-			settings.Title = "API Test";
-			settings.Description = "This is an API test";
-			settings.Options.UseBasicAuthorization( );
-		} );
+		var action = ( ) => services.AddDocs( settings => settings
+		.UseTitle( "API Test" )
+		.UseDescription( "This is an API test" )
+		.UseBasicAuthorization( ));
 
 		var app = new ApplicationBuilder( services.BuildServiceProvider( ) );
-		var action2 = ( ) => app.UseSwaggerVersioned( );
+		var action2 = ( ) => app.UseDocs( );
 
 		// Assert
 		action.Should( ).NotThrow<Exception>( );

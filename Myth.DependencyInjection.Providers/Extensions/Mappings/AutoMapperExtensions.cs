@@ -4,7 +4,7 @@ using Myth.Interfaces.Results;
 using Myth.Models.Results;
 using Myth.ValueProviders;
 
-namespace Myth.Extensions;
+namespace Myth.Extensions.Mapping;
 
 public static class AutoMapperExtensions {
 
