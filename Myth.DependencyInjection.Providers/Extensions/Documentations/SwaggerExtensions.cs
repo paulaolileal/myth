@@ -181,7 +181,7 @@ public static class SwaggerExtensions {
 	public static IApplicationBuilder UseDocs( this IApplicationBuilder app ) {
 		// Setup static file serving for advanced UI assets
 		app.UseStaticFiles( new StaticFileOptions {
-			FileProvider = new EmbeddedFileProvider( typeof( SwaggerExtensions ).Assembly, "Myth.Extensions.Swagger.UI.Assets" ),
+			FileProvider = new EmbeddedFileProvider( typeof( SwaggerExtensions ).Assembly, "Myth.Extensions.Documentations.UI.Assets" ),
 			RequestPath = "/swagger-ui"
 		} );
 
@@ -251,17 +251,20 @@ public static class SwaggerExtensions {
 		try {
 			// Try to get the embedded HTML template
 			var assembly = typeof( SwaggerExtensions ).Assembly;
-			var resourceName = "Myth.Extensions.Swagger.UI.Assets.swagger-advanced.html";
+			var resourceName = "Myth.Extensions.Documentations.UI.Assets.swagger-advanced.html";
 
 			var stream = assembly.GetManifestResourceStream( resourceName );
 			if ( stream != null ) {
 				using var reader = new StreamReader( stream );
 				var html = reader.ReadToEnd( );
 
+				// Get the first available swagger endpoint dynamically
+				var specUrl = GetDefaultSwaggerEndpoint( services );
+
 				// Replace placeholders with actual values
 				html = html.Replace( "%(DocumentTitle)", "API Documentation" );
 				html = html.Replace( "%(DocumentDescription)", "API Documentation with advanced features" );
-				html = html.Replace( "%(SpecUrl)", "./swagger/v1/swagger.json" );
+				html = html.Replace( "%(SpecUrl)", specUrl );
 				html = html.Replace( "%(SwaggerAdvancedConfig)", GetAdvancedConfigJson( services ) );
 				html = html.Replace( "%(AnalyticsScript)", "" );
 				html = html.Replace( "%(CustomScripts)", "" );
@@ -274,6 +277,26 @@ public static class SwaggerExtensions {
 
 		// Fallback to default template
 		return GetDefaultIndexStream( );
+	}
+
+	/// <summary>
+	/// Gets the default swagger endpoint URL dynamically based on available API versions
+	/// </summary>
+	/// <param name="services">The service provider for accessing configuration.</param>
+	/// <returns>The swagger.json endpoint URL.</returns>
+	private static string GetDefaultSwaggerEndpoint( IServiceProvider services ) {
+		try {
+			var versionProvider = services?.GetService<IApiVersionDescriptionProvider>( );
+			if ( versionProvider?.ApiVersionDescriptions?.Any( ) == true ) {
+				var firstVersion = versionProvider.ApiVersionDescriptions.First( );
+				return $"./swagger/{firstVersion.GroupName}/swagger.json";
+			}
+		} catch ( Exception ex ) {
+			Console.WriteLine( $"Warning: Failed to get dynamic swagger endpoint: {ex.Message}" );
+		}
+
+		// Fallback to default
+		return "./swagger/v1/swagger.json";
 	}
 
 	/// <summary>
@@ -354,14 +377,34 @@ public static class SwaggerExtensions {
     <script src='./swagger-ui-standalone-preset.js'></script>
     <script>
         window.onload = function() {
-            const ui = SwaggerUIBundle({
-                url: './swagger/v1/swagger.json',
-                dom_id: '#swagger-ui',
-                deepLinking: true,
-                presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-                plugins: [SwaggerUIBundle.plugins.DownloadUrl],
-                layout: 'StandaloneLayout'
-            });
+            // Try multiple common swagger endpoints
+            const possibleUrls = [
+                './swagger/v1/swagger.json',
+                './swagger/v1.0/swagger.json',
+                './swagger/default/swagger.json'
+            ];
+
+            let ui;
+            function tryNextUrl(index = 0) {
+                if (index >= possibleUrls.length) {
+                    document.getElementById('swagger-ui').innerHTML = '<h3>Failed to load API definition. Please check if swagger.json endpoints are properly configured.</h3>';
+                    return;
+                }
+
+                ui = SwaggerUIBundle({
+                    url: possibleUrls[index],
+                    dom_id: '#swagger-ui',
+                    deepLinking: true,
+                    presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+                    plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+                    layout: 'StandaloneLayout',
+                    onFailure: function() {
+                        tryNextUrl(index + 1);
+                    }
+                });
+            }
+
+            tryNextUrl();
         };
     </script>
 </body>
