@@ -19,12 +19,13 @@ public class ProvidersTests {
 		services.AddLogging( );
 		services.AddControllers( );
 		services.AddVersioning( 1 );
+		services.AddHttpContextAccessor( );
 
 		// Act
 		var action = ( ) => services.AddDocs( settings => settings
 		.UseTitle( "API Test" )
 		.UseDescription( "This is an API test" )
-		.UseBasicAuthorization( ));
+		.UseBasicAuthorization( ) );
 
 		var app = new ApplicationBuilder( services.BuildServiceProvider( ) );
 		var action2 = ( ) => app.UseDocs( );
