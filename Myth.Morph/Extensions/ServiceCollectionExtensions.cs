@@ -36,7 +36,7 @@ namespace Myth.Extensions {
 				var logger = sp.GetService<ILogger<SchemaRegistry>>( );
 				logger?.LogInformation( "Initializing SchemaRegistry with {AssemblyCount} assemblies", assemblies.Count );
 
-				var registry = new SchemaRegistry( sp );
+				var registry = new SchemaRegistry( sp, morphSettings );
 
 				// Register manually defined generic mappings
 				foreach ( var (iface, concrete) in morphSettings.GenericMappings ) {

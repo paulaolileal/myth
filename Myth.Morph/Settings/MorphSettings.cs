@@ -22,6 +22,38 @@ namespace Myth.Settings {
 		internal List<Assembly> Assemblies { get; set; } = [ ];
 
 		/// <summary>
+		/// Gets or sets whether inheritance fallback is enabled for type mapping resolution.
+		/// When enabled, if no direct mapping is found for a type (such as EF proxies),
+		/// the system will search through the inheritance hierarchy for compatible mappings.
+		/// </summary>
+		/// <remarks>
+		/// This feature is particularly useful for Entity Framework proxy types like Castle.Proxies.User_proxy,
+		/// which inherit from the original entity type but don't have direct mappings registered.
+		/// Default value is true to handle proxy scenarios automatically.
+		/// </remarks>
+		public bool EnableInheritanceFallback { get; set; } = true;
+
+		/// <summary>
+		/// Gets or sets the maximum depth to search in the inheritance hierarchy when looking for compatible mappings.
+		/// This prevents infinite loops and controls performance when dealing with deep inheritance chains.
+		/// </summary>
+		/// <remarks>
+		/// A value of 0 disables inheritance search. A value of -1 allows unlimited depth.
+		/// Default value is 5, which covers most proxy and inheritance scenarios.
+		/// </remarks>
+		public int MaxInheritanceDepth { get; set; } = 5;
+
+		/// <summary>
+		/// Gets or sets whether to include interfaces in inheritance fallback search.
+		/// When enabled, the system will also check implemented interfaces for compatible mappings.
+		/// </summary>
+		/// <remarks>
+		/// This can be useful for mapping scenarios where base interfaces have registered mappings.
+		/// Default value is true to maximize compatibility.
+		/// </remarks>
+		public bool IncludeInterfacesInFallback { get; set; } = true;
+
+		/// <summary>
 		/// Gets or sets the list of generic type mappings between interfaces and their concrete implementations.
 		/// </summary>
 		/// <remarks>
@@ -205,6 +237,30 @@ namespace Myth.Settings {
 				throw new ArgumentNullException( nameof( concreteType ) );
 
 			return GenericMappings.Any( mapping => mapping.iface == interfaceType && mapping.concrete == concreteType );
+		}
+
+		/// <summary>
+		/// Configures inheritance fallback settings for type mapping resolution.
+		/// </summary>
+		/// <param name="enabled">Whether to enable inheritance fallback.</param>
+		/// <param name="maxDepth">Maximum depth to search in inheritance hierarchy (-1 for unlimited).</param>
+		/// <param name="includeInterfaces">Whether to include interfaces in fallback search.</param>
+		/// <returns>The current MorphSettings instance for method chaining.</returns>
+		public MorphSettings WithInheritanceFallback( bool enabled = true, int maxDepth = 5, bool includeInterfaces = true ) {
+			EnableInheritanceFallback = enabled;
+			MaxInheritanceDepth = maxDepth;
+			IncludeInterfacesInFallback = includeInterfaces;
+			return this;
+		}
+
+		/// <summary>
+		/// Disables inheritance fallback for type mapping resolution.
+		/// Use this if you want strict type matching without proxy support.
+		/// </summary>
+		/// <returns>The current MorphSettings instance for method chaining.</returns>
+		public MorphSettings DisableInheritanceFallback( ) {
+			EnableInheritanceFallback = false;
+			return this;
 		}
 	}
 }

@@ -4,7 +4,9 @@ using Myth.Exceptions;
 using Myth.Extensions;
 using Myth.Interfaces;
 using Myth.ServiceProvider;
+using Myth.Settings;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Reflection;
 
 namespace Myth.Morph {
@@ -13,24 +15,33 @@ namespace Myth.Morph {
 	/// Central registry for managing object transformation schemas and mappings.
 	/// This class handles the registration and execution of type mappings, supporting both
 	/// generic mappings and instance-based mappings through the IMorphable interface.
+	/// Includes inheritance fallback support for handling proxy types and derived classes.
 	/// </summary>
 	public class SchemaRegistry {
 		private readonly IServiceProvider _sp;
 		private readonly ILogger<SchemaRegistry>? _logger;
+		private readonly MorphSettings _settings;
 		private readonly Dictionary<(Type, Type), object> _builders = [ ];
 		private readonly Dictionary<Type, Type> _genericInterfaceToConcrete = [ ];
 		private readonly List<Action<Type, Type>> _genericRegisters = [ ];
 		private readonly HashSet<(Type, Type)> _instanceBasedMappings = [ ];
 
+		// Cache for inheritance hierarchy lookups to improve performance
+		private readonly ConcurrentDictionary<Type, List<Type>> _inheritanceHierarchyCache = new( );
+
+		private readonly ConcurrentDictionary<(Type, Type), (Type, Type)?> _mappingFallbackCache = new( );
+
 		/// <summary>
 		/// Initializes a new instance of the SchemaRegistry with the specified service provider.
 		/// </summary>
 		/// <param name="sp">The service provider for dependency injection and logger resolution.</param>
-		public SchemaRegistry( IServiceProvider sp ) {
+		/// <param name="settings">The MorphSettings configuration for inheritance fallback and other options.</param>
+		public SchemaRegistry( IServiceProvider sp, MorphSettings? settings = null ) {
 			_sp = sp;
+			_settings = settings ?? new MorphSettings( );
 			var serviceProvider = MythServiceProvider.GetOrFallback( sp );
 			_logger = serviceProvider?.GetService<ILogger<SchemaRegistry>>( );
-			_logger?.LogDebug( "SchemaRegistry initialized" );
+			_logger?.LogDebug( "SchemaRegistry initialized with inheritance fallback: {InheritanceFallback}", _settings.EnableInheritanceFallback );
 		}
 
 		/// <summary>
@@ -484,6 +495,7 @@ namespace Myth.Morph {
 
 		/// <summary>
 		/// Attempts to find an existing builder for the specified source and destination types.
+		/// Includes inheritance fallback support when enabled in settings.
 		/// </summary>
 		/// <param name="sourceType">The source type.</param>
 		/// <param name="destinationType">The destination type.</param>
@@ -496,18 +508,106 @@ namespace Myth.Morph {
 				return true;
 			}
 
-			// Look for compatible mappings (inheritance/implementation)
-			foreach ( var ((src, dst), builder) in _builders ) {
-				if ( src.IsAssignableFrom( sourceType ) && dst.IsAssignableFrom( destinationType ) ) {
-					builderObj = builder;
-					_logger?.LogTrace( "Found compatible builder for {SourceType} -> {DestinationType} (via {BuilderSource} -> {BuilderDest})",
-						sourceType.Name, destinationType.Name, src.Name, dst.Name );
+			// Try inheritance fallback if enabled
+			if ( _settings.EnableInheritanceFallback ) {
+				if ( TryGetBuilderWithInheritanceFallback( sourceType, destinationType, out builderObj ) ) {
 					return true;
+				}
+
+				// Look for compatible mappings (inheritance/implementation) - original behavior but only if inheritance is enabled
+				foreach ( var ((src, dst), builder) in _builders ) {
+					if ( src.IsAssignableFrom( sourceType ) && dst.IsAssignableFrom( destinationType ) ) {
+						builderObj = builder;
+						_logger?.LogTrace( "Found compatible builder for {SourceType} -> {DestinationType} (via {BuilderSource} -> {BuilderDest})",
+							sourceType.Name, destinationType.Name, src.Name, dst.Name );
+						return true;
+					}
 				}
 			}
 
 			builderObj = null;
 			return false;
+		}
+
+		/// <summary>
+		/// Attempts to find a builder using inheritance fallback by searching through the type hierarchy.
+		/// </summary>
+		/// <param name="sourceType">The source type to search for.</param>
+		/// <param name="destinationType">The destination type.</param>
+		/// <param name="builderObj">The found builder object, if successful.</param>
+		/// <returns>True if a builder was found through inheritance fallback, false otherwise.</returns>
+		private bool TryGetBuilderWithInheritanceFallback( Type sourceType, Type destinationType, out object? builderObj ) {
+			builderObj = null;
+
+			// Check cache first
+			var cacheKey = (sourceType, destinationType);
+			if ( _mappingFallbackCache.TryGetValue( cacheKey, out var cachedMapping ) ) {
+				if ( cachedMapping.HasValue ) {
+					_builders.TryGetValue( cachedMapping.Value, out builderObj );
+					_logger?.LogTrace( "Found cached inheritance mapping for {SourceType} -> {DestinationType} via {CachedSource} -> {CachedDest}",
+						sourceType.Name, destinationType.Name, cachedMapping.Value.Item1.Name, cachedMapping.Value.Item2.Name );
+					return builderObj != null;
+				}
+				return false; // Cached as not found
+			}
+
+			// Get inheritance hierarchy for source type
+			var hierarchy = GetInheritanceHierarchy( sourceType );
+
+			// Search through hierarchy for compatible mappings
+			foreach ( var baseType in hierarchy ) {
+				if ( _builders.TryGetValue( (baseType, destinationType), out builderObj ) ) {
+					_logger?.LogTrace( "Found inheritance fallback builder for {SourceType} -> {DestinationType} via base type {BaseType}",
+						sourceType.Name, destinationType.Name, baseType.Name );
+
+					// Cache this successful mapping
+					_mappingFallbackCache[ cacheKey ] = (baseType, destinationType);
+					return true;
+				}
+			}
+
+			// Cache as not found
+			_mappingFallbackCache[ cacheKey ] = null;
+			return false;
+		}
+
+		/// <summary>
+		/// Gets the inheritance hierarchy for a given type, including base classes and optionally interfaces.
+		/// Results are cached for performance.
+		/// </summary>
+		/// <param name="type">The type to get the hierarchy for.</param>
+		/// <returns>A list of types in the inheritance hierarchy, ordered from most specific to most general.</returns>
+		private List<Type> GetInheritanceHierarchy( Type type ) {
+			return _inheritanceHierarchyCache.GetOrAdd( type, t => {
+				var hierarchy = new List<Type>( );
+				var currentType = t.BaseType;
+				var depth = 0;
+
+				// Add base classes
+				while ( currentType != null && currentType != typeof( object ) ) {
+					if ( _settings.MaxInheritanceDepth >= 0 && depth >= _settings.MaxInheritanceDepth ) {
+						_logger?.LogTrace( "Reached maximum inheritance depth {MaxDepth} for type {Type}", _settings.MaxInheritanceDepth, t.Name );
+						break;
+					}
+
+					hierarchy.Add( currentType );
+					currentType = currentType.BaseType;
+					depth++;
+				}
+
+				// Add interfaces if enabled
+				if ( _settings.IncludeInterfacesInFallback ) {
+					var interfaces = t.GetInterfaces( );
+					foreach ( var iface in interfaces ) {
+						if ( !hierarchy.Contains( iface ) ) {
+							hierarchy.Add( iface );
+						}
+					}
+				}
+
+				_logger?.LogTrace( "Built inheritance hierarchy for {Type}: {HierarchyCount} types found", t.Name, hierarchy.Count );
+				return hierarchy;
+			} );
 		}
 
 		/// <summary>
@@ -611,6 +711,7 @@ namespace Myth.Morph {
 
 		/// <summary>
 		/// Checks if a mapping exists between the specified source and destination types.
+		/// Includes inheritance fallback support when enabled in settings.
 		/// </summary>
 		/// <param name="sourceType">The source type to check.</param>
 		/// <param name="destinationType">The destination type to check.</param>
@@ -628,6 +729,23 @@ namespace Myth.Morph {
 				return true;
 			}
 
+			// Check inheritance fallback if enabled
+			if ( _settings.EnableInheritanceFallback ) {
+				if ( TryGetBuilderWithInheritanceFallback( sourceType, destinationType, out _ ) ) {
+					_logger?.LogTrace( "Found inheritance fallback mapping for {SourceType} -> {DestType}", sourceType.Name, destinationType.Name );
+					return true;
+				}
+
+				// Also check instance-based mappings through inheritance
+				var hierarchy = GetInheritanceHierarchy( sourceType );
+				foreach ( var baseType in hierarchy ) {
+					if ( _instanceBasedMappings.Contains( (baseType, destinationType) ) ) {
+						_logger?.LogTrace( "Found inheritance instance-based mapping for {SourceType} -> {DestType} via {BaseType}", sourceType.Name, destinationType.Name, baseType.Name );
+						return true;
+					}
+				}
+			}
+
 			// Check if it's a generic mapping
 			if ( IsGenericMapping( sourceType, destinationType ) ) {
 				_logger?.LogTrace( "Found generic mapping for {SourceType} -> {DestType}", sourceType.Name, destinationType.Name );
@@ -639,6 +757,14 @@ namespace Myth.Morph {
 			if ( concreteDestType != destinationType && _builders.ContainsKey( (sourceType, concreteDestType) ) ) {
 				_logger?.LogTrace( "Found concrete type mapping for {SourceType} -> {ConcreteDestType}", sourceType.Name, concreteDestType.Name );
 				return true;
+			}
+
+			// Check concrete destination type with inheritance fallback
+			if ( _settings.EnableInheritanceFallback && concreteDestType != destinationType ) {
+				if ( TryGetBuilderWithInheritanceFallback( sourceType, concreteDestType, out _ ) ) {
+					_logger?.LogTrace( "Found inheritance fallback mapping for {SourceType} -> {ConcreteDestType}", sourceType.Name, concreteDestType.Name );
+					return true;
+				}
 			}
 
 			_logger?.LogTrace( "No mapping found for {SourceType} -> {DestType}", sourceType.Name, destinationType.Name );
