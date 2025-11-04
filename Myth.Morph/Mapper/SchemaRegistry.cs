@@ -93,8 +93,8 @@ namespace Myth.Morph {
 				_logger?.LogTrace( "Using actual source type {ActualType} instead of generic type {GenericType}", actualSourceType.Name, sourceType.Name );
 			}
 
-			// Check if it's an instance-based mapping
-			if ( _instanceBasedMappings.Contains( (actualSourceType, destinationType) ) &&
+			// Check if it's an instance-based mapping with inheritance fallback support
+			if ( TryGetInstanceBasedMapping( actualSourceType, destinationType ) &&
 				 source is IMorphable<TDestination> mapToInstance ) {
 				_logger?.LogDebug( "Using instance-based mapping for {SourceType} -> {DestinationType}", actualSourceType.Name, destinationType.Name );
 				return MapFromInstance( mapToInstance, destinationType );
@@ -530,6 +530,34 @@ namespace Myth.Morph {
 		}
 
 		/// <summary>
+		/// Checks if an instance-based mapping exists for the specified types, including inheritance fallback support.
+		/// </summary>
+		/// <param name="sourceType">The source type to check.</param>
+		/// <param name="destinationType">The destination type to check.</param>
+		/// <returns>True if an instance-based mapping exists (directly or through inheritance), false otherwise.</returns>
+		private bool TryGetInstanceBasedMapping( Type sourceType, Type destinationType ) {
+			// Check direct mapping first
+			if ( _instanceBasedMappings.Contains( (sourceType, destinationType) ) ) {
+				_logger?.LogTrace( "Found direct instance-based mapping for {SourceType} -> {DestinationType}", sourceType.Name, destinationType.Name );
+				return true;
+			}
+
+			// If inheritance fallback is enabled, check the inheritance hierarchy
+			if ( _settings.EnableInheritanceFallback ) {
+				var hierarchy = GetInheritanceHierarchy( sourceType );
+				foreach ( var baseType in hierarchy ) {
+					if ( _instanceBasedMappings.Contains( (baseType, destinationType) ) ) {
+						_logger?.LogTrace( "Found inheritance instance-based mapping for {SourceType} -> {DestinationType} via {BaseType}",
+							sourceType.Name, destinationType.Name, baseType.Name );
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
+
+		/// <summary>
 		/// Attempts to find a builder using inheritance fallback by searching through the type hierarchy.
 		/// </summary>
 		/// <param name="sourceType">The source type to search for.</param>
@@ -717,8 +745,8 @@ namespace Myth.Morph {
 		/// <param name="destinationType">The destination type to check.</param>
 		/// <returns>True if a mapping exists, false otherwise.</returns>
 		public bool HasMapping( Type sourceType, Type destinationType ) {
-			// Check if it's an instance-based mapping
-			if ( _instanceBasedMappings.Contains( (sourceType, destinationType) ) ) {
+			// Check if it's an instance-based mapping with inheritance fallback support
+			if ( TryGetInstanceBasedMapping( sourceType, destinationType ) ) {
 				_logger?.LogTrace( "Found instance-based mapping for {SourceType} -> {DestType}", sourceType.Name, destinationType.Name );
 				return true;
 			}
@@ -734,15 +762,6 @@ namespace Myth.Morph {
 				if ( TryGetBuilderWithInheritanceFallback( sourceType, destinationType, out _ ) ) {
 					_logger?.LogTrace( "Found inheritance fallback mapping for {SourceType} -> {DestType}", sourceType.Name, destinationType.Name );
 					return true;
-				}
-
-				// Also check instance-based mappings through inheritance
-				var hierarchy = GetInheritanceHierarchy( sourceType );
-				foreach ( var baseType in hierarchy ) {
-					if ( _instanceBasedMappings.Contains( (baseType, destinationType) ) ) {
-						_logger?.LogTrace( "Found inheritance instance-based mapping for {SourceType} -> {DestType} via {BaseType}", sourceType.Name, destinationType.Name, baseType.Name );
-						return true;
-					}
 				}
 			}
 

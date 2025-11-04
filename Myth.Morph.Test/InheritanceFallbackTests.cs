@@ -301,6 +301,68 @@ namespace Myth.Morph.Test {
 			hasMapping3.Should( ).BeTrue( );
 		}
 
+		[Fact]
+		public void MorphTo_Should_HandleEntityFrameworkProxyTypes( ) {
+			// Arrange
+			var serviceProvider = CreateServiceProviderWithInheritance( );
+
+			// Create a dynamic proxy type that simulates Entity Framework proxy behavior
+			// This is similar to Castle.Proxies.WeatherForecastProxy created by EF
+			var proxyType = CreateDynamicDerivedType( typeof( PublicTestEntity ), "Castle.Proxies.PublicTestEntityProxy" );
+
+			// Create an instance of the dynamic proxy type
+			var proxyInstance = Activator.CreateInstance( proxyType )!;
+
+			// Set properties using reflection (simulating how EF populates proxy instances)
+			SetProperty( proxyInstance, nameof( PublicTestEntity.Id ), _faker.Random.Number( ) );
+			SetProperty( proxyInstance, nameof( PublicTestEntity.Name ), _faker.Name.FirstName( ) );
+			SetProperty( proxyInstance, nameof( PublicTestEntity.Description ), _faker.Lorem.Text( ) );
+			SetProperty( proxyInstance, nameof( PublicTestEntity.IsActive ), _faker.Random.Bool( ) );
+
+			// Act - The proxy type should use the base type's IMorphable implementation via inheritance fallback
+			var result = proxyInstance.To<PublicTestDto>( serviceProvider );
+
+			// Assert
+			result.Should( ).NotBeNull( );
+			result.Id.Should( ).Be( GetProperty<int>( proxyInstance, nameof( PublicTestEntity.Id ) ) );
+			result.Name.Should( ).Be( GetProperty<string>( proxyInstance, nameof( PublicTestEntity.Name ) ) );
+			result.Description.Should( ).Be( GetProperty<string>( proxyInstance, nameof( PublicTestEntity.Description ) ) );
+			// IsActive is inverted by the mapping logic in PublicTestEntity.MorphTo
+			result.IsActive.Should( ).Be( !GetProperty<bool>( proxyInstance, nameof( PublicTestEntity.IsActive ) ) );
+		}
+
+		[Fact]
+		public void CanBindTo_Should_ReturnTrue_ForEntityFrameworkProxyTypes( ) {
+			// Arrange
+			var serviceProvider = CreateServiceProviderWithInheritance( );
+
+			// Create a dynamic proxy type that simulates Entity Framework proxy behavior
+			var proxyType = CreateDynamicDerivedType( typeof( PublicTestEntity ), "Castle.Proxies.PublicTestEntityProxy" );
+			var proxyInstance = Activator.CreateInstance( proxyType )!;
+
+			// Act
+			var canBind = proxyInstance.CanBindTo<PublicTestDto>( serviceProvider );
+
+			// Assert
+			canBind.Should( ).BeTrue( );
+		}
+
+		[Fact]
+		public void HasMapping_Should_ReturnTrue_ForEntityFrameworkProxyTypes( ) {
+			// Arrange
+			var serviceProvider = CreateServiceProviderWithInheritance( );
+			var registry = serviceProvider.GetRequiredService<SchemaRegistry>( );
+
+			// Create a dynamic proxy type that simulates Entity Framework proxy behavior
+			var proxyType = CreateDynamicDerivedType( typeof( PublicTestEntity ), "Castle.Proxies.PublicTestEntityProxy" );
+
+			// Act
+			var hasMapping = registry.HasMapping( proxyType, typeof( PublicTestDto ) );
+
+			// Assert
+			hasMapping.Should( ).BeTrue( );
+		}
+
 		/// <summary>
 		/// Creates a dynamic type that inherits from the specified base type.
 		/// This simulates Entity Framework proxy types like Castle.Proxies.User_proxy.
