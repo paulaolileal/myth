@@ -3,6 +3,7 @@ using Myth.Exceptions;
 using Myth.Guard;
 using Myth.Interfaces;
 using Myth.Models;
+using Myth.ServiceProvider;
 
 namespace Myth.Validation {
 
@@ -56,7 +57,7 @@ namespace Myth.Validation {
 					var ruleContext = new RuleContext<object>(
 						value: GetFieldValue( entity, fieldValidation.FieldName ),
 						fieldName: fieldValidation.FieldName,
-						serviceProvider: _serviceProvider,
+						serviceProvider: MythServiceProvider.GetOrFallback( _serviceProvider ),
 						cancellationToken: cancellationToken,
 						entity: entity
 					);

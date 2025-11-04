@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;
 using Myth.Extensions.Swagger.Settings;
+using Myth.ServiceProvider;
 using Myth.ValueProviders;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Swashbuckle.AspNetCore.SwaggerUI;
@@ -17,36 +18,39 @@ namespace Myth.Extensions.Swagger;
 public static class SwaggerExtensions {
 
 	public static IServiceCollection AddDocs( this IServiceCollection services, Action<SwaggerSettings>? settings = null ) {
-		var serviceProvider = services.BuildServiceProvider( );
-		var versionProvider = serviceProvider.GetRequiredService<IApiVersionDescriptionProvider>( );
-
 		services.AddEndpointsApiExplorer( );
 
 		services.AddSwaggerGen( options => {
 			var swaggerSettings = new SwaggerSettings( );
 			settings?.Invoke( swaggerSettings );
 
-			foreach ( var versionDescription in versionProvider.ApiVersionDescriptions ) {
-				var info = new OpenApiInfo {
-					Version = versionDescription.ApiVersion.ToString( ),
-					Title = swaggerSettings.Title,
-					Description = swaggerSettings.Description
-				};
+			// Resolve the version provider from the fully configured service provider at runtime
+			var serviceProvider = MythServiceProvider.GetOrFallback( null );
+			var versionProvider = serviceProvider?.GetService<IApiVersionDescriptionProvider>( );
 
-				if ( versionDescription.IsDeprecated )
-					info.Description += " | This version of API is obsolete.";
-
-				if ( swaggerSettings.ContactName is not null ) {
-					var contact = new OpenApiContact {
-						Name = swaggerSettings.ContactName,
-						Email = swaggerSettings.ContactEmail,
-						Url = new Uri( swaggerSettings.ContactUrl )
+			if ( versionProvider != null ) {
+				foreach ( var versionDescription in versionProvider.ApiVersionDescriptions ) {
+					var info = new OpenApiInfo {
+						Version = versionDescription.ApiVersion.ToString( ),
+						Title = swaggerSettings.Title,
+						Description = swaggerSettings.Description
 					};
 
-					info.Contact = contact;
-				}
+					if ( versionDescription.IsDeprecated )
+						info.Description += " | This version of API is obsolete.";
 
-				options.SwaggerDoc( versionDescription.GroupName, info );
+					if ( swaggerSettings.ContactName is not null ) {
+						var contact = new OpenApiContact {
+							Name = swaggerSettings.ContactName,
+							Email = swaggerSettings.ContactEmail,
+							Url = new Uri( swaggerSettings.ContactUrl )
+						};
+
+						info.Contact = contact;
+					}
+
+					options.SwaggerDoc( versionDescription.GroupName, info );
+				}
 			}
 
 			options.EnableAnnotations( );
@@ -183,18 +187,21 @@ public static class SwaggerExtensions {
 
 		app.UseSwagger( );
 		app.UseSwaggerUI( options => {
-			var versionProvider = app.ApplicationServices.GetRequiredService<IApiVersionDescriptionProvider>( );
-			var context = app.ApplicationServices.GetRequiredService<IHttpContextAccessor>( );
+			var serviceProvider = MythServiceProvider.GetOrFallback( app.ApplicationServices );
+			var versionProvider = serviceProvider?.GetRequiredService<IApiVersionDescriptionProvider>( );
+			var context = serviceProvider?.GetRequiredService<IHttpContextAccessor>( );
 
 			// Configure endpoints
-			foreach ( var versionDescription in versionProvider.ApiVersionDescriptions ) {
-				options.SwaggerEndpoint(
-					$"{context.HttpContext?.Request.Path}/swagger/{versionDescription.GroupName}/swagger.json",
-					versionDescription.GroupName.ToUpperInvariant( ) );
+			if ( versionProvider != null ) {
+				foreach ( var versionDescription in versionProvider.ApiVersionDescriptions ) {
+					options.SwaggerEndpoint(
+						$"{context?.HttpContext?.Request.Path}/swagger/{versionDescription.GroupName}/swagger.json",
+						versionDescription.GroupName.ToUpperInvariant( ) );
+				}
 			}
 
 			// Configure advanced UI features
-			ConfigureAdvancedUI( options, app.ApplicationServices );
+			ConfigureAdvancedUI( options, serviceProvider );
 		} );
 
 		return app;

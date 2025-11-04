@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Myth.Exceptions;
 using Myth.Extensions;
 using Myth.Interfaces;
+using Myth.ServiceProvider;
 using System.Collections;
 using System.Reflection;
 
@@ -27,7 +28,8 @@ namespace Myth.Morph {
 		/// <param name="sp">The service provider for dependency injection and logger resolution.</param>
 		public SchemaRegistry( IServiceProvider sp ) {
 			_sp = sp;
-			_logger = sp.GetService<ILogger<SchemaRegistry>>( );
+			var serviceProvider = MythServiceProvider.GetOrFallback( sp );
+			_logger = serviceProvider?.GetService<ILogger<SchemaRegistry>>( );
 			_logger?.LogDebug( "SchemaRegistry initialized" );
 		}
 
@@ -449,7 +451,8 @@ namespace Myth.Morph {
 
 			// If it's a non-generic interface, look for registered implementation in DI
 			if ( destinationType.IsInterface ) {
-				var serviceImpl = _sp.GetService( destinationType );
+				var serviceProvider = MythServiceProvider.GetOrFallback( _sp );
+				var serviceImpl = serviceProvider?.GetService( destinationType );
 				if ( serviceImpl != null ) {
 					_logger?.LogTrace( "Resolved interface {Interface} to service implementation {Implementation}", destinationType.Name, serviceImpl.GetType( ).Name );
 					return serviceImpl.GetType( );
@@ -715,7 +718,8 @@ namespace Myth.Morph {
 			_logger?.LogTrace( "Creating instance of type {TypeName}", type.Name );
 
 			// 1 - Try via DI first
-			var fromSp = _sp.GetService( type );
+			var serviceProvider = MythServiceProvider.GetOrFallback( _sp );
+			var fromSp = serviceProvider?.GetService( type );
 			if ( fromSp != null ) {
 				_logger?.LogTrace( "Created instance via service provider for {TypeName}", type.Name );
 				return fromSp;
@@ -747,7 +751,7 @@ namespace Myth.Morph {
 			var args = parameters
 				.Select( p => {
 					// Try to resolve via DI first
-					var serviceValue = _sp.GetService( p.ParameterType );
+					var serviceValue = serviceProvider?.GetService( p.ParameterType );
 					if ( serviceValue != null ) {
 						_logger?.LogTrace( "Resolved parameter {ParameterName} of type {ParameterType} via DI", p.Name, p.ParameterType.Name );
 						return serviceValue;
