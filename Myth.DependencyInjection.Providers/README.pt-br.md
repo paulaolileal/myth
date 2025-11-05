@@ -6,7 +6,7 @@
 
 [![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg?style=for-the-badge)](/README.pt-br.md) [![en](https://img.shields.io/badge/lang-en-red.svg?style=for-the-badge)](/README.md)
 
-Uma biblioteca .NET que fornece configuração pré-pronta de injeção de dependências para bibliotecas terceiras comumente utilizadas em aplicações ASP.NET Core. Simplifica a integração de versionamento de API, documentação Swagger/OpenAPI avançada com interface moderna, e AutoMapper com padrões prontos para produção.
+Uma biblioteca .NET abrangente que fornece configuração pré-pronta de injeção de dependências para aplicações ASP.NET Core empresariais. Simplifica a integração de versionamento de API, documentação Swagger/OpenAPI avançada, AutoMapper, health checks, observabilidade, conexões de banco de dados, HashiCorp Vault, e muito mais com padrões prontos para produção.
 
 ## Por que Myth.DependencyInjection.Providers?
 
@@ -21,6 +21,7 @@ Aplicações modernas ASP.NET Core requerem configuração consistente em múlti
 
 ## Funcionalidades
 
+### 🌐 **Documentação e Versionamento de API**
 - **Versionamento de API**: Versionamento completo com suporte a URL segment, header e media type
 - **Swagger/OpenAPI Avançado**: Interface de documentação moderna com experiência de desenvolvedor aprimorada
   - 🌲 **TreeView Hierárquica** - Endpoints organizados por tags com suporte a múltiplos níveis
@@ -32,10 +33,43 @@ Aplicações modernas ASP.NET Core requerem configuração consistente em múlti
   - ⌨️ **Atalhos de Teclado** - Recursos para usuários avançados (Ctrl+Enter, Ctrl+F, etc.)
   - 📊 **Monitoramento de Performance** - Timing de requisições, códigos de status coloridos e feedback visual
   - ✨ **UX Aprimorada** - JSON beautify, colapso de modelos, validação e histórico de requisições
+
+### 🗄️ **Integração de Banco de Dados**
+- **MongoDB**: Cliente MongoDB pré-configurado e serviços de banco com substituição de tokens Vault
+- **Gerenciamento de Conexão**: Padrão singleton client com acesso scoped ao banco de dados
+- **Configuração**: Configuração simples de connection string e nome do banco de dados
+
+### 🔍 **Health Checks e Monitoramento**
+- **Suporte Multi-Banco**: Health checks para SQL Server, PostgreSQL, MongoDB e Redis
+- **Health Checks Customizados**: Conectividade com internet e validação de dependências customizadas
+- **Endpoint de Métricas**: Relatórios abrangentes de status de saúde com diagnósticos detalhados
+- **Informações de Ambiente**: Detecção e relatório de ambiente de execução
+
+### 📊 **Observabilidade e Telemetria**
+- **Integração OpenTelemetry**: Rastreamento e métricas completos com exportação Prometheus
+- **Métricas Customizadas**: Auto-descoberta e registro de métricas da aplicação
+- **Instrumentação**: Instrumentação ASP.NET Core, HTTP, SQL e Runtime pronta para uso
+- **Monitoramento de Performance**: Timing de requisições, uso de recursos e métricas operacionais
+- **Controller de Métricas**: Endpoint RESTful para acessar dados de telemetria
+
+### 🔧 **Mapeamento de Objetos e Transformações**
 - **Integração AutoMapper**: Configuração simplificada com mapeamentos de tipos de paginação e acesso global
 - **Extensões de Mapeamento de Tipos**: Métodos de extensão estáticos para transformações de objetos convenientes
-- **Integração de Autenticação**: Validação de autenticação ASP.NET Core e armazenamento seguro de credenciais
-- **Experiência do Desenvolvedor**: APIs fluentes, código boilerplate mínimo e 100% de compatibilidade retroativa
+- **Auto-Descoberta de Profiles**: Registro automático de profiles de mapeamento dos assemblies da aplicação
+- **Acesso Global**: Provider de mapper estático para uso em toda a aplicação
+
+### 🔐 **Segurança e Configuração**
+- **Integração HashiCorp Vault**: Autenticação Kubernetes com refresh automático de token
+- **Gerenciamento de Segredos**: Recuperação de segredos KV engine com gerenciamento de token de 12 horas
+- **Fallback Local**: Configuração de segredos local amigável ao desenvolvimento
+- **Políticas CORS**: Políticas CORS pré-configuradas com configurações customizáveis
+
+### 🏗️ **Infraestrutura e Experiência do Desenvolvedor**
+- **APIs Fluentes**: Configuração intuitiva com encadeamento de métodos
+- **Boilerplate Mínimo**: Reduz código de configuração em até 80%
+- **Pronto para Produção**: Padrões testados em batalha com recursos de nível empresarial
+- **100% Compatibilidade Retroativa**: Migração sem interrupções de configurações existentes
+- **Segurança de Tipos**: Configurações e mapeamentos verificados em tempo de compilação
 
 ## Instalação
 
@@ -45,60 +79,109 @@ dotnet add package Myth.DependencyInjection.Providers
 
 ## Início Rápido
 
-### Exemplo de Configuração Completa
+### Exemplo de Configuração Empresarial Completa
 
 ```csharp
-using Myth.Extensions;
+using Myth.Documentations;
+using Myth.HealthChecks.Extensions;
+using Myth.Instrumentations;
+using Myth.Mappings;
+using Myth.Databases.Mongo;
+using Myth.Vault.Extensions;
+using Myth.Policies;
+using Myth.Versionings;
 
 var builder = WebApplication.CreateBuilder( args );
 
 builder.Services.AddControllers( );
 
+// Versionamento de API
 builder.Services.AddVersioning( 1.0 );
 
-// Configuração básica (100% compatível com versões anteriores)
+// Documentação com funcionalidades avançadas e autenticação
 builder.Services.AddDocs( settings => {
-    settings.UseTitle( "Minha API" )
-           .UseDescription( "Uma API abrangente para gerenciamento de recursos" )
+    settings.UseTitle( "API Empresarial" )
+           .UseDescription( "API abrangente com recursos empresariais" )
            .UseContact( "Equipe de API", "api@minhaempresa.com", "https://minhaempresa.com/api" )
-           .UseBearerAuthorization( );
-} );
-
-// OU com funcionalidades avançadas habilitadas
-builder.Services.AddDocs( settings => {
-    settings.UseTitle( "Documentação Avançada da API" )
-           .UseDescription( "API com interface moderna e experiência de desenvolvedor aprimorada" )
-           .UseContact( "Equipe de API", "api@minhaempresa.com", "https://minhaempresa.com/api" )
-
-           // Habilitar todas as funcionalidades avançadas com padrões sensatos
            .UseAdvancedFeatures( )
-
-           // Ou configurar individualmente
-           .UseTreeView( enableHierarchy: true, tagSeparator: "/" )
-           .UseSearch( enableRealTime: true )
-           .UseTheme( SwaggerTheme.Auto, allowUserToggle: true )
-           .UseCache( enablePersistence: true, expirationMinutes: 60 )
-           .UseAuthentication( enableDropdown: true, validateTokens: false )
-           .UseUI( enableDirectExecution: true, enableKeyboardShortcuts: true )
-           .UsePerformance( enableTiming: true, enableStatusColors: true );
+           .UseBearerAuthorization( )
+           .RequireAuthenticationIf( env => env.IsProduction( ) ); // Auto-proteger em produção
 } );
 
+// Mapeamento de Objetos
 builder.Services.AddTypeMapping( conf => {
     conf.CreateMap<UserEntity, UserDto>( );
     conf.CreateMap<OrderEntity, OrderDto>( );
 } );
 
+// Integração de Banco de Dados
+builder.Services.AddMongoDB( settings => {
+    settings.ConnectionStringKey = "MongoDB";
+    settings.DatabaseName = "MinhaAplicacaoDB";
+} );
+
+// Health Checks
+builder.Services.AddHealthCheck( settings => {
+    settings.AddSqlServer( "DefaultConnection" )
+           .AddMongoDB( "MongoDB" )
+           .AddRedis( "Redis" )
+           .AddInternetAccess( );
+} );
+
+// Observabilidade e Telemetria
+builder.Services.AddTelemetry( settings => {
+    settings.ApplicationName = "MinhaApp"
+           .EnableMetrics( true )
+           .EnableTracing( true );
+} );
+
+builder.Services.AddCollectibleMetrics( );
+
+// Integração HashiCorp Vault
+builder.Services.AddHashicorpVault( settings => {
+    settings.VaultUrl = builder.Configuration[ "Vault:Url" ];
+    settings.Namespace = builder.Configuration[ "Vault:Namespace" ];
+    settings.RoleName = builder.Configuration[ "Vault:RoleName" ];
+} );
+
+// Políticas CORS
+builder.Services.AddDefaultCors( );
+
 var app = builder.Build( );
 
-// Opcional: Proteger Swagger com autenticação em produção
-if ( app.Environment.IsProduction( ) ) {
-    app.UseSwaggerAuthentication( );
+// Pipeline de Middleware
+if ( app.Environment.IsDevelopment( ) ) {
+    app.UseDeveloperExceptionPage( );
 }
 
+app.UseDefaultCors( );
 app.UseDocs( );
+app.UseMetrics( ); // Endpoint Prometheus
 app.UseAuthorization( );
-app.MapControllers( );
 
+// Adicionar controller de métricas
+app.MapControllers( );
+app.AddMetricsController( );
+
+app.Run( );
+```
+
+### Configuração Mínima (Compatível com Versões Anteriores)
+
+```csharp
+var builder = WebApplication.CreateBuilder( args );
+
+builder.Services.AddControllers( );
+builder.Services.AddVersioning( 1.0 );
+builder.Services.AddDocs( settings => {
+    settings.UseTitle( "Minha API" ).UseBearerAuthorization( );
+} );
+builder.Services.AddTypeMapping( );
+
+var app = builder.Build( );
+
+app.UseDocs( );
+app.MapControllers( );
 app.Run( );
 ```
 
@@ -244,15 +327,13 @@ services.AddDocs( settings => {
                enableTiming: true,          // Mostrar timing de requisições
                enableStatusColors: true,    // Colorir códigos de status HTTP
                enableProgressIndicators: true
-           );
+           )
+
+           // Proteção de autenticação integrada
+           .RequireAuthenticationIf( env => env.IsProduction( ) ); // Auto-proteger em produção
 } );
 
-// Opcional: Proteger Swagger em produção
-if ( app.Environment.IsProduction( ) ) {
-    app.UseSwaggerAuthentication( );  // Exigir auth para acessar Swagger
-}
-
-app.UseDocs( );
+app.UseDocs( ); // Autenticação é aplicada automaticamente quando configurada
 ```
 
 #### Configuração Rápida com Todas as Funcionalidades
@@ -303,6 +384,85 @@ Isso cria uma estrutura hierárquica na interface do Swagger:
     └── 📁 Perfil (2)
         └── 📁 Avatar (1)
 ```
+
+### Autenticação Integrada do Swagger
+
+A biblioteca agora fornece **proteção de autenticação integrada** para a UI do Swagger, eliminando a necessidade de configuração de middleware separado. Os requisitos de autenticação são configurados diretamente no método `AddDocs()` e aplicados automaticamente pelo `UseDocs()`.
+
+#### Proteção Básica de Autenticação
+
+```csharp
+// Exigir autenticação apenas em ambientes de produção
+builder.Services.AddDocs( settings => {
+    settings.UseTitle( "API Protegida" )
+           .UseBearerAuthorization( )
+           .RequireAuthenticationIf( env => env.IsProduction( ) ); // Auto-detectar ambiente
+} );
+
+var app = builder.Build( );
+app.UseDocs( ); // Autenticação aplicada automaticamente quando configurada
+```
+
+#### Sempre Exigir Autenticação
+
+```csharp
+// Sempre exigir autenticação (útil para APIs públicas)
+builder.Services.AddDocs( settings => {
+    settings.UseTitle( "API Segura" )
+           .UseBearerAuthorization( )
+           .RequireAuthentication( true ); // Sempre exigir auth
+} );
+```
+
+#### Lógica de Autenticação Personalizada
+
+```csharp
+// Validação de autenticação personalizada
+builder.Services.AddDocs( settings => {
+    settings.UseTitle( "API Auth Personalizada" )
+           .RequireCustomAuthentication( async ( context ) => {
+               // Lógica de validação personalizada
+               var apiKey = context.Request.Headers[ "X-API-Key" ].FirstOrDefault( );
+               return await ValidateApiKeyAsync( apiKey );
+           } );
+} );
+```
+
+#### Autenticação com Caminhos de Bypass
+
+```csharp
+// Permitir que certos caminhos ignorem a autenticação
+builder.Services.AddDocs( settings => {
+    settings.UseTitle( "API com Health Checks" )
+           .RequireAuthentication( true )
+           .WithAuthenticationBypass( "/swagger/health", "/swagger/status" );
+} );
+```
+
+#### Múltiplos Esquemas de Autenticação
+
+```csharp
+// Suporte a múltiplos métodos de autenticação
+builder.Services.AddDocs( settings => {
+    settings.UseTitle( "API Multi-Auth" )
+           .UseBearerAuthorization( )
+           .RequireAuthentication(
+               requireAuthentication: true,
+               validateTokens: true,
+               AuthorizationType.Bearer,
+               AuthorizationType.Basic,
+               AuthorizationType.ApiKey
+           );
+} );
+```
+
+**Principais Benefícios:**
+- **Integração Automática**: Não é necessário registro de middleware separado
+- **Consciência de Ambiente**: Diferentes requisitos por ambiente
+- **Validação Flexível**: Suporte a lógica de autenticação personalizada
+- **Múltiplos Esquemas**: Bearer, Basic, API Key e métodos personalizados
+- **Opções de Bypass**: Permitir que caminhos específicos permaneçam públicos
+- **Tratamento de Erros**: Respostas não autorizadas configuráveis
 
 ### Métodos de Autenticação
 
@@ -669,15 +829,270 @@ O método `AddVersioning` configura:
 - API explorer com substituição de versão
 - Relatório de versão nos headers de resposta
 
+## Novos Módulos Empresariais
+
+### Integração de Banco de Dados
+
+#### Suporte ao MongoDB
+
+```csharp
+// Adicionar MongoDB com substituição de tokens Vault
+builder.Services.AddMongoDB( settings => {
+    settings.ConnectionStringKey = "MongoDB";
+    settings.DatabaseName = "MinhaAplicacaoDB";
+} );
+```
+
+Recursos:
+- Padrão singleton MongoClient para performance otimizada
+- IMongoDatabase scoped para isolamento de requisições
+- Substituição automática de tokens Vault em connection strings
+- Configuração simples com chaves de connection string
+
+### Health Checks e Monitoramento
+
+#### Health Checks Multi-Banco
+
+```csharp
+builder.Services.AddHealthCheck( settings => {
+    settings.AddSqlServer( "DefaultConnection" )
+           .AddPostgreSQL( "PostgreSQLConnection" )
+           .AddMongoDB( "MongoDB" )
+           .AddRedis( "RedisCache" )
+           .AddInternetAccess( );
+} );
+
+app.UseMetrics( ); // Habilitar endpoint Prometheus em /metrics
+```
+
+#### Controller de Métricas
+
+A biblioteca fornece um controller pronto para uso para monitoramento de saúde e ambiente:
+
+```csharp
+app.AddMetricsController( ); // Adiciona endpoints aos controllers existentes
+
+// Endpoints disponíveis:
+// GET /Metrics/HealthCheck      - Status de saúde abrangente
+// GET /Metrics/Environment      - Informações de ambiente de execução
+// GET /Metrics/Prometheus       - Redireciona para endpoint /metrics
+```
+
+### Observabilidade e Telemetria
+
+#### Integração OpenTelemetry
+
+```csharp
+// Configurar telemetria com exportação Prometheus
+builder.Services.AddTelemetry( settings => {
+    settings.ApplicationName = "MinhaAplicacao"
+           .EnableMetrics( true )
+           .EnableTracing( true );
+} );
+
+// Auto-descobrir e registrar métricas customizadas
+builder.Services.AddCollectibleMetrics( );
+```
+
+#### Métricas Customizadas
+
+Crie métricas customizadas implementando `ICustomMetric`:
+
+```csharp
+public class OrderProcessingMetric : ICustomMetric {
+    private static readonly Counter<int> OrdersProcessed =
+        Meter.CreateCounter<int>( "orders_processed_total", "Número de pedidos processados" );
+
+    public void RecordOrderProcessed( ) {
+        OrdersProcessed.Add( 1 );
+    }
+}
+```
+
+Recursos:
+- Integração OpenTelemetry com exportação Prometheus
+- Instrumentação ASP.NET Core, HTTP, SQL e Runtime
+- Auto-descoberta de métricas customizadas
+- Exportação console para desenvolvimento
+- Endpoint Prometheus pronto para produção
+
+### Integração HashiCorp Vault
+
+#### Autenticação Kubernetes
+
+```csharp
+// Configuração Vault de produção
+builder.Services.AddHashicorpVault( settings => {
+    settings.VaultUrl = "https://vault.empresa.com"
+           .Namespace = "app/producao"
+           .RoleName = "meuapp-role";
+} );
+
+// Fallback local para desenvolvimento
+builder.Services.AddLocalVault( );
+```
+
+#### Recuperação de Segredos
+
+```csharp
+public class OrderService {
+    private readonly IVaultProvider _vault;
+
+    public OrderService( IVaultProvider vault ) {
+        _vault = vault;
+    }
+
+    public async Task ProcessOrderAsync( ) {
+        var apiKey = await _vault.GetSecretAsync( "payment-gateway/api-key" );
+        // Usar o segredo...
+    }
+}
+```
+
+Recursos:
+- Autenticação de service account Kubernetes
+- Refresh automático de token de 12 horas
+- Recuperação de segredos KV engine
+- Fallback local para desenvolvimento
+- Gerenciamento de token e tratamento de erros
+
+### Gerenciamento de Políticas CORS
+
+#### Configuração CORS Padrão
+
+```csharp
+// Adicionar política CORS permissiva para desenvolvimento
+builder.Services.AddDefaultCors( );
+
+var app = builder.Build( );
+
+// Habilitar middleware CORS
+app.UseDefaultCors( );
+```
+
+A política padrão permite:
+- Qualquer origem (`AllowAnyOrigin`)
+- Qualquer método HTTP (`AllowAnyMethod`)
+- Qualquer cabeçalho (`AllowAnyHeader`)
+
+### Exemplos de Configuração
+
+#### Configuração de Microserviço
+
+```csharp
+var builder = WebApplication.CreateBuilder( args );
+
+// Serviços essenciais
+builder.Services.AddControllers( );
+builder.Services.AddVersioning( 1.0 );
+
+// Documentação
+builder.Services.AddDocs( s => s.UseTitle( "API Pedidos" ).UseAdvancedFeatures( ) );
+
+// Dados e Mapeamento
+builder.Services.AddMongoDB( s => s.ConnectionStringKey = "MongoDB" );
+builder.Services.AddTypeMapping( );
+
+// Observabilidade
+builder.Services.AddHealthCheck( s => s.AddMongoDB( "MongoDB" ).AddInternetAccess( ) );
+builder.Services.AddTelemetry( s => s.ApplicationName = "PedidosAPI" );
+
+// Segurança
+builder.Services.AddHashicorpVault( s => s.LoadFromConfiguration( builder.Configuration ) );
+
+var app = builder.Build( );
+
+app.UseDocs( );
+app.UseMetrics( );
+app.MapControllers( );
+app.AddMetricsController( );
+app.Run( );
+```
+
+#### Configuração de API Gateway
+
+```csharp
+var builder = WebApplication.CreateBuilder( args );
+
+builder.Services.AddControllers( );
+builder.Services.AddVersioning( 2.0 );
+
+// Documentação aprimorada para API pública com autenticação integrada
+builder.Services.AddDocs( settings => {
+    settings.UseTitle( "Gateway de API Pública" )
+           .UseDescription( "API unificada para todos os microserviços" )
+           .UseContact( "Equipe de API", "api@empresa.com", "https://docs.empresa.com" )
+           .UseAuthentication( enableDropdown: true, requireAuth: true )
+           .UseAdvancedFeatures( )
+           .RequireAuthentication( true ); // Sempre exigir autenticação para gateway de API pública
+} );
+
+// Monitoramento de saúde abrangente
+builder.Services.AddHealthCheck( settings => {
+    settings.AddSqlServer( "UsersDB" )
+           .AddMongoDB( "OrdersDB" )
+           .AddMongoDB( "InventoryDB" )
+           .AddRedis( "SessionCache" )
+           .AddRedis( "DataCache" )
+           .AddInternetAccess( );
+} );
+
+// Stack completo de observabilidade
+builder.Services.AddTelemetry( settings => {
+    settings.ApplicationName = "APIGateway"
+           .EnableMetrics( true )
+           .EnableTracing( true );
+} );
+
+builder.Services.AddCollectibleMetrics( );
+
+var app = builder.Build( );
+
+app.UseDocs( ); // Autenticação aplicada automaticamente com base na configuração
+app.UseMetrics( );
+app.MapControllers( );
+app.AddMetricsController( );
+app.Run( );
+```
+
 ## Dependências
 
+### Dependências Principais
 - **Asp.Versioning.Mvc** (8.1.0): Framework de versionamento de API
 - **Asp.Versioning.Mvc.ApiExplorer** (8.1.0): API explorer para endpoints versionados
 - **AutoMapper** (13.0.1): Mapeamento objeto-para-objeto
 - **Swashbuckle.AspNetCore** (6.6.2): Implementação Swagger/OpenAPI
 - **Swashbuckle.AspNetCore.Annotations** (6.6.2): Suporte a anotações do Swagger
+
+### Health Checks
+- **AspNetCore.HealthChecks.SqlServer** (8.0.2): Health checks SQL Server
+- **AspNetCore.HealthChecks.NpgSql** (8.0.2): Health checks PostgreSQL
+- **AspNetCore.HealthChecks.MongoDb** (8.0.1): Health checks MongoDB
+- **AspNetCore.HealthChecks.Redis** (8.0.1): Health checks Redis
+
+### Observabilidade e Telemetria
+- **OpenTelemetry.Api** (1.8.1): API OpenTelemetry
+- **OpenTelemetry.Api.ProviderBuilderExtensions** (1.8.1): Extensões provider builder
+- **OpenTelemetry.Exporter.Console** (1.8.1): Exportador console para desenvolvimento
+- **OpenTelemetry.Exporter.OpenTelemetryProtocol** (1.8.1): Exportador OTLP
+- **OpenTelemetry.Exporter.Prometheus.AspNetCore** (1.5.0-rc.1): Exportação métricas Prometheus
+- **OpenTelemetry.Extensions.Hosting** (1.8.1): Integração hosting
+- **OpenTelemetry.Instrumentation.AspNetCore** (1.8.1): Instrumentação ASP.NET Core
+- **OpenTelemetry.Instrumentation.Http** (1.8.1): Instrumentação cliente HTTP
+- **OpenTelemetry.Instrumentation.Process** (0.5.0-beta.5): Métricas de processo
+- **OpenTelemetry.Instrumentation.Runtime** (1.8.1): Métricas runtime .NET
+- **OpenTelemetry.Instrumentation.SqlClient** (1.8.0-beta.1): Instrumentação SQL Client
+- **Npgsql.OpenTelemetry** (8.0.6): Telemetria PostgreSQL
+- **prometheus-net.AspNetCore** (8.2.1): Integração Prometheus .NET
+
+### Integração de Banco de Dados
+- **MongoDB.Driver**: Driver MongoDB .NET (referenciado automaticamente)
+- **Npgsql**: Driver PostgreSQL .NET para health checks
+
+### Dependências Internas
 - **Myth.DependencyInjection**: Descoberta de tipos e varredura de assemblies
-- **Myth.Repository**: Interfaces de paginação
+- **Myth.Repository**: Interfaces de paginação e padrões de repository
+- **Myth.Rest**: Comunicação HTTP e funcionalidade cliente REST
 
 ## Benefícios Arquiteturais
 
