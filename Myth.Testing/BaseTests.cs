@@ -264,8 +264,9 @@ namespace Myth.Testing {
 		/// <remarks>
 		/// Provides proper async disposal of the service provider when called in an async context.
 		/// This method should be preferred over Dispose() when working in async scenarios.
+		/// Derived classes can override this method to add custom disposal logic.
 		/// </remarks>
-		public async ValueTask DisposeAsync( ) {
+		public virtual async ValueTask DisposeAsync( ) {
 			try {
 				if ( _serviceProvider is IAsyncDisposable asyncDisposable ) {
 					await asyncDisposable.DisposeAsync( ).ConfigureAwait( false );

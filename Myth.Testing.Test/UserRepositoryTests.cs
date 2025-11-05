@@ -36,8 +36,6 @@ namespace Myth.Testing.Test {
 		[Fact]
 		public async Task CreateAsync_WithValidUser_ShouldCreateUserInDatabase( ) {
 			// Arrange
-			await InitializeDatabaseAsync( );
-
 			var userEntity = _userFaker.Generate( );
 
 			// Act
@@ -52,8 +50,6 @@ namespace Myth.Testing.Test {
 			var dbUser = await context.Users.FindAsync( result.Id );
 			dbUser.Should( ).NotBeNull( );
 			dbUser!.Email.Should( ).Be( userEntity.Email );
-
-			await CleanupDatabaseAsync( );
 		}
 
 		/// <summary>
@@ -62,8 +58,6 @@ namespace Myth.Testing.Test {
 		[Fact]
 		public async Task GetByIdAsync_WithExistingId_ShouldReturnUser( ) {
 			// Arrange
-			await InitializeDatabaseAsync( );
-
 			var userEntity = _userFaker.Generate( );
 
 			var created = await _repository.CreateAsync( userEntity );
@@ -75,8 +69,6 @@ namespace Myth.Testing.Test {
 			result.Should( ).NotBeNull( );
 			result!.Id.Should( ).Be( created.Id );
 			result.Email.Should( ).Be( created.Email );
-
-			await CleanupDatabaseAsync( );
 		}
 
 		/// <summary>
@@ -84,16 +76,11 @@ namespace Myth.Testing.Test {
 		/// </summary>
 		[Fact]
 		public async Task GetByIdAsync_WithNonExistingId_ShouldReturnNull( ) {
-			// Arrange
-			await InitializeDatabaseAsync( );
-
 			// Act
 			var result = await _repository.GetByIdAsync( Guid.NewGuid( ) );
 
 			// Assert
 			result.Should( ).BeNull( );
-
-			await CleanupDatabaseAsync( );
 		}
 
 		/// <summary>
@@ -102,8 +89,6 @@ namespace Myth.Testing.Test {
 		[Fact]
 		public async Task GetByEmailAsync_WithExistingEmail_ShouldReturnUser( ) {
 			// Arrange
-			await InitializeDatabaseAsync( );
-
 			var userEntity = _userFaker.Generate( );
 			userEntity.Email = "test@example.com";
 
@@ -115,8 +100,6 @@ namespace Myth.Testing.Test {
 			// Assert
 			result.Should( ).NotBeNull( );
 			result!.Email.Should( ).Be( "test@example.com" );
-
-			await CleanupDatabaseAsync( );
 		}
 
 		/// <summary>
@@ -125,8 +108,6 @@ namespace Myth.Testing.Test {
 		[Fact]
 		public async Task GetAllAsync_WithMultipleUsers_ShouldReturnAllUsers( ) {
 			// Arrange
-			await InitializeDatabaseAsync( );
-
 			var users = _userFaker.Generate( 3 );
 			foreach ( var user in users )
 				await _repository.CreateAsync( user );
@@ -137,8 +118,6 @@ namespace Myth.Testing.Test {
 			// Assert
 			result.Should( ).HaveCount( 3 );
 			result.Should( ).Contain( u => users.Any( created => created.Email == u.Email ) );
-
-			await CleanupDatabaseAsync( );
 		}
 
 		/// <summary>
@@ -147,8 +126,6 @@ namespace Myth.Testing.Test {
 		[Fact]
 		public async Task UpdateAsync_WithValidUser_ShouldUpdateUserInDatabase( ) {
 			// Arrange
-			await InitializeDatabaseAsync( );
-
 			var userEntity = _userFaker.Generate( );
 
 			var created = await _repository.CreateAsync( userEntity );
@@ -169,8 +146,6 @@ namespace Myth.Testing.Test {
 			var dbUser = await _repository.GetByIdAsync( created.Id );
 			dbUser!.Name.Should( ).Be( "Updated Name" );
 			dbUser.Email.Should( ).Be( "updated@example.com" );
-
-			await CleanupDatabaseAsync( );
 		}
 
 		/// <summary>
@@ -179,8 +154,6 @@ namespace Myth.Testing.Test {
 		[Fact]
 		public async Task DeleteAsync_WithExistingId_ShouldDeleteUserFromDatabase( ) {
 			// Arrange
-			await InitializeDatabaseAsync( );
-
 			var userEntity = _userFaker.Generate( );
 
 			var created = await _repository.CreateAsync( userEntity );
@@ -194,8 +167,6 @@ namespace Myth.Testing.Test {
 			// Verify deletion
 			var dbUser = await _repository.GetByIdAsync( created.Id );
 			dbUser.Should( ).BeNull( );
-
-			await CleanupDatabaseAsync( );
 		}
 
 		/// <summary>
@@ -203,9 +174,6 @@ namespace Myth.Testing.Test {
 		/// </summary>
 		[Fact]
 		public async Task CreateAsync_WithNullUser_ShouldThrowArgumentNullException( ) {
-			// Arrange
-			await InitializeDatabaseAsync( );
-
 			// Act & Assert
 			var task = ( ) => _repository.CreateAsync( null! );
 
@@ -214,8 +182,6 @@ namespace Myth.Testing.Test {
 			// Verify no users were created
 			var allUsers = await _repository.GetAllAsync( );
 			allUsers.Should( ).BeEmpty( );
-
-			await CleanupDatabaseAsync( );
 		}
 	}
 }
