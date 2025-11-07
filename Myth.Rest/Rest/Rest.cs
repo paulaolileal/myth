@@ -17,14 +17,3 @@ public static class Rest {
 	/// <returns>REST configuration interface</returns>
 	public static IRestBuilder Create( ) => _builderPool.Get( );
 }
-
-public class RestBuilderPoolPolicy : IPooledObjectPolicy<RestBuilder> {
-
-	public RestBuilder Create( ) => new( );
-
-	public bool Return( RestBuilder obj ) {
-		obj.Dispose( );
-
-		return true;
-	}
-}
