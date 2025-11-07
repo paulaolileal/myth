@@ -1,11 +1,13 @@
 ﻿using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting.Internal;
 using Myth.DependencyInjection.Test.Models;
-using Myth.Extensions;
-using Myth.Extensions.Mapping;
-using Myth.Extensions.Swagger;
-using Myth.ValueProviders;
+using Myth.Documentations;
+using Myth.Mappings;
+using Myth.Mappings.ValueProviders;
+using Myth.Versionings.Extensions;
 
 namespace Myth.DependencyInjection.Test;
 
@@ -15,11 +17,13 @@ public class ProvidersTests {
 	public void Add_swagger_versioned_should_not_throw_exception( ) {
 		// Arrange
 		var services = new ServiceCollection( );
+		var env = new HostingEnvironment { EnvironmentName = "Test" };
 
 		services.AddLogging( );
 		services.AddControllers( );
 		services.AddVersioning( 1 );
 		services.AddHttpContextAccessor( );
+		services.AddSingleton<IHostEnvironment>( x => env );
 
 		// Act
 		var action = ( ) => services.AddDocs( settings => settings
