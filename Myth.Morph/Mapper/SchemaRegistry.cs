@@ -481,14 +481,7 @@ namespace Myth.Morph {
 				morphableFromDest.MorphFrom( sourceSchema );
 
 				// Apply the mapping from source to destination using the configured schema
-				var applyMethod = typeof( Schema<TSource> )
-					.GetMethod( "ApplyToInstanceAsync", BindingFlags.Instance | BindingFlags.NonPublic );
-
-				if ( applyMethod != null ) {
-					var genericApplyMethod = applyMethod.MakeGenericMethod( typeof( TDestination ) );
-					var task = ( Task )genericApplyMethod.Invoke( sourceSchema, [ source, dest, _sp ] )!;
-					task.GetAwaiter( ).GetResult( );
-				}
+				sourceSchema.ApplyFromSourceToDestination( source, dest, _sp );
 			}
 
 			_logger?.LogDebug( "IMorphableFrom mapping completed for {SourceType} -> {DestinationType}", sourceType.Name, destinationType.Name );

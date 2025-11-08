@@ -24,6 +24,9 @@ namespace Myth.Morph {
 		private readonly HashSet<string> _ignoredProperties = [ ];
 		private readonly List<Func<TDestination, IServiceProvider, Task>> _asyncMappings = [ ];
 
+		// For IMorphableFrom pattern - reverse bindings where TDestination is the source type
+		private readonly List<Action<object, object, IServiceProvider>> _reverseMappings = [ ];
+
 		/// <summary>
 		/// Configures a binding between a destination property and a value resolved from a service provider.
 		/// </summary>
@@ -159,6 +162,61 @@ namespace Myth.Morph {
 			if ( destSelector.Body is MemberExpression member ) {
 				_ignoredProperties.Add( member.Member.Name );
 			}
+
+			return this;
+		}
+
+		/// <summary>
+		/// Configures a binding from a source property to a destination value for IMorphableFrom pattern.
+		/// This method is used when the destination object defines how it should be created from the source.
+		/// </summary>
+		/// <typeparam name="TValue">The type of the value being mapped.</typeparam>
+		/// <param name="sourceSelector">An expression that specifies the property of the source type to read from.</param>
+		/// <param name="destinationPropertyGetter">A function that references the destination property (used to capture the property name).</param>
+		/// <returns>The current <see cref="Schema{TDestination}"/> instance, allowing for method chaining.</returns>
+
+		/// <summary>
+		/// Configures a reverse binding for IMorphableFrom pattern where destination property is set from source expression.
+		/// This method is used when the destination object defines how it should be created from the source.
+		/// The syntax is: schema.Bind(() => destinationProperty, src => sourceExpression)
+		/// </summary>
+		/// <typeparam name="TValue">The type of the value being mapped.</typeparam>
+		/// <param name="destinationPropertyGetter">An expression that references the destination property to be set.</param>
+		/// <param name="sourceExpression">An expression that calculates a value from the source object.</param>
+		/// <returns>The current <see cref="Schema{TDestination}"/> instance, allowing for method chaining.</returns>
+		public Schema<TDestination> Bind<TValue>( Expression<Func<TValue>> destinationPropertyGetter, Expression<Func<TDestination, TValue>> sourceExpression ) {
+			var compiledSourceExpression = sourceExpression.Compile( );
+
+			// Extract the destination property name from the destinationPropertyGetter expression
+			string destinationPropertyName = null;
+			if ( destinationPropertyGetter.Body is MemberExpression memberExpr ) {
+				destinationPropertyName = memberExpr.Member.Name;
+			}
+
+			if ( destinationPropertyName == null ) {
+				throw new BindException( "Invalid destination property expression. Use () => PropertyName syntax." );
+			}
+
+			_reverseMappings.Add( ( source, destination, sp ) => {
+				var logger = GetLogger( sp );
+				try {
+					// Calculate the value from the source using the expression
+					var calculatedValue = compiledSourceExpression( ( TDestination )source );
+
+					// Set the value on the destination object
+					var destType = destination.GetType( );
+					var property = destType.GetProperty( destinationPropertyName );
+					if ( property != null && property.CanWrite ) {
+						property.SetValue( destination, calculatedValue );
+						logger?.LogTrace( "Set property {PropertyName} to value {Value}", destinationPropertyName, calculatedValue );
+					} else {
+						logger?.LogWarning( "Property {PropertyName} not found or not writable on type {DestinationType}", destinationPropertyName, destType.Name );
+					}
+				} catch ( Exception ex ) {
+					logger?.LogError( ex, "Error applying reverse binding for property {PropertyName}", destinationPropertyName );
+					throw;
+				}
+			} );
 
 			return this;
 		}
@@ -559,6 +617,31 @@ namespace Myth.Morph {
 				logger?.LogError( ex, "Failed to assign value to member '{MemberName}'", member.Name );
 				throw;
 			}
+		}
+
+		/// <summary>
+		/// Applies configured bindings from source to destination for IMorphableFrom pattern.
+		/// This method processes reverse mappings where expressions calculate values from the source
+		/// and assign them to the destination object.
+		/// </summary>
+		/// <param name="source">The source object to read values from.</param>
+		/// <param name="destination">The destination object to write values to.</param>
+		/// <param name="serviceProvider">The service provider for dependency resolution.</param>
+		public void ApplyFromSourceToDestination( object source, object destination, IServiceProvider serviceProvider ) {
+			var logger = GetLogger( serviceProvider );
+			logger?.LogDebug( "Applying reverse mappings from {SourceType} to {DestinationType}", source.GetType( ).Name, destination.GetType( ).Name );
+
+			// Apply all configured reverse mappings
+			foreach ( var mapping in _reverseMappings ) {
+				try {
+					mapping( source, destination, serviceProvider );
+				} catch ( Exception ex ) {
+					logger?.LogError( ex, "Error applying reverse mapping" );
+					throw;
+				}
+			}
+
+			logger?.LogDebug( "Completed reverse mapping with {MappingCount} mappings", _reverseMappings.Count );
 		}
 
 		/// <summary>
