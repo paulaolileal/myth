@@ -50,5 +50,19 @@ namespace Myth.Interfaces.Rules {
 		/// </code>
 		/// </example>
 		FieldRuleBuilder<T> Only( params T[ ] values );
+
+		/// <summary>
+		/// Validates that the enum value is a valid defined member of the enumeration.
+		/// This rule prevents invalid enum values like (MyEnum)999 from being accepted.
+		/// This method is an alias for BeInEnum() with a more explicit name.
+		/// </summary>
+		/// <returns>A <see cref="FieldRuleBuilder{T}"/> for method chaining.</returns>
+		/// <example>
+		/// <code>
+		/// public enum Status { Active, Inactive, Pending }
+		/// builder.For(x => x.UserStatus, r => r.IsValidEnumValue()); // Prevents (Status)999
+		/// </code>
+		/// </example>
+		FieldRuleBuilder<T> IsValidEnumValue( );
 	}
 }

@@ -539,6 +539,41 @@ namespace Myth.Extensions {
 			return builder.AddRule( new BeInEnumRule<TEnum>( ) );
 		}
 
+		/// <summary>
+		/// Validates that the enum value is a valid defined member of the enumeration.
+		/// This method prevents invalid enum values like (MyEnum)999 from being accepted.
+		/// </summary>
+		/// <typeparam name="TEnum">The enum type to validate.</typeparam>
+		/// <param name="builder">The fluent rule builder instance.</param>
+		/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+		/// <example>
+		/// <code>
+		/// public enum Priority { Low, Medium, High }
+		/// builder.For(x => x.TaskPriority, r => r.IsValidEnumValue()); // Prevents (Priority)999
+		/// </code>
+		/// </example>
+		public static FluentRuleBuilder<TEnum> IsValidEnumValue<TEnum>( this FluentRuleBuilder<TEnum> builder ) where TEnum : struct, Enum {
+			return builder.AddRule( new IsValidEnumValueRule<TEnum>( ) );
+		}
+
+		/// <summary>
+		/// Validates that a nullable enum value, when not null, is a valid defined member of the enumeration.
+		/// This method prevents invalid enum values like (MyEnum?)999 from being accepted.
+		/// Null values are considered valid - use NotNull() separately if null should be rejected.
+		/// </summary>
+		/// <typeparam name="TEnum">The enum type to validate.</typeparam>
+		/// <param name="builder">The fluent rule builder instance.</param>
+		/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+		/// <example>
+		/// <code>
+		/// public enum Priority { Low, Medium, High }
+		/// builder.For(x => x.OptionalPriority, r => r.IsValidNullableEnumValue()); // Prevents (Priority?)999 but allows null
+		/// </code>
+		/// </example>
+		public static FluentRuleBuilder<TEnum?> IsValidNullableEnumValue<TEnum>( this FluentRuleBuilder<TEnum?> builder ) where TEnum : struct, Enum {
+			return builder.AddRule( new IsValidNullableEnumValueRule<TEnum>( ) );
+		}
+
 		#endregion Enum Extensions
 
 		#region Generic Extensions (already implemented in FluentRuleBuilder base class, but adding for completeness)
