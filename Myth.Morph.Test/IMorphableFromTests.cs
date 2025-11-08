@@ -431,5 +431,34 @@ namespace Myth.Morph.Test {
 			dto.LocalizedActivityStatus.Should( ).Be( "User Inactive 🔴" );
 			dto.CountryFullName.Should( ).Be( "Brazil" );
 		}
+
+		[Fact]
+		public void SimpleUserDto_Should_MapAutomatically_WhenNoCustomMappings( ) {
+			// Arrange
+			var user = new User {
+				Id = 123,
+				FirstName = "John",
+				LastName = "Doe",
+				Email = "john.doe@example.com",
+				BirthDate = new DateTime( 1985, 5, 15 ),
+				CountryCode = "US",
+				IsEmailVerified = true,
+				LastLoginAt = new DateTime( 2024, 6, 1, 10, 30, 0 )
+			};
+
+			// Act
+			var dto = user.To<SimpleUserDto>( _serviceProvider );
+
+			// Assert - All properties should be automatically mapped
+			dto.Should( ).NotBeNull( );
+			dto.Id.Should( ).Be( user.Id );
+			dto.FirstName.Should( ).Be( user.FirstName );
+			dto.LastName.Should( ).Be( user.LastName );
+			dto.Email.Should( ).Be( user.Email );
+			dto.BirthDate.Should( ).Be( user.BirthDate );
+			dto.CountryCode.Should( ).Be( user.CountryCode );
+			dto.IsEmailVerified.Should( ).Be( user.IsEmailVerified );
+			dto.LastLoginAt.Should( ).Be( user.LastLoginAt );
+		}
 	}
 }

@@ -731,6 +731,10 @@ namespace Myth.Morph {
 				}
 			}
 
+			// Apply auto-mapping for unmapped properties using source-to-dest mapping
+			logger?.LogTrace( "Starting automatic property mapping from source" );
+			AutoMapToInstanceFromSource( source, destination, serviceProvider );
+
 			logger?.LogDebug( "Completed reverse mapping with {MappingCount} mappings", _reverseMappings.Count );
 		}
 
@@ -766,7 +770,95 @@ namespace Myth.Morph {
 				}
 			}
 
+			// Apply auto-mapping for unmapped properties using source-to-dest mapping
+			logger?.LogTrace( "Starting automatic property mapping from source" );
+			AutoMapToInstanceFromSource( source, destination, serviceProvider );
+
 			logger?.LogDebug( "Completed async reverse mapping with {SyncMappingCount} sync and {AsyncMappingCount} async mappings", _reverseMappings.Count, _asyncReverseMappings.Count );
+		}
+
+		/// <summary>
+		/// Automatically maps properties from the source object to the destination object using the IMorphableFrom pattern.
+		/// This method performs automatic property mapping by matching property names between source and destination types.
+		/// </summary>
+		/// <param name="source">The source object to map from.</param>
+		/// <param name="destination">The destination object to map to.</param>
+		/// <param name="serviceProvider">The service provider for dependency resolution.</param>
+		private void AutoMapToInstanceFromSource( object source, object destination, IServiceProvider serviceProvider ) {
+			var logger = GetLogger( serviceProvider );
+			var srcType = source?.GetType( );
+			var destType = destination?.GetType( );
+
+			if ( srcType == null || destType == null ) {
+				return;
+			}
+
+			logger?.LogTrace( "Starting automatic mapping from {SourceType} to {DestinationType} using IMorphableFrom pattern", srcType.Name, destType.Name );
+
+			var srcMembers = srcType.GetMembers( BindingFlags.Public | BindingFlags.Instance );
+			var destMembers = destType.GetMembers( BindingFlags.Public | BindingFlags.Instance );
+
+			var mappedCount = 0;
+			var skippedCount = 0;
+			var errorCount = 0;
+
+			foreach ( var destMember in destMembers ) {
+				// Skip manually mapped or ignored properties
+				if ( _manuallyMappedDestProps.Contains( destMember.Name ) || _ignoredProperties.Contains( destMember.Name ) ) {
+					skippedCount++;
+					continue;
+				}
+
+				var srcMember = srcMembers.FirstOrDefault( m => m.Name == destMember.Name );
+				if ( srcMember == null ) {
+					continue;
+				}
+
+				var srcMemberType = GetMemberType( srcMember );
+				var destMemberType = GetMemberType( destMember );
+
+				if ( srcMemberType == null || destMemberType == null ) {
+					continue;
+				}
+
+				// Check if destination member can be written
+				if ( !CanWriteMember( destMember ) ) {
+					continue;
+				}
+
+				object? srcValue = null;
+				try {
+					srcValue = srcMember switch {
+						PropertyInfo p => p.GetValue( source ),
+						FieldInfo f => f.GetValue( source ),
+						_ => null
+					};
+				} catch ( Exception ex ) {
+					errorCount++;
+					logger?.LogWarning( ex, "Error reading value from source member '{MemberName}'", srcMember.Name );
+					continue;
+				}
+
+				if ( srcValue == null ) {
+					// Set default value if possible
+					if ( destMemberType.IsValueType && Nullable.GetUnderlyingType( destMemberType ) == null ) {
+						SetValue( destination, destMember, Activator.CreateInstance( destMemberType ), logger );
+					}
+					continue;
+				}
+
+				try {
+					var mappedValue = MapValue( srcValue, srcMemberType, destMemberType, serviceProvider );
+					SetValue( destination, destMember, mappedValue, logger );
+					mappedCount++;
+				} catch ( Exception ex ) {
+					errorCount++;
+					logger?.LogWarning( ex, "Error mapping '{SourceMember}' -> '{DestMember}'", srcMember.Name, destMember.Name );
+				}
+			}
+
+			logger?.LogTrace( "Automatic mapping completed for IMorphableFrom. Mapped: {MappedCount}, Skipped: {SkippedCount}, Errors: {ErrorCount}",
+				mappedCount, skippedCount, errorCount );
 		}
 
 		/// <summary>
