@@ -22,7 +22,7 @@ build-job:
     - branches
     - tags
   script:
-    - dotnet restore --verbosity minimal
+    - dotnet restore Myth.slnx --verbosity minimal
     - dotnet build Myth.slnx
       --configuration Release
       --no-restore
