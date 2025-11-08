@@ -27,6 +27,8 @@ namespace Myth.Morph {
 		// For IMorphableFrom pattern - reverse bindings where TDestination is the source type
 		private readonly List<Action<object, object, IServiceProvider>> _reverseMappings = [ ];
 
+		private readonly List<Func<object, object, IServiceProvider, Task>> _asyncReverseMappings = [ ];
+
 		/// <summary>
 		/// Configures a binding between a destination property and a value resolved from a service provider.
 		/// </summary>
@@ -214,6 +216,94 @@ namespace Myth.Morph {
 					}
 				} catch ( Exception ex ) {
 					logger?.LogError( ex, "Error applying reverse binding for property {PropertyName}", destinationPropertyName );
+					throw;
+				}
+			} );
+
+			return this;
+		}
+
+		/// <summary>
+		/// Configures a binding for the IMorphableFrom pattern with service provider access.
+		/// This method is used when the destination object needs to access services during mapping.
+		/// The syntax is: schema.Bind(() => destinationProperty, (src, sp) => sp.GetService<IService>().Method(src.Property))
+		/// </summary>
+		/// <typeparam name="TValue">The type of the value being mapped.</typeparam>
+		/// <param name="destinationPropertyGetter">An expression that references the destination property to be set.</param>
+		/// <param name="sourceExpression">A function that calculates a value from the source object with service provider access.</param>
+		/// <returns>The current <see cref="Schema{TDestination}"/> instance, allowing for method chaining.</returns>
+		public Schema<TDestination> Bind<TValue>( Expression<Func<TValue>> destinationPropertyGetter, Func<TDestination, IServiceProvider, TValue> sourceExpression ) {
+			// Extract the destination property name from the destinationPropertyGetter expression
+			string destinationPropertyName = null;
+			if ( destinationPropertyGetter.Body is MemberExpression memberExpr ) {
+				destinationPropertyName = memberExpr.Member.Name;
+			}
+
+			if ( destinationPropertyName == null ) {
+				throw new BindException( "Invalid destination property expression. Use () => PropertyName syntax." );
+			}
+
+			_reverseMappings.Add( ( source, destination, sp ) => {
+				var logger = GetLogger( sp );
+				try {
+					// Calculate the value from the source using the expression with service provider
+					var calculatedValue = sourceExpression( ( TDestination )source, sp );
+
+					// Set the value on the destination object
+					var destType = destination.GetType( );
+					var property = destType.GetProperty( destinationPropertyName );
+					if ( property != null && property.CanWrite ) {
+						property.SetValue( destination, calculatedValue );
+						logger?.LogTrace( "Set property {PropertyName} to value {Value} using service provider", destinationPropertyName, calculatedValue );
+					} else {
+						logger?.LogWarning( "Property {PropertyName} not found or not writable on type {DestinationType}", destinationPropertyName, destType.Name );
+					}
+				} catch ( Exception ex ) {
+					logger?.LogError( ex, "Error applying service provider binding for property {PropertyName}", destinationPropertyName );
+					throw;
+				}
+			} );
+
+			return this;
+		}
+
+		/// <summary>
+		/// Configures an asynchronous binding for the IMorphableFrom pattern using MythServiceProvider access.
+		/// This method is used when the destination object defines how it should be created from the source asynchronously.
+		/// The syntax is: schema.BindAsync(() => destinationProperty, async src => await CalculateValueAsync(src))
+		/// </summary>
+		/// <typeparam name="TValue">The type of the value being mapped.</typeparam>
+		/// <param name="destinationPropertyGetter">An expression that references the destination property to be set.</param>
+		/// <param name="sourceExpressionAsync">An async function that calculates a value from the source object using MythServiceProvider for services.</param>
+		/// <returns>The current <see cref="Schema{TDestination}"/> instance, allowing for method chaining.</returns>
+		public Schema<TDestination> BindAsync<TValue>( Expression<Func<TValue>> destinationPropertyGetter, Func<TDestination, Task<TValue>> sourceExpressionAsync ) {
+			// Extract the destination property name from the destinationPropertyGetter expression
+			string destinationPropertyName = null;
+			if ( destinationPropertyGetter.Body is MemberExpression memberExpr ) {
+				destinationPropertyName = memberExpr.Member.Name;
+			}
+
+			if ( destinationPropertyName == null ) {
+				throw new BindException( "Invalid destination property expression. Use () => PropertyName syntax." );
+			}
+
+			_asyncReverseMappings.Add( async ( source, destination, sp ) => {
+				var logger = GetLogger( sp );
+				try {
+					// Calculate the value from the source using the async expression (no service provider parameter)
+					var calculatedValue = await sourceExpressionAsync( ( TDestination )source );
+
+					// Set the value on the destination object
+					var destType = destination.GetType( );
+					var property = destType.GetProperty( destinationPropertyName );
+					if ( property != null && property.CanWrite ) {
+						property.SetValue( destination, calculatedValue );
+						logger?.LogTrace( "Set property {PropertyName} to async value {Value}", destinationPropertyName, calculatedValue );
+					} else {
+						logger?.LogWarning( "Property {PropertyName} not found or not writable on type {DestinationType}", destinationPropertyName, destType.Name );
+					}
+				} catch ( Exception ex ) {
+					logger?.LogError( ex, "Error applying async reverse binding for property {PropertyName}", destinationPropertyName );
 					throw;
 				}
 			} );
@@ -642,6 +732,41 @@ namespace Myth.Morph {
 			}
 
 			logger?.LogDebug( "Completed reverse mapping with {MappingCount} mappings", _reverseMappings.Count );
+		}
+
+		/// <summary>
+		/// Applies reverse mappings from source to destination asynchronously, including async reverse mappings.
+		/// This method is used for the IMorphableFrom pattern when async operations are needed.
+		/// </summary>
+		/// <param name="source">The source object to map from.</param>
+		/// <param name="destination">The destination object to map to.</param>
+		/// <param name="serviceProvider">The service provider for dependency injection.</param>
+		/// <returns>A task representing the asynchronous mapping operation.</returns>
+		public async Task ApplyFromSourceToDestinationAsync( object source, object destination, IServiceProvider serviceProvider ) {
+			var logger = GetLogger( serviceProvider );
+			logger?.LogDebug( "Applying reverse mappings asynchronously from {SourceType} to {DestinationType}", source.GetType( ).Name, destination.GetType( ).Name );
+
+			// Apply synchronous reverse mappings first
+			foreach ( var mapping in _reverseMappings ) {
+				try {
+					mapping( source, destination, serviceProvider );
+				} catch ( Exception ex ) {
+					logger?.LogError( ex, "Error applying synchronous reverse mapping" );
+					throw;
+				}
+			}
+
+			// Apply asynchronous reverse mappings
+			foreach ( var asyncMapping in _asyncReverseMappings ) {
+				try {
+					await asyncMapping( source, destination, serviceProvider );
+				} catch ( Exception ex ) {
+					logger?.LogError( ex, "Error applying asynchronous reverse mapping" );
+					throw;
+				}
+			}
+
+			logger?.LogDebug( "Completed async reverse mapping with {SyncMappingCount} sync and {AsyncMappingCount} async mappings", _reverseMappings.Count, _asyncReverseMappings.Count );
 		}
 
 		/// <summary>

@@ -477,7 +477,7 @@ namespace Myth.Morph {
 				// Create schema for source type
 				var sourceSchema = new Schema<TSource>( );
 
-				// Call the destination's MorphFrom method to configure the schema
+				// Call the destination's MorphFrom method to configure the schema (uses MythServiceProvider internally)
 				morphableFromDest.MorphFrom( sourceSchema );
 
 				// Apply the mapping from source to destination using the configured schema
@@ -485,6 +485,40 @@ namespace Myth.Morph {
 			}
 
 			_logger?.LogDebug( "IMorphableFrom mapping completed for {SourceType} -> {DestinationType}", sourceType.Name, destinationType.Name );
+			return dest;
+		}
+
+		/// <summary>
+		/// Maps from a source object to a destination type using the IMorphableFrom pattern asynchronously.
+		/// This method supports async bindings and service provider access during mapping configuration.
+		/// </summary>
+		/// <typeparam name="TSource">The type of the source object.</typeparam>
+		/// <typeparam name="TDestination">The type of the destination object.</typeparam>
+		/// <param name="source">The source object to map from.</param>
+		/// <param name="sourceType">The runtime type of the source.</param>
+		/// <param name="destinationType">The runtime type of the destination.</param>
+		/// <returns>A task that returns the mapped destination instance.</returns>
+		private async Task<TDestination> MapFromMorphableFromAsync<TSource, TDestination>( TSource source, Type sourceType, Type destinationType ) {
+			_logger?.LogDebug( "Starting async IMorphableFrom mapping from {SourceType} to {DestinationType}", sourceType.Name, destinationType.Name );
+
+			var concreteDestinationType = ResolveConcreteDestinationType( destinationType );
+
+			// Create destination instance
+			var dest = ( TDestination )CreateInstance( concreteDestinationType );
+
+			// Check if destination implements IMorphableFrom<TSource>
+			if ( dest is IMorphableFrom<TSource> morphableFromDest ) {
+				// Create schema for source type
+				var sourceSchema = new Schema<TSource>( );
+
+				// Call the destination's MorphFrom method to configure the schema (uses MythServiceProvider internally)
+				morphableFromDest.MorphFrom( sourceSchema );
+
+				// Apply the mapping from source to destination using the configured schema (including async mappings)
+				await sourceSchema.ApplyFromSourceToDestinationAsync( source, dest, _sp );
+			}
+
+			_logger?.LogDebug( "Async IMorphableFrom mapping completed for {SourceType} -> {DestinationType}", sourceType.Name, destinationType.Name );
 			return dest;
 		}
 

@@ -4,6 +4,7 @@ using Myth.Extensions;
 using Myth.Morph.Test.Models.Dtos;
 using Myth.Morph.Test.Models.Entities;
 using Myth.Morph.Test.Services;
+using Myth.ServiceProvider;
 
 namespace Myth.Morph.Test {
 
@@ -11,10 +12,14 @@ namespace Myth.Morph.Test {
 		private readonly IServiceProvider _serviceProvider;
 
 		public IMorphableFromTests( ) {
+			// Configure MythServiceProvider for tests with localization service
+			MythServiceProvider.Reset( );
 			var services = new ServiceCollection( );
 			services.AddMorph( );
 			services.AddScoped<ILocalizationService, LocalizationService>( );
-			_serviceProvider = services.BuildServiceProvider( );
+			var serviceProvider = services.BuildServiceProvider( );
+			MythServiceProvider.Initialize( serviceProvider );
+			_serviceProvider = serviceProvider;
 		}
 
 		[Fact]
@@ -271,6 +276,160 @@ namespace Myth.Morph.Test {
 			// Assert
 			dto.SummaryId.Should( ).Be( expectedId );
 			dto.SummaryDescription.Should( ).Be( summary.ToString( ) );
+		}
+
+		[Fact]
+		public void IMorphableFrom_Should_UseServiceProviderForLocalization( ) {
+			// Arrange
+			var user = new User {
+				Id = 1,
+				FirstName = "John",
+				LastName = "Doe",
+				Email = "john.doe@example.com",
+				BirthDate = new DateTime( 1990, 5, 15 ),
+				CountryCode = "US",
+				IsEmailVerified = true,
+				LastLoginAt = DateTime.Now.AddDays( -2 )
+			};
+
+			// Act
+			var dto = user.To<UserProfileDto>( _serviceProvider );
+
+			// Assert - Basic properties should work
+			dto.FullName.Should( ).Be( "John Doe" );
+			dto.EmailStatus.Should( ).Be( "Verified" );
+			dto.Country.Should( ).Be( "US" );
+			dto.ActivityStatus.Should( ).Be( "Active" );
+
+			// Service provider dependent properties should be populated
+			dto.LocalizedEmailStatus.Should( ).Be( "Email Verified ✓" );
+			dto.LocalizedActivityStatus.Should( ).Be( "User Active 🟢" );
+			dto.CountryFullName.Should( ).Be( "United States" );
+		}
+
+		[Fact]
+		public void IMorphableFrom_Should_WorkWithMythServiceProviderWithoutLocalizationService( ) {
+			// Arrange - Save current MythServiceProvider state
+			var originalServiceProvider = MythServiceProvider.Current;
+
+			try {
+				// Reset MythServiceProvider and configure without localization service
+				MythServiceProvider.Reset( );
+				var minimalServices = new ServiceCollection( );
+				minimalServices.AddMorph( );
+				// Note: Not adding ILocalizationService
+				MythServiceProvider.Initialize( minimalServices.BuildServiceProvider( ) );
+
+				var user = new User {
+					Id = 1,
+					FirstName = "Jane",
+					LastName = "Smith",
+					Email = "jane@example.com",
+					BirthDate = new DateTime( 1985, 3, 10 ),
+					CountryCode = "ca",
+					IsEmailVerified = false,
+					LastLoginAt = DateTime.Now.AddDays( -10 )
+				};
+
+				// Act - Transform using MythServiceProvider without localization service
+				var dto = user.To<UserProfileDto>( );
+
+				// Assert - Basic properties should still work
+				dto.FullName.Should( ).Be( "Jane Smith" );
+				dto.EmailStatus.Should( ).Be( "Pending" );
+				dto.Country.Should( ).Be( "CA" );
+				dto.ActivityStatus.Should( ).Be( "Inactive" );
+
+				// Service provider dependent properties should be empty (default values)
+				dto.LocalizedEmailStatus.Should( ).Be( "" );
+				dto.LocalizedActivityStatus.Should( ).Be( "" );
+				dto.CountryFullName.Should( ).Be( "" );
+			} finally {
+				// Restore original service provider
+				if ( originalServiceProvider != null ) {
+					MythServiceProvider.Initialize( originalServiceProvider );
+				} else {
+					MythServiceProvider.Reset( );
+				}
+			}
+		}
+
+		[Fact]
+		public void IMorphableFrom_Should_HandleMissingServiceWithGracefulDegradation( ) {
+			// Arrange - Testing graceful degradation when ILocalizationService is not available in MythServiceProvider
+			var originalServiceProvider = MythServiceProvider.Current;
+
+			try {
+				// Reset and configure MythServiceProvider without localization service
+				MythServiceProvider.Reset( );
+				var servicesWithoutLocalization = new ServiceCollection( );
+				servicesWithoutLocalization.AddMorph( );
+				// Note: Not adding ILocalizationService to test graceful degradation
+				MythServiceProvider.Initialize( servicesWithoutLocalization.BuildServiceProvider( ) );
+
+				var user = new User {
+					Id = 1,
+					FirstName = "Bob",
+					LastName = "Johnson",
+					Email = "bob@example.com",
+					BirthDate = new DateTime( 1980, 8, 20 ),
+					CountryCode = "uk",
+					IsEmailVerified = true,
+					LastLoginAt = DateTime.Now.AddDays( -1 )
+				};
+
+				// Act - Use MythServiceProvider directly (no service provider parameter needed)
+				var dto = user.To<UserProfileDto>( );
+
+				// Assert - Basic properties should work
+				dto.FullName.Should( ).Be( "Bob Johnson" );
+				dto.EmailStatus.Should( ).Be( "Verified" );
+				dto.Country.Should( ).Be( "UK" );
+				dto.ActivityStatus.Should( ).Be( "Active" );
+
+				// Service provider dependent properties should be empty when service is not available
+				dto.LocalizedEmailStatus.Should( ).Be( "" );
+				dto.LocalizedActivityStatus.Should( ).Be( "" );
+				dto.CountryFullName.Should( ).Be( "" );
+			} finally {
+				// Restore original service provider
+				if ( originalServiceProvider != null ) {
+					MythServiceProvider.Initialize( originalServiceProvider );
+				} else {
+					MythServiceProvider.Reset( );
+				}
+			}
+		}
+
+		[Fact]
+		public void IMorphableFrom_Should_SupportComplexServiceProviderScenarios( ) {
+			// Arrange
+			var user = new User {
+				Id = 42,
+				FirstName = "Alice",
+				LastName = "Wonder",
+				Email = "alice@wonderland.com",
+				BirthDate = new DateTime( 1992, 12, 25 ),
+				CountryCode = "BR",
+				IsEmailVerified = false,
+				LastLoginAt = DateTime.Now.AddDays( -15 )
+			};
+
+			// Act
+			var dto = user.To<UserProfileDto>( _serviceProvider );
+
+			// Assert
+			dto.FullName.Should( ).Be( "Alice Wonder" );
+			dto.EmailStatus.Should( ).Be( "Pending" );
+			dto.Age.Should( ).Be( DateTime.Now.Year - 1992 );
+			dto.Country.Should( ).Be( "BR" );
+			dto.ActivityStatus.Should( ).Be( "Inactive" );
+			dto.InitialsAvatar.Should( ).Be( "AW" );
+
+			// Service provider enhanced properties
+			dto.LocalizedEmailStatus.Should( ).Be( "Email Pending ⏳" );
+			dto.LocalizedActivityStatus.Should( ).Be( "User Inactive 🔴" );
+			dto.CountryFullName.Should( ).Be( "Brazil" );
 		}
 	}
 }
