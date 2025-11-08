@@ -251,13 +251,7 @@ public static class SwaggerExtensions {
 	/// <param name="services">The service provider for accessing configuration.</param>
 	private static void ConfigureAdvancedUI( SwaggerUIOptions options, IServiceProvider services ) {
 		try {
-			// Inject custom CSS
-			options.InjectStylesheet( "/swagger-ui/swagger-advanced.css" );
-
-			// Inject custom JavaScript
-			options.InjectJavascript( "/swagger-ui/swagger-advanced.js" );
-
-			// Use custom HTML template
+			// Use custom HTML template (CSS and JS are included in the template)
 			options.IndexStream = ( ) => GetCustomIndexStream( services );
 
 			// Configure UI settings
