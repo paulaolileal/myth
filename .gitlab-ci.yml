@@ -4,7 +4,7 @@ stages:
   - publish
   
 default:
-  image: mcr.microsoft.com/dotnet/sdk:8.0
+  image: mcr.microsoft.com/dotnet/sdk:10.0
 
 variables:
   NUGET_API_KEY: $NUGET_API_KEY
@@ -22,8 +22,8 @@ build-job:
     - branches
     - tags
   script:
-    - dotnet restore .\Myth.slnx --verbosity minimal
-    - dotnet build .\Myth.slnx
+    - dotnet restore --verbosity minimal
+    - dotnet build
       --configuration Release
       --no-restore
       --verbosity minimal
@@ -39,7 +39,7 @@ test-job:
     - branches
     - tags
   script:
-    - dotnet test .\Myth.slnx
+    - dotnet test
       --configuration Release
       --no-build
       --no-restore
