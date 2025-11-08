@@ -22,8 +22,8 @@ build-job:
     - branches
     - tags
   script:
-    - dotnet restore Myth.slnx --verbosity minimal
-    - dotnet build Myth.slnx
+    - dotnet restore .\Myth.slnx --verbosity minimal
+    - dotnet build .\Myth.slnx
       --configuration Release
       --no-restore
       --verbosity minimal
@@ -39,7 +39,7 @@ test-job:
     - branches
     - tags
   script:
-    - dotnet test Myth.slnx
+    - dotnet test .\Myth.slnx
       --configuration Release
       --no-build
       --no-restore
