@@ -4,7 +4,7 @@ using Myth.Morph.Test.Models.Dtos;
 
 namespace Myth.Morph.Test.Models {
 
-	public class ParentEntity : IMorphable<ParentDto> {
+	public class ParentEntity : IMorphableTo<ParentDto> {
 		public int Id { get; set; }
 		public ChildEntity? Child { get; set; }
 

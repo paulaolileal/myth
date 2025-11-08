@@ -12,7 +12,7 @@ namespace Myth.Morph.Test {
 	/// Public test entity for inheritance fallback tests.
 	/// Must be public for dynamic type creation to work.
 	/// </summary>
-	public class PublicTestEntity : IMorphable<PublicTestDto> {
+	public class PublicTestEntity : IMorphableTo<PublicTestDto> {
 		public int Id { get; set; }
 		public string Name { get; set; } = string.Empty;
 		public bool IsActive { get; set; }
@@ -40,7 +40,7 @@ namespace Myth.Morph.Test {
 	/// <summary>
 	/// Public base entity for inheritance tests.
 	/// </summary>
-	public class PublicBaseEntity : IMorphable<PublicBaseDto> {
+	public class PublicBaseEntity : IMorphableTo<PublicBaseDto> {
 		public string BaseProperty { get; set; } = string.Empty;
 
 		public void MorphTo( Schema<PublicBaseDto> schema ) {
@@ -51,7 +51,7 @@ namespace Myth.Morph.Test {
 	/// <summary>
 	/// Public derived entity for inheritance tests.
 	/// </summary>
-	public class PublicDerivedEntity : PublicBaseEntity, IMorphable<PublicDerivedDto> {
+	public class PublicDerivedEntity : PublicBaseEntity, IMorphableTo<PublicDerivedDto> {
 		public string DerivedProperty { get; set; } = string.Empty;
 
 		public void MorphTo( Schema<PublicDerivedDto> schema ) {
@@ -75,7 +75,7 @@ namespace Myth.Morph.Test {
 	/// <summary>
 	/// Base entity with mapping that proxy inherits from.
 	/// </summary>
-	public class BaseTestEntity : IMorphable<PublicTestDto> {
+	public class BaseTestEntity : IMorphableTo<PublicTestDto> {
 		public int Id { get; set; }
 		public string Name { get; set; } = string.Empty;
 		public bool IsActive { get; set; }

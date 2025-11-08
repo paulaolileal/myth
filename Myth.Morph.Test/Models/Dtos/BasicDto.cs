@@ -2,7 +2,7 @@
 
 namespace Myth.Morph.Test.Models.Dtos {
 
-	internal class BasicDto : IMorphable<BasicEntity>, IMorphable<ViewModel> {
+	internal class BasicDto : IMorphableTo<BasicEntity>, IMorphableTo<ViewModel> {
 		public int DtoId { get; set; }
 		public string Name { get; set; }
 		public bool Enabled { get; set; }

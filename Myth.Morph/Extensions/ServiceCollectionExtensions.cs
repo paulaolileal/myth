@@ -44,8 +44,8 @@ namespace Myth.Extensions {
 					registry.RegisterGenericMapping( iface, concrete );
 				}
 
-				// Register profiles based on IMorphable<TDestination> interface
-				RegisterInstanceBasedMapToProfiles( registry, assemblies, logger );
+				// Register profiles based on IMorphableTo<TDestination> and IMorphableFrom<TSource> interfaces
+				RegisterInstanceBasedMorphProfiles( registry, assemblies, logger );
 
 				// Register automatic mapping for equal generic types
 				registry.RegisterGenericEqualTypesMapping( );
@@ -70,7 +70,7 @@ namespace Myth.Extensions {
 		/// <param name="registry">The <see cref="SchemaRegistry"/> where the profiles will be registered.</param>
 		/// <param name="assemblies">A list of assemblies to scan for types containing instance-based profiles.</param>
 		/// <param name="logger">The logger instance for recording registration activities.</param>
-		private static void RegisterInstanceBasedMapToProfiles( SchemaRegistry registry, List<Assembly> assemblies, ILogger? logger ) {
+		private static void RegisterInstanceBasedMorphProfiles( SchemaRegistry registry, List<Assembly> assemblies, ILogger? logger ) {
 			logger?.LogDebug( "Starting instance-based profile registration across {AssemblyCount} assemblies", assemblies.Count );
 
 			var allTypes = assemblies
@@ -102,7 +102,7 @@ namespace Myth.Extensions {
 
 			foreach ( var type in typeArray ) {
 				try {
-					RegisterInstanceBasedProfiles( type, registry, logger );
+					RegisterMorphProfiles( type, registry, logger );
 					successCount++;
 				} catch ( Exception ex ) {
 					errorCount++;
@@ -114,46 +114,53 @@ namespace Myth.Extensions {
 		}
 
 		/// <summary>
-		/// Registers instance-based mapping profiles for a given source type.
+		/// Registers instance-based mapping profiles for a given type.
 		/// </summary>
 		/// <remarks>
-		/// This method identifies interfaces implemented by <paramref name="sourceType"/> that match the
-		/// generic definition of <see cref="IMorphable{T}"/>. For each matching interface, it registers a mapping between
-		/// <paramref name="sourceType"/> and the destination type specified by the generic argument of <see
-		/// cref="IMorphable{T}"/>.
+		/// This method identifies interfaces implemented by the type that match the
+		/// generic definition of <see cref="IMorphableTo{T}"/> or <see cref="IMorphableFrom{T}"/>.
+		/// For each matching interface, it registers appropriate mappings in the registry.
 		/// </remarks>
-		/// <param name="sourceType">The type to analyze for instance-based mapping profiles.</param>
+		/// <param name="type">The type to analyze for instance-based mapping profiles.</param>
 		/// <param name="registry">The registry where the mappings will be registered.</param>
 		/// <param name="logger">The logger instance for recording registration activities.</param>
-		private static void RegisterInstanceBasedProfiles( Type sourceType, SchemaRegistry registry, ILogger? logger ) {
+		private static void RegisterMorphProfiles( Type type, SchemaRegistry registry, ILogger? logger ) {
 			var interfacesFound = 0;
 			var mappingsRegistered = 0;
 
-			foreach ( var iface in sourceType.GetInterfaces( ) ) {
+			foreach ( var iface in type.GetInterfaces( ) ) {
 				if ( !iface.IsGenericType )
 					continue;
 
 				var genericDef = iface.GetGenericTypeDefinition( );
-				if ( genericDef != typeof( IMorphable<> ) )
-					continue;
 
-				interfacesFound++;
-				var destinationType = iface.GenericTypeArguments[ 0 ];
+				// Check for IMorphableTo<TDestination> - source type defines how to transform to destination
+				if ( genericDef == typeof( IMorphableTo<> ) ) {
+					interfacesFound++;
+					var destinationType = iface.GenericTypeArguments[ 0 ];
 
-				try {
-					// Register a special mapping for types that implement IMorphable<TDestination>
-					registry.RegisterInstanceBasedMapping( sourceType, destinationType );
-					mappingsRegistered++;
+					try {
+						// Register a mapping for types that implement IMorphableTo<TDestination>
+						registry.RegisterInstanceBasedMapping( type, destinationType );
+						mappingsRegistered++;
 
-					logger?.LogDebug( "Instance-based profile registered: {SourceType} -> {DestinationType}", sourceType.Name, destinationType.Name );
-				} catch ( Exception ex ) {
-					logger?.LogError( ex, "Error registering instance-based profile for {SourceType} -> {DestinationType}", sourceType.Name, destinationType.Name );
+						logger?.LogDebug( "IMorphableTo profile registered: {SourceType} -> {DestinationType}", type.Name, destinationType.Name );
+					} catch ( Exception ex ) {
+						logger?.LogError( ex, "Error registering IMorphableTo profile for {SourceType} -> {DestinationType}", type.Name, destinationType.Name );
+					}
+				}
+				// IMorphableFrom<TSource> mappings are handled dynamically when needed
+				// No need to register them upfront as they're discovered at runtime
+				else if ( genericDef == typeof( IMorphableFrom<> ) ) {
+					interfacesFound++;
+					var sourceType = iface.GenericTypeArguments[ 0 ];
+					logger?.LogTrace( "Found IMorphableFrom interface: {DestinationType} can be created from {SourceType}", type.Name, sourceType.Name );
 				}
 			}
 
 			if ( interfacesFound > 0 ) {
-				logger?.LogTrace( "Processed {InterfaceCount} IMorphable interfaces for type {TypeName}, registered {MappingCount} mappings",
-					interfacesFound, sourceType.Name, mappingsRegistered );
+				logger?.LogTrace( "Processed {InterfaceCount} morph interfaces for type {TypeName}, registered {MappingCount} mappings",
+					interfacesFound, type.Name, mappingsRegistered );
 			}
 		}
 	}

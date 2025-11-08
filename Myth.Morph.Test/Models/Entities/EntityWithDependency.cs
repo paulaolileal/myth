@@ -5,7 +5,7 @@ using Myth.Morph.Test.Service;
 
 namespace Myth.Morph.Test.Models {
 
-	internal class EntityWithDependency : IMorphable<DtoWithDependency> {
+	internal class EntityWithDependency : IMorphableTo<DtoWithDependency> {
 		public Guid Id { get; set; }
 		public string Text { get; set; }
 

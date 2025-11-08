@@ -181,7 +181,7 @@ namespace Myth.Morph {
 		/// <param name="sp">The <see cref="IServiceProvider"/> used to resolve dependencies during the mapping process. Cannot be <see
 		/// langword="null"/>.</param>
 		/// <returns>A task representing the asynchronous mapping operation.</returns>
-		internal async Task ApplyFromInstanceAsync<TSource>( TSource src, TDestination dest, IServiceProvider sp ) where TSource : IMorphable<TDestination> {
+		internal async Task ApplyFromInstanceAsync<TSource>( TSource src, TDestination dest, IServiceProvider sp ) where TSource : IMorphableTo<TDestination> {
 			var logger = GetLogger( sp );
 			logger?.LogDebug( "Starting mapping from {SourceType} to {DestinationType}", typeof( TSource ).Name, typeof( TDestination ).Name );
 
@@ -212,6 +212,49 @@ namespace Myth.Morph {
 			AutoMapFromInstance( src, dest, sp );
 
 			logger?.LogDebug( "Completed mapping from {SourceType} to {DestinationType}", typeof( TSource ).Name, typeof( TDestination ).Name );
+		}
+
+		/// <summary>
+		/// Applies mappings to create a destination instance from a source, where the destination defines how to be created from the source.
+		/// This method is used for IMorphableFrom pattern where the destination knows how to transform itself from the source.
+		/// </summary>
+		/// <typeparam name="TDestination">The destination type that implements IMorphableFrom.</typeparam>
+		/// <param name="src">The source instance from which to create the destination. Cannot be <see langword="null"/>.</param>
+		/// <param name="dest">The destination instance to which mappings are applied. Cannot be <see langword="null"/>.</param>
+		/// <param name="sp">The <see cref="IServiceProvider"/> used to resolve dependencies during the mapping process. Cannot be <see
+		/// langword="null"/>.</param>
+		/// <returns>A task representing the asynchronous mapping operation.</returns>
+		internal async Task ApplyToInstanceAsync<TSource>( TSource src, TDestination dest, IServiceProvider sp ) {
+			var logger = GetLogger( sp );
+			logger?.LogDebug( "Starting mapping from {SourceType} to {DestinationType} using IMorphableFrom", typeof( TSource ).Name, typeof( TDestination ).Name );
+
+			// Apply synchronized mappings
+			logger?.LogTrace( "Applying {Count} synchronous mappings", _mappings.Count );
+			foreach ( var map in _mappings ) {
+				try {
+					map( dest, sp );
+				} catch ( Exception ex ) {
+					logger?.LogError( ex, "Error applying synchronous mapping" );
+					throw;
+				}
+			}
+
+			// Apply asynchronous mappings
+			logger?.LogTrace( "Applying {Count} asynchronous mappings", _asyncMappings.Count );
+			foreach ( var asyncMap in _asyncMappings ) {
+				try {
+					await asyncMap( dest, sp );
+				} catch ( Exception ex ) {
+					logger?.LogError( ex, "Error applying asynchronous mapping" );
+					throw;
+				}
+			}
+
+			// Apply auto-mapping for unmapped properties using source-to-dest mapping
+			logger?.LogTrace( "Starting automatic property mapping from source" );
+			AutoMapToInstance( src, dest, sp );
+
+			logger?.LogDebug( "Completed mapping from {SourceType} to {DestinationType} using IMorphableFrom", typeof( TSource ).Name, typeof( TDestination ).Name );
 		}
 
 		/// <summary>
@@ -297,6 +340,86 @@ namespace Myth.Morph {
 			}
 
 			logger?.LogTrace( "Automatic mapping completed. Mapped: {MappedCount}, Skipped: {SkippedCount}, Errors: {ErrorCount}",
+				mappedCount, skippedCount, errorCount );
+		}
+
+		/// <summary>
+		/// Automatically maps properties from the source instance to the destination instance for IMorphableFrom pattern.
+		/// </summary>
+		/// <typeparam name="TDestination">The type of the destination instance.</typeparam>
+		/// <param name="src">The source instance to map from.</param>
+		/// <param name="dest">The destination instance to map to.</param>
+		/// <param name="sp">The service provider for dependency resolution.</param>
+		private void AutoMapToInstance<TSource>( TSource src, TDestination dest, IServiceProvider sp ) {
+			var logger = GetLogger( sp );
+			var srcType = src?.GetType( ) ?? typeof( TSource );
+			var destType = dest?.GetType( ) ?? typeof( TDestination );
+
+			logger?.LogTrace( "Starting automatic mapping from {SourceType} to {DestinationType} using IMorphableFrom pattern", srcType.Name, destType.Name );
+
+			var srcMembers = srcType.GetMembers( BindingFlags.Public | BindingFlags.Instance );
+			var destMembers = destType.GetMembers( BindingFlags.Public | BindingFlags.Instance );
+
+			var mappedCount = 0;
+			var skippedCount = 0;
+			var errorCount = 0;
+
+			foreach ( var destMember in destMembers ) {
+				// Skip manually mapped or ignored properties
+				if ( _manuallyMappedDestProps.Contains( destMember.Name ) || _ignoredProperties.Contains( destMember.Name ) ) {
+					skippedCount++;
+					continue;
+				}
+
+				var srcMember = srcMembers.FirstOrDefault( m => m.Name == destMember.Name );
+				if ( srcMember == null ) {
+					continue;
+				}
+
+				var srcMemberType = GetMemberType( srcMember );
+				var destMemberType = GetMemberType( destMember );
+
+				if ( srcMemberType == null || destMemberType == null ) {
+					continue;
+				}
+
+				// Check if destination member can be written
+				if ( !CanWriteMember( destMember ) ) {
+					continue;
+				}
+
+				object? srcValue = null;
+				try {
+					srcValue = srcMember switch {
+						PropertyInfo p => p.GetValue( src ),
+						FieldInfo f => f.GetValue( src ),
+						_ => null
+					};
+				} catch ( Exception ex ) {
+					errorCount++;
+					logger?.LogWarning( ex, "Error reading value from source member '{MemberName}'", srcMember.Name );
+					continue;
+				}
+
+				if ( srcValue == null ) {
+					// Set default value if possible
+					if ( destMemberType.IsValueType && Nullable.GetUnderlyingType( destMemberType ) == null ) {
+						SetValue( dest, destMember, Activator.CreateInstance( destMemberType ), logger );
+					}
+					continue;
+				}
+
+				try {
+					var mappedValue = MapValue( srcValue, srcMemberType, destMemberType, sp );
+					SetValue( dest, destMember, mappedValue, logger );
+					mappedCount++;
+				} catch ( Exception ex ) {
+					errorCount++;
+					logger?.LogWarning( ex, "Error mapping '{SourceMember}' -> '{DestMember}'", srcMember.Name, destMember.Name );
+				}
+			}
+
+			logger?.LogTrace( "Automatic mapping completed for IMorphableFrom. Mapped: {MappedCount}, Skipped: {SkippedCount}, Errors: {ErrorCount}",
 				mappedCount, skippedCount, errorCount );
 		}
 

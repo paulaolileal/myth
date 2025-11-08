@@ -3,7 +3,7 @@ using Myth.Morph.Test.Models.Dtos;
 
 namespace Myth.Morph.Test.Models {
 
-	internal class BasicEntity : IMorphable<BasicDto> {
+	internal class BasicEntity : IMorphableTo<BasicDto> {
 		public int EntityId { get; set; }
 		public string Name { get; set; }
 		public bool Enabled { get; set; }
