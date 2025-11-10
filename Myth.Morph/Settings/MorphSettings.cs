@@ -23,13 +23,13 @@ namespace Myth.Settings {
 
 		/// <summary>
 		/// Gets or sets whether inheritance fallback is enabled for type mapping resolution.
-		/// When enabled, if no direct mapping is found for a type (such as EF proxies),
+		/// When enabled, if no direct mapping is found for a derived type,
 		/// the system will search through the inheritance hierarchy for compatible mappings.
 		/// </summary>
 		/// <remarks>
-		/// This feature is particularly useful for Entity Framework proxy types like Castle.Proxies.User_proxy,
-		/// which inherit from the original entity type but don't have direct mappings registered.
-		/// Default value is true to handle proxy scenarios automatically.
+		/// This feature is useful for scenarios where derived types inherit from mapped base types.
+		/// The system will traverse the inheritance hierarchy to find a compatible mapping.
+		/// Default value is true to handle inheritance scenarios automatically.
 		/// </remarks>
 		public bool EnableInheritanceFallback { get; set; } = true;
 
@@ -39,7 +39,7 @@ namespace Myth.Settings {
 		/// </summary>
 		/// <remarks>
 		/// A value of 0 disables inheritance search. A value of -1 allows unlimited depth.
-		/// Default value is 5, which covers most proxy and inheritance scenarios.
+		/// Default value is 5, which covers most common inheritance scenarios.
 		/// </remarks>
 		public int MaxInheritanceDepth { get; set; } = 5;
 
@@ -52,6 +52,20 @@ namespace Myth.Settings {
 		/// Default value is true to maximize compatibility.
 		/// </remarks>
 		public bool IncludeInterfacesInFallback { get; set; } = true;
+
+		/// <summary>
+		/// Gets or sets whether to always resolve derived types to their root base type for mapping.
+		/// When enabled, any type with a base class will be resolved to its root base type.
+		/// This enables mapping of derived types using their base type mappings.
+		/// </summary>
+		/// <remarks>
+		/// When false (default), types are used as-is for direct mapping.
+		/// When true, ALL types in an inheritance hierarchy are resolved to their root base type.
+		/// This is useful for scenarios where you have multiple derived types that should use the same base mapping.
+		/// Example: SpecialUser : User : BaseEntity - will resolve to BaseEntity for mapping.
+		/// Default value is false to allow specific mappings for derived types.
+		/// </remarks>
+		public bool ResolveToBaseType { get; set; } = false;
 
 		/// <summary>
 		/// Gets or sets the list of generic type mappings between interfaces and their concrete implementations.
@@ -245,17 +259,29 @@ namespace Myth.Settings {
 		/// <param name="enabled">Whether to enable inheritance fallback.</param>
 		/// <param name="maxDepth">Maximum depth to search in inheritance hierarchy (-1 for unlimited).</param>
 		/// <param name="includeInterfaces">Whether to include interfaces in fallback search.</param>
+		/// <param name="resolveToBaseType">Whether to always resolve derived types to their root base type.</param>
 		/// <returns>The current MorphSettings instance for method chaining.</returns>
-		public MorphSettings WithInheritanceFallback( bool enabled = true, int maxDepth = 5, bool includeInterfaces = true ) {
+		public MorphSettings WithInheritanceFallback( bool enabled = true, int maxDepth = 5, bool includeInterfaces = true, bool resolveToBaseType = false ) {
 			EnableInheritanceFallback = enabled;
 			MaxInheritanceDepth = maxDepth;
 			IncludeInterfacesInFallback = includeInterfaces;
+			ResolveToBaseType = resolveToBaseType;
+			return this;
+		}
+
+		/// <summary>
+		/// Enables resolving derived types to their root base type for all mappings.
+		/// This will resolve ALL inheritance hierarchies to their root base type.
+		/// </summary>
+		/// <returns>The current MorphSettings instance for method chaining.</returns>
+		public MorphSettings WithResolveToBaseType( ) {
+			ResolveToBaseType = true;
 			return this;
 		}
 
 		/// <summary>
 		/// Disables inheritance fallback for type mapping resolution.
-		/// Use this if you want strict type matching without proxy support.
+		/// Use this if you want strict type matching without inheritance resolution.
 		/// </summary>
 		/// <returns>The current MorphSettings instance for method chaining.</returns>
 		public MorphSettings DisableInheritanceFallback( ) {

@@ -22,6 +22,9 @@ Perfeito para aplicações CQRS, Arquitetura Limpa e DDD onde transformações e
 
 ## Funcionalidades
 
+- **Padrões de Mapeamento Bidirecionais**: Suporte para padrões `IMorphableTo<T>` e `IMorphableFrom<T>`
+- **Suporte a Proxies do Entity Framework**: Detecção e tratamento automático de proxies lazy-loading do EF Core
+- **Resolução de Hierarquia de Herança**: Travessia configurável de profundidade para hierarquias de tipos complexas
 - **Configuração de Esquema Declarativa**: Defina transformações usando API fluente com segurança em tempo de compilação
 - **Mapeamento Automático de Propriedades**: Mapeamento baseado em convenção para nomes de propriedades correspondentes
 - **Binding Manual**: Quatro estratégias de binding para máxima flexibilidade
@@ -37,6 +40,67 @@ Perfeito para aplicações CQRS, Arquitetura Limpa e DDD onde transformações e
 ```bash
 dotnet add package Myth.Morph
 ```
+
+## Suporte a Proxies do Entity Framework
+
+Myth.Morph fornece detecção e tratamento automático de proxies lazy-loading do Entity Framework Core, garantindo transformações confiáveis mesmo ao trabalhar com entidades proxied.
+
+### Cenário do Problema
+
+Ao usar Entity Framework Core com lazy loading, o EF cria proxies dinâmicos das suas classes de entidade (usando Castle.Proxies). Essas classes proxy herdam de suas entidades mas têm types diferentes em tempo de execução, o que pode quebrar mapeamentos baseados em tipos.
+
+```csharp
+// Você define isso
+public class User {
+    public string Name { get; set; }
+    public virtual Profile Profile { get; set; } // Lazy loading
+}
+
+// EF retorna isso em runtime
+// Castle.Proxies.UserProxy : User
+```
+
+### Como Myth.Morph Resolve
+
+O Morph detecta automaticamente proxies do EF e resolve para o tipo base da entidade:
+
+```csharp
+public class UserDto : IMorphableFrom<User> {
+    public string Name { get; set; }
+    public string ProfileName { get; set; }
+
+    public void MorphFrom( Schema<User> schema ) {
+        schema
+            .Bind(() => Name, u => u.Name)
+            .Bind(() => ProfileName, u => u.Profile.Name);
+    }
+}
+
+// Funciona perfeitamente com entities proxied
+var user = await dbContext.Users.Include(u => u.Profile).FirstAsync();
+var dto = user.To<UserDto>(); // Morph detecta proxy e resolve corretamente
+```
+
+### Configuração de Travessia de Hierarquia
+
+Para hierarquias de tipos complexas, você pode configurar o comportamento de fallback de herança:
+
+```csharp
+services.AddMorph(settings => {
+    settings.ConfigureTypeResolver(options => {
+        options.InheritanceDepth = 5;              // Máximo 5 níveis na cadeia de herança
+        options.IncludeInterfaces = true;          // Incluir interfaces na resolução de hierarquia
+        options.EnableInheritanceFallback = true;  // Tentar tipos pai se exato não encontrado
+    });
+});
+```
+
+### Otimização de Performance
+
+O Morph usa otimização de caminho rápido para entidades não-proxy e cai para tratamento baseado em reflexão apenas quando proxies são detectados:
+
+- **Caminho Rápido**: Conversão de tipo direta para entidades regulares (quase zero overhead)
+- **Caminho de Proxy**: Resolução de tipo baseada em reflexão para entidades proxied (mínimo overhead)
 
 ## Início Rápido
 
@@ -62,10 +126,12 @@ var provider = services.BuildWithGlobalProvider();
 
 ### 2. Definir Transformações
 
-Implemente `IMorphable<TDestination>` no seu tipo de origem:
+O Myth.Morph suporta dois padrões de transformação:
+
+**Padrão IMorphableTo** - A origem define como transformar para destino (comando → entidade):
 
 ```csharp
-public class CreateUserDto : IMorphable<User> {
+public class CreateUserDto : IMorphableTo<User> {
     public string Name { get; set; }
     public string Email { get; set; }
     public DateTime BirthDate { get; set; }
@@ -78,6 +144,25 @@ public class CreateUserDto : IMorphable<User> {
     }
 }
 ```
+
+**Padrão IMorphableFrom** - O destino define como criar a partir da origem (entidade → DTO):
+
+```csharp
+public class UserDto : IMorphableFrom<User> {
+    public string Name { get; set; }
+    public string Email { get; set; }
+    public int Age { get; set; }
+
+    public void MorphFrom( Schema<User> schema ) {
+        schema
+            .Bind(() => Name, u => u.FullName)
+            .Bind(() => Email, u => u.EmailAddress)
+            .Bind(() => Age, u => DateTime.Today.Year - u.BirthDate.Year);
+    }
+}
+```
+
+> **Dica**: Use `IMorphableTo` para comandos e inputs (criando entidades), e `IMorphableFrom` para DTOs e respostas (projetando a partir de entidades).
 
 ### 3. Transformar Objetos
 
@@ -93,68 +178,158 @@ var user = dto.To<User>();
 
 ## Estratégias de Binding
 
-Myth.Morph fornece quatro estratégias de binding para lidar com diferentes cenários de transformação.
+Myth.Morph fornece quatro estratégias de binding para lidar com diferentes cenários de transformação. Os exemplos abaixo mostram ambos os padrões IMorphableTo e IMorphableFrom.
 
 ### 1. Binding Direto de Valor
 
-Mapear uma propriedade para um valor computado:
+**IMorphableTo** - Mapear propriedade de destino para valor computado:
 
 ```csharp
-public void MorphTo( Schema<User> schema ) {
-    schema.Bind(u => u.FullName, () => $"{FirstName} {LastName}");
+public class CreateUserDto : IMorphableTo<User> {
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+
+    public void MorphTo( Schema<User> schema ) {
+        schema.Bind(u => u.FullName, () => $"{FirstName} {LastName}");
+    }
+}
+```
+
+**IMorphableFrom** - Mapear propriedade do DTO a partir de valor computado:
+
+```csharp
+public class UserDto : IMorphableFrom<User> {
+    public string DisplayName { get; set; }
+
+    public void MorphFrom( Schema<User> schema ) {
+        schema.Bind(() => DisplayName, u => $"{u.FirstName} {u.LastName}");
+    }
 }
 ```
 
 ### 2. Binding com Service Provider
 
-Acessar serviços do container DI para transformações complexas:
+**IMorphableTo** - Acessar serviços para criar entidades:
 
 ```csharp
-public void MorphTo( Schema<Order> schema ) {
-    schema.Bind(o => o.Customer, sp => {
-        var customerService = sp.GetRequiredService<ICustomerService>();
-        return customerService.GetCustomerById(CustomerId);
-    });
+public class CreateOrderDto : IMorphableTo<Order> {
+    public string CustomerId { get; set; }
+
+    public void MorphTo( Schema<Order> schema ) {
+        schema.Bind(o => o.Customer, sp => {
+            var customerService = sp.GetRequiredService<ICustomerService>();
+            return customerService.GetCustomerById(CustomerId);
+        });
+    }
+}
+```
+
+**IMorphableFrom** - Acessar serviços para projetar DTOs:
+
+```csharp
+public class OrderDto : IMorphableFrom<Order> {
+    public string CustomerName { get; set; }
+
+    public void MorphFrom( Schema<Order> schema ) {
+        schema.Bind(() => CustomerName, (o, sp) => {
+            var customerService = sp.GetRequiredService<ICustomerService>();
+            return customerService.GetCustomerName(o.CustomerId);
+        });
+    }
 }
 ```
 
 ### 3. Binding Assíncrono Direto
 
-Para operações assíncronas sem service provider:
+**IMorphableTo** - Operações assíncronas para criar entidades:
 
 ```csharp
-public void MorphTo( Schema<User> schema ) {
-    schema.BindAsync(u => u.Avatar, async () => {
-        await Task.Delay(100); // Simular trabalho assíncrono
-        return "default-avatar.png";
-    });
+public class CreateUserDto : IMorphableTo<User> {
+    public void MorphTo( Schema<User> schema ) {
+        schema.BindAsync(u => u.Avatar, async () => {
+            await Task.Delay(100); // Simular trabalho assíncrono
+            return "default-avatar.png";
+        });
+    }
+}
+```
+
+**IMorphableFrom** - Operações assíncronas para projetar DTOs:
+
+```csharp
+public class UserDto : IMorphableFrom<User> {
+    public string AvatarUrl { get; set; }
+
+    public void MorphFrom( Schema<User> schema ) {
+        schema.BindAsync(() => AvatarUrl, async u => {
+            await Task.Delay(100); // Simular carregamento de imagem
+            return $"/avatars/{u.AvatarId}.png";
+        });
+    }
 }
 ```
 
 ### 4. Binding Assíncrono com Service Provider
 
-Combinar operações assíncronas com DI:
+**IMorphableTo** - Combinar operações assíncronas com DI para criar entidades:
 
 ```csharp
-public void MorphTo( Schema<Product> schema ) {
-    schema.BindAsync(p => p.Reviews, async sp => {
-        var reviewService = sp.GetRequiredService<IReviewService>();
-        return await reviewService.GetReviewsAsync(ProductId);
-    });
+public class CreateProductDto : IMorphableTo<Product> {
+    public int ProductId { get; set; }
+
+    public void MorphTo( Schema<Product> schema ) {
+        schema.BindAsync(p => p.Reviews, async sp => {
+            var reviewService = sp.GetRequiredService<IReviewService>();
+            return await reviewService.GetReviewsAsync(ProductId);
+        });
+    }
+}
+```
+
+**IMorphableFrom** - Combinar operações assíncronas com DI para projetar DTOs:
+
+```csharp
+public class ProductDto : IMorphableFrom<Product> {
+    public List<ReviewDto> Reviews { get; set; }
+
+    public void MorphFrom( Schema<Product> schema ) {
+        schema.BindAsync(() => Reviews, async (p, sp) => {
+            var reviewService = sp.GetRequiredService<IReviewService>();
+            var reviews = await reviewService.GetReviewsAsync(p.Id);
+            return reviews.Select(r => new ReviewDto { Text = r.Text }).ToList();
+        });
+    }
 }
 ```
 
 ## Mapeamento Automático de Propriedades
 
-Propriedades com nomes correspondentes e tipos compatíveis são mapeadas automaticamente:
+Propriedades com nomes correspondentes e tipos compatíveis são mapeadas automaticamente em ambos os padrões:
+
+**IMorphableTo** - Criar entidades a partir de DTOs:
 
 ```csharp
-public class UserDto : IMorphable<User> {
+public class CreateUserDto : IMorphableTo<User> {
     public string Name { get; set; }      // Auto-mapeia para User.Name
     public string Email { get; set; }     // Auto-mapeia para User.Email
     public int Age { get; set; }          // Auto-mapeia para User.Age
 
     public void MorphTo( Schema<User> schema ) {
+        // Apenas defina mapeamentos customizados - mapeamento automático cuida do resto
+        schema.Ignore(u => u.InternalId);
+    }
+}
+```
+
+**IMorphableFrom** - Projetar DTOs a partir de entidades:
+
+```csharp
+public class UserDto : IMorphableFrom<User> {
+    public string Name { get; set; }      // Auto-mapeia de User.Name
+    public string Email { get; set; }     // Auto-mapeia de User.Email
+    public int Age { get; set; }          // Auto-mapeia de User.Age
+
+    public void MorphFrom( Schema<User> schema ) {
         // Apenas defina mapeamentos customizados - mapeamento automático cuida do resto
         schema.Ignore(u => u.InternalId);
     }
@@ -204,12 +379,14 @@ IEnumerable<User> users = dtoList.To<UserDto, User>();
 
 ## Mapeamento de Objetos Aninhados
 
-Myth.Morph lida automaticamente com transformações aninhadas:
+Myth.Morph lida automaticamente com transformações aninhadas em ambos os padrões:
+
+**IMorphableTo** - Criar entidades com objetos aninhados:
 
 ```csharp
-public class OrderDto : IMorphable<Order> {
+public class CreateOrderDto : IMorphableTo<Order> {
     public int OrderId { get; set; }
-    public List<OrderItemDto> Items { get; set; }
+    public List<CreateOrderItemDto> Items { get; set; }
 
     public void MorphTo( Schema<Order> schema ) {
         schema
@@ -221,12 +398,40 @@ public class OrderDto : IMorphable<Order> {
     }
 }
 
-// OrderItemDto também implementa IMorphable<OrderItem>
-public class OrderItemDto : IMorphable<OrderItem> {
+// CreateOrderItemDto implementa IMorphableTo<OrderItem>
+public class CreateOrderItemDto : IMorphableTo<OrderItem> {
     public string ProductName { get; set; }
     public decimal Price { get; set; }
 
     public void MorphTo( Schema<OrderItem> schema ) {
+        // Mapeamento automático cuida das propriedades
+    }
+}
+```
+
+**IMorphableFrom** - Projetar DTOs com objetos aninhados:
+
+```csharp
+public class OrderDto : IMorphableFrom<Order> {
+    public int Id { get; set; }
+    public List<OrderItemDto> Items { get; set; }
+
+    public void MorphFrom( Schema<Order> schema ) {
+        schema
+            .Bind(() => Id, o => o.Id)
+            .BindAsync(() => Items, async (o, sp) =>
+                // Transformação de coleção aninhada
+                await o.Items.ToAsync<OrderItemDto>(sp)
+            );
+    }
+}
+
+// OrderItemDto implementa IMorphableFrom<OrderItem>
+public class OrderItemDto : IMorphableFrom<OrderItem> {
+    public string ProductName { get; set; }
+    public decimal Price { get; set; }
+
+    public void MorphFrom( Schema<OrderItem> schema ) {
         // Mapeamento automático cuida das propriedades
     }
 }
@@ -282,10 +487,12 @@ services.AddMorph(settings => {
 
 ## Exemplos do Mundo Real
 
-### Comando CQRS para Entidade
+### Comando CQRS para Entidade (IMorphableTo)
+
+Use `IMorphableTo` quando o tipo de comando/input define como criar a entidade:
 
 ```csharp
-public class CreateProductCommand : IMorphable<Product> {
+public class CreateProductCommand : IMorphableTo<Product> {
     public string Name { get; set; }
     public decimal Price { get; set; }
     public string CategoryId { get; set; }
@@ -302,12 +509,50 @@ public class CreateProductCommand : IMorphable<Product> {
             .Bind(p => p.IsActive, () => true);
     }
 }
+
+// Uso
+var command = new CreateProductCommand { Name = "Widget", Price = 99.99m, CategoryId = "CAT-1" };
+var product = command.To<Product>(serviceProvider);
 ```
 
-### Resposta de API para Modelo de Domínio
+### Entidade para DTO (IMorphableFrom)
+
+Use `IMorphableFrom` quando o DTO define como projetar a partir da entidade:
 
 ```csharp
-public class UserApiResponse : IMorphable<User> {
+public class Product {
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public Category Category { get; set; }
+}
+
+public class ProductDto : IMorphableFrom<Product> {
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+    public string DisplayName { get; set; }
+    public string CategoryName { get; set; }
+
+    public void MorphFrom( Schema<Product> schema ) {
+        // Id, Name, Price auto-mapeados
+        schema
+            .Bind(() => DisplayName, p => $"{p.Name} - ${p.Price}")
+            .Bind(() => CategoryName, p => p.Category.Name)
+            .Ignore(p => p.CreatedAt);
+    }
+}
+
+// Transformação de entidade para DTO
+var product = await dbContext.Products.Include(p => p.Category).FirstAsync();
+var dto = product.To<ProductDto>();
+```
+
+### Resposta de API para Modelo de Domínio (IMorphableTo)
+
+```csharp
+public class UserApiResponse : IMorphableTo<User> {
     public string Id { get; set; }
     public string FullName { get; set; }
     public string EmailAddress { get; set; }
@@ -325,37 +570,10 @@ public class UserApiResponse : IMorphable<User> {
 }
 ```
 
-### Entidade para DTO com Propriedades Computadas
+### Integração com Event Sourcing (IMorphableTo)
 
 ```csharp
-public class Product {
-    public int Id { get; set; }
-    public string Name { get; set; }
-    public decimal Price { get; set; }
-    public DateTime CreatedAt { get; set; }
-}
-
-public class ProductDto : IMorphable<Product> {
-    public int Id { get; set; }
-    public string Name { get; set; }
-    public decimal Price { get; set; }
-    public string DisplayName { get; set; }
-
-    public void MorphTo( Schema<Product> schema ) {
-        // Id, Name, Price auto-mapeados
-        schema.Ignore(p => p.CreatedAt);
-    }
-}
-
-// Transformação reversa
-var product = new Product { Id = 1, Name = "Widget", Price = 99.99m };
-var dto = product.To<ProductDto>();
-```
-
-### Integração com Event Sourcing
-
-```csharp
-public class UserRegisteredEvent : IMorphable<User> {
+public class UserRegisteredEvent : IMorphableTo<User> {
     public Guid UserId { get; set; }
     public string Email { get; set; }
     public string Name { get; set; }
@@ -385,6 +603,7 @@ public class ProductService {
         _serviceProvider = serviceProvider;
     }
 
+    // Usar IMorphableFrom para projetar entidades em DTOs
     public async Task<ProductDto> GetProductAsync( int productId ) {
         var product = await _repository.GetByIdAsync(productId);
         return product.To<ProductDto>(_serviceProvider);
@@ -395,9 +614,21 @@ public class ProductService {
         return await products.ToAsync<ProductDto>(_serviceProvider);
     }
 
-    public async Task<Product> CreateProductAsync( CreateProductDto dto ) {
-        var product = dto.To<Product>(_serviceProvider);
+    // Usar IMorphableTo para criar entidades a partir de comandos
+    public async Task<Product> CreateProductAsync( CreateProductCommand command ) {
+        var product = command.To<Product>(_serviceProvider);
         return await _repository.AddAsync(product);
+    }
+
+    // Usar IMorphableTo para atualizar entidades a partir de comandos
+    public async Task<Product> UpdateProductAsync( int id, UpdateProductCommand command ) {
+        var product = await _repository.GetByIdAsync(id);
+
+        // Atualizar usando mapeamento manual ou criar novo método de extensão
+        product.Name = command.Name;
+        product.Price = command.Price;
+
+        return await _repository.UpdateAsync(product);
     }
 }
 ```
@@ -514,9 +745,14 @@ var app = builder.BuildApp(); // Não builder.Build()
 ### Erro "No mapping found"
 
 ```csharp
-// Garantir que a origem implementa IMorphable<TDestination>
-public class MyDto : IMorphable<MyEntity> {
+// Garantir que o tipo de origem implementa IMorphableTo<TDestination>
+public class CreateMyDto : IMorphableTo<MyEntity> {
     public void MorphTo( Schema<MyEntity> schema ) { }
+}
+
+// Ou que o tipo de destino implementa IMorphableFrom<TSource>
+public class MyDto : IMorphableFrom<MyEntity> {
+    public void MorphFrom( Schema<MyEntity> schema ) { }
 }
 ```
 
@@ -559,7 +795,7 @@ var result = await Pipeline.Start(createUserDto)
 ### Com Myth.Guard
 
 ```csharp
-public class CreateUserDto : IMorphable<User>, IValidatable<CreateUserDto> {
+public class CreateUserDto : IMorphableTo<User>, IValidatable<CreateUserDto> {
     public string Name { get; set; }
     public string Email { get; set; }
 
@@ -569,8 +805,9 @@ public class CreateUserDto : IMorphable<User>, IValidatable<CreateUserDto> {
     }
 
     public void MorphTo( Schema<User> schema ) {
-        schema.Bind(u => u.FullName, () => Name);
-        schema.Bind(u => u.EmailAddress, () => Email);
+        schema
+            .Bind(u => u.FullName, () => Name)
+            .Bind(u => u.EmailAddress, () => Email);
     }
 }
 
@@ -583,9 +820,25 @@ var user = dto.To<User>();
 
 ```csharp
 public class UserRepository : IUserRepository {
+    private readonly DbContext _dbContext;
+
+    public UserRepository( DbContext dbContext ) {
+        _dbContext = dbContext;
+    }
+
+    // Usar IMorphableFrom para projetar entidades em DTOs
     public async Task<UserDto> GetUserDtoAsync( int userId ) {
         var user = await _dbContext.Users.FindAsync(userId);
-        return user.To<UserDto>();
+        return user.To<UserDto>(); // UserDto implementa IMorphableFrom<User>
+    }
+
+    // Funciona perfeitamente com proxies do Entity Framework
+    public async Task<UserDto> GetUserWithProfileAsync( int userId ) {
+        var user = await _dbContext.Users
+            .Include(u => u.Profile) // Lazy loading cria proxy
+            .FirstAsync(u => u.Id == userId);
+
+        return user.To<UserDto>(); // Morph detecta e trata proxy automaticamente
     }
 }
 ```

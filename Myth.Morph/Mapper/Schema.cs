@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Myth.Exceptions;
-using Myth.Extensions;
 using Myth.Interfaces;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -28,6 +27,11 @@ namespace Myth.Morph {
 		private readonly List<Action<object, object, IServiceProvider>> _reverseMappings = [ ];
 
 		private readonly List<Func<object, object, IServiceProvider, Task>> _asyncReverseMappings = [ ];
+
+		// Executors for different mapping patterns
+		private ToMappingExecutor<TDestination>? _toExecutor;
+
+		private FromMappingExecutor<TDestination>? _fromExecutor;
 
 		/// <summary>
 		/// Configures a binding between a destination property and a value resolved from a service provider.
@@ -331,7 +335,7 @@ namespace Myth.Morph {
 		/// <returns>A task representing the asynchronous mapping operation.</returns>
 		internal async Task ApplyFromInstanceAsync<TSource>( TSource src, TDestination dest, IServiceProvider sp ) where TSource : IMorphableTo<TDestination> {
 			var logger = GetLogger( sp );
-			logger?.LogDebug( "Starting mapping from {SourceType} to {DestinationType}", typeof( TSource ).Name, typeof( TDestination ).Name );
+			logger?.LogDebug( "Starting IMorphableTo mapping from {SourceType} to {DestinationType}", typeof( TSource ).Name, typeof( TDestination ).Name );
 
 			// Apply synchronized mappings
 			logger?.LogTrace( "Applying {Count} synchronous mappings", _mappings.Count );
@@ -355,11 +359,11 @@ namespace Myth.Morph {
 				}
 			}
 
-			// Apply auto-mapping for unmapped properties
-			logger?.LogTrace( "Starting automatic property mapping" );
-			AutoMapFromInstance( src, dest, sp );
+			// Apply auto-mapping using executor
+			logger?.LogTrace( "Starting automatic property mapping using ToMappingExecutor" );
+			GetToExecutor( sp ).ApplyMapping( src, dest, sp, _manuallyMappedDestProps, _ignoredProperties );
 
-			logger?.LogDebug( "Completed mapping from {SourceType} to {DestinationType}", typeof( TSource ).Name, typeof( TDestination ).Name );
+			logger?.LogDebug( "Completed IMorphableTo mapping from {SourceType} to {DestinationType}", typeof( TSource ).Name, typeof( TDestination ).Name );
 		}
 
 		/// <summary>
@@ -398,286 +402,42 @@ namespace Myth.Morph {
 				}
 			}
 
-			// Apply auto-mapping for unmapped properties using source-to-dest mapping
-			logger?.LogTrace( "Starting automatic property mapping from source" );
-			AutoMapToInstance( src, dest, sp );
+			// Apply auto-mapping using executor
+			logger?.LogTrace( "Starting automatic property mapping using FromMappingExecutor" );
+			GetFromExecutor( sp ).ApplyMapping( src, dest, sp, _manuallyMappedDestProps, _ignoredProperties );
 
 			logger?.LogDebug( "Completed mapping from {SourceType} to {DestinationType} using IMorphableFrom", typeof( TSource ).Name, typeof( TDestination ).Name );
 		}
 
 		/// <summary>
-		/// Automatically maps properties from the source instance to the destination instance.
+		/// Gets or creates the ToMappingExecutor instance for this schema.
 		/// </summary>
-		/// <remarks>
-		/// This method performs automatic property mapping by matching property names between source and destination types.
-		/// Properties that have been manually mapped or explicitly ignored are skipped. The method attempts to handle
-		/// type conversions and nested object mappings through the Morph system.
-		/// </remarks>
-		/// <typeparam name="TSource">The type of the source instance.</typeparam>
-		/// <param name="src">The source instance to map from.</param>
-		/// <param name="dest">The destination instance to map to.</param>
-		/// <param name="sp">The service provider for dependency resolution.</param>
-		private void AutoMapFromInstance<TSource>( TSource src, TDestination dest, IServiceProvider sp ) {
-			var logger = GetLogger( sp );
-
-			var srcType = src?.GetType( ) ?? typeof( TSource );
-			var destType = dest?.GetType( ) ?? typeof( TDestination );
-
-			logger?.LogTrace( "Starting automatic mapping between {SourceType} and {DestinationType}", srcType.Name, destType.Name );
-
-			var srcMembers = srcType.GetMembers( BindingFlags.Public | BindingFlags.Instance );
-			var destMembers = destType.GetMembers( BindingFlags.Public | BindingFlags.Instance );
-
-			var mappedCount = 0;
-			var skippedCount = 0;
-			var errorCount = 0;
-
-			foreach ( var destMember in destMembers ) {
-				// Skip manually mapped or ignored properties
-				if ( _manuallyMappedDestProps.Contains( destMember.Name ) || _ignoredProperties.Contains( destMember.Name ) ) {
-					skippedCount++;
-					continue;
-				}
-
-				var srcMember = srcMembers.FirstOrDefault( m => m.Name == destMember.Name );
-				if ( srcMember == null ) {
-					continue;
-				}
-
-				var srcMemberType = GetMemberType( srcMember );
-				var destMemberType = GetMemberType( destMember );
-
-				if ( srcMemberType == null || destMemberType == null ) {
-					continue;
-				}
-
-				// Check if destination member can be written
-				if ( !CanWriteMember( destMember ) ) {
-					continue;
-				}
-
-				object? srcValue = null;
-				try {
-					srcValue = srcMember switch {
-						PropertyInfo p => p.GetValue( src ),
-						FieldInfo f => f.GetValue( src ),
-						_ => null
-					};
-				} catch ( Exception ex ) {
-					errorCount++;
-					logger?.LogWarning( ex, "Error reading value from source member '{MemberName}'", srcMember.Name );
-					continue;
-				}
-
-				if ( srcValue == null ) {
-					// Set default value if possible
-					if ( destMemberType.IsValueType && Nullable.GetUnderlyingType( destMemberType ) == null ) {
-						SetValue( dest, destMember, Activator.CreateInstance( destMemberType ), logger );
-					}
-					continue;
-				}
-
-				try {
-					var mappedValue = MapValue( srcValue, srcMemberType, destMemberType, sp );
-					SetValue( dest, destMember, mappedValue, logger );
-					mappedCount++;
-				} catch ( Exception ex ) {
-					errorCount++;
-					logger?.LogWarning( ex, "Error mapping '{SourceMember}' -> '{DestMember}'", srcMember.Name, destMember.Name );
-				}
+		/// <param name="sp">The service provider for logger resolution.</param>
+		/// <returns>The ToMappingExecutor instance.</returns>
+		private ToMappingExecutor<TDestination> GetToExecutor( IServiceProvider sp ) {
+			if ( _toExecutor == null ) {
+				var logger = GetLogger( sp );
+				var typeResolverLogger = logger != null ? sp.GetService<ILogger<TypeResolver>>( ) : null;
+				var typeResolver = new TypeResolver( typeResolverLogger );
+				_toExecutor = new ToMappingExecutor<TDestination>( logger, typeResolver );
 			}
-
-			logger?.LogTrace( "Automatic mapping completed. Mapped: {MappedCount}, Skipped: {SkippedCount}, Errors: {ErrorCount}",
-				mappedCount, skippedCount, errorCount );
+			return _toExecutor;
 		}
 
 		/// <summary>
-		/// Automatically maps properties from the source instance to the destination instance for IMorphableFrom pattern.
+		/// Gets or creates the FromMappingExecutor instance for this schema.
 		/// </summary>
-		/// <typeparam name="TDestination">The type of the destination instance.</typeparam>
-		/// <param name="src">The source instance to map from.</param>
-		/// <param name="dest">The destination instance to map to.</param>
-		/// <param name="sp">The service provider for dependency resolution.</param>
-		private void AutoMapToInstance<TSource>( TSource src, TDestination dest, IServiceProvider sp ) {
-			var logger = GetLogger( sp );
-			var srcType = src?.GetType( ) ?? typeof( TSource );
-			var destType = dest?.GetType( ) ?? typeof( TDestination );
-
-			logger?.LogTrace( "Starting automatic mapping from {SourceType} to {DestinationType} using IMorphableFrom pattern", srcType.Name, destType.Name );
-
-			var srcMembers = srcType.GetMembers( BindingFlags.Public | BindingFlags.Instance );
-			var destMembers = destType.GetMembers( BindingFlags.Public | BindingFlags.Instance );
-
-			var mappedCount = 0;
-			var skippedCount = 0;
-			var errorCount = 0;
-
-			foreach ( var destMember in destMembers ) {
-				// Skip manually mapped or ignored properties
-				if ( _manuallyMappedDestProps.Contains( destMember.Name ) || _ignoredProperties.Contains( destMember.Name ) ) {
-					skippedCount++;
-					continue;
-				}
-
-				var srcMember = srcMembers.FirstOrDefault( m => m.Name == destMember.Name );
-				if ( srcMember == null ) {
-					continue;
-				}
-
-				var srcMemberType = GetMemberType( srcMember );
-				var destMemberType = GetMemberType( destMember );
-
-				if ( srcMemberType == null || destMemberType == null ) {
-					continue;
-				}
-
-				// Check if destination member can be written
-				if ( !CanWriteMember( destMember ) ) {
-					continue;
-				}
-
-				object? srcValue = null;
-				try {
-					srcValue = srcMember switch {
-						PropertyInfo p => p.GetValue( src ),
-						FieldInfo f => f.GetValue( src ),
-						_ => null
-					};
-				} catch ( Exception ex ) {
-					errorCount++;
-					logger?.LogWarning( ex, "Error reading value from source member '{MemberName}'", srcMember.Name );
-					continue;
-				}
-
-				if ( srcValue == null ) {
-					// Set default value if possible
-					if ( destMemberType.IsValueType && Nullable.GetUnderlyingType( destMemberType ) == null ) {
-						SetValue( dest, destMember, Activator.CreateInstance( destMemberType ), logger );
-					}
-					continue;
-				}
-
-				try {
-					var mappedValue = MapValue( srcValue, srcMemberType, destMemberType, sp );
-					SetValue( dest, destMember, mappedValue, logger );
-					mappedCount++;
-				} catch ( Exception ex ) {
-					errorCount++;
-					logger?.LogWarning( ex, "Error mapping '{SourceMember}' -> '{DestMember}'", srcMember.Name, destMember.Name );
-				}
+		/// <param name="sp">The service provider for logger resolution.</param>
+		/// <returns>The FromMappingExecutor instance.</returns>
+		private FromMappingExecutor<TDestination> GetFromExecutor( IServiceProvider sp ) {
+			if ( _fromExecutor == null ) {
+				var logger = GetLogger( sp );
+				var typeResolverLogger = logger != null ? sp.GetService<ILogger<TypeResolver>>( ) : null;
+				var typeResolver = new TypeResolver( typeResolverLogger );
+				_fromExecutor = new FromMappingExecutor<TDestination>( logger, typeResolver );
 			}
-
-			logger?.LogTrace( "Automatic mapping completed for IMorphableFrom. Mapped: {MappedCount}, Skipped: {SkippedCount}, Errors: {ErrorCount}",
-				mappedCount, skippedCount, errorCount );
+			return _fromExecutor;
 		}
-
-		/// <summary>
-		/// Maps a value from the source type to the destination type, handling type conversions and nested mappings.
-		/// </summary>
-		/// <param name="srcValue">The source value to map.</param>
-		/// <param name="srcType">The type of the source value.</param>
-		/// <param name="destType">The target destination type.</param>
-		/// <param name="sp">The service provider for dependency resolution.</param>
-		/// <returns>The mapped value, or null if mapping is not possible.</returns>
-		private object? MapValue( object srcValue, Type srcType, Type destType, IServiceProvider sp ) {
-			var logger = GetLogger( sp );
-
-			// If types are compatible, return directly
-			if ( destType.IsAssignableFrom( srcType ) ) {
-				logger?.LogTrace( "Direct assignment from {SourceType} to {DestType}", srcType.Name, destType.Name );
-				return srcValue;
-			}
-
-			// Try direct conversion
-			if ( TryConvertDirect( srcValue, destType, out var converted ) ) {
-				logger?.LogTrace( "Direct conversion successful from {SourceType} to {DestType}", srcType.Name, destType.Name );
-				return converted;
-			}
-
-			// Try mapping using extensions
-			try {
-				using var scope = sp.CreateScope( );
-
-				var method = typeof( MorphExtensions )
-					.GetMethod( nameof( MorphExtensions.To ), [ typeof( object ), typeof( IServiceProvider ) ] )?
-					.MakeGenericMethod( destType );
-
-				var result = method?.Invoke( null, [ srcValue, scope.ServiceProvider ] );
-				logger?.LogTrace( "Successfully mapped {SourceType} to {DestType} using MorphExtensions", srcType.Name, destType.Name );
-				return result;
-			} catch ( Exception ex ) {
-				logger?.LogDebug( ex, "Failed to map {SourceType} to {DestType} using MorphExtensions", srcType.Name, destType.Name );
-			}
-
-			logger?.LogDebug( "Unable to map {SourceType} to {DestType}", srcType.Name, destType.Name );
-			return null;
-		}
-
-		/// <summary>
-		/// Attempts to perform direct type conversion using built-in .NET conversion methods.
-		/// </summary>
-		/// <param name="value">The value to convert.</param>
-		/// <param name="targetType">The target type for conversion.</param>
-		/// <param name="result">The converted result, if successful.</param>
-		/// <returns>True if conversion was successful, false otherwise.</returns>
-		private static bool TryConvertDirect( object value, Type targetType, out object? result ) {
-			result = null;
-
-			try {
-				// Handle nullable types
-				var underlyingType = Nullable.GetUnderlyingType( targetType );
-				if ( underlyingType != null ) {
-					if ( value == null ) {
-						result = null;
-						return true;
-					}
-					targetType = underlyingType;
-				}
-
-				// Try direct assignment
-				if ( targetType.IsAssignableFrom( value.GetType( ) ) ) {
-					result = value;
-					return true;
-				}
-
-				// Try Convert.ChangeType for primitive and common types
-				if ( targetType.IsPrimitive ||
-					 targetType == typeof( string ) ||
-					 targetType == typeof( DateTime ) ||
-					 targetType == typeof( decimal ) ) {
-					result = Convert.ChangeType( value, targetType );
-					return true;
-				}
-
-				return false;
-			} catch {
-				return false;
-			}
-		}
-
-		/// <summary>
-		/// Determines whether a member (property or field) can be written to.
-		/// </summary>
-		/// <param name="member">The member to check.</param>
-		/// <returns>True if the member can be written to, false otherwise.</returns>
-		private bool CanWriteMember( MemberInfo member ) =>
-			member switch {
-				PropertyInfo p => p.CanWrite,
-				FieldInfo f => !f.IsInitOnly && !f.IsLiteral,
-				_ => false
-			};
-
-		/// <summary>
-		/// Gets the type of a member (property or field).
-		/// </summary>
-		/// <param name="member">The member to get the type for.</param>
-		/// <returns>The type of the member, or null if not a property or field.</returns>
-		private static Type? GetMemberType( MemberInfo member ) =>
-			member switch {
-				PropertyInfo p => p.PropertyType,
-				FieldInfo f => f.FieldType,
-				_ => null
-			};
 
 		/// <summary>
 		/// Sets the value of a member (property or field) on the target object.
@@ -691,20 +451,22 @@ namespace Myth.Morph {
 				switch ( member ) {
 					case PropertyInfo p when p.CanWrite:
 					p.SetValue( target, value );
-					logger?.LogTrace( "Successfully set property '{PropertyName}' to value of type {ValueType}", p.Name, value?.GetType( ).Name ?? "null" );
+					logger?.LogTrace( "Successfully set property {PropertyName} to value of type {ValueType}",
+						p.Name, value?.GetType( ).Name ?? "null" );
 					break;
 
 					case FieldInfo f when !f.IsInitOnly && !f.IsLiteral:
 					f.SetValue( target, value );
-					logger?.LogTrace( "Successfully set field '{FieldName}' to value of type {ValueType}", f.Name, value?.GetType( ).Name ?? "null" );
+					logger?.LogTrace( "Successfully set field {FieldName} to value of type {ValueType}",
+						f.Name, value?.GetType( ).Name ?? "null" );
 					break;
 
 					default:
-					logger?.LogWarning( "Member '{MemberName}' is not assignable", member.Name );
+					logger?.LogWarning( "Member {MemberName} is not assignable", member.Name );
 					break;
 				}
 			} catch ( Exception ex ) {
-				logger?.LogError( ex, "Failed to assign value to member '{MemberName}'", member.Name );
+				logger?.LogError( ex, "Failed to assign value to member {MemberName}", member.Name );
 				throw;
 			}
 		}
@@ -731,9 +493,25 @@ namespace Myth.Morph {
 				}
 			}
 
-			// Apply auto-mapping for unmapped properties using source-to-dest mapping
-			logger?.LogTrace( "Starting automatic property mapping from source" );
-			AutoMapToInstanceFromSource( source, destination, serviceProvider );
+			// Apply auto-mapping using executor
+			// Note: For IMorphableFrom pattern, TDestination is actually the SOURCE type (User),
+			// and destination parameter is the actual DTO we're mapping TO
+			logger?.LogTrace( "Starting automatic property mapping using FromMappingExecutor" );
+
+			// Create a FromMappingExecutor for the actual destination type
+			var actualDestinationType = destination.GetType( );
+			var logger2 = GetLogger( serviceProvider );
+			var typeResolverLogger = logger2 != null ? serviceProvider.GetService<ILogger<TypeResolver>>( ) : null;
+			var typeResolver = new TypeResolver( typeResolverLogger );
+
+			// Use reflection to create and invoke the executor for the actual destination type
+			var executorType = typeof( FromMappingExecutor<> ).MakeGenericType( actualDestinationType );
+			var executor = Activator.CreateInstance( executorType, logger2, typeResolver )!;
+
+			var applyMethod = executorType.GetMethod( nameof( FromMappingExecutor<object>.ApplyMapping ) );
+			if ( applyMethod != null ) {
+				applyMethod.Invoke( executor, [ source, destination, serviceProvider, _manuallyMappedDestProps, _ignoredProperties ] );
+			}
 
 			logger?.LogDebug( "Completed reverse mapping with {MappingCount} mappings", _reverseMappings.Count );
 		}
@@ -770,95 +548,25 @@ namespace Myth.Morph {
 				}
 			}
 
-			// Apply auto-mapping for unmapped properties using source-to-dest mapping
-			logger?.LogTrace( "Starting automatic property mapping from source" );
-			AutoMapToInstanceFromSource( source, destination, serviceProvider );
+			// Apply auto-mapping using executor
+			logger?.LogTrace( "Starting automatic property mapping using FromMappingExecutor" );
+
+			// Create a FromMappingExecutor for the actual destination type
+			var actualDestinationType = destination.GetType( );
+			var logger2 = GetLogger( serviceProvider );
+			var typeResolverLogger = logger2 != null ? serviceProvider.GetService<ILogger<TypeResolver>>( ) : null;
+			var typeResolver = new TypeResolver( typeResolverLogger );
+
+			// Use reflection to create and invoke the executor for the actual destination type
+			var executorType = typeof( FromMappingExecutor<> ).MakeGenericType( actualDestinationType );
+			var executor = Activator.CreateInstance( executorType, logger2, typeResolver )!;
+
+			var applyMethod = executorType.GetMethod( nameof( FromMappingExecutor<object>.ApplyMapping ) );
+			if ( applyMethod != null ) {
+				applyMethod.Invoke( executor, [ source, destination, serviceProvider, _manuallyMappedDestProps, _ignoredProperties ] );
+			}
 
 			logger?.LogDebug( "Completed async reverse mapping with {SyncMappingCount} sync and {AsyncMappingCount} async mappings", _reverseMappings.Count, _asyncReverseMappings.Count );
-		}
-
-		/// <summary>
-		/// Automatically maps properties from the source object to the destination object using the IMorphableFrom pattern.
-		/// This method performs automatic property mapping by matching property names between source and destination types.
-		/// </summary>
-		/// <param name="source">The source object to map from.</param>
-		/// <param name="destination">The destination object to map to.</param>
-		/// <param name="serviceProvider">The service provider for dependency resolution.</param>
-		private void AutoMapToInstanceFromSource( object source, object destination, IServiceProvider serviceProvider ) {
-			var logger = GetLogger( serviceProvider );
-			var srcType = source?.GetType( );
-			var destType = destination?.GetType( );
-
-			if ( srcType == null || destType == null ) {
-				return;
-			}
-
-			logger?.LogTrace( "Starting automatic mapping from {SourceType} to {DestinationType} using IMorphableFrom pattern", srcType.Name, destType.Name );
-
-			var srcMembers = srcType.GetMembers( BindingFlags.Public | BindingFlags.Instance );
-			var destMembers = destType.GetMembers( BindingFlags.Public | BindingFlags.Instance );
-
-			var mappedCount = 0;
-			var skippedCount = 0;
-			var errorCount = 0;
-
-			foreach ( var destMember in destMembers ) {
-				// Skip manually mapped or ignored properties
-				if ( _manuallyMappedDestProps.Contains( destMember.Name ) || _ignoredProperties.Contains( destMember.Name ) ) {
-					skippedCount++;
-					continue;
-				}
-
-				var srcMember = srcMembers.FirstOrDefault( m => m.Name == destMember.Name );
-				if ( srcMember == null ) {
-					continue;
-				}
-
-				var srcMemberType = GetMemberType( srcMember );
-				var destMemberType = GetMemberType( destMember );
-
-				if ( srcMemberType == null || destMemberType == null ) {
-					continue;
-				}
-
-				// Check if destination member can be written
-				if ( !CanWriteMember( destMember ) ) {
-					continue;
-				}
-
-				object? srcValue = null;
-				try {
-					srcValue = srcMember switch {
-						PropertyInfo p => p.GetValue( source ),
-						FieldInfo f => f.GetValue( source ),
-						_ => null
-					};
-				} catch ( Exception ex ) {
-					errorCount++;
-					logger?.LogWarning( ex, "Error reading value from source member '{MemberName}'", srcMember.Name );
-					continue;
-				}
-
-				if ( srcValue == null ) {
-					// Set default value if possible
-					if ( destMemberType.IsValueType && Nullable.GetUnderlyingType( destMemberType ) == null ) {
-						SetValue( destination, destMember, Activator.CreateInstance( destMemberType ), logger );
-					}
-					continue;
-				}
-
-				try {
-					var mappedValue = MapValue( srcValue, srcMemberType, destMemberType, serviceProvider );
-					SetValue( destination, destMember, mappedValue, logger );
-					mappedCount++;
-				} catch ( Exception ex ) {
-					errorCount++;
-					logger?.LogWarning( ex, "Error mapping '{SourceMember}' -> '{DestMember}'", srcMember.Name, destMember.Name );
-				}
-			}
-
-			logger?.LogTrace( "Automatic mapping completed for IMorphableFrom. Mapped: {MappedCount}, Skipped: {SkippedCount}, Errors: {ErrorCount}",
-				mappedCount, skippedCount, errorCount );
 		}
 
 		/// <summary>

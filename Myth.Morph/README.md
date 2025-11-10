@@ -22,6 +22,9 @@ Perfect for CQRS, Clean Architecture, and DDD applications where explicit transf
 
 ## Features
 
+- **Bidirectional Mapping Patterns**: Support for both `IMorphableTo<T>` and `IMorphableFrom<T>` patterns
+- **Entity Framework Proxy Support**: Automatic detection and handling of EF Core lazy-loading proxies
+- **Inheritance Hierarchy Resolution**: Configurable depth traversal for complex type hierarchies
 - **Declarative Schema Configuration**: Define transformations using fluent API with compile-time safety
 - **Automatic Property Mapping**: Convention-based mapping for matching property names
 - **Manual Binding**: Four binding strategies for maximum flexibility
@@ -62,10 +65,14 @@ var provider = services.BuildWithGlobalProvider();
 
 ### 2. Define Transformations
 
-Implement `IMorphable<TDestination>` on your source type:
+Myth.Morph supports two mapping patterns:
+
+#### IMorphableTo Pattern (Source → Destination)
+
+The source type defines how to transform **to** the destination:
 
 ```csharp
-public class CreateUserDto : IMorphable<User> {
+public class CreateUserDto : IMorphableTo<User> {
     public string Name { get; set; }
     public string Email { get; set; }
     public DateTime BirthDate { get; set; }
@@ -78,6 +85,28 @@ public class CreateUserDto : IMorphable<User> {
     }
 }
 ```
+
+#### IMorphableFrom Pattern (Destination ← Source)
+
+The destination type defines how to be created **from** the source:
+
+```csharp
+public class UserDto : IMorphableFrom<User> {
+    public string DisplayName { get; set; }
+    public string Email { get; set; }
+    public int Age { get; set; }
+
+    public void MorphFrom( Schema<User> schema ) {
+        schema
+            .Bind(() => DisplayName, u => $"{u.FirstName} {u.LastName}")
+            .Bind(() => Email, u => u.EmailAddress)
+            .Bind(() => Age, u => DateTime.Today.Year - u.BirthDate.Year);
+    }
+}
+```
+
+> **Note**: Use `IMorphableTo` when the source knows about the destination (DTOs → Entities).
+> Use `IMorphableFrom` when the destination knows about the source (Entities → DTOs).
 
 ### 3. Transform Objects
 
@@ -232,6 +261,87 @@ public class OrderItemDto : IMorphable<OrderItem> {
 }
 ```
 
+## Entity Framework Proxy Support
+
+Myth.Morph automatically detects and handles Entity Framework Core lazy-loading proxies (Castle.Proxies), ensuring seamless transformations even when working with proxied entities.
+
+### How It Works
+
+When EF Core uses lazy-loading proxies, it creates dynamic proxy types that inherit from your entity:
+
+```csharp
+// Your entity
+public class User {
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public virtual ICollection<Order> Orders { get; set; } // virtual for lazy loading
+}
+
+// EF Core creates: Castle.Proxies.UserProxy : User
+```
+
+Myth.Morph automatically resolves the proxy to the base entity type, ensuring your mappings work correctly:
+
+```csharp
+// This works even if user is a proxy
+var userDto = user.To<UserDto>();
+
+// Collections with proxies also work
+var userDtos = users.To<UserDto>(); // users may contain proxy instances
+```
+
+### Configuring Inheritance Fallback
+
+Enable inheritance fallback for advanced proxy and inheritance scenarios:
+
+```csharp
+services.AddMorph(settings => {
+    settings.EnableInheritanceFallback = true;
+    settings.MaxInheritanceDepth = 5; // How deep to traverse the hierarchy
+    settings.IncludeInterfacesInFallback = false; // Whether to check interfaces
+});
+```
+
+### Example with EF Core
+
+```csharp
+public class UserRepository {
+    private readonly DbContext _context;
+
+    public async Task<UserDto> GetUserWithOrdersAsync(int userId) {
+        // EF Core may return a proxy with lazy-loaded Orders
+        var user = await _context.Users
+            .Include(u => u.Orders)
+            .FirstAsync(u => u.Id == userId);
+
+        // Myth.Morph automatically handles the proxy
+        return user.To<UserDto>();
+    }
+}
+
+public class UserDto : IMorphableFrom<User> {
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public List<OrderDto> Orders { get; set; }
+
+    public void MorphFrom(Schema<User> schema) {
+        // Automatic mapping works even with proxies
+        schema.BindAsync(() => Orders, async (u, sp) =>
+            await u.Orders.ToAsync<OrderDto>(sp)
+        );
+    }
+}
+```
+
+### Proxy Detection
+
+Myth.Morph detects proxies by:
+- Checking for `Castle.Proxies` namespace
+- Identifying dynamic assemblies
+- Analyzing type hierarchy patterns
+
+No configuration needed - it just works! 🎯
+
 ## Advanced Configuration
 
 ### Custom Assembly Scanning
@@ -284,8 +394,10 @@ services.AddMorph(settings => {
 
 ### CQRS Command to Entity
 
+Use `IMorphableTo` when commands/DTOs transform into entities:
+
 ```csharp
-public class CreateProductCommand : IMorphable<Product> {
+public class CreateProductCommand : IMorphableTo<Product> {
     public string Name { get; set; }
     public decimal Price { get; set; }
     public string CategoryId { get; set; }
@@ -327,28 +439,35 @@ public class UserApiResponse : IMorphable<User> {
 
 ### Entity to DTO with Computed Properties
 
+Use `IMorphableFrom` when entities transform into DTOs for read operations:
+
 ```csharp
 public class Product {
     public int Id { get; set; }
     public string Name { get; set; }
     public decimal Price { get; set; }
     public DateTime CreatedAt { get; set; }
+    public bool IsActive { get; set; }
 }
 
-public class ProductDto : IMorphable<Product> {
+public class ProductDto : IMorphableFrom<Product> {
     public int Id { get; set; }
     public string Name { get; set; }
     public decimal Price { get; set; }
     public string DisplayName { get; set; }
+    public string Status { get; set; }
 
-    public void MorphTo( Schema<Product> schema ) {
-        // Id, Name, Price auto-mapped
-        schema.Ignore(p => p.CreatedAt);
+    public void MorphFrom( Schema<Product> schema ) {
+        // Id, Name, Price auto-mapped from matching properties
+        schema
+            .Bind(() => DisplayName, p => $"{p.Name} (#{p.Id})")
+            .Bind(() => Status, p => p.IsActive ? "Active" : "Inactive")
+            .Ignore(p => p.CreatedAt); // Don't map this property
     }
 }
 
-// Reverse transformation
-var product = new Product { Id = 1, Name = "Widget", Price = 99.99m };
+// Transform entity to DTO (works with EF proxies too!)
+var product = await _context.Products.FindAsync(1);
 var dto = product.To<ProductDto>();
 ```
 

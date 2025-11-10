@@ -15,7 +15,7 @@ namespace Myth.Morph {
 	/// Central registry for managing object transformation schemas and mappings.
 	/// This class handles the registration and execution of type mappings, supporting both
 	/// generic mappings and instance-based mappings through the IMorphable interface.
-	/// Includes inheritance fallback support for handling proxy types and derived classes.
+	/// Includes inheritance fallback support for handling derived classes and type hierarchies.
 	/// </summary>
 	public class SchemaRegistry {
 		private readonly IServiceProvider _sp;
@@ -25,9 +25,7 @@ namespace Myth.Morph {
 		private readonly Dictionary<Type, Type> _genericInterfaceToConcrete = [ ];
 		private readonly List<Action<Type, Type>> _genericRegisters = [ ];
 		private readonly HashSet<(Type, Type)> _instanceBasedMappings = [ ];
-
-		// Cache for inheritance hierarchy lookups to improve performance
-		private readonly ConcurrentDictionary<Type, List<Type>> _inheritanceHierarchyCache = new( );
+		private readonly TypeResolver _typeResolver;
 
 		private readonly ConcurrentDictionary<(Type, Type), (Type, Type)?> _mappingFallbackCache = new( );
 
@@ -41,7 +39,15 @@ namespace Myth.Morph {
 			_settings = settings ?? new MorphSettings( );
 			var serviceProvider = MythServiceProvider.GetOrFallback( sp );
 			_logger = serviceProvider?.GetService<ILogger<SchemaRegistry>>( );
-			_logger?.LogDebug( "SchemaRegistry initialized with inheritance fallback: {InheritanceFallback}", _settings.EnableInheritanceFallback );
+
+			_typeResolver = new TypeResolver(
+				_logger as ILogger<TypeResolver>,
+				_settings.MaxInheritanceDepth,
+				_settings.IncludeInterfacesInFallback,
+				_settings.ResolveToBaseType );
+
+			_logger?.LogDebug( "SchemaRegistry initialized with inheritance fallback: {InheritanceFallback}, maxDepth: {MaxDepth}, resolveToBaseType: {ResolveToBaseType}",
+				_settings.EnableInheritanceFallback, _settings.MaxInheritanceDepth, _settings.ResolveToBaseType );
 		}
 
 		/// <summary>
@@ -87,10 +93,18 @@ namespace Myth.Morph {
 				return default!;
 			}
 
-			// Use the actual type of the object if different from the generic type
-			var actualSourceType = source.GetType( );
+			// Use the actual type of the object (resolving inheritance) if different from the generic type
+			var runtimeSourceType = source.GetType( );
+			var actualSourceType = _typeResolver.GetActualType( runtimeSourceType );
+
 			if ( actualSourceType != sourceType ) {
-				_logger?.LogTrace( "Using actual source type {ActualType} instead of generic type {GenericType}", actualSourceType.Name, sourceType.Name );
+				_logger?.LogTrace( "Using actual source type {ActualType} instead of generic type {GenericType} (runtime type: {RuntimeType})",
+					actualSourceType.Name, sourceType.Name, runtimeSourceType.Name );
+			}
+
+			if ( actualSourceType != runtimeSourceType && _typeResolver.HasBaseType( runtimeSourceType ) ) {
+				_logger?.LogDebug( "Resolved derived type {DerivedType} to base type {ActualType}",
+					runtimeSourceType.Name, actualSourceType.Name );
 			}
 
 			// Check if it's an instance-based mapping with inheritance fallback support
@@ -460,11 +474,13 @@ namespace Myth.Morph {
 		/// <typeparam name="TSource">The source type.</typeparam>
 		/// <typeparam name="TDestination">The destination type.</typeparam>
 		/// <param name="source">The source object.</param>
-		/// <param name="sourceType">The source type.</param>
+		/// <param name="sourceType">The actual runtime source type (may be a proxy).</param>
 		/// <param name="destinationType">The destination type to map to.</param>
 		/// <returns>The mapped destination object.</returns>
 		private TDestination MapFromMorphableFrom<TSource, TDestination>( TSource source, Type sourceType, Type destinationType ) {
-			_logger?.LogDebug( "Starting IMorphableFrom mapping for {SourceType} -> {DestinationType}", sourceType.Name, destinationType.Name );
+			var actualSourceType = _typeResolver.GetActualType( sourceType );
+			_logger?.LogDebug( "Starting IMorphableFrom mapping for {SourceType} -> {DestinationType} (actual source: {ActualSource})",
+				sourceType.Name, destinationType.Name, actualSourceType.Name );
 
 			// Resolve concrete type if necessary
 			var concreteDestinationType = ResolveConcreteDestinationType( destinationType );
@@ -472,20 +488,84 @@ namespace Myth.Morph {
 			// Create destination instance
 			var dest = ( TDestination )CreateInstance( concreteDestinationType );
 
-			// Check if destination implements IMorphableFrom<TSource>
+			// Try direct cast first (fast path for non-proxy scenarios)
 			if ( dest is IMorphableFrom<TSource> morphableFromDest ) {
+				_logger?.LogDebug( "Using direct IMorphableFrom<{TSource}> cast (fast path)", typeof( TSource ).Name );
+
 				// Create schema for source type
 				var sourceSchema = new Schema<TSource>( );
 
-				// Call the destination's MorphFrom method to configure the schema (uses MythServiceProvider internally)
+				// Call the destination's MorphFrom method to configure the schema
 				morphableFromDest.MorphFrom( sourceSchema );
 
 				// Apply the mapping from source to destination using the configured schema
 				sourceSchema.ApplyFromSourceToDestination( source, dest, _sp );
+			} else {
+				// Fallback for proxy scenarios - check if destination implements IMorphableFrom for the actual source type
+				_logger?.LogTrace( "Direct cast failed, checking for IMorphableFrom with proxy support" );
+
+				var morphableFromInterface = _typeResolver.FindGenericInterface( concreteDestinationType, typeof( IMorphableFrom<> ) );
+
+				if ( morphableFromInterface != null ) {
+					var sourceTypeArg = morphableFromInterface.GetGenericArguments( )[ 0 ];
+					_logger?.LogTrace( "Found IMorphableFrom<{SourceTypeArg}> on destination type {DestType}",
+						sourceTypeArg.Name, concreteDestinationType.Name );
+
+					// Check if the actual source type is compatible with the interface's source type
+					if ( sourceTypeArg.IsAssignableFrom( actualSourceType ) || sourceTypeArg == actualSourceType ) {
+						_logger?.LogDebug( "Source type {ActualSource} is compatible with IMorphableFrom<{SourceTypeArg}>",
+							actualSourceType.Name, sourceTypeArg.Name );
+
+						// Use reflection to call MorphFrom and ApplyFromSourceToDestination with the correct types
+						ApplyMorphableFromMapping( source, dest, sourceTypeArg, actualSourceType );
+					} else {
+						_logger?.LogWarning( "Source type {ActualSource} is not compatible with IMorphableFrom<{SourceTypeArg}>",
+							actualSourceType.Name, sourceTypeArg.Name );
+					}
+				} else {
+					_logger?.LogTrace( "Destination type {DestType} does not implement IMorphableFrom<>",
+						concreteDestinationType.Name );
+				}
 			}
 
-			_logger?.LogDebug( "IMorphableFrom mapping completed for {SourceType} -> {DestinationType}", sourceType.Name, destinationType.Name );
+			_logger?.LogDebug( "IMorphableFrom mapping completed for {SourceType} -> {DestinationType}",
+				sourceType.Name, destinationType.Name );
 			return dest;
+		}
+
+		/// <summary>
+		/// Applies the IMorphableFrom mapping using reflection to handle proxy types.
+		/// </summary>
+		private void ApplyMorphableFromMapping<TDestination>( object source, TDestination dest, Type interfaceSourceType, Type actualSourceType ) {
+			_logger?.LogTrace( "Applying IMorphableFrom mapping with interface source type {InterfaceSource} and actual source {ActualSource}",
+				interfaceSourceType.Name, actualSourceType.Name );
+
+			try {
+				// Create Schema<InterfaceSourceType>
+				var schemaType = typeof( Schema<> ).MakeGenericType( interfaceSourceType );
+				var schema = Activator.CreateInstance( schemaType )!;
+
+				// Get the MorphFrom method and invoke it
+				var morphFromMethod = dest!.GetType( ).GetMethod( nameof( IMorphableFrom<object>.MorphFrom ) );
+				if ( morphFromMethod != null ) {
+					_logger?.LogTrace( "Invoking MorphFrom method on destination" );
+					morphFromMethod.Invoke( dest, [ schema ] );
+
+					// Apply the mapping using ApplyFromSourceToDestination
+					var applyMethod = schemaType.GetMethod( nameof( Schema<object>.ApplyFromSourceToDestination ) );
+					if ( applyMethod != null ) {
+						_logger?.LogTrace( "Invoking ApplyFromSourceToDestination" );
+						applyMethod.Invoke( schema, [ source, dest, _sp ] );
+					} else {
+						_logger?.LogError( "ApplyFromSourceToDestination method not found on Schema<{Type}>", interfaceSourceType.Name );
+					}
+				} else {
+					_logger?.LogError( "MorphFrom method not found on destination type {DestType}", dest.GetType( ).Name );
+				}
+			} catch ( Exception ex ) {
+				_logger?.LogError( ex, "Error applying IMorphableFrom mapping" );
+				throw;
+			}
 		}
 
 		/// <summary>
@@ -495,31 +575,100 @@ namespace Myth.Morph {
 		/// <typeparam name="TSource">The type of the source object.</typeparam>
 		/// <typeparam name="TDestination">The type of the destination object.</typeparam>
 		/// <param name="source">The source object to map from.</param>
-		/// <param name="sourceType">The runtime type of the source.</param>
+		/// <param name="sourceType">The actual runtime source type (may be a proxy).</param>
 		/// <param name="destinationType">The runtime type of the destination.</param>
 		/// <returns>A task that returns the mapped destination instance.</returns>
 		private async Task<TDestination> MapFromMorphableFromAsync<TSource, TDestination>( TSource source, Type sourceType, Type destinationType ) {
-			_logger?.LogDebug( "Starting async IMorphableFrom mapping from {SourceType} to {DestinationType}", sourceType.Name, destinationType.Name );
+			var actualSourceType = _typeResolver.GetActualType( sourceType );
+			_logger?.LogDebug( "Starting async IMorphableFrom mapping from {SourceType} to {DestinationType} (actual source: {ActualSource})",
+				sourceType.Name, destinationType.Name, actualSourceType.Name );
 
 			var concreteDestinationType = ResolveConcreteDestinationType( destinationType );
 
 			// Create destination instance
 			var dest = ( TDestination )CreateInstance( concreteDestinationType );
 
-			// Check if destination implements IMorphableFrom<TSource>
+			// Try direct cast first (fast path for non-proxy scenarios)
 			if ( dest is IMorphableFrom<TSource> morphableFromDest ) {
+				_logger?.LogDebug( "Using direct IMorphableFrom<{TSource}> cast (fast path)", typeof( TSource ).Name );
+
 				// Create schema for source type
 				var sourceSchema = new Schema<TSource>( );
 
-				// Call the destination's MorphFrom method to configure the schema (uses MythServiceProvider internally)
+				// Call the destination's MorphFrom method to configure the schema
 				morphableFromDest.MorphFrom( sourceSchema );
 
 				// Apply the mapping from source to destination using the configured schema (including async mappings)
 				await sourceSchema.ApplyFromSourceToDestinationAsync( source, dest, _sp );
+			} else {
+				// Fallback for proxy scenarios
+				_logger?.LogTrace( "Direct cast failed, checking for IMorphableFrom with proxy support" );
+
+				var morphableFromInterface = _typeResolver.FindGenericInterface( concreteDestinationType, typeof( IMorphableFrom<> ) );
+
+				if ( morphableFromInterface != null ) {
+					var sourceTypeArg = morphableFromInterface.GetGenericArguments( )[ 0 ];
+					_logger?.LogTrace( "Found IMorphableFrom<{SourceTypeArg}> on destination type {DestType}",
+						sourceTypeArg.Name, concreteDestinationType.Name );
+
+					// Check if the actual source type is compatible with the interface's source type
+					if ( sourceTypeArg.IsAssignableFrom( actualSourceType ) || sourceTypeArg == actualSourceType ) {
+						_logger?.LogDebug( "Source type {ActualSource} is compatible with IMorphableFrom<{SourceTypeArg}>",
+							actualSourceType.Name, sourceTypeArg.Name );
+
+						// Use reflection to call MorphFrom and ApplyFromSourceToDestinationAsync with the correct types
+						await ApplyMorphableFromMappingAsync( source, dest, sourceTypeArg, actualSourceType );
+					} else {
+						_logger?.LogWarning( "Source type {ActualSource} is not compatible with IMorphableFrom<{SourceTypeArg}>",
+							actualSourceType.Name, sourceTypeArg.Name );
+					}
+				} else {
+					_logger?.LogTrace( "Destination type {DestType} does not implement IMorphableFrom<>",
+						concreteDestinationType.Name );
+				}
 			}
 
-			_logger?.LogDebug( "Async IMorphableFrom mapping completed for {SourceType} -> {DestinationType}", sourceType.Name, destinationType.Name );
+			_logger?.LogDebug( "Async IMorphableFrom mapping completed for {SourceType} -> {DestinationType}",
+				sourceType.Name, destinationType.Name );
 			return dest;
+		}
+
+		/// <summary>
+		/// Applies the IMorphableFrom mapping asynchronously using reflection to handle proxy types.
+		/// </summary>
+		private async Task ApplyMorphableFromMappingAsync<TDestination>( object source, TDestination dest, Type interfaceSourceType, Type actualSourceType ) {
+			_logger?.LogTrace( "Applying async IMorphableFrom mapping with interface source type {InterfaceSource} and actual source {ActualSource}",
+				interfaceSourceType.Name, actualSourceType.Name );
+
+			try {
+				// Create Schema<InterfaceSourceType>
+				var schemaType = typeof( Schema<> ).MakeGenericType( interfaceSourceType );
+				var schema = Activator.CreateInstance( schemaType )!;
+
+				// Get the MorphFrom method and invoke it
+				var morphFromMethod = dest!.GetType( ).GetMethod( nameof( IMorphableFrom<object>.MorphFrom ) );
+				if ( morphFromMethod != null ) {
+					_logger?.LogTrace( "Invoking MorphFrom method on destination" );
+					morphFromMethod.Invoke( dest, [ schema ] );
+
+					// Apply the mapping using ApplyFromSourceToDestinationAsync
+					var applyMethod = schemaType.GetMethod( nameof( Schema<object>.ApplyFromSourceToDestinationAsync ) );
+					if ( applyMethod != null ) {
+						_logger?.LogTrace( "Invoking ApplyFromSourceToDestinationAsync" );
+						var task = ( Task? )applyMethod.Invoke( schema, [ source, dest, _sp ] );
+						if ( task != null ) {
+							await task;
+						}
+					} else {
+						_logger?.LogError( "ApplyFromSourceToDestinationAsync method not found on Schema<{Type}>", interfaceSourceType.Name );
+					}
+				} else {
+					_logger?.LogError( "MorphFrom method not found on destination type {DestType}", dest.GetType( ).Name );
+				}
+			} catch ( Exception ex ) {
+				_logger?.LogError( ex, "Error applying async IMorphableFrom mapping" );
+				throw;
+			}
 		}
 
 		/// <summary>
@@ -612,22 +761,34 @@ namespace Myth.Morph {
 		/// <param name="destinationType">The destination type to check.</param>
 		/// <returns>True if an instance-based mapping exists (directly or through inheritance), false otherwise.</returns>
 		private bool TryGetInstanceBasedMapping( Type sourceType, Type destinationType ) {
+			var actualSourceType = _typeResolver.GetActualType( sourceType );
+			var actualDestType = _typeResolver.GetActualType( destinationType );
+
+			_logger?.LogTrace( "Checking instance-based mapping for {SourceType} -> {DestinationType} (actual: {ActualSource} -> {ActualDest})",
+				sourceType.Name, destinationType.Name, actualSourceType.Name, actualDestType.Name );
+
 			// Check direct mapping first
-			if ( _instanceBasedMappings.Contains( (sourceType, destinationType) ) ) {
-				_logger?.LogTrace( "Found direct instance-based mapping for {SourceType} -> {DestinationType}", sourceType.Name, destinationType.Name );
+			if ( _instanceBasedMappings.Contains( (actualSourceType, actualDestType) ) ) {
+				_logger?.LogDebug( "Found direct instance-based mapping for {SourceType} -> {DestinationType}",
+					actualSourceType.Name, actualDestType.Name );
 				return true;
 			}
 
 			// If inheritance fallback is enabled, check the inheritance hierarchy
 			if ( _settings.EnableInheritanceFallback ) {
-				var hierarchy = GetInheritanceHierarchy( sourceType );
+				_logger?.LogTrace( "Checking instance-based mapping with inheritance fallback for {SourceType}", actualSourceType.Name );
+				var hierarchy = _typeResolver.GetInheritanceHierarchy( actualSourceType );
+
 				foreach ( var baseType in hierarchy ) {
-					if ( _instanceBasedMappings.Contains( (baseType, destinationType) ) ) {
-						_logger?.LogTrace( "Found inheritance instance-based mapping for {SourceType} -> {DestinationType} via {BaseType}",
-							sourceType.Name, destinationType.Name, baseType.Name );
+					if ( _instanceBasedMappings.Contains( (baseType, actualDestType) ) ) {
+						_logger?.LogDebug( "Found inheritance instance-based mapping for {SourceType} -> {DestinationType} via base type {BaseType}",
+							actualSourceType.Name, actualDestType.Name, baseType.Name );
 						return true;
 					}
 				}
+
+				_logger?.LogTrace( "No instance-based mapping found in hierarchy for {SourceType} -> {DestinationType}",
+					actualSourceType.Name, actualDestType.Name );
 			}
 
 			return false;
@@ -640,34 +801,50 @@ namespace Myth.Morph {
 		/// <param name="destinationType">The destination type.</param>
 		/// <returns>True if the destination type can be created from the source type using IMorphableFrom.</returns>
 		private bool TryGetMorphableFromMapping( Type sourceType, Type destinationType ) {
-			// Check if destination type implements IMorphableFrom<sourceType>
-			var morphableFromInterface = destinationType
+			// Resolve actual types (handle proxies)
+			var actualSourceType = _typeResolver.GetActualType( sourceType );
+			var actualDestType = _typeResolver.GetActualType( destinationType );
+
+			_logger?.LogTrace( "Checking IMorphableFrom mapping for {SourceType} -> {DestinationType} (actual: {ActualSource} -> {ActualDest})",
+				sourceType.Name, destinationType.Name, actualSourceType.Name, actualDestType.Name );
+
+			// Check if destination type implements IMorphableFrom<actualSourceType>
+			var morphableFromInterface = actualDestType
 				.GetInterfaces( )
 				.FirstOrDefault( i => i.IsGenericType &&
 								   i.GetGenericTypeDefinition( ) == typeof( IMorphableFrom<> ) &&
-								   i.GetGenericArguments( )[ 0 ] == sourceType );
+								   _typeResolver.GetActualType( i.GetGenericArguments( )[ 0 ] ) == actualSourceType );
 
 			if ( morphableFromInterface != null ) {
-				_logger?.LogTrace( "Found IMorphableFrom mapping for {SourceType} -> {DestinationType}", sourceType.Name, destinationType.Name );
+				_logger?.LogDebug( "Found direct IMorphableFrom mapping for {SourceType} -> {DestinationType}",
+					actualSourceType.Name, actualDestType.Name );
 				return true;
 			}
 
 			// If inheritance fallback is enabled, check the inheritance hierarchy of the source type
 			if ( _settings.EnableInheritanceFallback ) {
-				var sourceHierarchy = GetInheritanceHierarchy( sourceType );
+				_logger?.LogTrace( "Checking IMorphableFrom with inheritance fallback for {SourceType}", actualSourceType.Name );
+				var sourceHierarchy = _typeResolver.GetInheritanceHierarchy( actualSourceType );
+
+				_logger?.LogTrace( "Source type {SourceType} has {HierarchyCount} types in hierarchy",
+					actualSourceType.Name, sourceHierarchy.Count );
+
 				foreach ( var baseSourceType in sourceHierarchy ) {
-					var hierarchyInterface = destinationType
+					var hierarchyInterface = actualDestType
 						.GetInterfaces( )
 						.FirstOrDefault( i => i.IsGenericType &&
 										   i.GetGenericTypeDefinition( ) == typeof( IMorphableFrom<> ) &&
-										   i.GetGenericArguments( )[ 0 ] == baseSourceType );
+										   _typeResolver.GetActualType( i.GetGenericArguments( )[ 0 ] ) == baseSourceType );
 
 					if ( hierarchyInterface != null ) {
-						_logger?.LogTrace( "Found IMorphableFrom inheritance mapping for {SourceType} -> {DestinationType} via {BaseSourceType}",
-							sourceType.Name, destinationType.Name, baseSourceType.Name );
+						_logger?.LogDebug( "Found IMorphableFrom inheritance mapping for {SourceType} -> {DestinationType} via base type {BaseSourceType}",
+							actualSourceType.Name, actualDestType.Name, baseSourceType.Name );
 						return true;
 					}
 				}
+
+				_logger?.LogTrace( "No IMorphableFrom mapping found in hierarchy for {SourceType} -> {DestinationType}",
+					actualSourceType.Name, actualDestType.Name );
 			}
 
 			return false;
@@ -683,75 +860,47 @@ namespace Myth.Morph {
 		private bool TryGetBuilderWithInheritanceFallback( Type sourceType, Type destinationType, out object? builderObj ) {
 			builderObj = null;
 
+			var actualSourceType = _typeResolver.GetActualType( sourceType );
+			var actualDestType = _typeResolver.GetActualType( destinationType );
+
 			// Check cache first
-			var cacheKey = (sourceType, destinationType);
+			var cacheKey = (actualSourceType, actualDestType);
 			if ( _mappingFallbackCache.TryGetValue( cacheKey, out var cachedMapping ) ) {
 				if ( cachedMapping.HasValue ) {
 					_builders.TryGetValue( cachedMapping.Value, out builderObj );
 					_logger?.LogTrace( "Found cached inheritance mapping for {SourceType} -> {DestinationType} via {CachedSource} -> {CachedDest}",
-						sourceType.Name, destinationType.Name, cachedMapping.Value.Item1.Name, cachedMapping.Value.Item2.Name );
+						actualSourceType.Name, actualDestType.Name, cachedMapping.Value.Item1.Name, cachedMapping.Value.Item2.Name );
 					return builderObj != null;
 				}
-				return false; // Cached as not found
+				_logger?.LogTrace( "Cache indicates no mapping exists for {SourceType} -> {DestinationType}",
+					actualSourceType.Name, actualDestType.Name );
+				return false;
 			}
 
-			// Get inheritance hierarchy for source type
-			var hierarchy = GetInheritanceHierarchy( sourceType );
+			_logger?.LogTrace( "Searching inheritance hierarchy for builder: {SourceType} -> {DestinationType}",
+				actualSourceType.Name, actualDestType.Name );
+
+			// Get inheritance hierarchy for source type using TypeResolver
+			var hierarchy = _typeResolver.GetInheritanceHierarchy( actualSourceType );
 
 			// Search through hierarchy for compatible mappings
 			foreach ( var baseType in hierarchy ) {
-				if ( _builders.TryGetValue( (baseType, destinationType), out builderObj ) ) {
-					_logger?.LogTrace( "Found inheritance fallback builder for {SourceType} -> {DestinationType} via base type {BaseType}",
-						sourceType.Name, destinationType.Name, baseType.Name );
+				if ( _builders.TryGetValue( (baseType, actualDestType), out builderObj ) ) {
+					_logger?.LogDebug( "Found inheritance fallback builder for {SourceType} -> {DestinationType} via base type {BaseType}",
+						actualSourceType.Name, actualDestType.Name, baseType.Name );
 
 					// Cache this successful mapping
-					_mappingFallbackCache[ cacheKey ] = (baseType, destinationType);
+					_mappingFallbackCache[ cacheKey ] = (baseType, actualDestType);
 					return true;
 				}
 			}
 
+			_logger?.LogTrace( "No inheritance fallback builder found for {SourceType} -> {DestinationType}",
+				actualSourceType.Name, actualDestType.Name );
+
 			// Cache as not found
 			_mappingFallbackCache[ cacheKey ] = null;
 			return false;
-		}
-
-		/// <summary>
-		/// Gets the inheritance hierarchy for a given type, including base classes and optionally interfaces.
-		/// Results are cached for performance.
-		/// </summary>
-		/// <param name="type">The type to get the hierarchy for.</param>
-		/// <returns>A list of types in the inheritance hierarchy, ordered from most specific to most general.</returns>
-		private List<Type> GetInheritanceHierarchy( Type type ) {
-			return _inheritanceHierarchyCache.GetOrAdd( type, t => {
-				var hierarchy = new List<Type>( );
-				var currentType = t.BaseType;
-				var depth = 0;
-
-				// Add base classes
-				while ( currentType != null && currentType != typeof( object ) ) {
-					if ( _settings.MaxInheritanceDepth >= 0 && depth >= _settings.MaxInheritanceDepth ) {
-						_logger?.LogTrace( "Reached maximum inheritance depth {MaxDepth} for type {Type}", _settings.MaxInheritanceDepth, t.Name );
-						break;
-					}
-
-					hierarchy.Add( currentType );
-					currentType = currentType.BaseType;
-					depth++;
-				}
-
-				// Add interfaces if enabled
-				if ( _settings.IncludeInterfacesInFallback ) {
-					var interfaces = t.GetInterfaces( );
-					foreach ( var iface in interfaces ) {
-						if ( !hierarchy.Contains( iface ) ) {
-							hierarchy.Add( iface );
-						}
-					}
-				}
-
-				_logger?.LogTrace( "Built inheritance hierarchy for {Type}: {HierarchyCount} types found", t.Name, hierarchy.Count );
-				return hierarchy;
-			} );
 		}
 
 		/// <summary>
