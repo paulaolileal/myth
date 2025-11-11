@@ -9,10 +9,11 @@ namespace Myth.Extensions {
 	public static class ApplicationBuilderExtensions {
 
 		/// <summary>
-		/// Adds middleware to handle validation exceptions
+		/// Adds middleware to handle exceptions globally with configured mappings.
+		/// Automatically handles ValidationException and any other mapped exceptions.
 		/// </summary>
 		public static IApplicationBuilder UseGuard( this IApplicationBuilder app ) {
-			return app.UseMiddleware<ValidationExceptionMiddleware>( );
+			return app.UseMiddleware<GuardExceptionMiddleware>( );
 		}
 	}
 }

@@ -17,6 +17,7 @@ A maioria das bibliotecas de validação forçam você a escolher entre validaç
 - **API Fluente Declarativa**: Escreva regras de validação legíveis com métodos encadeáveis
 - **Validação Consciente de Contexto**: Regras diferentes para operações Create, Update, Delete na mesma entidade
 - **Integração Assíncrona com Serviços**: Acesse injeção de dependência para validação de banco de dados ou API
+- **Tratador Global de Exceções**: Configure mapeamentos customizados de exceções com códigos de status e formatos de resposta
 - **Tratamento Automático de Erros**: Middleware ASP.NET Core com respostas JSON estruturadas
 - **100+ Regras Integradas**: Validação abrangente para strings, números, coleções, datas, booleanos, enums
 - **Suporte a Tipos Nullable**: Suporte completo para tipos nullable com regras dedicadas
@@ -599,6 +600,195 @@ Ao usar `app.UseGuard()`, exceções de validação são automaticamente captura
 ```
 
 **Código de Status HTTP**: O código de status mais alto de todos os erros de validação (ex: se um erro tem `409 Conflict`, a resposta será `409`).
+
+## Tratamento Global de Exceções
+
+O Myth.Guard agora inclui um poderoso **Tratador Global de Exceções** que permite mapear qualquer tipo de exceção para respostas HTTP customizadas com códigos de status e formatos de erro apropriados.
+
+### Configuração Rápida
+
+Configure mapeamentos de exceções ao adicionar os serviços do Guard:
+
+```csharp
+builder.Services.AddGuard( options => {
+    options.AutoMapCommonExceptions( );
+} );
+```
+
+O método `AutoMapCommonExceptions()` configura automaticamente padrões sensatos para exceções comuns do .NET:
+
+- `ArgumentNullException` → 400 Bad Request
+- `ArgumentException` → 400 Bad Request
+- `InvalidOperationException` → 409 Conflict
+- `UnauthorizedAccessException` → 403 Forbidden
+- `NotImplementedException` → 501 Not Implemented
+- `TimeoutException` → 408 Request Timeout
+- Handler padrão → 500 Internal Server Error (com stack trace formatado em desenvolvimento)
+
+### Mapeamentos Customizados de Exceções
+
+Mapeie seus próprios tipos de exceção com configuração fluente:
+
+```csharp
+builder.Services.AddGuard( options => {
+    // Mapear tipos específicos de exceção
+    options
+        .MapException<NotFoundException>( )
+        .WithStatusCode( 404 )
+        .WithErrorCode( "NOT_FOUND" )
+        .WithResponse( ex => new {
+            error = ex.Message,
+            resourceType = ex.ResourceType
+        } );
+
+    options
+        .MapException<BusinessRuleException>( )
+        .WithStatusCode( 422 )
+        .WithErrorCode( "BUSINESS_RULE_VIOLATION" )
+        .WithResponse( ex => new {
+            error = ex.Message,
+            rule = ex.RuleName,
+            details = ex.Details
+        } )
+        .OnBeforeResponse( ( ex, ctx ) => {
+            _logger.LogWarning( ex, "Violação de regra de negócio: {Rule}", ex.RuleName );
+        } );
+
+    // Configurar handler padrão para exceções não mapeadas
+    options
+        .MapDefaultException( )
+        .WithStatusCode( 500 )
+        .WithErrorCode( "INTERNAL_ERROR" )
+        .WithResponse( ex => new {
+            error = _env.IsDevelopment( ) ? ex.Message : "Ocorreu um erro interno",
+            trace = _env.IsDevelopment( ) ? ex.StackTrace : null
+        } )
+        .OnBeforeResponse( ( ex, ctx ) => {
+            _logger.LogError( ex, "Exceção não tratada" );
+        } );
+} );
+```
+
+### Referência da API
+
+#### `MapException<TException>()`
+
+Cria um mapeamento para um tipo específico de exceção.
+
+**Métodos Encadeáveis:**
+
+- `.WithStatusCode( int statusCode )` - Define o código de status HTTP
+- `.WithStatusCode( Func<TException, int> resolver )` - Código de status dinâmico
+- `.WithErrorCode( string code )` - Define a string do código de erro
+- `.WithErrorCode( Func<TException, string> resolver )` - Código de erro dinâmico
+- `.WithResponse( Func<TException, object> builder )` - Constrói o objeto de resposta
+- `.OnBeforeResponse( Action<TException, HttpContext> callback )` - Executa antes de escrever a resposta (para logging, telemetria, etc.)
+
+#### `MapDefaultException()`
+
+Configura o handler de fallback para exceções não mapeadas. Usa a mesma API fluente que `MapException<TException>()`.
+
+#### `AutoMapCommonExceptions( bool includeStackTrace = true )`
+
+Configura automaticamente handlers para exceções comuns do .NET com padrões sensatos. Em modo de desenvolvimento, inclui stack traces formatados para o handler padrão.
+
+### Resolução de Exceções
+
+O middleware usa **resolução consciente de herança** para encontrar o melhor handler correspondente:
+
+1. **Correspondência exata**: Procura por handler registrado para o tipo exato da exceção
+2. **Correspondência por herança**: Busca handlers de tipos base, priorizando a correspondência mais específica
+3. **Handler padrão**: Retorna ao handler padrão se nenhuma correspondência for encontrada
+4. **Fallback integrado**: Retorna erro genérico 500 se nenhum handler estiver configurado
+
+### Formatação de Stack Trace
+
+Quando `AutoMapCommonExceptions()` é usado com stack traces habilitados (padrão em desenvolvimento), os stack traces são automaticamente formatados para legibilidade:
+
+**Antes:**
+```
+at MyApp.Services.UserService.GetUser(Int32 id) in C:\Projects\MyApp\Services\UserService.cs:line 42
+at MyApp.Controllers.UserController.Get(Int32 id) in C:\Projects\MyApp\Controllers\UserController.cs:line 28
+```
+
+**Depois:**
+```
+  at MyApp.Services.UserService.GetUser(Int32 id) in C:\Projects\MyApp\Services\UserService.cs:line 42
+  at MyApp.Controllers.UserController.Get(Int32 id) in C:\Projects\MyApp\Controllers\UserController.cs:line 28
+```
+
+### Exemplo Completo
+
+```csharp
+// Program.cs
+var builder = WebApplication.CreateBuilder( args );
+
+builder.Services.AddGuard( options => {
+    // Auto-mapear exceções comuns
+    options.AutoMapCommonExceptions( );
+
+    // Exceções de domínio customizadas
+    options
+        .MapException<EntityNotFoundException>( )
+        .WithStatusCode( 404 )
+        .WithErrorCode( "ENTITY_NOT_FOUND" )
+        .WithResponse( ex => new {
+            error = $"{ex.EntityType} com ID {ex.EntityId} não encontrado"
+        } );
+
+    options
+        .MapException<DuplicateEntityException>( )
+        .WithStatusCode( 409 )
+        .WithErrorCode( "DUPLICATE_ENTITY" )
+        .WithResponse( ex => new {
+            error = ex.Message,
+            conflictingField = ex.FieldName,
+            existingId = ex.ExistingEntityId
+        } );
+} );
+
+var app = builder.Build( );
+
+// Habilitar tratamento global de exceções
+app.UseGuard( );
+
+app.MapControllers( );
+app.Run( );
+```
+
+```csharp
+// Uso no controller - sem necessidade de try/catch!
+[ApiController]
+[Route( "api/[controller]" )]
+public class UsersController : ControllerBase {
+
+    [HttpGet( "{id}" )]
+    public async Task<UserDto> GetUser( int id ) {
+        // Lança EntityNotFoundException se não encontrado
+        // Automaticamente tratado pelo middleware do Guard
+        return await _userService.GetByIdAsync( id );
+    }
+}
+```
+
+### Compatibilidade Retroativa
+
+**ValidationException** continua funcionando exatamente como antes. O middleware detecta e trata automaticamente com o formato de erro estruturado existente:
+
+```json
+{
+    "code": "MULTIPLE_ERRORS",
+    "errors": [
+        {
+            "field": "email",
+            "message": "Email é obrigatório",
+            "code": "VIOLATION"
+        }
+    ]
+}
+```
+
+Nenhuma alteração necessária no código de validação existente!
 
 ## Testes
 
