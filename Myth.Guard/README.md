@@ -605,6 +605,10 @@ When using `app.UseGuard()`, validation exceptions are automatically caught and 
 
 Myth.Guard now includes a powerful **Global Exception Handler** that allows you to map any exception type to custom HTTP responses with appropriate status codes and error formats.
 
+### Opt-In Behavior
+
+By default, `UseGuard()` **only handles `ValidationException`** automatically. Other exceptions are **not intercepted** unless you explicitly configure handlers for them. This ensures backward compatibility and gives you full control.
+
 ### Quick Setup
 
 Configure exception mappings when adding Guard services:
@@ -614,6 +618,8 @@ builder.Services.AddGuard( options => {
     options.AutoMapCommonExceptions( );
 } );
 ```
+
+**Important:** Without calling `AutoMapCommonExceptions()` or configuring custom handlers, only `ValidationException` will be handled by the middleware.
 
 The `AutoMapCommonExceptions()` method automatically configures sensible defaults for common .NET exceptions:
 
@@ -677,10 +683,12 @@ Creates a mapping for a specific exception type.
 
 **Chainable Methods:**
 
-- `.WithStatusCode( int statusCode )` - Sets HTTP status code
-- `.WithStatusCode( Func<TException, int> resolver )` - Dynamic status code
+- `.WithStatusCode( int statusCode )` - Sets HTTP status code (e.g., 404, 500)
+- `.WithStatusCode( HttpStatusCode statusCode )` - Sets HTTP status code using enum (e.g., HttpStatusCode.NotFound)
+- `.WithStatusCode( Func<TException, int> resolver )` - Dynamic status code resolver
+- `.WithStatusCode( Func<TException, HttpStatusCode> resolver )` - Dynamic status code resolver with enum
 - `.WithErrorCode( string code )` - Sets error code string
-- `.WithErrorCode( Func<TException, string> resolver )` - Dynamic error code
+- `.WithErrorCode( Func<TException, string> resolver )` - Dynamic error code resolver
 - `.WithResponse( Func<TException, object> builder )` - Builds response object
 - `.OnBeforeResponse( Action<TException, HttpContext> callback )` - Executes before writing response (for logging, telemetry, etc.)
 
@@ -721,21 +729,24 @@ at MyApp.Controllers.UserController.Get(Int32 id) in C:\Projects\MyApp\Controlle
 
 ```csharp
 // Program.cs
+using System.Net;
+
 var builder = WebApplication.CreateBuilder( args );
 
 builder.Services.AddGuard( options => {
     // Auto-map common exceptions
     options.AutoMapCommonExceptions( );
 
-    // Custom domain exceptions
+    // Custom domain exceptions using enum
     options
         .MapException<EntityNotFoundException>( )
-        .WithStatusCode( 404 )
+        .WithStatusCode( HttpStatusCode.NotFound )
         .WithErrorCode( "ENTITY_NOT_FOUND" )
         .WithResponse( ex => new {
             error = $"{ex.EntityType} with ID {ex.EntityId} not found"
         } );
 
+    // Or using int status code
     options
         .MapException<DuplicateEntityException>( )
         .WithStatusCode( 409 )
@@ -744,6 +755,16 @@ builder.Services.AddGuard( options => {
             error = ex.Message,
             conflictingField = ex.FieldName,
             existingId = ex.ExistingEntityId
+        } );
+
+    // Dynamic status code using enum
+    options
+        .MapException<BusinessRuleException>( )
+        .WithStatusCode( ex => ex.IsCritical ? HttpStatusCode.Forbidden : HttpStatusCode.UnprocessableEntity )
+        .WithErrorCode( "BUSINESS_RULE_VIOLATION" )
+        .WithResponse( ex => new {
+            error = ex.Message,
+            rule = ex.RuleName
         } );
 } );
 

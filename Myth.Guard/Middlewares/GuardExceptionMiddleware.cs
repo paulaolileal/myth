@@ -31,13 +31,17 @@ namespace Myth.Middlewares {
 		}
 
 		private async Task HandleExceptionAsync( HttpContext context, Exception exception ) {
+			if ( exception is ValidationException validationException ) {
+				await HandleValidationExceptionAsync( context, validationException );
+
+				return;
+			}
+
 			var handler = FindHandler( exception );
 
 			if ( handler == null ) {
-				_logger?.LogError( exception, "Unhandled exception with no configured handler" );
-				await WriteDefaultErrorResponse( context, exception );
-
-				return;
+				_logger?.LogWarning( "Exception of type {ExceptionType} not handled by Guard middleware, re-throwing", exception.GetType( ).Name );
+				throw exception;
 			}
 
 			try {
@@ -58,14 +62,34 @@ namespace Myth.Middlewares {
 
 			} catch ( Exception handlerException ) {
 				_logger?.LogError( handlerException, "Error in exception handler for {ExceptionType}", exception.GetType( ).Name );
-				await WriteDefaultErrorResponse( context, exception );
+				throw exception;
 			}
 		}
 
-		private ExceptionHandler? FindHandler( Exception exception ) {
-			if ( exception is ValidationException )
-				return GetValidationExceptionHandler( );
+		private static async Task HandleValidationExceptionAsync( HttpContext context, ValidationException exception ) {
+			var response = new ValidationErrorResponse {
+				Code = exception.ValidationResult.Errors.Count > 1
+					? "MULTIPLE_ERRORS"
+					: exception.ValidationResult.Errors[ 0 ].Code,
+				Errors = [ .. exception.ValidationResult.Errors.Select( e => new ErrorDetail {
+					Field = e.Field,
+					Message = e.Message,
+					Code = e.Code
+				} ) ]
+			};
 
+			context.Response.StatusCode = ( int )exception.ValidationResult.StatusCode;
+			context.Response.ContentType = "application/json";
+
+			var options = new JsonSerializerOptions {
+				PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+				WriteIndented = false
+			};
+
+			await context.Response.WriteAsJsonAsync( response, options );
+		}
+
+		private ExceptionHandler? FindHandler( Exception exception ) {
 			var exceptionType = exception.GetType( );
 
 			if ( _options.ExceptionHandlers.TryGetValue( exceptionType, out var handler ) )
@@ -82,31 +106,6 @@ namespace Myth.Middlewares {
 			return _options.DefaultHandler;
 		}
 
-		private static ExceptionHandler GetValidationExceptionHandler( ) {
-			return new ExceptionHandler {
-				ExceptionType = typeof( ValidationException ),
-				StatusCodeResolver = ex => {
-					var validationEx = ( ValidationException )ex;
-
-					return ( int )validationEx.ValidationResult.StatusCode;
-				},
-				ResponseBuilder = ex => {
-					var validationEx = ( ValidationException )ex;
-
-					return new ValidationErrorResponse {
-						Code = validationEx.ValidationResult.Errors.Count > 1
-							? "MULTIPLE_ERRORS"
-							: validationEx.ValidationResult.Errors[ 0 ].Code,
-						Errors = [ .. validationEx.ValidationResult.Errors.Select( e => new ErrorDetail {
-							Field = e.Field,
-							Message = e.Message,
-							Code = e.Code
-						} ) ]
-					};
-				}
-			};
-		}
-
 		private static int GetInheritanceDistance( Type childType, Type parentType ) {
 			var distance = 0;
 			var currentType = childType;
@@ -117,22 +116,6 @@ namespace Myth.Middlewares {
 			}
 
 			return currentType == parentType ? distance : int.MaxValue;
-		}
-
-		private static async Task WriteDefaultErrorResponse( HttpContext context, Exception exception ) {
-			context.Response.StatusCode = 500;
-			context.Response.ContentType = "application/json";
-
-			var response = new {
-				error = "An internal error occurred"
-			};
-
-			var options = new JsonSerializerOptions {
-				PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-				WriteIndented = false
-			};
-
-			await context.Response.WriteAsJsonAsync( response, options );
 		}
 	}
 }

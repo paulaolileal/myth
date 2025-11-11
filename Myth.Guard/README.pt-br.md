@@ -605,6 +605,10 @@ Ao usar `app.UseGuard()`, exceções de validação são automaticamente captura
 
 O Myth.Guard agora inclui um poderoso **Tratador Global de Exceções** que permite mapear qualquer tipo de exceção para respostas HTTP customizadas com códigos de status e formatos de erro apropriados.
 
+### Comportamento Opt-In
+
+Por padrão, `UseGuard()` **apenas trata `ValidationException`** automaticamente. Outras exceções **não são interceptadas** a menos que você configure handlers explicitamente para elas. Isso garante compatibilidade retroativa e lhe dá controle total.
+
 ### Configuração Rápida
 
 Configure mapeamentos de exceções ao adicionar os serviços do Guard:
@@ -614,6 +618,8 @@ builder.Services.AddGuard( options => {
     options.AutoMapCommonExceptions( );
 } );
 ```
+
+**Importante:** Sem chamar `AutoMapCommonExceptions()` ou configurar handlers customizados, apenas `ValidationException` será tratada pelo middleware.
 
 O método `AutoMapCommonExceptions()` configura automaticamente padrões sensatos para exceções comuns do .NET:
 
@@ -677,8 +683,10 @@ Cria um mapeamento para um tipo específico de exceção.
 
 **Métodos Encadeáveis:**
 
-- `.WithStatusCode( int statusCode )` - Define o código de status HTTP
-- `.WithStatusCode( Func<TException, int> resolver )` - Código de status dinâmico
+- `.WithStatusCode( int statusCode )` - Define o código de status HTTP (ex: 404, 500)
+- `.WithStatusCode( HttpStatusCode statusCode )` - Define o código de status HTTP usando enum (ex: HttpStatusCode.NotFound)
+- `.WithStatusCode( Func<TException, int> resolver )` - Resolvedor de código de status dinâmico
+- `.WithStatusCode( Func<TException, HttpStatusCode> resolver )` - Resolvedor de código de status dinâmico com enum
 - `.WithErrorCode( string code )` - Define a string do código de erro
 - `.WithErrorCode( Func<TException, string> resolver )` - Código de erro dinâmico
 - `.WithResponse( Func<TException, object> builder )` - Constrói o objeto de resposta
@@ -721,21 +729,24 @@ at MyApp.Controllers.UserController.Get(Int32 id) in C:\Projects\MyApp\Controlle
 
 ```csharp
 // Program.cs
+using System.Net;
+
 var builder = WebApplication.CreateBuilder( args );
 
 builder.Services.AddGuard( options => {
     // Auto-mapear exceções comuns
     options.AutoMapCommonExceptions( );
 
-    // Exceções de domínio customizadas
+    // Exceções de domínio customizadas usando enum
     options
         .MapException<EntityNotFoundException>( )
-        .WithStatusCode( 404 )
+        .WithStatusCode( HttpStatusCode.NotFound )
         .WithErrorCode( "ENTITY_NOT_FOUND" )
         .WithResponse( ex => new {
             error = $"{ex.EntityType} com ID {ex.EntityId} não encontrado"
         } );
 
+    // Ou usando código de status int
     options
         .MapException<DuplicateEntityException>( )
         .WithStatusCode( 409 )
@@ -744,6 +755,16 @@ builder.Services.AddGuard( options => {
             error = ex.Message,
             conflictingField = ex.FieldName,
             existingId = ex.ExistingEntityId
+        } );
+
+    // Código de status dinâmico usando enum
+    options
+        .MapException<BusinessRuleException>( )
+        .WithStatusCode( ex => ex.IsCritical ? HttpStatusCode.Forbidden : HttpStatusCode.UnprocessableEntity )
+        .WithErrorCode( "BUSINESS_RULE_VIOLATION" )
+        .WithResponse( ex => new {
+            error = ex.Message,
+            rule = ex.RuleName
         } );
 } );
 

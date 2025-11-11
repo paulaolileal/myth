@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Myth.Models;
+using System.Net;
 
 namespace Myth.Builder {
 
@@ -32,12 +33,33 @@ namespace Myth.Builder {
 		}
 
 		/// <summary>
+		/// Sets the HTTP status code for this exception type using HttpStatusCode enum
+		/// </summary>
+		/// <param name="statusCode">The HTTP status code enum</param>
+		public ExceptionMappingBuilder<TException> WithStatusCode( HttpStatusCode statusCode ) {
+			_statusCode = ( int )statusCode;
+
+			return this;
+		}
+
+		/// <summary>
 		/// Sets a dynamic HTTP status code resolver for this exception type
 		/// </summary>
 		/// <param name="statusCodeResolver">Function to resolve status code from exception</param>
 		public ExceptionMappingBuilder<TException> WithStatusCode( Func<TException, int> statusCodeResolver ) {
 			_statusCode = 0;
 			_errorCodeResolver = ex => statusCodeResolver( ex ).ToString( );
+
+			return this;
+		}
+
+		/// <summary>
+		/// Sets a dynamic HTTP status code resolver for this exception type using HttpStatusCode enum
+		/// </summary>
+		/// <param name="statusCodeResolver">Function to resolve status code from exception</param>
+		public ExceptionMappingBuilder<TException> WithStatusCode( Func<TException, HttpStatusCode> statusCodeResolver ) {
+			_statusCode = 0;
+			_errorCodeResolver = ex => ( ( int )statusCodeResolver( ex ) ).ToString( );
 
 			return this;
 		}
