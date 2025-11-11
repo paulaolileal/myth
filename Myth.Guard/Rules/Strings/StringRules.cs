@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using Myth.Interfaces.Rules;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Strings; 
+namespace Myth.Rules.Strings;
 
 /// <summary>
 /// String rule configurator

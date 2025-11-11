@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Myth.Exceptions;
 using Myth.Flow.Actions.Interfaces;
 using Myth.Interfaces;

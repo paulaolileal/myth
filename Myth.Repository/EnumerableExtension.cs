@@ -1,4 +1,4 @@
-﻿using Myth.Interfaces.Results;
+using Myth.Interfaces.Results;
 using Myth.Models.Results;
 using Myth.ValueObjects;
 

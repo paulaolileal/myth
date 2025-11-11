@@ -1,6 +1,6 @@
 using Myth.Rules.Base;
 
-namespace Myth.Interfaces.Rules; 
+namespace Myth.Interfaces.Rules;
 
 /// <summary>
 /// DateOnly-specific validation rules

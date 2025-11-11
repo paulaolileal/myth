@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Myth.Rules.Base;
 
-namespace Myth.Interfaces.Rules; 
+namespace Myth.Interfaces.Rules;
 
 /// <summary>
 /// Provides validation rules specifically designed for string values, including length validation,

@@ -1,9 +1,8 @@
-﻿namespace Myth.Commons.Test.Models {
+namespace Myth.Commons.Test.Models;
 
-	internal interface ITestModel {
-		int Id { get; set; }
-		string Name { get; set; }
+internal interface ITestModel {
+	int Id { get; set; }
+	string Name { get; set; }
 
-		string Test( );
-	}
+	string Test( );
 }

@@ -1,13 +1,13 @@
-﻿using Microsoft.AspNetCore.Http;
+using System.Diagnostics;
+using System.Dynamic;
+using System.Net.Http.Headers;
+using System.Text;
+using Microsoft.AspNetCore.Http;
 using Myth.Builders;
 using Myth.Exceptions;
 using Myth.Extensions;
 using Myth.Interfaces;
 using Myth.Models;
-using System.Diagnostics;
-using System.Dynamic;
-using System.Net.Http.Headers;
-using System.Text;
 
 namespace Myth.Rest;
 

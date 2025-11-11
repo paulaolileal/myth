@@ -1,7 +1,7 @@
 using Myth.Interfaces.Rules;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Dates; 
+namespace Myth.Rules.Dates;
 
 /// <summary>
 /// DateOnly rule configurator

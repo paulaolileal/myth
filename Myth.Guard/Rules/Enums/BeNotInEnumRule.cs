@@ -1,7 +1,7 @@
 using Myth.Models;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Enums; 
+namespace Myth.Rules.Enums;
 
 internal sealed class BeNotInEnumRule<T> : ValidationRuleBase<T> where T : struct, Enum {
 

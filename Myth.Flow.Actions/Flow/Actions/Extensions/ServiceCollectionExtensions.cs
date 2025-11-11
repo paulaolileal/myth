@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+using System.Diagnostics;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -10,7 +11,6 @@ using Myth.Flow.Actions.Settings;
 using Myth.Flow.Resilience;
 using Myth.Interfaces;
 using Myth.Models;
-using System.Diagnostics;
 
 namespace Myth.Flow.Actions.Extensions;
 
@@ -118,75 +118,75 @@ public static class ServiceCollectionExtensions {
 	private static void RegisterMessageBroker( IServiceCollection services, FlowActionsConfiguration configuration ) {
 		switch ( configuration.BrokerType ) {
 			case MessageBrokerType.InMemory:
-			var inMemoryOptions = new InMemoryBrokerOptions( );
-			if ( configuration.BrokerConfigurationFactory != null ) {
-				var options = configuration.BrokerConfigurationFactory( );
-				if ( options is InMemoryBrokerOptions opt )
-					inMemoryOptions = opt;
-			}
+				var inMemoryOptions = new InMemoryBrokerOptions( );
+				if ( configuration.BrokerConfigurationFactory != null ) {
+					var options = configuration.BrokerConfigurationFactory( );
+					if ( options is InMemoryBrokerOptions opt )
+						inMemoryOptions = opt;
+				}
 
-			services.AddSingleton( inMemoryOptions );
+				services.AddSingleton( inMemoryOptions );
 
-			if ( inMemoryOptions.UseDeadLetterQueue ) {
-				services.AddSingleton<DeadLetterQueue>( sp => {
-					var logger = sp.GetRequiredService<ILogger<DeadLetterQueue>>( );
-					return new DeadLetterQueue( logger, maxSize: 10000 );
+				if ( inMemoryOptions.UseDeadLetterQueue ) {
+					services.AddSingleton<DeadLetterQueue>( sp => {
+						var logger = sp.GetRequiredService<ILogger<DeadLetterQueue>>( );
+						return new DeadLetterQueue( logger, maxSize: 10000 );
+					} );
+				}
+
+				services.AddSingleton<IMessageBroker>( sp => {
+					var subscriptionManager = sp.GetRequiredService<IEventSubscriptionManager>( );
+					var logger = sp.GetRequiredService<ILogger<InMemoryBroker>>( );
+					var activitySource = sp.GetService<ActivitySource>( ) ?? new ActivitySource( "Myth.Flow.Actions" );
+					var dlq = inMemoryOptions.UseDeadLetterQueue ? sp.GetService<DeadLetterQueue>( ) : null;
+
+					return new InMemoryBroker(
+						subscriptionManager,
+						logger,
+						activitySource,
+						inMemoryOptions,
+						dlq );
 				} );
-			}
-
-			services.AddSingleton<IMessageBroker>( sp => {
-				var subscriptionManager = sp.GetRequiredService<IEventSubscriptionManager>( );
-				var logger = sp.GetRequiredService<ILogger<InMemoryBroker>>( );
-				var activitySource = sp.GetService<ActivitySource>( ) ?? new ActivitySource( "Myth.Flow.Actions" );
-				var dlq = inMemoryOptions.UseDeadLetterQueue ? sp.GetService<DeadLetterQueue>( ) : null;
-
-				return new InMemoryBroker(
-					subscriptionManager,
-					logger,
-					activitySource,
-					inMemoryOptions,
-					dlq );
-			} );
-			break;
+				break;
 
 			case MessageBrokerType.Kafka:
-			var kafkaOptions = new KafkaOptions {
-				BootstrapServers = "localhost:9092",
-				GroupId = "flow-actions"
-			};
+				var kafkaOptions = new KafkaOptions {
+					BootstrapServers = "localhost:9092",
+					GroupId = "flow-actions"
+				};
 
-			if ( configuration.BrokerConfigurationFactory != null ) {
-				var options = configuration.BrokerConfigurationFactory( );
-				if ( options is KafkaOptions opt )
-					kafkaOptions = opt;
-			}
+				if ( configuration.BrokerConfigurationFactory != null ) {
+					var options = configuration.BrokerConfigurationFactory( );
+					if ( options is KafkaOptions opt )
+						kafkaOptions = opt;
+				}
 
-			services.AddSingleton( kafkaOptions );
-			services.AddSingleton<IMessageBroker>( sp => {
-				var logger = sp.GetRequiredService<ILogger<KafkaBroker>>( );
-				return new KafkaBroker( kafkaOptions, logger );
-			} );
-			break;
+				services.AddSingleton( kafkaOptions );
+				services.AddSingleton<IMessageBroker>( sp => {
+					var logger = sp.GetRequiredService<ILogger<KafkaBroker>>( );
+					return new KafkaBroker( kafkaOptions, logger );
+				} );
+				break;
 
 			case MessageBrokerType.RabbitMQ:
-			var rabbitOptions = new RabbitMQOptions {
-				HostName = "localhost",
-				UserName = "guest",
-				Password = "guest"
-			};
+				var rabbitOptions = new RabbitMQOptions {
+					HostName = "localhost",
+					UserName = "guest",
+					Password = "guest"
+				};
 
-			if ( configuration.BrokerConfigurationFactory != null ) {
-				var options = configuration.BrokerConfigurationFactory( );
-				if ( options is RabbitMQOptions opt )
-					rabbitOptions = opt;
-			}
+				if ( configuration.BrokerConfigurationFactory != null ) {
+					var options = configuration.BrokerConfigurationFactory( );
+					if ( options is RabbitMQOptions opt )
+						rabbitOptions = opt;
+				}
 
-			services.AddSingleton( rabbitOptions );
-			services.AddSingleton<IMessageBroker>( sp => {
-				var logger = sp.GetRequiredService<ILogger<RabbitMQBroker>>( );
-				return new RabbitMQBroker( rabbitOptions, logger );
-			} );
-			break;
+				services.AddSingleton( rabbitOptions );
+				services.AddSingleton<IMessageBroker>( sp => {
+					var logger = sp.GetRequiredService<ILogger<RabbitMQBroker>>( );
+					return new RabbitMQBroker( rabbitOptions, logger );
+				} );
+				break;
 		}
 	}
 
@@ -206,21 +206,21 @@ public static class ServiceCollectionExtensions {
 
 		switch ( cacheConfig.ProviderType ) {
 			case CacheProviderType.Memory:
-			services.AddMemoryCache( );
-			services.AddSingleton<ICacheProvider>( sp => {
-				var cache = sp.GetRequiredService<IMemoryCache>( );
-				var logger = sp.GetRequiredService<ILogger<MemoryCacheProvider>>( );
-				return new MemoryCacheProvider( cache, logger );
-			} );
-			break;
+				services.AddMemoryCache( );
+				services.AddSingleton<ICacheProvider>( sp => {
+					var cache = sp.GetRequiredService<IMemoryCache>( );
+					var logger = sp.GetRequiredService<ILogger<MemoryCacheProvider>>( );
+					return new MemoryCacheProvider( cache, logger );
+				} );
+				break;
 
 			case CacheProviderType.Distributed:
-			if ( !string.IsNullOrEmpty( cacheConfig.ConnectionString ) ) {
-				services.AddStackExchangeRedisCache( options => {
-					options.Configuration = cacheConfig.ConnectionString;
-				} );
-			}
-			break;
+				if ( !string.IsNullOrEmpty( cacheConfig.ConnectionString ) ) {
+					services.AddStackExchangeRedisCache( options => {
+						options.Configuration = cacheConfig.ConnectionString;
+					} );
+				}
+				break;
 		}
 	}
 

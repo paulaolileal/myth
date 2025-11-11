@@ -2,7 +2,7 @@ using Myth.Interfaces;
 using Myth.Interfaces.Rules;
 using Myth.Rules.Generics;
 
-namespace Myth.Rules.Base; 
+namespace Myth.Rules.Base;
 
 /// <summary>
 /// Base implementation of <see cref="IRuleConfigurator{T}"/> that provides common validation rules

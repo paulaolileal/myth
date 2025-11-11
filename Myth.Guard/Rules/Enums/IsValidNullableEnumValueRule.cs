@@ -1,7 +1,7 @@
 using Myth.Models;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Enums; 
+namespace Myth.Rules.Enums;
 
 /// <summary>
 /// Validates that a nullable enum value, when not null, is a valid defined member of the enum

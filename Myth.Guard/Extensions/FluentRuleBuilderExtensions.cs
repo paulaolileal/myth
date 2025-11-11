@@ -12,7 +12,7 @@ using Myth.Rules.Enums;
 using Myth.Rules.Numerics;
 using Myth.Rules.Strings;
 
-namespace Myth.Extensions; 
+namespace Myth.Extensions;
 
 /// <summary>
 /// Extension methods for <see cref="FluentRuleBuilder{T}"/> providing a complete fluent validation API.

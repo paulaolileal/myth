@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Bogus;
 using FluentAssertions;
 using Myth.Constants;
@@ -5,11 +10,6 @@ using Myth.Exceptions;
 using Myth.Rest.Test.Base;
 using Myth.Rest.Test.Models;
 using Myth.Testing.Mocks;
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Myth.Rest.Test;

@@ -1,6 +1,6 @@
-﻿using Myth.Flow.Test.Interfaces;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Myth.Flow.Test.Interfaces;
 
 public class MockEventPublisher : IEventPublisher {
 	public List<object> PublishedEvents { get; } = new( );

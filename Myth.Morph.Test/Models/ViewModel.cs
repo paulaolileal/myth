@@ -1,8 +1,7 @@
-﻿namespace Myth.Morph.Test.Models {
+namespace Myth.Morph.Test.Models;
 
-	internal class ViewModel {
-		public int ViewModelId { get; set; }
-		public string Name { get; set; }
-		public bool Enabled { get; set; }
-	}
+internal class ViewModel {
+	public int ViewModelId { get; set; }
+	public string Name { get; set; }
+	public bool Enabled { get; set; }
 }

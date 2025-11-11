@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using Myth.Models;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Strings; 
+namespace Myth.Rules.Strings;
 
 internal sealed class EmailRule : ValidationRuleBase<string> {
 

@@ -1,6 +1,6 @@
-﻿using Myth.Extensions;
-using Myth.Models;
 using System.Net;
+using Myth.Extensions;
+using Myth.Models;
 
 namespace Myth.Builders;
 

@@ -2,7 +2,7 @@ using System.Net;
 using Microsoft.AspNetCore.Http;
 using Myth.Models;
 
-namespace Myth.Builder; 
+namespace Myth.Builder;
 
 /// <summary>
 /// Fluent builder for configuring exception handling mappings

@@ -1,7 +1,7 @@
 using Myth.Models;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Collections; 
+namespace Myth.Rules.Collections;
 
 internal sealed class CountLessThanRule<T> : ValidationRuleBase<IEnumerable<T>> {
 	private readonly int _max;

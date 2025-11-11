@@ -1,6 +1,6 @@
 using Myth.Models;
 
-namespace Myth.Exceptions; 
+namespace Myth.Exceptions;
 
 /// <summary>
 /// Exception thrown when validation fails during the validation process.

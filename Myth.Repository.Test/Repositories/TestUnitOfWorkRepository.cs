@@ -1,11 +1,10 @@
-﻿using Myth.Repositories.EntityFramework;
+using Myth.Repositories.EntityFramework;
 using Myth.Repository.Test.Contexts;
 
-namespace Myth.Repository.Test.Repositories {
+namespace Myth.Repository.Test.Repositories;
 
-	internal class TestUnitOfWorkRepository : UnitOfWorkRepository<ContextTest> {
+internal class TestUnitOfWorkRepository : UnitOfWorkRepository<ContextTest> {
 
-		public TestUnitOfWorkRepository( ContextTest context ) : base( context ) {
-		}
+	public TestUnitOfWorkRepository( ContextTest context ) : base( context ) {
 	}
 }

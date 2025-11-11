@@ -1,6 +1,6 @@
 using Myth.Rules.Base;
 
-namespace Myth.Interfaces.Rules; 
+namespace Myth.Interfaces.Rules;
 
 /// <summary>
 /// Provides validation rules specifically designed for collections and enumerable types,

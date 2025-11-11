@@ -5,7 +5,7 @@ using Myth.Interfaces;
 using Myth.Models;
 using Myth.ServiceProvider;
 
-namespace Myth.Validation; 
+namespace Myth.Validation;
 
 /// <summary>
 /// Default implementation of IValidator

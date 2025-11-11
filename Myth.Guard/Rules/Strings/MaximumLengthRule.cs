@@ -1,7 +1,7 @@
 using Myth.Models;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Strings; 
+namespace Myth.Rules.Strings;
 
 internal sealed class MaximumLengthRule : ValidationRuleBase<string> {
 	private readonly int _maxLength;

@@ -1,5 +1,5 @@
-﻿using Myth.Models;
 using System.Net;
+using Myth.Models;
 
 namespace Myth.Exceptions;
 

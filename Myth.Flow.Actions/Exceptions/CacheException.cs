@@ -1,4 +1,4 @@
-﻿/// <summary>
+/// <summary>
 /// Thrown when cache operations fail
 /// </summary>
 public sealed class CacheException : Exception {

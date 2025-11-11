@@ -1,8 +1,8 @@
+using System;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Myth.Extensions;
 using Myth.ServiceProvider;
-using System;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Myth.Flow.Test;

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 
-namespace Myth.Models; 
+namespace Myth.Models;
 
 /// <summary>
 /// Configuration options for the Guard middleware exception handling

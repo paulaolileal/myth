@@ -1,4 +1,4 @@
-﻿namespace Myth.Models;
+namespace Myth.Models;
 
 /// <summary>
 /// Metadata for event processing

@@ -1,10 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
+using System.Text;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Myth.Flow.Actions.Settings;
 using Myth.Interfaces;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using System.Text;
-using System.Text.Json;
 
 /// <summary>
 /// RabbitMQ message broker implementation

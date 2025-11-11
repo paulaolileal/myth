@@ -1,7 +1,7 @@
 using Myth.Models;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Dates; 
+namespace Myth.Rules.Dates;
 
 internal sealed class TodayDateOnlyRule : ValidationRuleBase<DateOnly> {
 

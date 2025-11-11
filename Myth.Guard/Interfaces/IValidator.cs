@@ -1,7 +1,7 @@
 using Myth.Guard;
 using Myth.Models;
 
-namespace Myth.Interfaces; 
+namespace Myth.Interfaces;
 
 /// <summary>
 /// Provides validation services

@@ -1,7 +1,7 @@
 using Myth.Interfaces.Rules;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Numerics; 
+namespace Myth.Rules.Numerics;
 
 /// <summary>
 /// Numeric rule configurator

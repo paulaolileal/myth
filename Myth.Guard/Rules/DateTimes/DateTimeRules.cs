@@ -1,7 +1,7 @@
 using Myth.Interfaces.Rules;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.DateTimes; 
+namespace Myth.Rules.DateTimes;
 
 /// <summary>
 /// DateTime rule configurator

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Myth.Exceptions;
 using Myth.Models;
 
-namespace Myth.Middlewares; 
+namespace Myth.Middlewares;
 
 /// <summary>
 /// Middleware to handle validation exceptions

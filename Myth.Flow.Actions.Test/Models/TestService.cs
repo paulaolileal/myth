@@ -1,4 +1,4 @@
-﻿namespace Myth.Flow.Actions.Test.Models;
+namespace Myth.Flow.Actions.Test.Models;
 
 /// <summary>
 /// Test service for pipeline step testing

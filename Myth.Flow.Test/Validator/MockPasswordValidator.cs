@@ -1,6 +1,6 @@
-﻿using Myth.Flow.Test.Interfaces;
-using Myth.Models;
 using System.Linq;
+using Myth.Flow.Test.Interfaces;
+using Myth.Models;
 
 public class MockPasswordValidator : IPasswordValidator {
 

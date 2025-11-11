@@ -1,12 +1,12 @@
-﻿using Microsoft.Extensions.Logging;
-using Myth.Constants;
-using Myth.Helpers;
-using Myth.Interfaces;
-using Myth.Models;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Microsoft.Extensions.Logging;
+using Myth.Constants;
+using Myth.Helpers;
+using Myth.Interfaces;
+using Myth.Models;
 
 namespace Myth.Builders;
 

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Myth.Middlewares;
 
-namespace Myth.Extensions; 
+namespace Myth.Extensions;
 
 /// <summary>
 /// Extension methods for application builder

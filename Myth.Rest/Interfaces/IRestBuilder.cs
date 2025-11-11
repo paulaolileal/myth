@@ -1,4 +1,4 @@
-﻿using Myth.Builders;
+using Myth.Builders;
 
 namespace Myth.Interfaces;
 

@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace Myth.Models; 
+namespace Myth.Models;
 
 /// <summary>
 /// Represents the result of a validation operation, containing any validation errors and status information.

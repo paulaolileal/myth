@@ -1,7 +1,7 @@
-﻿using Myth.Exceptions;
-using Myth.Extensions;
 using System.Net;
 using System.Text;
+using Myth.Exceptions;
+using Myth.Extensions;
 
 namespace Myth.Models;
 

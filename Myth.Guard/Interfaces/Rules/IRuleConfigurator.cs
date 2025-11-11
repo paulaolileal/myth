@@ -1,6 +1,6 @@
 using Myth.Rules.Base;
 
-namespace Myth.Interfaces.Rules; 
+namespace Myth.Interfaces.Rules;
 
 /// <summary>
 /// Base interface for rule configurations that provides common validation rules applicable to all types.

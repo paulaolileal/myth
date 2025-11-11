@@ -1,4 +1,4 @@
-﻿using Bogus;
+using Bogus;
 using FluentAssertions;
 using Myth.Interfaces.Repositories.EntityFramework;
 using Myth.Repository.Test.Contexts;

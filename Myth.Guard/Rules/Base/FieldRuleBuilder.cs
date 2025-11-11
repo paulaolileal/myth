@@ -1,6 +1,6 @@
 using Myth.Interfaces;
 
-namespace Myth.Rules.Base; 
+namespace Myth.Rules.Base;
 
 /// <summary>
 /// Rule builder for a specific field

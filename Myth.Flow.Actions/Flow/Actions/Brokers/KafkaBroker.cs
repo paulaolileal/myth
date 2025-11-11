@@ -1,8 +1,8 @@
-﻿using Confluent.Kafka;
+using System.Text.Json;
+using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
 using Myth.Flow.Actions.Settings;
 using Myth.Interfaces;
-using System.Text.Json;
 
 namespace Myth.Flow.Actions.Brokers;
 

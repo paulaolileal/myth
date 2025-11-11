@@ -1,7 +1,7 @@
 using Myth.Interfaces.Rules;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Collections; 
+namespace Myth.Rules.Collections;
 
 /// <summary>
 /// Collection rule configurator

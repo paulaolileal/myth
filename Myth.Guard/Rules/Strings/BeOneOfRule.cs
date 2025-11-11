@@ -1,7 +1,7 @@
 using Myth.Models;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Strings; 
+namespace Myth.Rules.Strings;
 
 internal sealed class BeOneOfRule : ValidationRuleBase<string> {
 	private readonly string[ ] _options;

@@ -4,7 +4,7 @@ using Myth.Interfaces;
 using Myth.Models;
 using Myth.Validation;
 
-namespace Myth.Extensions; 
+namespace Myth.Extensions;
 
 /// <summary>
 /// Extension methods for service collection

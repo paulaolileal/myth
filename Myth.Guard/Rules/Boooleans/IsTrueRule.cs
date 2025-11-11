@@ -1,7 +1,7 @@
 using Myth.Models;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Boooleans; 
+namespace Myth.Rules.Boooleans;
 
 internal sealed class IsTrueRule : ValidationRuleBase<bool> {
 

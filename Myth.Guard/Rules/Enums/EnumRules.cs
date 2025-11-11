@@ -1,7 +1,7 @@
 using Myth.Interfaces.Rules;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Enums; 
+namespace Myth.Rules.Enums;
 
 /// <summary>
 /// Enum rule configurator

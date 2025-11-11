@@ -1,7 +1,7 @@
 using Myth.Models;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Generics; 
+namespace Myth.Rules.Generics;
 
 internal sealed class EqualsRule<T> : ValidationRuleBase<T> {
 	private readonly T _expected;

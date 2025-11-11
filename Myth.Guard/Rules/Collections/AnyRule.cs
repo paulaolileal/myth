@@ -1,7 +1,7 @@
 using Myth.Models;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Collections; 
+namespace Myth.Rules.Collections;
 
 internal sealed class AnyRule<T> : ValidationRuleBase<IEnumerable<T>> {
 	private readonly Func<T, bool> _predicate;

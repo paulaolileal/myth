@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using Myth.Exceptions;
 using Myth.Models;
 
-namespace Myth.Middlewares; 
+namespace Myth.Middlewares;
 
 /// <summary>
 /// Middleware to handle exceptions globally with configurable mappings

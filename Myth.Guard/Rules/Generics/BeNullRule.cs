@@ -1,7 +1,7 @@
 using Myth.Models;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Generics; 
+namespace Myth.Rules.Generics;
 
 internal sealed class BeNullRule<T> : ValidationRuleBase<T> {
 

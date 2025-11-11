@@ -1,4 +1,4 @@
-﻿/// <summary>
+/// <summary>
 /// Thrown when message broker operations fail
 /// </summary>
 public sealed class MessageBrokerException : Exception {

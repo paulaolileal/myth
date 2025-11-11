@@ -1,8 +1,8 @@
-﻿using Myth.Constants;
-using Myth.Exceptions;
-using Myth.Models;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Myth.Constants;
+using Myth.Exceptions;
+using Myth.Models;
 
 namespace Myth.Extensions;
 
@@ -104,37 +104,37 @@ public static class JsonExtensions {
 	private static dynamic ConvertJsonElementToDynamic( JsonElement element ) {
 		switch ( element.ValueKind ) {
 			case JsonValueKind.Object:
-			var expandoObject = new System.Dynamic.ExpandoObject( );
-			var dictionary = ( IDictionary<string, object?> )expandoObject;
-			foreach ( var property in element.EnumerateObject( ) ) {
-				dictionary[ property.Name ] = ConvertJsonElementToDynamic( property.Value );
-			}
-			return expandoObject;
+				var expandoObject = new System.Dynamic.ExpandoObject( );
+				var dictionary = ( IDictionary<string, object?> )expandoObject;
+				foreach ( var property in element.EnumerateObject( ) ) {
+					dictionary[ property.Name ] = ConvertJsonElementToDynamic( property.Value );
+				}
+				return expandoObject;
 
 			case JsonValueKind.Array:
-			return element.EnumerateArray( ).Select( ConvertJsonElementToDynamic ).ToArray( );
+				return element.EnumerateArray( ).Select( ConvertJsonElementToDynamic ).ToArray( );
 
 			case JsonValueKind.String:
-			return element.GetString( )!;
+				return element.GetString( )!;
 
 			case JsonValueKind.Number:
-			if ( element.TryGetInt32( out var intValue ) )
-				return intValue;
-			if ( element.TryGetInt64( out var longValue ) )
-				return longValue;
-			return element.GetDouble( );
+				if ( element.TryGetInt32( out var intValue ) )
+					return intValue;
+				if ( element.TryGetInt64( out var longValue ) )
+					return longValue;
+				return element.GetDouble( );
 
 			case JsonValueKind.True:
-			return true;
+				return true;
 
 			case JsonValueKind.False:
-			return false;
+				return false;
 
 			case JsonValueKind.Null:
-			return null!;
+				return null!;
 
 			default:
-			throw new ArgumentOutOfRangeException( nameof( element.ValueKind ), element.ValueKind, "Unsupported JsonValueKind" );
+				throw new ArgumentOutOfRangeException( nameof( element.ValueKind ), element.ValueKind, "Unsupported JsonValueKind" );
 		}
 	}
 }

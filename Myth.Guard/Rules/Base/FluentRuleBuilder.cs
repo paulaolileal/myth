@@ -1,7 +1,7 @@
 using Myth.Interfaces;
 using Myth.Rules.Generics;
 
-namespace Myth.Rules.Base; 
+namespace Myth.Rules.Base;
 
 /// <summary>
 /// Fluent rule builder that maintains state for chaining operations like WithMessage, WithCode, When, Unless

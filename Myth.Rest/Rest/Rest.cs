@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.ObjectPool;
+using Microsoft.Extensions.ObjectPool;
 using Myth.Interfaces;
 
 namespace Myth.Rest;

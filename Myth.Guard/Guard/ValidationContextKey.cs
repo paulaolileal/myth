@@ -1,4 +1,5 @@
-namespace Myth.Guard; 
+namespace Myth.Guard;
+
 /// <summary>
 /// Represents a validation context key that determines which set of validation rules should be applied.
 /// Context keys enable context-aware validation where the same entity can have different validation rules

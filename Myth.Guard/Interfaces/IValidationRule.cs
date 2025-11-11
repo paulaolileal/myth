@@ -1,6 +1,6 @@
 using Myth.Models;
 
-namespace Myth.Interfaces; 
+namespace Myth.Interfaces;
 
 /// <summary>
 /// Non-generic base interface for validation rules

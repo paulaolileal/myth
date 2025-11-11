@@ -1,4 +1,4 @@
-namespace Myth.Models; 
+namespace Myth.Models;
 
 /// <summary>
 /// Error detail model

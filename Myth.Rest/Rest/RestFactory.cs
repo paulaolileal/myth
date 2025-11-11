@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Options;
 using Myth.Builders;
 using Myth.DependencyInjection;
 using Myth.Interfaces;

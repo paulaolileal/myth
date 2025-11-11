@@ -1,7 +1,7 @@
 using Myth.Builder;
 using Myth.Guard;
 
-namespace Myth.Interfaces; 
+namespace Myth.Interfaces;
 
 /// <summary>
 /// Defines a validatable entity

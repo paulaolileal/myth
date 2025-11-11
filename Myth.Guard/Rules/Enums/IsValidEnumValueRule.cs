@@ -1,7 +1,7 @@
 using Myth.Models;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Enums; 
+namespace Myth.Rules.Enums;
 
 /// <summary>
 /// Validates that an enum value is a valid defined member of the enum.

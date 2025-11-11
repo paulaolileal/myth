@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace Myth.Models; 
+namespace Myth.Models;
 
 /// <summary>
 /// Represents a single validation error that occurred during field validation.

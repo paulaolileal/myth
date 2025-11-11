@@ -1,7 +1,7 @@
 using Myth.Models;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Numerics; 
+namespace Myth.Rules.Numerics;
 
 internal sealed class PositiveRule<T> : ValidationRuleBase<T> where T : struct, IComparable<T> {
 

@@ -1,7 +1,7 @@
 using Myth.Interfaces.Rules;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Boooleans; 
+namespace Myth.Rules.Boooleans;
 
 /// <summary>
 /// Boolean rule configurator

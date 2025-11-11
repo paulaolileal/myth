@@ -2,7 +2,7 @@ using Myth.Guard;
 using Myth.Interfaces;
 using Myth.Rules.Base;
 
-namespace Myth.Builder; 
+namespace Myth.Builder;
 
 /// <summary>
 /// Builds validation rules for an entity

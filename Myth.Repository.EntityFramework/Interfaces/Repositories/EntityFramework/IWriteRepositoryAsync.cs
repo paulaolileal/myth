@@ -1,4 +1,4 @@
-﻿namespace Myth.Interfaces.Repositories.EntityFramework;
+namespace Myth.Interfaces.Repositories.EntityFramework;
 
 public interface IWriteRepositoryAsync<TEntity> : Base.IWriteRepositoryAsync<TEntity> {
 

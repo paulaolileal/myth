@@ -1,6 +1,6 @@
 using Myth.Interfaces;
 
-namespace Myth.Builder; 
+namespace Myth.Builder;
 
 /// <summary>
 /// Represents field validation configuration

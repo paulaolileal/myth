@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace Myth.Models; 
+namespace Myth.Models;
 
 /// <summary>
 /// Defines how a specific exception type should be handled by the Guard middleware

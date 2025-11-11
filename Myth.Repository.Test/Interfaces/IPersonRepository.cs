@@ -1,8 +1,7 @@
-﻿using Myth.Interfaces.Repositories.Base;
+using Myth.Interfaces.Repositories.Base;
 using Myth.Repository.Test.Models;
 
-namespace Myth.Repository.Test.Interfaces {
+namespace Myth.Repository.Test.Interfaces;
 
-	internal interface IPersonRepository : IReadWriteRepositoryAsync<Person> {
-	}
+internal interface IPersonRepository : IReadWriteRepositoryAsync<Person> {
 }

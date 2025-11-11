@@ -1,7 +1,7 @@
 using Myth.Models;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.DateTimes; 
+namespace Myth.Rules.DateTimes;
 
 internal sealed class FutureRule : ValidationRuleBase<DateTime> {
 

@@ -1,4 +1,4 @@
-﻿namespace Myth.Flow.Actions.Interfaces;
+namespace Myth.Flow.Actions.Interfaces;
 
 /// <summary>
 /// Interface for empty pipeline builder that can be populated with Transform operations

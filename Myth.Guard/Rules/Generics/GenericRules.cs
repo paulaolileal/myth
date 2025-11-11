@@ -1,7 +1,7 @@
 using Myth.Interfaces.Rules;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Generics; 
+namespace Myth.Rules.Generics;
 
 /// <summary>
 /// Generic rule configurator with default implementation

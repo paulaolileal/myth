@@ -201,8 +201,10 @@ public class ManualExceptionMappingTests {
 		options.MapException<HttpRequestException>( )
 			.WithStatusCode( ex => {
 				// Extract status code from message or default to 502
-				if ( ex.Message.Contains( "404" ) ) return 404;
-				if ( ex.Message.Contains( "500" ) ) return 500;
+				if ( ex.Message.Contains( "404" ) )
+					return 404;
+				if ( ex.Message.Contains( "500" ) )
+					return 500;
 				return 502;
 			} )
 			.WithErrorCode( "HTTP_REQUEST_FAILED" )
@@ -260,7 +262,7 @@ public class ManualExceptionMappingTests {
 			.OnBeforeResponse( ( ex, httpContext ) => {
 				callbackExecuted = true;
 				capturedMessage = ex.Message;
-				httpContext.Response.Headers.Add( "X-Custom-Header", "Operation-Cancelled" );
+				httpContext.Response.Headers.Append( "X-Custom-Header", "Operation-Cancelled" );
 			} )
 			.Build( );
 
@@ -276,7 +278,7 @@ public class ManualExceptionMappingTests {
 		context.Response.StatusCode.Should( ).Be( 499 );
 		context.Response.ContentType.Should( ).Contain( "application/json" );
 		context.Response.Headers.Should( ).ContainKey( "X-Custom-Header" );
-		context.Response.Headers["X-Custom-Header"].Should( ).Contain( "Operation-Cancelled" );
+		context.Response.Headers[ "X-Custom-Header" ].Should( ).Contain( "Operation-Cancelled" );
 
 		callbackExecuted.Should( ).BeTrue( );
 		capturedMessage.Should( ).Be( "User cancelled the operation" );

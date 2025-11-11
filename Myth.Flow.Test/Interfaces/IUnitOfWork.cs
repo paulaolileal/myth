@@ -1,13 +1,12 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 
-namespace Myth.Flow.Test.Interfaces {
+namespace Myth.Flow.Test.Interfaces;
 
-	public interface IUnitOfWork {
+public interface IUnitOfWork {
 
-		Task CommitAsync( );
+	Task CommitAsync( );
 
-		Task RollbackAsync( );
+	Task RollbackAsync( );
 
-		Task BeginTransactionAsync( );
-	}
+	Task BeginTransactionAsync( );
 }

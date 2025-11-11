@@ -2,7 +2,7 @@ using System.Net;
 using Myth.Interfaces;
 using Myth.Models;
 
-namespace Myth.Rules.Base; 
+namespace Myth.Rules.Base;
 
 /// <summary>
 /// Abstract base class for validation rules
