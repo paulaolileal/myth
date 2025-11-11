@@ -14,6 +14,8 @@ public sealed class GuardOptions {
 
 	internal IWebHostEnvironment? Environment { get; set; }
 
+	internal List<object> PendingBuilders { get; } = new( );
+
 	/// <summary>
 	/// Automatically maps common .NET exceptions with sensible defaults
 	/// </summary>
@@ -105,6 +107,25 @@ public sealed class GuardOptions {
 			DefaultHandler = handler;
 		else
 			ExceptionHandlers[ exceptionType ] = handler;
+	}
+
+	internal void AddPendingBuilder( object builder ) {
+		PendingBuilders.Add( builder );
+	}
+
+	/// <summary>
+	/// Finalizes all pending exception mapping builders
+	/// </summary>
+	public GuardOptions FinalizePendingBuilders( ) {
+		foreach ( var builder in PendingBuilders.ToList( ) ) {
+			if ( builder.GetType( ).GetMethod( "ForceBuild", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic ) is { } buildMethod ) {
+				buildMethod.Invoke( builder, null );
+			}
+		}
+
+		PendingBuilders.Clear( );
+
+		return this;
 	}
 
 	private static string? FormatStackTrace( string? stackTrace ) {

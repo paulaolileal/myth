@@ -21,6 +21,14 @@ public sealed class ExceptionMappingBuilder<TException> where TException : Excep
 	internal ExceptionMappingBuilder( GuardOptions options, bool isDefault = false ) {
 		_options = options;
 		_isDefault = isDefault;
+		_options.AddPendingBuilder( this );
+	}
+
+	/// <summary>
+	/// Interface for auto-finalization
+	/// </summary>
+	internal void ForceBuild( ) {
+		Build( );
 	}
 
 	/// <summary>
@@ -129,6 +137,7 @@ public sealed class ExceptionMappingBuilder<TException> where TException : Excep
 		};
 
 		_options.RegisterHandler( typeof( TException ), handler, _isDefault );
+		_options.PendingBuilders.Remove( this );
 
 		return handler;
 	}

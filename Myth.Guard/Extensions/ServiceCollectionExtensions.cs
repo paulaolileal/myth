@@ -26,6 +26,9 @@ public static class ServiceCollectionExtensions {
 
 		configure?.Invoke( options );
 
+		// Finalize any pending builders that weren't explicitly built
+		options.FinalizePendingBuilders( );
+
 		services.AddSingleton( options );
 		services.AddScoped<IValidator, Validator>( );
 
