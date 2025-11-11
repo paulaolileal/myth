@@ -1,6 +1,6 @@
+using System.Net;
 using FluentAssertions;
 using Myth.Models;
-using System.Net;
 
 namespace Myth.Guard.Test;
 

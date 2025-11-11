@@ -1,94 +1,93 @@
-﻿using Myth.Builder;
+using Myth.Builder;
 using Myth.Exceptions;
 using Myth.Guard;
 using Myth.Interfaces;
 using Myth.Models;
 using Myth.ServiceProvider;
 
-namespace Myth.Validation {
+namespace Myth.Validation; 
+
+/// <summary>
+/// Default implementation of IValidator
+/// </summary>
+internal sealed class Validator : IValidator {
+	private readonly IServiceProvider _serviceProvider;
+
+	public Validator( IServiceProvider serviceProvider ) {
+		_serviceProvider = serviceProvider;
+	}
 
 	/// <summary>
-	/// Default implementation of IValidator
+	/// Validates an entity and throws exception on failure
 	/// </summary>
-	internal sealed class Validator : IValidator {
-		private readonly IServiceProvider _serviceProvider;
+	public async Task ValidateAsync<T>( T entity, ValidationContextKey? context = null, CancellationToken cancellationToken = default )
+		where T : class {
+		ArgumentNullException.ThrowIfNull( entity );
+		var result = await ValidateAndReturnAsync( entity, context, cancellationToken );
 
-		public Validator( IServiceProvider serviceProvider ) {
-			_serviceProvider = serviceProvider;
+		if ( !result.IsValid ) {
+			throw new ValidationException( result );
+		}
+	}
+
+	/// <summary>
+	/// Validates an entity and returns the result
+	/// </summary>
+	public async Task<ValidationResult> ValidateAndReturnAsync<T>( T entity, ValidationContextKey? context = null, CancellationToken cancellationToken = default )
+		where T : class {
+		if ( entity is not IValidatable<T> validatable ) {
+			throw new InvalidOperationException( $"Type {typeof( T ).Name} does not implement IValidatable<{typeof( T ).Name}>" );
 		}
 
-		/// <summary>
-		/// Validates an entity and throws exception on failure
-		/// </summary>
-		public async Task ValidateAsync<T>( T entity, ValidationContextKey? context = null, CancellationToken cancellationToken = default )
-			where T : class {
-			ArgumentNullException.ThrowIfNull( entity );
-			var result = await ValidateAndReturnAsync( entity, context, cancellationToken );
+		var builder = new ValidationBuilder<T>( );
+		validatable.Validate( builder, context );
 
-			if ( !result.IsValid ) {
-				throw new ValidationException( result );
-			}
-		}
+		var rules = builder.GetRules( context );
+		var result = new ValidationResult( );
 
-		/// <summary>
-		/// Validates an entity and returns the result
-		/// </summary>
-		public async Task<ValidationResult> ValidateAndReturnAsync<T>( T entity, ValidationContextKey? context = null, CancellationToken cancellationToken = default )
-			where T : class {
-			if ( entity is not IValidatable<T> validatable ) {
-				throw new InvalidOperationException( $"Type {typeof( T ).Name} does not implement IValidatable<{typeof( T ).Name}>" );
-			}
+		foreach ( var fieldValidation in rules ) {
+			var shouldStop = false;
 
-			var builder = new ValidationBuilder<T>( );
-			validatable.Validate( builder, context );
+			foreach ( var rule in fieldValidation.Rules ) {
+				if ( shouldStop )
+					break;
 
-			var rules = builder.GetRules( context );
-			var result = new ValidationResult( );
+				cancellationToken.ThrowIfCancellationRequested( );
 
-			foreach ( var fieldValidation in rules ) {
-				var shouldStop = false;
+				var ruleContext = new RuleContext<object>(
+					value: GetFieldValue( entity, fieldValidation.FieldName ),
+					fieldName: fieldValidation.FieldName,
+					serviceProvider: MythServiceProvider.GetOrFallback( _serviceProvider ),
+					cancellationToken: cancellationToken,
+					entity: entity
+				);
 
-				foreach ( var rule in fieldValidation.Rules ) {
-					if ( shouldStop )
-						break;
+				var error = await rule.ValidateAsync( ruleContext );
 
-					cancellationToken.ThrowIfCancellationRequested( );
+				if ( error != null ) {
+					result.AddError( error );
 
-					var ruleContext = new RuleContext<object>(
-						value: GetFieldValue( entity, fieldValidation.FieldName ),
-						fieldName: fieldValidation.FieldName,
-						serviceProvider: MythServiceProvider.GetOrFallback( _serviceProvider ),
-						cancellationToken: cancellationToken,
-						entity: entity
-					);
-
-					var error = await rule.ValidateAsync( ruleContext );
-
-					if ( error != null ) {
-						result.AddError( error );
-
-						if ( rule.StopOnFailure ) {
-							shouldStop = true;
-						}
+					if ( rule.StopOnFailure ) {
+						shouldStop = true;
 					}
 				}
 			}
-
-			return result;
 		}
 
-		private static object GetFieldValue<T>( T entity, string fieldName ) where T : class {
-			var property = typeof( T ).GetProperty( fieldName );
-			if ( property != null ) {
-				return property.GetValue( entity )!;
-			}
+		return result;
+	}
 
-			var field = typeof( T ).GetField( fieldName );
-			if ( field != null ) {
-				return field.GetValue( entity )!;
-			}
-
-			return null!;
+	private static object GetFieldValue<T>( T entity, string fieldName ) where T : class {
+		var property = typeof( T ).GetProperty( fieldName );
+		if ( property != null ) {
+			return property.GetValue( entity )!;
 		}
+
+		var field = typeof( T ).GetField( fieldName );
+		if ( field != null ) {
+			return field.GetValue( entity )!;
+		}
+
+		return null!;
 	}
 }

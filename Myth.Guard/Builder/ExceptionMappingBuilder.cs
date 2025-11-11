@@ -1,156 +1,153 @@
+using System.Net;
 using Microsoft.AspNetCore.Http;
 using Myth.Models;
-using System.Net;
 
-namespace Myth.Builder {
+namespace Myth.Builder; 
+
+/// <summary>
+/// Fluent builder for configuring exception handling mappings
+/// </summary>
+/// <typeparam name="TException">The exception type to configure</typeparam>
+public sealed class ExceptionMappingBuilder<TException> where TException : Exception {
+
+	private readonly GuardOptions _options;
+	private readonly bool _isDefault;
+	private int _statusCode = 500;
+	private Func<TException, int>? _statusCodeResolver;
+	private Func<TException, string>? _errorCodeResolver;
+	private Func<TException, object>? _responseBuilder;
+	private Action<TException, HttpContext>? _onBeforeResponse;
+
+	internal ExceptionMappingBuilder( GuardOptions options, bool isDefault = false ) {
+		_options = options;
+		_isDefault = isDefault;
+	}
 
 	/// <summary>
-	/// Fluent builder for configuring exception handling mappings
+	/// Sets the HTTP status code for this exception type
 	/// </summary>
-	/// <typeparam name="TException">The exception type to configure</typeparam>
-	public sealed class ExceptionMappingBuilder<TException> where TException : Exception {
+	/// <param name="statusCode">The HTTP status code</param>
+	public ExceptionMappingBuilder<TException> WithStatusCode( int statusCode ) {
+		_statusCode = statusCode;
 
-		private readonly GuardOptions _options;
-		private readonly bool _isDefault;
-		private int _statusCode = 500;
-		private Func<TException, string>? _errorCodeResolver;
-		private Func<TException, object>? _responseBuilder;
-		private Action<TException, HttpContext>? _onBeforeResponse;
+		return this;
+	}
 
-		internal ExceptionMappingBuilder( GuardOptions options, bool isDefault = false ) {
-			_options = options;
-			_isDefault = isDefault;
-		}
+	/// <summary>
+	/// Sets the HTTP status code for this exception type using HttpStatusCode enum
+	/// </summary>
+	/// <param name="statusCode">The HTTP status code enum</param>
+	public ExceptionMappingBuilder<TException> WithStatusCode( HttpStatusCode statusCode ) {
+		_statusCode = ( int )statusCode;
 
-		/// <summary>
-		/// Sets the HTTP status code for this exception type
-		/// </summary>
-		/// <param name="statusCode">The HTTP status code</param>
-		public ExceptionMappingBuilder<TException> WithStatusCode( int statusCode ) {
-			_statusCode = statusCode;
+		return this;
+	}
 
-			return this;
-		}
+	/// <summary>
+	/// Sets a dynamic HTTP status code resolver for this exception type
+	/// </summary>
+	/// <param name="statusCodeResolver">Function to resolve status code from exception</param>
+	public ExceptionMappingBuilder<TException> WithStatusCode( Func<TException, int> statusCodeResolver ) {
+		_statusCode = 0;
+		_statusCodeResolver = statusCodeResolver;
 
-		/// <summary>
-		/// Sets the HTTP status code for this exception type using HttpStatusCode enum
-		/// </summary>
-		/// <param name="statusCode">The HTTP status code enum</param>
-		public ExceptionMappingBuilder<TException> WithStatusCode( HttpStatusCode statusCode ) {
-			_statusCode = ( int )statusCode;
+		return this;
+	}
 
-			return this;
-		}
+	/// <summary>
+	/// Sets a dynamic HTTP status code resolver for this exception type using HttpStatusCode enum
+	/// </summary>
+	/// <param name="statusCodeResolver">Function to resolve status code from exception</param>
+	public ExceptionMappingBuilder<TException> WithStatusCode( Func<TException, HttpStatusCode> statusCodeResolver ) {
+		_statusCode = 0;
+		_statusCodeResolver = ex => ( int )statusCodeResolver( ex );
 
-		/// <summary>
-		/// Sets a dynamic HTTP status code resolver for this exception type
-		/// </summary>
-		/// <param name="statusCodeResolver">Function to resolve status code from exception</param>
-		public ExceptionMappingBuilder<TException> WithStatusCode( Func<TException, int> statusCodeResolver ) {
-			_statusCode = 0;
-			_errorCodeResolver = ex => statusCodeResolver( ex ).ToString( );
+		return this;
+	}
 
-			return this;
-		}
+	/// <summary>
+	/// Sets the error code for this exception type
+	/// </summary>
+	/// <param name="errorCode">The error code string</param>
+	public ExceptionMappingBuilder<TException> WithErrorCode( string errorCode ) {
+		_errorCodeResolver = _ => errorCode;
 
-		/// <summary>
-		/// Sets a dynamic HTTP status code resolver for this exception type using HttpStatusCode enum
-		/// </summary>
-		/// <param name="statusCodeResolver">Function to resolve status code from exception</param>
-		public ExceptionMappingBuilder<TException> WithStatusCode( Func<TException, HttpStatusCode> statusCodeResolver ) {
-			_statusCode = 0;
-			_errorCodeResolver = ex => ( ( int )statusCodeResolver( ex ) ).ToString( );
+		return this;
+	}
 
-			return this;
-		}
+	/// <summary>
+	/// Sets a dynamic error code resolver for this exception type
+	/// </summary>
+	/// <param name="errorCodeResolver">Function to resolve error code from exception</param>
+	public ExceptionMappingBuilder<TException> WithErrorCode( Func<TException, string> errorCodeResolver ) {
+		_errorCodeResolver = errorCodeResolver;
 
-		/// <summary>
-		/// Sets the error code for this exception type
-		/// </summary>
-		/// <param name="errorCode">The error code string</param>
-		public ExceptionMappingBuilder<TException> WithErrorCode( string errorCode ) {
-			_errorCodeResolver = _ => errorCode;
+		return this;
+	}
 
-			return this;
-		}
+	/// <summary>
+	/// Sets the response builder for this exception type
+	/// </summary>
+	/// <param name="responseBuilder">Function to build response object from exception</param>
+	public ExceptionMappingBuilder<TException> WithResponse( Func<TException, object> responseBuilder ) {
+		_responseBuilder = responseBuilder;
 
-		/// <summary>
-		/// Sets a dynamic error code resolver for this exception type
-		/// </summary>
-		/// <param name="errorCodeResolver">Function to resolve error code from exception</param>
-		public ExceptionMappingBuilder<TException> WithErrorCode( Func<TException, string> errorCodeResolver ) {
-			_errorCodeResolver = errorCodeResolver;
+		return this;
+	}
 
-			return this;
-		}
+	/// <summary>
+	/// Sets a callback to execute before writing the response
+	/// </summary>
+	/// <param name="callback">Action to execute with the exception and HTTP context</param>
+	public ExceptionMappingBuilder<TException> OnBeforeResponse( Action<TException, HttpContext> callback ) {
+		_onBeforeResponse = callback;
 
-		/// <summary>
-		/// Sets the response builder for this exception type
-		/// </summary>
-		/// <param name="responseBuilder">Function to build response object from exception</param>
-		public ExceptionMappingBuilder<TException> WithResponse( Func<TException, object> responseBuilder ) {
-			_responseBuilder = responseBuilder;
+		return this;
+	}
 
-			return this;
-		}
+	/// <summary>
+	/// Builds and registers the exception handler
+	/// </summary>
+	internal ExceptionHandler Build( ) {
+		var handler = new ExceptionHandler {
+			ExceptionType = typeof( TException ),
+			StatusCodeResolver = ex => {
+				if ( _statusCodeResolver != null )
+					return _statusCodeResolver( ( TException )ex );
 
-		/// <summary>
-		/// Sets a callback to execute before writing the response
-		/// </summary>
-		/// <param name="callback">Action to execute with the exception and HTTP context</param>
-		public ExceptionMappingBuilder<TException> OnBeforeResponse( Action<TException, HttpContext> callback ) {
-			_onBeforeResponse = callback;
+				return _statusCode;
+			},
+			ErrorCodeResolver = _errorCodeResolver != null
+				? ex => _errorCodeResolver( ( TException )ex )
+				: null,
+			ResponseBuilder = _responseBuilder != null
+				? ex => _responseBuilder( ( TException )ex )
+				: ex => new { error = ex.Message },
+			OnBeforeResponse = _onBeforeResponse != null
+				? ( ex, ctx ) => _onBeforeResponse( ( TException )ex, ctx )
+				: null
+		};
 
-			return this;
-		}
+		_options.RegisterHandler( typeof( TException ), handler, _isDefault );
 
-		/// <summary>
-		/// Builds and registers the exception handler
-		/// </summary>
-		internal ExceptionHandler Build( ) {
-			var handler = new ExceptionHandler {
-				ExceptionType = typeof( TException ),
-				StatusCodeResolver = ex => {
-					if ( _statusCode > 0 )
-						return _statusCode;
+		return handler;
+	}
 
-					if ( _errorCodeResolver != null && int.TryParse( _errorCodeResolver( ( TException )ex ), out var code ) )
-						return code;
+	/// <summary>
+	/// Finalizes the configuration and returns to the parent options builder
+	/// </summary>
+	public GuardOptions And( ) {
+		Build( );
 
-					return 500;
-				},
-				ErrorCodeResolver = _errorCodeResolver != null
-					? ex => _errorCodeResolver( ( TException )ex )
-					: null,
-				ResponseBuilder = _responseBuilder != null
-					? ex => _responseBuilder( ( TException )ex )
-					: ex => new { error = ex.Message },
-				OnBeforeResponse = _onBeforeResponse != null
-					? ( ex, ctx ) => _onBeforeResponse( ( TException )ex, ctx )
-					: null
-			};
+		return _options;
+	}
 
-			_options.RegisterHandler( typeof( TException ), handler, _isDefault );
+	/// <summary>
+	/// Implicitly builds the handler when the builder goes out of scope
+	/// </summary>
+	public static implicit operator GuardOptions( ExceptionMappingBuilder<TException> builder ) {
+		builder.Build( );
 
-			return handler;
-		}
-
-		/// <summary>
-		/// Finalizes the configuration and returns to the parent options builder
-		/// </summary>
-		public GuardOptions And( ) {
-			Build( );
-
-			return _options;
-		}
-
-		/// <summary>
-		/// Implicitly builds the handler when the builder goes out of scope
-		/// </summary>
-		public static implicit operator GuardOptions( ExceptionMappingBuilder<TException> builder ) {
-			builder.Build( );
-
-			return builder._options;
-		}
+		return builder._options;
 	}
 }

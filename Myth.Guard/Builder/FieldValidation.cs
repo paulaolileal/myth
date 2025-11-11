@@ -1,12 +1,11 @@
-﻿using Myth.Interfaces;
+using Myth.Interfaces;
 
-namespace Myth.Builder {
+namespace Myth.Builder; 
 
-	/// <summary>
-	/// Represents field validation configuration
-	/// </summary>
-	internal sealed class FieldValidation {
-		public string FieldName { get; init; } = string.Empty;
-		public List<IValidationRule> Rules { get; init; } = new( );
-	}
+/// <summary>
+/// Represents field validation configuration
+/// </summary>
+internal sealed class FieldValidation {
+	public string FieldName { get; init; } = string.Empty;
+	public List<IValidationRule> Rules { get; init; } = new( );
 }

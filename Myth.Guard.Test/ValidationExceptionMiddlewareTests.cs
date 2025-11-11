@@ -1,3 +1,6 @@
+using System.Net;
+using System.Text;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Myth.Constants;
@@ -6,9 +9,6 @@ using Myth.Extensions;
 using Myth.Middlewares;
 using Myth.Models;
 using NSubstitute;
-using System.Net;
-using System.Text;
-using System.Text.Json;
 
 namespace Myth.Guard.Test;
 

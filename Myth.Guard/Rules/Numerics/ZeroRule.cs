@@ -1,17 +1,16 @@
-﻿using Myth.Models;
+using Myth.Models;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Numerics {
+namespace Myth.Rules.Numerics; 
 
-	internal sealed class ZeroRule<T> : ValidationRuleBase<T> where T : struct, IComparable<T> {
+internal sealed class ZeroRule<T> : ValidationRuleBase<T> where T : struct, IComparable<T> {
 
-		protected override Task<bool> EvaluateAsync( RuleContext<T> context ) {
-			dynamic value = context.Value;
-			return Task.FromResult( value == 0 );
-		}
+	protected override Task<bool> EvaluateAsync( RuleContext<T> context ) {
+		dynamic value = context.Value;
+		return Task.FromResult( value == 0 );
+	}
 
-		protected override string GetDefaultMessage( T value ) {
-			return "Value must be zero";
-		}
+	protected override string GetDefaultMessage( T value ) {
+		return "Value must be zero";
 	}
 }

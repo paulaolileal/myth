@@ -1,16 +1,15 @@
-﻿using Myth.Models;
+using Myth.Models;
 using Myth.Rules.Base;
 
-namespace Myth.Rules.Dates {
+namespace Myth.Rules.Dates; 
 
-	internal sealed class TodayDateOnlyRule : ValidationRuleBase<DateOnly> {
+internal sealed class TodayDateOnlyRule : ValidationRuleBase<DateOnly> {
 
-		protected override Task<bool> EvaluateAsync( RuleContext<DateOnly> context ) {
-			return Task.FromResult( context.Value == DateOnly.FromDateTime( DateTime.Today ) );
-		}
+	protected override Task<bool> EvaluateAsync( RuleContext<DateOnly> context ) {
+		return Task.FromResult( context.Value == DateOnly.FromDateTime( DateTime.Today ) );
+	}
 
-		protected override string GetDefaultMessage( DateOnly value ) {
-			return "Date must be today";
-		}
+	protected override string GetDefaultMessage( DateOnly value ) {
+		return "Date must be today";
 	}
 }
