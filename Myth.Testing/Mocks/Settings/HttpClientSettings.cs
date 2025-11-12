@@ -81,6 +81,17 @@ public class MockEndpointBuilder {
 	}
 
 	/// <summary>
+	/// Set a plain text response body for the endpoint
+	/// </summary>
+	/// <param name="content">The text content to return</param>
+	/// <param name="contentType">The content type (default: text/plain)</param>
+	/// <returns>The builder instance for fluent chaining</returns>
+	public MockEndpointBuilder WithStringResponse( string content, string contentType = "text/plain" ) {
+		Response = new { Content = content, ContentType = contentType };
+		return this;
+	}
+
+	/// <summary>
 	/// Set the route pattern for the endpoint
 	/// </summary>
 	/// <param name="route">The route pattern (e.g., "/api/users/{id}")</param>

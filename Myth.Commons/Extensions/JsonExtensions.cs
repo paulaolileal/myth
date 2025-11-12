@@ -9,6 +9,95 @@ namespace Myth.Extensions;
 public static class JsonExtensions {
 	private static JsonSettings _globalSettings = new( );
 
+	/// <summary>
+	/// Checks if a string represents valid JSON content
+	/// </summary>
+	/// <param name="content">The content to check</param>
+	/// <returns>True if the content appears to be valid JSON, false otherwise</returns>
+	public static bool IsValidJson( this string content ) {
+		if ( string.IsNullOrWhiteSpace( content ) )
+			return false;
+
+		var trimmed = content.Trim( );
+
+		try {
+			using var doc = JsonDocument.Parse( trimmed );
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
+	/// <summary>
+	/// Safely deserializes JSON content, returning null for non-JSON content
+	/// </summary>
+	/// <typeparam name="T">The target type</typeparam>
+	/// <param name="content">The JSON content</param>
+	/// <param name="settings">Optional JSON settings</param>
+	/// <returns>The deserialized object, or null if content is not valid JSON</returns>
+	public static T? SafeFromJson<T>( this string content, Action<JsonSettings>? settings = null ) {
+		try {
+			if ( !content.IsValidJson( ) )
+				return default( T );
+
+			return content.FromJson<T>( settings );
+		} catch {
+			return default( T );
+		}
+	}
+
+	/// <summary>
+	/// Deserializes JSON content, throwing InvalidJsonResponseException for non-JSON content
+	/// </summary>
+	/// <typeparam name="T">The target type</typeparam>
+	/// <param name="content">The JSON content</param>
+	/// <param name="statusCode">The HTTP status code (for exception context)</param>
+	/// <param name="contentType">The content type (for exception context)</param>
+	/// <param name="settings">Optional JSON settings</param>
+	/// <returns>The deserialized object</returns>
+	/// <exception cref="InvalidJsonResponseException">Thrown when content is not valid JSON</exception>
+	public static T FromJsonOrThrow<T>( this string content, System.Net.HttpStatusCode statusCode, string? contentType = null, Action<JsonSettings>? settings = null ) {
+		try {
+			// Handle empty content for successful responses - return default for dynamic, throw for specific types
+			if ( string.IsNullOrEmpty( content ) ) {
+				if ( typeof( T ) == typeof( object ) || typeof( T ).Name == "Object" ) {
+					return ( T )( object )new { }; // Return empty object for dynamic
+				}
+
+				// For empty content, only throw if it's clearly not expected (not success codes like 204, and not json content type)
+				if ( !IsSuccessWithEmptyContentExpected( statusCode, contentType ) ) {
+					throw new InvalidJsonResponseException( statusCode, content, contentType );
+				}
+
+				return default( T )!;
+			}
+
+			if ( !content.IsValidJson( ) ) {
+				throw new InvalidJsonResponseException( statusCode, content, contentType );
+			}
+
+			return content.FromJson<T>( settings )!;
+		} catch ( InvalidJsonResponseException ) {
+			throw; // Re-throw our custom exception
+		} catch ( Exception ex ) {
+			throw new InvalidJsonResponseException( statusCode, content, contentType, ex );
+		}
+	}
+
+	/// <summary>
+	/// Checks if empty content is expected for the given status code and content type
+	/// </summary>
+	private static bool IsSuccessWithEmptyContentExpected( System.Net.HttpStatusCode statusCode, string? contentType ) {
+		// Success status codes where empty content is normal
+		var emptyContentSuccessCodes = new[ ] {
+			System.Net.HttpStatusCode.NoContent,          // 204
+			System.Net.HttpStatusCode.NotModified,        // 304
+			System.Net.HttpStatusCode.ResetContent        // 205
+		};
+
+		return emptyContentSuccessCodes.Contains( statusCode );
+	}
+
 	private static JsonSerializerOptions BaseSerializer( Action<JsonSettings>? settings = null ) {
 		var jsonSettings = _globalSettings.Copy( );
 

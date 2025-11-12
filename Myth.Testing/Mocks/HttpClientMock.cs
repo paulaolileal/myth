@@ -42,10 +42,23 @@ public class HttpClientMock {
 
 				app.UseEndpoints( endpoints => {
 					RequestDelegate handler = async context => {
-						context.Response.ContentType = "application/json";
 						context.Response.StatusCode = ( int )mockSettings.StatusCode;
-						if ( mockSettings.Response is not null )
-							await context.Response.WriteAsync( mockSettings.Response.ToJson( ) );
+
+						if ( mockSettings.Response is not null ) {
+							// Check if it's a string response with custom content type
+							if ( mockSettings.Response.GetType( ).GetProperty( "Content" ) is not null &&
+								 mockSettings.Response.GetType( ).GetProperty( "ContentType" ) is not null ) {
+								var content = mockSettings.Response.GetType( ).GetProperty( "Content" )?.GetValue( mockSettings.Response ) as string;
+								var contentType = mockSettings.Response.GetType( ).GetProperty( "ContentType" )?.GetValue( mockSettings.Response ) as string;
+
+								context.Response.ContentType = contentType ?? "text/plain";
+								await context.Response.WriteAsync( content ?? "" );
+							} else {
+								// Default JSON response
+								context.Response.ContentType = "application/json";
+								await context.Response.WriteAsync( mockSettings.Response.ToJson( ) );
+							}
+						}
 					};
 
 					var route = mockSettings.Route.ToLowerInvariant( );
@@ -108,10 +121,23 @@ public class HttpClientMock {
 						endpointConfig.Invoke( mockSettings );
 
 						RequestDelegate handler = async context => {
-							context.Response.ContentType = "application/json";
 							context.Response.StatusCode = ( int )mockSettings.StatusCode;
-							if ( mockSettings.Response is not null )
-								await context.Response.WriteAsync( mockSettings.Response.ToJson( ) );
+
+							if ( mockSettings.Response is not null ) {
+								// Check if it's a string response with custom content type
+								if ( mockSettings.Response.GetType( ).GetProperty( "Content" ) is not null &&
+									 mockSettings.Response.GetType( ).GetProperty( "ContentType" ) is not null ) {
+									var content = mockSettings.Response.GetType( ).GetProperty( "Content" )?.GetValue( mockSettings.Response ) as string;
+									var contentType = mockSettings.Response.GetType( ).GetProperty( "ContentType" )?.GetValue( mockSettings.Response ) as string;
+
+									context.Response.ContentType = contentType ?? "text/plain";
+									await context.Response.WriteAsync( content ?? "" );
+								} else {
+									// Default JSON response
+									context.Response.ContentType = "application/json";
+									await context.Response.WriteAsync( mockSettings.Response.ToJson( ) );
+								}
+							}
 						};
 
 						var route = mockSettings.Route.ToLowerInvariant( );
