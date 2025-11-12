@@ -29,7 +29,7 @@ public class GuardExceptionMiddlewareTests {
 		_environment.EnvironmentName.Returns( Environments.Development );
 
 		_options = new GuardOptions { Environment = _environment };
-		_options.AutoMapCommonExceptions( );
+		_options.AutoGuardCommonExceptions( );
 
 		_middleware = new GuardExceptionMiddleware( _next, _options, _logger );
 	}
@@ -253,7 +253,7 @@ public class GuardExceptionMiddlewareTests {
 
 		// Create production options
 		var productionOptions = new GuardOptions { Environment = productionEnvironment };
-		productionOptions.AutoMapCommonExceptions( );
+		productionOptions.AutoGuardCommonExceptions( );
 
 		var productionMiddleware = new GuardExceptionMiddleware( _next, productionOptions, _logger );
 

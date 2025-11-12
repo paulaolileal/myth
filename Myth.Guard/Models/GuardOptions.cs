@@ -17,12 +17,12 @@ public sealed class GuardOptions {
 	internal List<object> PendingBuilders { get; } = new( );
 
 	/// <summary>
-	/// Automatically maps common .NET exceptions with sensible defaults
+	/// Automatically guards against common .NET exceptions with sensible defaults
 	/// </summary>
 	/// <param name="includeStackTrace">Whether to include formatted stack traces in development mode</param>
 	/// <returns>The GuardOptions instance for method chaining</returns>
-	public GuardOptions AutoMapCommonExceptions( bool includeStackTrace = true ) {
-		MapException<ArgumentNullException>( )
+	public GuardOptions AutoGuardCommonExceptions( bool includeStackTrace = true ) {
+		GuardException<ArgumentNullException>( )
 			.WithStatusCode( 400 )
 			.WithErrorCode( "ARGUMENT_NULL" )
 			.WithResponse( ex => new {
@@ -31,7 +31,7 @@ public sealed class GuardOptions {
 			} )
 			.Build( );
 
-		MapException<ArgumentException>( )
+		GuardException<ArgumentException>( )
 			.WithStatusCode( 400 )
 			.WithErrorCode( "ARGUMENT_INVALID" )
 			.WithResponse( ex => new {
@@ -40,7 +40,7 @@ public sealed class GuardOptions {
 			} )
 			.Build( );
 
-		MapException<InvalidOperationException>( )
+		GuardException<InvalidOperationException>( )
 			.WithStatusCode( 409 )
 			.WithErrorCode( "INVALID_OPERATION" )
 			.WithResponse( ex => new {
@@ -48,7 +48,7 @@ public sealed class GuardOptions {
 			} )
 			.Build( );
 
-		MapException<UnauthorizedAccessException>( )
+		GuardException<UnauthorizedAccessException>( )
 			.WithStatusCode( 403 )
 			.WithErrorCode( "FORBIDDEN" )
 			.WithResponse( ex => new {
@@ -56,7 +56,7 @@ public sealed class GuardOptions {
 			} )
 			.Build( );
 
-		MapException<NotImplementedException>( )
+		GuardException<NotImplementedException>( )
 			.WithStatusCode( 501 )
 			.WithErrorCode( "NOT_IMPLEMENTED" )
 			.WithResponse( ex => new {
@@ -64,7 +64,7 @@ public sealed class GuardOptions {
 			} )
 			.Build( );
 
-		MapException<TimeoutException>( )
+		GuardException<TimeoutException>( )
 			.WithStatusCode( 408 )
 			.WithErrorCode( "TIMEOUT" )
 			.WithResponse( ex => new {
@@ -72,7 +72,7 @@ public sealed class GuardOptions {
 			} )
 			.Build( );
 
-		MapDefaultException( )
+		GuardDefaultException( )
 			.WithStatusCode( 500 )
 			.WithErrorCode( "INTERNAL_ERROR" )
 			.WithResponse( ex => {
@@ -89,18 +89,19 @@ public sealed class GuardOptions {
 	}
 
 	/// <summary>
-	/// Maps a specific exception type to a handler configuration
+	/// Guards against a specific exception type with a handler configuration
 	/// </summary>
-	public Builder.ExceptionMappingBuilder<TException> MapException<TException>( ) where TException : Exception {
+	public Builder.ExceptionMappingBuilder<TException> GuardException<TException>( ) where TException : Exception {
 		return new Builder.ExceptionMappingBuilder<TException>( this );
 	}
 
 	/// <summary>
-	/// Maps the default handler for unhandled exceptions
+	/// Guards with a default handler for unhandled exceptions
 	/// </summary>
-	public Builder.ExceptionMappingBuilder<Exception> MapDefaultException( ) {
+	public Builder.ExceptionMappingBuilder<Exception> GuardDefaultException( ) {
 		return new Builder.ExceptionMappingBuilder<Exception>( this, isDefault: true );
 	}
+
 
 	internal void RegisterHandler( Type exceptionType, ExceptionHandler handler, bool isDefault = false ) {
 		if ( isDefault )

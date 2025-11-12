@@ -36,10 +36,10 @@ public class IntegratedExceptionMappingTests {
 		var options = new GuardOptions { Environment = _environment };
 
 		// First apply auto-mapping
-		options.AutoMapCommonExceptions( );
+		options.AutoGuardCommonExceptions( );
 
 		// Then add manual mapping for custom exception
-		options.MapException<FileNotFoundException>( )
+		options.GuardException<FileNotFoundException>( )
 			.WithStatusCode( 404 )
 			.WithErrorCode( "FILE_NOT_FOUND" )
 			.WithResponse( ex => new {
@@ -83,10 +83,10 @@ public class IntegratedExceptionMappingTests {
 		var options = new GuardOptions { Environment = _environment };
 
 		// First apply auto-mapping
-		options.AutoMapCommonExceptions( );
+		options.AutoGuardCommonExceptions( );
 
 		// Then override ArgumentNullException with custom mapping
-		options.MapException<ArgumentNullException>( )
+		options.GuardException<ArgumentNullException>( )
 			.WithStatusCode( 422 ) // Different from auto-mapping (400)
 			.WithErrorCode( "CUSTOM_ARGUMENT_NULL" )
 			.WithResponse( ex => new {
@@ -130,7 +130,7 @@ public class IntegratedExceptionMappingTests {
 		var options = new GuardOptions { Environment = _environment };
 
 		// Apply auto-mapping (includes default handler)
-		options.AutoMapCommonExceptions( );
+		options.AutoGuardCommonExceptions( );
 
 		var middleware = new GuardExceptionMiddleware( _next, options, _logger );
 
@@ -167,10 +167,10 @@ public class IntegratedExceptionMappingTests {
 		var options = new GuardOptions { Environment = _environment };
 
 		// Apply auto-mapping first
-		options.AutoMapCommonExceptions( );
+		options.AutoGuardCommonExceptions( );
 
 		// Then override the default handler
-		options.MapDefaultException( )
+		options.GuardDefaultException( )
 			.WithStatusCode( 503 ) // Service Unavailable instead of 500
 			.WithErrorCode( "CUSTOM_ERROR" )
 			.WithResponse( ex => new {

@@ -31,7 +31,7 @@ public class WithErrorCodeTests {
 		string? capturedErrorCode = null;
 
 		services.AddGuard( config => config
-			.MapException<ArgumentNullException>( )
+			.GuardException<ArgumentNullException>( )
 			.WithStatusCode( HttpStatusCode.UnprocessableEntity )
 			.WithErrorCode( "INVALID_ARGUMENT" )
 			.WithResponse( ex => {
@@ -90,7 +90,7 @@ public class WithErrorCodeTests {
 		services.AddSingleton( environment );
 
 		services.AddGuard( config => config
-			.MapException<ArgumentException>( )
+			.GuardException<ArgumentException>( )
 			.WithStatusCode( 400 )
 			.WithErrorCode( ex => {
 				// Dynamic error code based on parameter name
@@ -150,7 +150,7 @@ public class WithErrorCodeTests {
 		var options = new GuardOptions( );
 
 		// Act
-		options.MapException<InvalidOperationException>( )
+		options.GuardException<InvalidOperationException>( )
 			.WithErrorCode( "OPERATION_INVALID" )
 			.Build( );
 

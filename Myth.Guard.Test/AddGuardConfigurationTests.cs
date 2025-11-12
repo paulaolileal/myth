@@ -32,7 +32,7 @@ public class AddGuardConfigurationTests {
 		services.AddSingleton( _environment );
 
 		services.AddGuard( config => config
-			.MapException<ArgumentNullException>( )
+			.GuardException<ArgumentNullException>( )
 			.WithStatusCode( HttpStatusCode.UnprocessableEntity )
 			.WithErrorCode( "INVALID" )
 			.WithResponse( a => new {
@@ -72,7 +72,7 @@ public class AddGuardConfigurationTests {
 		services.AddSingleton( _environment );
 
 		services.AddGuard( config => config
-			.MapException<ArgumentNullException>( )
+			.GuardException<ArgumentNullException>( )
 			.WithStatusCode( HttpStatusCode.UnprocessableEntity )
 			.WithErrorCode( "INVALID" )
 			.WithResponse( a => new {
@@ -123,7 +123,7 @@ public class AddGuardConfigurationTests {
 		services.AddSingleton( _environment );
 
 		services.AddGuard( config => config
-			.MapException<ArgumentNullException>( )
+			.GuardException<ArgumentNullException>( )
 			.WithStatusCode( HttpStatusCode.UnprocessableEntity )
 			.WithErrorCode( "INVALID" )
 			.WithResponse( a => new {

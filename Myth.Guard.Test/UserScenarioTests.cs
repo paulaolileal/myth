@@ -29,7 +29,7 @@ public class UserScenarioTests {
 
 		// Exactly the user's configuration - no .Build() or .And() call
 		services.AddGuard( config => config
-			.MapException<ArgumentNullException>( )
+			.GuardException<ArgumentNullException>( )
 			.WithStatusCode( HttpStatusCode.UnprocessableEntity )
 			.WithErrorCode( "INVALID" )
 			.WithResponse( a => new {
@@ -85,7 +85,7 @@ public class UserScenarioTests {
 
 		// Use .And() to auto-build the handler
 		services.AddGuard( config => config
-			.MapException<ArgumentNullException>( )
+			.GuardException<ArgumentNullException>( )
 			.WithStatusCode( HttpStatusCode.UnprocessableEntity )
 			.WithErrorCode( "INVALID" )
 			.WithResponse( a => new {
