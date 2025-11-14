@@ -113,29 +113,36 @@ public abstract class BaseDatabaseTests<TContext> : BaseTests where TContext : D
 	/// <summary>
 	/// Get the database context for direct access
 	/// </summary>
-	/// <returns>The database context instance</returns>
+	/// <returns>The database context instance with cleared change tracker</returns>
 	/// <remarks>
 	/// The database is automatically initialized when this method is called for the first time.
+	/// The change tracker is cleared to ensure fresh data from the database in test scenarios.
 	/// </remarks>
 	protected TContext GetContext( ) {
 		// Note: For synchronous context access, we use a fire-and-forget approach
 		// The calling code should be responsible for proper async patterns
 		_ = EnsureDatabaseInitializedAsync( );
-		return GetRequiredService<TContext>( );
+		var context = GetRequiredService<TContext>( );
+		context.ChangeTracker.Clear( );
+		return context;
 	}
 
 	/// <summary>
 	/// Get the database context for direct access with automatic initialization
 	/// </summary>
-	/// <returns>A task containing the database context instance</returns>
+	/// <returns>A task containing the database context instance with cleared change tracker</returns>
 	/// <remarks>
 	/// This async version ensures proper database initialization before returning the context.
+	/// The change tracker is cleared to ensure fresh data from the database in test scenarios.
 	/// Prefer this method in async scenarios for guaranteed initialization.
 	/// </remarks>
 	protected async Task<TContext> GetContextAsync( ) {
 		await EnsureDatabaseInitializedAsync( );
-		return GetRequiredService<TContext>( );
+		var context = GetRequiredService<TContext>( );
+		context.ChangeTracker.Clear( );
+		return context;
 	}
+
 
 	/// <summary>
 	/// Dispose database resources
