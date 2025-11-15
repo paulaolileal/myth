@@ -60,7 +60,7 @@ public class ValidationErrorTests {
 	[Theory]
 	[InlineData( "" )]
 	[InlineData( null )]
-	public void Constructor_WithNullOrEmptyField_ShouldAcceptValue( string field ) {
+	public void Constructor_WithNullOrEmptyField_ShouldAcceptValue( string? field ) {
 		// Act
 		var error = new ValidationError( field, "Message", "CODE", HttpStatusCode.BadRequest );
 
@@ -71,7 +71,7 @@ public class ValidationErrorTests {
 	[Theory]
 	[InlineData( "" )]
 	[InlineData( null )]
-	public void Constructor_WithNullOrEmptyMessage_ShouldAcceptValue( string message ) {
+	public void Constructor_WithNullOrEmptyMessage_ShouldAcceptValue( string? message ) {
 		// Act
 		var error = new ValidationError( "Field", message, "CODE", HttpStatusCode.BadRequest );
 
@@ -82,7 +82,7 @@ public class ValidationErrorTests {
 	[Theory]
 	[InlineData( "" )]
 	[InlineData( null )]
-	public void Constructor_WithNullOrEmptyCode_ShouldAcceptValue( string code ) {
+	public void Constructor_WithNullOrEmptyCode_ShouldAcceptValue( string? code ) {
 		// Act
 		var error = new ValidationError( "Field", "Message", code, HttpStatusCode.BadRequest );
 
