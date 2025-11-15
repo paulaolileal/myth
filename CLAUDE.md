@@ -407,3 +407,4 @@ All non-test projects are configured as NuGet packages with:
 - Package icon: `Logo.jpg`
 - Repository URL: https://gitlab.com/dotnet-myth/myth
 - Each package has its own README.md included
+- Sempre que for gerar uma nova documentação, alterar alguma documentação ou gerar casos de uso, use os README.md e o README.pt-br.md para documentar. Não crie arquivos novos
