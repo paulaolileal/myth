@@ -23,6 +23,7 @@ public abstract class Constant<TConstant, TValue>( string name, TValue value )
 	/// <returns></returns>
 	public static string GetOptions( ) =>
 		List
-			.Select( x => $"({x.Name}): {x.Value}" )
+			.OrderBy( x => x.Value )
+			.Select( x => $"{x.Value}: {x.Name}" )
 			.ToStringWithSeparator( " | " );
 }
