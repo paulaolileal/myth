@@ -246,6 +246,53 @@ builder.For( Role, x => x.BeInEnum<UserRole>() );
 builder.For( Status, x => x.BeOneOf( Status.Active, Status.Pending ) );
 ```
 
+### Constant Rules
+
+Validate values and names against `Myth.Commons.ValueObjects.Constant<TConstant, TValue>` types:
+
+```csharp
+// Define your constants
+public class Status : Constant<Status, string> {
+    public static readonly Status Active = new( "Active", "A" );
+    public static readonly Status Inactive = new( "Inactive", "I" );
+    public static readonly Status Pending = new( "Pending", "P" );
+
+    public Status( string name, string value ) : base( name, value ) { }
+}
+
+public class Priority : Constant<Priority, int> {
+    public static readonly Priority Low = new( "Low", 1 );
+    public static readonly Priority Medium = new( "Medium", 5 );
+    public static readonly Priority High = new( "High", 10 );
+
+    public Priority( string name, int value ) : base( name, value ) { }
+}
+
+// Validate constant values and names
+builder.For( StatusCode, x => x
+    .NotEmpty()
+    .ExistsInConstant<Status, string>() );
+
+builder.For( StatusName, x => x
+    .NotEmpty()
+    .NameExistsInConstant<Status, string>() );
+
+builder.For( PriorityLevel, x => x
+    .ExistsInConstant<Priority, int>() );
+
+builder.For( PriorityName, x => x
+    .NotEmpty()
+    .NameExistsInConstant<Priority, int>() );
+```
+
+**Available Constant Rules:**
+- `ExistsInConstant<TConstant, TValue>()` - Validates that a value exists in the constant definition
+- `NameExistsInConstant<TConstant, TValue>()` - Validates that a name exists in the constant definition
+
+**Error Messages:**
+- Value error: `"Value 'X' is not valid. Valid options are: A: Active | I: Inactive | P: Pending"`
+- Name error: `"Name 'Unknown' is not valid. Valid options are: 1: Low | 5: Medium | 10: High"`
+
 ### Generic Rules (All Types)
 
 ```csharp

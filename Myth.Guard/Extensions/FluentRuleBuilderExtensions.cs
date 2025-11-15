@@ -6,11 +6,13 @@ using Myth.Guard.Rules.Nullables.Numerics;
 using Myth.Rules.Base;
 using Myth.Rules.Boooleans;
 using Myth.Rules.Collections;
+using Myth.Rules.Constants;
 using Myth.Rules.Dates;
 using Myth.Rules.DateTimes;
 using Myth.Rules.Enums;
 using Myth.Rules.Numerics;
 using Myth.Rules.Strings;
+using Myth.ValueObjects;
 
 namespace Myth.Extensions;
 
@@ -738,4 +740,58 @@ public static class FluentRuleBuilderExtensions {
 	}
 
 	#endregion Chaining Support Methods - Now functional!
+
+	#region Constant Extensions
+
+	/// <summary>
+	/// Validates that the value exists within the specified Constant type definition.
+	/// Uses the Constant's GetOptions() method to list available options in the default error message.
+	/// </summary>
+	/// <typeparam name="TConstant">The constant type that defines valid values.</typeparam>
+	/// <typeparam name="TValue">The value type of the constant.</typeparam>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// public class Status : Constant&lt;Status, string&gt; {
+	///     public static readonly Status Active = new("Active", "A");
+	///     public static readonly Status Inactive = new("Inactive", "I");
+	/// }
+	///
+	/// builder.For(x => x.StatusCode, r => r.ExistsInConstant&lt;Status, string&gt;());
+	/// // Error: "Value 'X' is not valid. Valid options are: (Active): A | (Inactive): I"
+	/// </code>
+	/// </example>
+	public static FluentRuleBuilder<TValue> ExistsInConstant<TConstant, TValue>( this FluentRuleBuilder<TValue> builder )
+		where TConstant : Constant<TConstant, TValue>
+		where TValue : IEquatable<TValue>, IComparable<TValue> {
+		return builder.AddRule( new ValueExistsInConstantRule<TConstant, TValue>( ) );
+	}
+
+	/// <summary>
+	/// Validates that the name exists within the specified Constant type definition.
+	/// Uses the Constant's GetOptions() method to list available options in the default error message.
+	/// </summary>
+	/// <typeparam name="TConstant">The constant type that defines valid names.</typeparam>
+	/// <typeparam name="TValue">The value type of the constant.</typeparam>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// public class Priority : Constant&lt;Priority, int&gt; {
+	///     public static readonly Priority Low = new("Low", 1);
+	///     public static readonly Priority High = new("High", 10);
+	/// }
+	///
+	/// builder.For(x => x.PriorityName, r => r.NameExistsInConstant&lt;Priority, int&gt;());
+	/// // Error: "Name 'Medium' is not valid. Valid options are: (Low): 1 | (High): 10"
+	/// </code>
+	/// </example>
+	public static FluentRuleBuilder<string> NameExistsInConstant<TConstant, TValue>( this FluentRuleBuilder<string> builder )
+		where TConstant : Constant<TConstant, TValue>
+		where TValue : IEquatable<TValue>, IComparable<TValue> {
+		return builder.AddRule( new NameExistsInConstantRule<TConstant, TValue>( ) );
+	}
+
+	#endregion Constant Extensions
 }

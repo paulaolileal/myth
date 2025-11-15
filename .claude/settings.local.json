@@ -4,7 +4,9 @@
       "Bash(dotnet --version)",
       "Bash(dotnet test:*)",
       "Bash(dotnet build:*)",
-      "WebFetch(domain:blog.nimblepros.com)"
+      "WebFetch(domain:blog.nimblepros.com)",
+      "Bash(powershell -Command:*)",
+      "Bash(dotnet restore:*)"
     ],
     "deny": [],
     "ask": []
