@@ -148,7 +148,7 @@ public abstract class Constant<TSelf, TValue> : IEquatable<Constant<TSelf, TValu
 		return GetAll( )
 			.OrderBy( x => x.Value )
 			.Select( x => $"{x.Value}: {x.Name}" )
-			.ToStringWithSeparator( " | " );
+			.ToStringWithSeparator( Environment.NewLine );
 	}
 
 	/// <summary>
