@@ -12,7 +12,7 @@ public class ConstantTests {
 		var test = ConstantMock.One == 1;
 
 		// Assert
-		options.Should( ).Be( "1: One | 2: Two" );
+		options.Should( ).Be( "1: One\n2: Two" );
 		test.Should( ).BeTrue( );
 	}
 }
