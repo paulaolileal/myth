@@ -6,7 +6,9 @@
       "Bash(dotnet build:*)",
       "WebFetch(domain:blog.nimblepros.com)",
       "Bash(powershell -Command:*)",
-      "Bash(dotnet restore:*)"
+      "Bash(dotnet restore:*)",
+      "Bash(move SmartConstantTests.cs ConstantTests.cs)",
+      "Bash(ren:*)"
     ],
     "deny": [],
     "ask": []

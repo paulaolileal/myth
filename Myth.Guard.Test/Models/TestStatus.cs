@@ -7,9 +7,9 @@ public partial class ConstantValidationRulesTests {
 	/// Test Status constant for string values
 	/// </summary>
 	public class TestStatus : Constant<TestStatus, string> {
-		public static readonly TestStatus Active = new( "Active", "A" );
-		public static readonly TestStatus Inactive = new( "Inactive", "I" );
-		public static readonly TestStatus Pending = new( "Pending", "P" );
+		public static readonly TestStatus Active = new( name: "Active", value: "A" );
+		public static readonly TestStatus Inactive = new( name: "Inactive", value: "I" );
+		public static readonly TestStatus Pending = new( name: "Pending", value: "P" );
 
 		public TestStatus( string name, string value ) : base( name, value ) { }
 	}
