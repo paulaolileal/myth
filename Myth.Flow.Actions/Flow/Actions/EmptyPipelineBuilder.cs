@@ -1,4 +1,4 @@
-﻿using Myth.Flow.Actions.Interfaces;
+using Myth.Flow.Actions.Interfaces;
 using Myth.ServiceProvider;
 
 namespace Myth.Flow.Actions;

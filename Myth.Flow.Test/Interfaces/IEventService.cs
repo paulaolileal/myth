@@ -1,10 +1,9 @@
-﻿using Myth.Flow.Test.Models;
 using System.Threading.Tasks;
+using Myth.Flow.Test.Models;
 
-namespace Myth.Flow.Test.Interfaces {
+namespace Myth.Flow.Test.Interfaces;
 
-	public interface IEventService {
+public interface IEventService {
 
-		Task PublishAsync( TestDto dto );
-	}
+	Task PublishAsync( TestDto dto );
 }

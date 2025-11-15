@@ -3,7 +3,8 @@
     "allow": [
       "Bash(dotnet --version)",
       "Bash(dotnet test:*)",
-      "Bash(dotnet build:*)"
+      "Bash(dotnet build:*)",
+      "WebFetch(domain:blog.nimblepros.com)"
     ],
     "deny": [],
     "ask": []

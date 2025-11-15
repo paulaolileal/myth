@@ -1,8 +1,8 @@
-﻿using Myth.Flow.Test.Interfaces;
-using Myth.Flow.Test.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Myth.Flow.Test.Interfaces;
+using Myth.Flow.Test.Models;
 
 public class MockUserRepository : IUserRepository {
 	private readonly List<string> _existingEmails = new( );

@@ -1,9 +1,8 @@
-﻿using Myth.Models;
+using Myth.Models;
 
-namespace Myth.Flow.Test.Interfaces {
+namespace Myth.Flow.Test.Interfaces;
 
-	public interface IPasswordValidator {
+public interface IPasswordValidator {
 
-		Result<string> ValidateAndHash( string password );
-	}
+	Result<string> ValidateAndHash( string password );
 }

@@ -1,5 +1,5 @@
-﻿using Myth.Flow.Test.Interfaces;
 using System.Collections.Generic;
+using Myth.Flow.Test.Interfaces;
 
 public class MockRoleValidator : IRoleValidator {
 	private readonly HashSet<string> _validRoles = new( ) { "admin", "common", "maintainer" };

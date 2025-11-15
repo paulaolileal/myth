@@ -1,7 +1,6 @@
-﻿namespace Myth.Flow.Test.Interfaces {
+namespace Myth.Flow.Test.Interfaces;
 
-	public interface IRoleValidator {
+public interface IRoleValidator {
 
-		bool IsValidRole( string role );
-	}
+	bool IsValidRole( string role );
 }

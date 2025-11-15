@@ -1,4 +1,4 @@
-﻿using Ardalis.SmartEnum;
+using Ardalis.SmartEnum;
 using Myth.Extensions;
 
 namespace Myth.ValueObjects;

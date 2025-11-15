@@ -1,33 +1,32 @@
-﻿namespace Myth.Models {
+namespace Myth.Models;
+
+/// <summary>
+/// Specifies the type of a pipeline step.
+/// </summary>
+internal enum StepType {
 
 	/// <summary>
-	/// Specifies the type of a pipeline step.
+	/// Synchronous step.
 	/// </summary>
-	internal enum StepType {
+	Sync,
 
-		/// <summary>
-		/// Synchronous step.
-		/// </summary>
-		Sync,
+	/// <summary>
+	/// Asynchronous step.
+	/// </summary>
+	Async,
 
-		/// <summary>
-		/// Asynchronous step.
-		/// </summary>
-		Async,
+	/// <summary>
+	/// Transformation step that changes the context type.
+	/// </summary>
+	Transform,
 
-		/// <summary>
-		/// Transformation step that changes the context type.
-		/// </summary>
-		Transform,
+	/// <summary>
+	/// Tap step for side-effect actions.
+	/// </summary>
+	Tap,
 
-		/// <summary>
-		/// Tap step for side-effect actions.
-		/// </summary>
-		Tap,
-
-		/// <summary>
-		/// Conditional step that executes based on a predicate.
-		/// </summary>
-		Conditional
-	}
+	/// <summary>
+	/// Conditional step that executes based on a predicate.
+	/// </summary>
+	Conditional
 }

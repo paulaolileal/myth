@@ -1,4 +1,4 @@
-﻿namespace Myth.Constants;
+namespace Myth.Constants;
 
 /// <summary>
 /// Json serialization case

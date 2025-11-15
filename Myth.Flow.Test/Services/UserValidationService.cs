@@ -1,8 +1,8 @@
-﻿using Myth.Flow.Test.Contexts;
-using Myth.Flow.Test.Interfaces;
-using Myth.Models;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
+using Myth.Flow.Test.Contexts;
+using Myth.Flow.Test.Interfaces;
+using Myth.Models;
 
 public class UserValidationService {
 	private readonly IUserRepository _repository;

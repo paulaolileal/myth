@@ -1,9 +1,9 @@
-﻿using Myth.Flow.Test.Contexts;
+using System;
+using System.Threading.Tasks;
+using Myth.Flow.Test.Contexts;
 using Myth.Flow.Test.Interfaces;
 using Myth.Flow.Test.Models;
 using Myth.Models;
-using System;
-using System.Threading.Tasks;
 
 public class UserCreationService {
 	private readonly IUserRepository _repository;

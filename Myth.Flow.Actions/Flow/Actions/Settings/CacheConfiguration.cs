@@ -1,4 +1,4 @@
-﻿namespace Myth.Flow.Actions.Settings;
+namespace Myth.Flow.Actions.Settings;
 
 /// <summary>
 /// Cache configuration

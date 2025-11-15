@@ -1,4 +1,4 @@
-﻿using Myth.ValueObjects;
+using Myth.ValueObjects;
 
 namespace Myth.Commons.Test.Models;
 

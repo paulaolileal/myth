@@ -1,8 +1,8 @@
+using System.Net;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Myth.Guard.Test.Models;
 using Myth.Validation;
-using System.Net;
 
 namespace Myth.Guard.Test;
 

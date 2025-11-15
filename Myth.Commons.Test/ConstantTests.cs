@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Myth.Commons.Test.Models;
 
 namespace Myth.Commons.Test;

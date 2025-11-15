@@ -1,4 +1,4 @@
-﻿namespace Myth.ValueObjects;
+namespace Myth.ValueObjects;
 
 public abstract class ValueObject {
 

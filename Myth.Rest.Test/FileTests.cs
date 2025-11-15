@@ -1,3 +1,8 @@
+using System;
+using System.IO;
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Myth.Exceptions;
@@ -5,11 +10,6 @@ using Myth.Extensions;
 using Myth.Interfaces;
 using Myth.Rest.Test.Base;
 using Myth.Testing.Mocks;
-using System;
-using System.IO;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Myth.Rest.Test;

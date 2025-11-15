@@ -1,13 +1,13 @@
-﻿using Microsoft.AspNetCore.Http;
+using System.Diagnostics;
+using System.Dynamic;
+using System.Net.Http.Headers;
+using System.Text;
+using Microsoft.AspNetCore.Http;
 using Myth.Builders;
 using Myth.Exceptions;
 using Myth.Extensions;
 using Myth.Interfaces;
 using Myth.Models;
-using System.Diagnostics;
-using System.Dynamic;
-using System.Net.Http.Headers;
-using System.Text;
 
 namespace Myth.Rest;
 
@@ -332,10 +332,13 @@ public class RestBuilder : IRestBuilder, IRestRequest, IRestPostProcessing,
 			elapsedTime,
 			_configBuilder._retryPolicy.AmountRetriesMade,
 			_errorBuilder._useFallback,
-			_isFileOperation );
+			_isFileOperation,
+			message.Content.Headers.ContentType?.MediaType );
 
 		// Handle error checking - for file operations, use empty dynamic object
-		dynamic dynamicContent = _isFileOperation ? new ExpandoObject( ) : stringContent.FromJson<dynamic>( );
+		dynamic dynamicContent = _isFileOperation
+			? new ExpandoObject( )
+			: stringContent.FromJsonOrThrow<dynamic>( message.StatusCode, message.Content.Headers.ContentType?.MediaType );
 
 		// If the response is not success and there is no fallback, throw an exception
 		if ( _errorBuilder.TryGet( message.StatusCode, dynamicContent ) )

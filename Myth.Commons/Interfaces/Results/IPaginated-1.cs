@@ -1,4 +1,4 @@
-﻿namespace Myth.Interfaces.Results;
+namespace Myth.Interfaces.Results;
 
 public interface IPaginated<T> : IPaginated {
 

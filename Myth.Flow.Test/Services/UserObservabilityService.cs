@@ -1,6 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
-using Myth.Flow.Test.Contexts;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Myth.Flow.Test.Contexts;
 
 public class UserObservabilityService {
 	private readonly ILogger<UserObservabilityService> _logger;

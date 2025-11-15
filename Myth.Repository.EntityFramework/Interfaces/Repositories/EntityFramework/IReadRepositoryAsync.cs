@@ -1,4 +1,4 @@
-﻿namespace Myth.Interfaces.Repositories.EntityFramework;
+namespace Myth.Interfaces.Repositories.EntityFramework;
 
 public interface IReadRepositoryAsync<TEntity> : Base.IReadRepositoryAsync<TEntity> {
 

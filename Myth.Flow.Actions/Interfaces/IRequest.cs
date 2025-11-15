@@ -1,4 +1,4 @@
-﻿namespace Myth.Interfaces;
+namespace Myth.Interfaces;
 
 /// <summary>
 /// Base marker interface for all requests (commands and queries)

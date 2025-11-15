@@ -1,9 +1,8 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 
-namespace Myth.Flow.Test.Interfaces {
+namespace Myth.Flow.Test.Interfaces;
 
-	public interface IEventPublisher {
+public interface IEventPublisher {
 
-		Task PublishAsync<TEvent>( TEvent @event );
-	}
+	Task PublishAsync<TEvent>( TEvent @event );
 }

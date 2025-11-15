@@ -1,7 +1,7 @@
-﻿using Myth.Flow.Test.Contexts;
+using System.Threading.Tasks;
+using Myth.Flow.Test.Contexts;
 using Myth.Flow.Test.Interfaces;
 using Myth.Flow.Test.Models;
-using System.Threading.Tasks;
 
 public class UserEventService {
 	private readonly IEventPublisher _eventPublisher;

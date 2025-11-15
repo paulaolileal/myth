@@ -1,4 +1,4 @@
-﻿public interface IUserMetrics {
+public interface IUserMetrics {
 
 	void IncrementUserCreated( );
 

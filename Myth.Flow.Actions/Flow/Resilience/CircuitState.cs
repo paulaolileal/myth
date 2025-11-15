@@ -1,4 +1,4 @@
-﻿namespace Myth.Flow.Resilience;
+namespace Myth.Flow.Resilience;
 
 /// <summary>
 /// Circuit breaker state

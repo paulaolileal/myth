@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Myth.Contexts;
 
 namespace Myth.Repository.Test.Extensions;

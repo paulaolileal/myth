@@ -1,11 +1,11 @@
-using FluentAssertions;
-using Myth.Helpers;
-using Myth.Models;
-using Myth.Rest.Test.Base;
 using System;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using FluentAssertions;
+using Myth.Helpers;
+using Myth.Models;
+using Myth.Rest.Test.Base;
 using Xunit;
 
 namespace Myth.Rest.Test;

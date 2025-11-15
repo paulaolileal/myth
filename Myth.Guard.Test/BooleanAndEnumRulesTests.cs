@@ -201,6 +201,102 @@ public class BooleanAndEnumRulesTests : BaseTestFixture {
 	}
 
 	[Theory]
+	[InlineData( UserRole.Admin )]
+	[InlineData( UserRole.User )]
+	[InlineData( UserRole.Guest )]
+	public async Task Enum_IsValidEnumValue_WithValidValues_ShouldPass( UserRole validRole ) {
+		// Arrange
+		var entity = new EnumTestEntity {
+			Role = validRole,
+			Priority = TestPriority.Medium,
+			NullableStatus = TestStatus.Active
+		};
+
+		// Act
+		var result = await _validator.ValidateAndReturnAsync( entity );
+
+		// Assert
+		result.IsValid.Should( ).BeTrue( );
+	}
+
+	[Fact]
+	public async Task Enum_IsValidEnumValue_WithInvalidValue_ShouldFail( ) {
+		// Arrange
+		var entity = new EnumTestEntity {
+			Role = ( UserRole )99, // Invalid enum value
+			Priority = TestPriority.Medium,
+			NullableStatus = TestStatus.Active
+		};
+
+		// Act
+		var result = await _validator.ValidateAndReturnAsync( entity );
+
+		// Assert
+		result.IsValid.Should( ).BeFalse( );
+		result.Errors.Should( ).Contain( e => e.Field == "Role" );
+		result.Errors.Where( e => e.Field == "Role" )
+			.Should( ).ContainSingle( )
+			.Which.Message.Should( ).Contain( "99" )
+			.And.Contain( "not a valid UserRole enum member" );
+	}
+
+	[Theory]
+	[InlineData( TestStatus.Active )]
+	[InlineData( TestStatus.Inactive )]
+	[InlineData( TestStatus.Pending )]
+	public async Task NullableEnum_IsValidNullableEnumValue_WithValidValues_ShouldPass( TestStatus validStatus ) {
+		// Arrange
+		var entity = new EnumTestEntity {
+			Role = UserRole.User,
+			Priority = TestPriority.Medium,
+			NullableStatus = validStatus
+		};
+
+		// Act
+		var result = await _validator.ValidateAndReturnAsync( entity );
+
+		// Assert
+		result.IsValid.Should( ).BeTrue( );
+	}
+
+	[Fact]
+	public async Task NullableEnum_IsValidNullableEnumValue_WithNullValue_ShouldPass( ) {
+		// Arrange
+		var entity = new EnumTestEntity {
+			Role = UserRole.User,
+			Priority = TestPriority.Medium,
+			NullableStatus = null
+		};
+
+		// Act
+		var result = await _validator.ValidateAndReturnAsync( entity );
+
+		// Assert
+		result.IsValid.Should( ).BeTrue( );
+	}
+
+	[Fact]
+	public async Task NullableEnum_IsValidNullableEnumValue_WithInvalidValue_ShouldFail( ) {
+		// Arrange
+		var entity = new EnumTestEntity {
+			Role = UserRole.User,
+			Priority = TestPriority.Medium,
+			NullableStatus = ( TestStatus? )999 // Invalid nullable enum value
+		};
+
+		// Act
+		var result = await _validator.ValidateAndReturnAsync( entity );
+
+		// Assert
+		result.IsValid.Should( ).BeFalse( );
+		result.Errors.Should( ).Contain( e => e.Field == "NullableStatus" );
+		result.Errors.Where( e => e.Field == "NullableStatus" )
+			.Should( ).ContainSingle( )
+			.Which.Message.Should( ).Contain( "999" )
+			.And.Contain( "not a valid TestStatus enum member" );
+	}
+
+	[Theory]
 	[InlineData( PhoneType.Optional )]
 	[InlineData( PhoneType.Required )]
 	public async Task Enum_PhoneType_WithValidValues_ShouldPass( PhoneType validPhoneType ) {

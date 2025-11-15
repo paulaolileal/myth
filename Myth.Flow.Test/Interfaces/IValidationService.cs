@@ -1,10 +1,9 @@
-﻿using Myth.Flow.Test.Models;
+using Myth.Flow.Test.Models;
 using Myth.Models;
 
-namespace Myth.Flow.Test.Interfaces {
+namespace Myth.Flow.Test.Interfaces;
 
-	public interface IValidationService {
+public interface IValidationService {
 
-		Result<TestDto> Validate( TestDto dto );
-	}
+	Result<TestDto> Validate( TestDto dto );
 }

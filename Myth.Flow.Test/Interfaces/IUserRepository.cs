@@ -1,12 +1,11 @@
-﻿using Myth.Flow.Test.Models;
 using System.Threading.Tasks;
+using Myth.Flow.Test.Models;
 
-namespace Myth.Flow.Test.Interfaces {
+namespace Myth.Flow.Test.Interfaces;
 
-	public interface IUserRepository {
+public interface IUserRepository {
 
-		Task<bool> EmailExistsAsync( string email );
+	Task<bool> EmailExistsAsync( string email );
 
-		Task<User> CreateUserAsync( User user );
-	}
+	Task<User> CreateUserAsync( User user );
 }

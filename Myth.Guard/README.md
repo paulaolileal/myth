@@ -17,6 +17,7 @@ Most validation libraries force you to choose between attribute-based validation
 - **Declarative Fluent API**: Write readable validation rules with chainable methods
 - **Context-Aware Validation**: Different rules for Create, Update, Delete operations on the same entity
 - **Async Service Integration**: Access dependency injection for database or API validation
+- **Global Exception Handler**: Configure custom exception mappings with status codes and response formats
 - **Automatic Error Handling**: ASP.NET Core middleware with structured JSON responses
 - **100+ Built-in Rules**: Comprehensive validation for strings, numbers, collections, dates, booleans, enums
 - **Nullable Type Support**: Full support for nullable value types with dedicated rules
@@ -599,6 +600,216 @@ When using `app.UseGuard()`, validation exceptions are automatically caught and 
 ```
 
 **HTTP Status Code**: The highest status code from all validation errors (e.g., if one error has `409 Conflict`, the response will be `409`).
+
+## Global Exception Handling
+
+Myth.Guard now includes a powerful **Global Exception Handler** that allows you to map any exception type to custom HTTP responses with appropriate status codes and error formats.
+
+### Opt-In Behavior
+
+By default, `UseGuard()` **only handles `ValidationException`** automatically. Other exceptions are **not intercepted** unless you explicitly configure handlers for them. This ensures backward compatibility and gives you full control.
+
+### Quick Setup
+
+Configure exception mappings when adding Guard services:
+
+```csharp
+builder.Services.AddGuard( options => {
+    options.AutoMapCommonExceptions( );
+} );
+```
+
+**Important:** Without calling `AutoMapCommonExceptions()` or configuring custom handlers, only `ValidationException` will be handled by the middleware.
+
+The `AutoMapCommonExceptions()` method automatically configures sensible defaults for common .NET exceptions:
+
+- `ArgumentNullException` → 400 Bad Request
+- `ArgumentException` → 400 Bad Request
+- `InvalidOperationException` → 409 Conflict
+- `UnauthorizedAccessException` → 403 Forbidden
+- `NotImplementedException` → 501 Not Implemented
+- `TimeoutException` → 408 Request Timeout
+- Default handler → 500 Internal Server Error (with formatted stack trace in development)
+
+### Custom Exception Mappings
+
+Map your own exception types with fluent configuration:
+
+```csharp
+builder.Services.AddGuard( options => {
+    // Map specific exception types
+    options
+        .MapException<NotFoundException>( )
+        .WithStatusCode( 404 )
+        .WithErrorCode( "NOT_FOUND" )
+        .WithResponse( ex => new {
+            error = ex.Message,
+            resourceType = ex.ResourceType
+        } );
+
+    options
+        .MapException<BusinessRuleException>( )
+        .WithStatusCode( 422 )
+        .WithErrorCode( "BUSINESS_RULE_VIOLATION" )
+        .WithResponse( ex => new {
+            error = ex.Message,
+            rule = ex.RuleName,
+            details = ex.Details
+        } )
+        .OnBeforeResponse( ( ex, ctx ) => {
+            _logger.LogWarning( ex, "Business rule violation: {Rule}", ex.RuleName );
+        } );
+
+    // Configure default handler for unmapped exceptions
+    options
+        .MapDefaultException( )
+        .WithStatusCode( 500 )
+        .WithErrorCode( "INTERNAL_ERROR" )
+        .WithResponse( ex => new {
+            error = _env.IsDevelopment( ) ? ex.Message : "An internal error occurred",
+            trace = _env.IsDevelopment( ) ? ex.StackTrace : null
+        } )
+        .OnBeforeResponse( ( ex, ctx ) => {
+            _logger.LogError( ex, "Unhandled exception" );
+        } );
+} );
+```
+
+### API Reference
+
+#### `MapException<TException>()`
+
+Creates a mapping for a specific exception type.
+
+**Chainable Methods:**
+
+- `.WithStatusCode( int statusCode )` - Sets HTTP status code (e.g., 404, 500)
+- `.WithStatusCode( HttpStatusCode statusCode )` - Sets HTTP status code using enum (e.g., HttpStatusCode.NotFound)
+- `.WithStatusCode( Func<TException, int> resolver )` - Dynamic status code resolver
+- `.WithStatusCode( Func<TException, HttpStatusCode> resolver )` - Dynamic status code resolver with enum
+- `.WithErrorCode( string code )` - Sets error code string
+- `.WithErrorCode( Func<TException, string> resolver )` - Dynamic error code resolver
+- `.WithResponse( Func<TException, object> builder )` - Builds response object
+- `.OnBeforeResponse( Action<TException, HttpContext> callback )` - Executes before writing response (for logging, telemetry, etc.)
+
+#### `MapDefaultException()`
+
+Configures the fallback handler for unmapped exceptions. Uses the same fluent API as `MapException<TException>()`.
+
+#### `AutoMapCommonExceptions( bool includeStackTrace = true )`
+
+Automatically configures handlers for common .NET exceptions with sensible defaults. In development mode, includes formatted stack traces for the default handler.
+
+### Exception Resolution
+
+The middleware uses **inheritance-aware resolution** to find the best matching handler:
+
+1. **Exact match**: Looks for handler registered for the exact exception type
+2. **Inheritance match**: Searches for handlers of base types, prioritizing the most specific match
+3. **Default handler**: Falls back to the default handler if no match found
+4. **Built-in fallback**: Returns generic 500 error if no handlers configured
+
+### Stack Trace Formatting
+
+When `AutoMapCommonExceptions()` is used with stack traces enabled (default in development), stack traces are automatically formatted for readability:
+
+**Before:**
+```
+at MyApp.Services.UserService.GetUser(Int32 id) in C:\Projects\MyApp\Services\UserService.cs:line 42
+at MyApp.Controllers.UserController.Get(Int32 id) in C:\Projects\MyApp\Controllers\UserController.cs:line 28
+```
+
+**After:**
+```
+  at MyApp.Services.UserService.GetUser(Int32 id) in C:\Projects\MyApp\Services\UserService.cs:line 42
+  at MyApp.Controllers.UserController.Get(Int32 id) in C:\Projects\MyApp\Controllers\UserController.cs:line 28
+```
+
+### Complete Example
+
+```csharp
+// Program.cs
+using System.Net;
+
+var builder = WebApplication.CreateBuilder( args );
+
+builder.Services.AddGuard( options => {
+    // Auto-map common exceptions
+    options.AutoMapCommonExceptions( );
+
+    // Custom domain exceptions using enum
+    options
+        .MapException<EntityNotFoundException>( )
+        .WithStatusCode( HttpStatusCode.NotFound )
+        .WithErrorCode( "ENTITY_NOT_FOUND" )
+        .WithResponse( ex => new {
+            error = $"{ex.EntityType} with ID {ex.EntityId} not found"
+        } );
+
+    // Or using int status code
+    options
+        .MapException<DuplicateEntityException>( )
+        .WithStatusCode( 409 )
+        .WithErrorCode( "DUPLICATE_ENTITY" )
+        .WithResponse( ex => new {
+            error = ex.Message,
+            conflictingField = ex.FieldName,
+            existingId = ex.ExistingEntityId
+        } );
+
+    // Dynamic status code using enum
+    options
+        .MapException<BusinessRuleException>( )
+        .WithStatusCode( ex => ex.IsCritical ? HttpStatusCode.Forbidden : HttpStatusCode.UnprocessableEntity )
+        .WithErrorCode( "BUSINESS_RULE_VIOLATION" )
+        .WithResponse( ex => new {
+            error = ex.Message,
+            rule = ex.RuleName
+        } );
+} );
+
+var app = builder.Build( );
+
+// Enable global exception handling
+app.UseGuard( );
+
+app.MapControllers( );
+app.Run( );
+```
+
+```csharp
+// Controller usage - no try/catch needed!
+[ApiController]
+[Route( "api/[controller]" )]
+public class UsersController : ControllerBase {
+
+    [HttpGet( "{id}" )]
+    public async Task<UserDto> GetUser( int id ) {
+        // Throws EntityNotFoundException if not found
+        // Automatically handled by Guard middleware
+        return await _userService.GetByIdAsync( id );
+    }
+}
+```
+
+### Backward Compatibility
+
+**ValidationException** continues to work exactly as before. The middleware automatically detects and handles it with the existing structured error format:
+
+```json
+{
+    "code": "MULTIPLE_ERRORS",
+    "errors": [
+        {
+            "field": "email",
+            "message": "Email is required",
+            "code": "VIOLATION"
+        }
+    ]
+}
+```
+
+No changes required to existing validation code!
 
 ## Testing
 

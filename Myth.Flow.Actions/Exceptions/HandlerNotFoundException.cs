@@ -1,4 +1,4 @@
-﻿/// <summary>
+/// <summary>
 /// Thrown when no handler is found for a request
 /// </summary>
 public sealed class HandlerNotFoundException : InvalidOperationException {

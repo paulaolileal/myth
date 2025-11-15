@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Myth.Extensions;
 using Myth.Repository.Test.Models;
 using Myth.ValueObjects;

@@ -1,4 +1,4 @@
-﻿namespace Myth.Models;
+namespace Myth.Models;
 
 /// <summary>
 /// Represents cached value with metadata

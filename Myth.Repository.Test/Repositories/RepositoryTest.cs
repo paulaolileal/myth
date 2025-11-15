@@ -1,4 +1,4 @@
-﻿using Myth.Repositories.EntityFramework;
+using Myth.Repositories.EntityFramework;
 using Myth.Repository.Test.Contexts;
 using Myth.Repository.Test.Interfaces;
 using Myth.Repository.Test.Models;

@@ -1,4 +1,4 @@
-﻿namespace Myth.Interfaces;
+namespace Myth.Interfaces;
 
 /// <summary>
 /// Manages event subscriptions

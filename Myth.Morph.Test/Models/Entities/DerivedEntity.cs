@@ -1,12 +1,11 @@
-﻿using Myth.Interfaces;
+using Myth.Interfaces;
 using Myth.Morph.Test.Models.Dtos;
 
-namespace Myth.Morph.Test.Models {
+namespace Myth.Morph.Test.Models;
 
-	public class DerivedEntity : BaseEntity, IMorphable<DerivedDto> {
-		public string DerivedProperty { get; set; } = "";
+public class DerivedEntity : BaseEntity, IMorphableTo<DerivedDto> {
+	public string DerivedProperty { get; set; } = "";
 
-		public void MorphTo( Schema<DerivedDto> schema ) {
-		}
+	public void MorphTo( Schema<DerivedDto> schema ) {
 	}
 }

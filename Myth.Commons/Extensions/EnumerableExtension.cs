@@ -1,4 +1,4 @@
-﻿namespace Myth.Extensions;
+namespace Myth.Extensions;
 
 public static class EnumerableExtension {
 

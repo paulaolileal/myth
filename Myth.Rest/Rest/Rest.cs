@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.ObjectPool;
+using Microsoft.Extensions.ObjectPool;
 using Myth.Interfaces;
 
 namespace Myth.Rest;
@@ -16,15 +16,4 @@ public static class Rest {
 	/// </summary>
 	/// <returns>REST configuration interface</returns>
 	public static IRestBuilder Create( ) => _builderPool.Get( );
-}
-
-public class RestBuilderPoolPolicy : IPooledObjectPolicy<RestBuilder> {
-
-	public RestBuilder Create( ) => new( );
-
-	public bool Return( RestBuilder obj ) {
-		obj.Dispose( );
-
-		return true;
-	}
 }

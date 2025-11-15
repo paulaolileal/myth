@@ -1,4 +1,4 @@
-﻿namespace Myth.Exceptions;
+namespace Myth.Exceptions;
 
 public class NoActionMadeException : Exception {
 

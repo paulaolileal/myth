@@ -1,6 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
-using Myth.Models;
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
+using Myth.Models;
 
 namespace Myth.Flow.Resilience;
 

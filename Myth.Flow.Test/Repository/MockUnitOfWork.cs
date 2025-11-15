@@ -1,5 +1,5 @@
-﻿using Myth.Flow.Test.Interfaces;
 using System.Threading.Tasks;
+using Myth.Flow.Test.Interfaces;
 
 public class MockUnitOfWork : IUnitOfWork {
 	public bool TransactionCommitted { get; private set; }

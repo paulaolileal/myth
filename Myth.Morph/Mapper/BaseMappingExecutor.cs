@@ -1,0 +1,299 @@
+using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Myth.Extensions;
+
+namespace Myth.Morph;
+
+/// <summary>
+/// Base class for mapping executors that handles common mapping logic between source and destination types.
+/// This class provides shared functionality for automatic property mapping, value conversion, and type resolution.
+/// </summary>
+/// <typeparam name="TDestination">The destination type for the mapping.</typeparam>
+public abstract class BaseMappingExecutor<TDestination> {
+	protected readonly ILogger? Logger;
+	protected readonly TypeResolver TypeResolver;
+
+	/// <summary>
+	/// Initializes a new instance of the BaseMappingExecutor class.
+	/// </summary>
+	/// <param name="logger">Optional logger for diagnostic information.</param>
+	/// <param name="typeResolver">The type resolver for handling inheritance and proxies.</param>
+	protected BaseMappingExecutor( ILogger? logger, TypeResolver typeResolver ) {
+		Logger = logger;
+		TypeResolver = typeResolver ?? throw new ArgumentNullException( nameof( typeResolver ) );
+		Logger?.LogTrace( "Initialized {ExecutorType} for destination type {DestinationType}",
+			GetType( ).Name, typeof( TDestination ).Name );
+	}
+
+	/// <summary>
+	/// Automatically maps properties from the source instance to the destination instance.
+	/// </summary>
+	/// <param name="source">The source object to map from.</param>
+	/// <param name="destination">The destination object to map to.</param>
+	/// <param name="serviceProvider">The service provider for dependency resolution.</param>
+	/// <param name="manuallyMappedProps">Set of property names that have been manually mapped and should be skipped.</param>
+	/// <param name="ignoredProperties">Set of property names that should be ignored during mapping.</param>
+	public void AutoMapProperties( object source, TDestination destination, IServiceProvider serviceProvider,
+		HashSet<string> manuallyMappedProps, HashSet<string> ignoredProperties ) {
+		if ( source == null )
+			throw new ArgumentNullException( nameof( source ) );
+
+		if ( destination == null )
+			throw new ArgumentNullException( nameof( destination ) );
+
+		var sourceType = TypeResolver.GetActualType( source.GetType( ) );
+		var destinationType = TypeResolver.GetActualType( destination.GetType( ) );
+
+		Logger?.LogDebug( "Starting automatic property mapping from {SourceType} to {DestinationType}",
+			sourceType.Name, destinationType.Name );
+		Logger?.LogTrace( "Manually mapped properties: {ManualCount}, Ignored properties: {IgnoredCount}",
+			manuallyMappedProps.Count, ignoredProperties.Count );
+
+		var sourceMembers = sourceType.GetMembers( BindingFlags.Public | BindingFlags.Instance );
+		var destMembers = destinationType.GetMembers( BindingFlags.Public | BindingFlags.Instance );
+
+		Logger?.LogTrace( "Found {SourceMemberCount} source members and {DestMemberCount} destination members",
+			sourceMembers.Length, destMembers.Length );
+
+		var mappedCount = 0;
+		var skippedCount = 0;
+		var errorCount = 0;
+
+		foreach ( var destMember in destMembers ) {
+			if ( manuallyMappedProps.Contains( destMember.Name ) ) {
+				Logger?.LogTrace( "Skipping manually mapped property: {PropertyName}", destMember.Name );
+				skippedCount++;
+				continue;
+			}
+
+			if ( ignoredProperties.Contains( destMember.Name ) ) {
+				Logger?.LogTrace( "Skipping ignored property: {PropertyName}", destMember.Name );
+				skippedCount++;
+				continue;
+			}
+
+			var srcMember = sourceMembers.FirstOrDefault( m => m.Name == destMember.Name );
+			if ( srcMember == null ) {
+				Logger?.LogTrace( "No matching source member found for destination property: {PropertyName}", destMember.Name );
+				continue;
+			}
+
+			var srcMemberType = GetMemberType( srcMember );
+			var destMemberType = GetMemberType( destMember );
+
+			if ( srcMemberType == null || destMemberType == null ) {
+				Logger?.LogTrace( "Skipping member {MemberName} due to null member types", destMember.Name );
+				continue;
+			}
+
+			if ( !CanWriteMember( destMember ) ) {
+				Logger?.LogTrace( "Destination member {MemberName} is not writable", destMember.Name );
+				continue;
+			}
+
+			object? srcValue = null;
+			try {
+				srcValue = srcMember switch {
+					PropertyInfo p => p.GetValue( source ),
+					FieldInfo f => f.GetValue( source ),
+					_ => null
+				};
+
+				Logger?.LogTrace( "Read value from source property {PropertyName}: {ValueType}",
+					srcMember.Name, srcValue?.GetType( ).Name ?? "null" );
+			} catch ( Exception ex ) {
+				errorCount++;
+				Logger?.LogWarning( ex, "Error reading value from source member {MemberName}", srcMember.Name );
+				continue;
+			}
+
+			if ( srcValue == null ) {
+				HandleNullValue( destination, destMember, destMemberType );
+				continue;
+			}
+
+			try {
+				var actualSourceType = TypeResolver.GetActualType( srcValue.GetType( ) );
+				Logger?.LogTrace( "Mapping property {PropertyName}: {SourceType} -> {DestType}",
+					destMember.Name, actualSourceType.Name, destMemberType.Name );
+
+				var mappedValue = MapValue( srcValue, actualSourceType, destMemberType, serviceProvider );
+				SetValue( destination, destMember, mappedValue );
+				mappedCount++;
+
+				Logger?.LogTrace( "Successfully mapped property {PropertyName}", destMember.Name );
+			} catch ( Exception ex ) {
+				errorCount++;
+				Logger?.LogWarning( ex, "Error mapping property {SourceProperty} -> {DestProperty}",
+					srcMember.Name, destMember.Name );
+			}
+		}
+
+		Logger?.LogDebug( "Automatic property mapping completed for {DestinationType}. Mapped: {MappedCount}, Skipped: {SkippedCount}, Errors: {ErrorCount}",
+			destinationType.Name, mappedCount, skippedCount, errorCount );
+	}
+
+	/// <summary>
+	/// Maps a value from the source type to the destination type, handling type conversions and nested mappings.
+	/// </summary>
+	/// <param name="srcValue">The source value to map.</param>
+	/// <param name="srcType">The type of the source value.</param>
+	/// <param name="destType">The target destination type.</param>
+	/// <param name="serviceProvider">The service provider for dependency resolution.</param>
+	/// <returns>The mapped value, or null if mapping is not possible.</returns>
+	protected object? MapValue( object srcValue, Type srcType, Type destType, IServiceProvider serviceProvider ) {
+		Logger?.LogTrace( "MapValue: Attempting to map {SourceType} to {DestType}", srcType.Name, destType.Name );
+
+		var actualSrcType = TypeResolver.GetActualType( srcType );
+		var actualDestType = TypeResolver.GetActualType( destType );
+
+		if ( actualDestType.IsAssignableFrom( actualSrcType ) ) {
+			Logger?.LogTrace( "Direct assignment: {SourceType} is assignable to {DestType}", actualSrcType.Name, actualDestType.Name );
+			return srcValue;
+		}
+
+		if ( TryConvertDirect( srcValue, destType, out var converted ) ) {
+			Logger?.LogTrace( "Direct conversion successful: {SourceType} -> {DestType}", srcType.Name, destType.Name );
+			return converted;
+		}
+
+		try {
+			using var scope = serviceProvider.CreateScope( );
+			Logger?.LogTrace( "Attempting mapping using MorphExtensions.To for {SourceType} -> {DestType}",
+				srcType.Name, destType.Name );
+
+			var method = typeof( MorphExtensions )
+				.GetMethod( nameof( MorphExtensions.To ), [ typeof( object ), typeof( IServiceProvider ) ] )?
+				.MakeGenericMethod( destType );
+
+			var result = method?.Invoke( null, [ srcValue, scope.ServiceProvider ] );
+			Logger?.LogDebug( "Successfully mapped {SourceType} to {DestType} using MorphExtensions", srcType.Name, destType.Name );
+			return result;
+		} catch ( Exception ex ) {
+			Logger?.LogDebug( ex, "Failed to map {SourceType} to {DestType} using MorphExtensions", srcType.Name, destType.Name );
+		}
+
+		Logger?.LogWarning( "Unable to map value from {SourceType} to {DestType}", srcType.Name, destType.Name );
+		return null;
+	}
+
+	/// <summary>
+	/// Attempts to perform direct type conversion using built-in .NET conversion methods.
+	/// </summary>
+	/// <param name="value">The value to convert.</param>
+	/// <param name="targetType">The target type for conversion.</param>
+	/// <param name="result">The converted result, if successful.</param>
+	/// <returns>True if conversion was successful, false otherwise.</returns>
+	protected bool TryConvertDirect( object value, Type targetType, out object? result ) {
+		result = null;
+
+		try {
+			Logger?.LogTrace( "TryConvertDirect: Converting {ValueType} to {TargetType}", value.GetType( ).Name, targetType.Name );
+
+			var underlyingType = Nullable.GetUnderlyingType( targetType );
+			if ( underlyingType != null ) {
+				Logger?.LogTrace( "Target type is nullable, underlying type: {UnderlyingType}", underlyingType.Name );
+
+				if ( value == null ) {
+					result = null;
+					return true;
+				}
+				targetType = underlyingType;
+			}
+
+			if ( targetType.IsAssignableFrom( value.GetType( ) ) ) {
+				Logger?.LogTrace( "Direct assignment possible" );
+				result = value;
+				return true;
+			}
+
+			if ( targetType.IsPrimitive ||
+				 targetType == typeof( string ) ||
+				 targetType == typeof( DateTime ) ||
+				 targetType == typeof( decimal ) ) {
+				Logger?.LogTrace( "Using Convert.ChangeType for primitive/common type" );
+				result = Convert.ChangeType( value, targetType );
+				return true;
+			}
+
+			Logger?.LogTrace( "Direct conversion not possible for type {TargetType}", targetType.Name );
+			return false;
+		} catch ( Exception ex ) {
+			Logger?.LogTrace( ex, "Direct conversion failed from {ValueType} to {TargetType}",
+				value.GetType( ).Name, targetType.Name );
+			return false;
+		}
+	}
+
+	/// <summary>
+	/// Handles null source values by setting appropriate default values on the destination.
+	/// </summary>
+	/// <param name="destination">The destination object.</param>
+	/// <param name="destMember">The destination member to set.</param>
+	/// <param name="destMemberType">The type of the destination member.</param>
+	protected void HandleNullValue( TDestination destination, MemberInfo destMember, Type destMemberType ) {
+		if ( destMemberType.IsValueType && Nullable.GetUnderlyingType( destMemberType ) == null ) {
+			Logger?.LogTrace( "Setting default value for non-nullable value type property: {PropertyName}", destMember.Name );
+			SetValue( destination, destMember, Activator.CreateInstance( destMemberType ) );
+		} else {
+			Logger?.LogTrace( "Source value is null for property {PropertyName}, skipping", destMember.Name );
+		}
+	}
+
+	/// <summary>
+	/// Sets the value of a member (property or field) on the target object.
+	/// </summary>
+	/// <param name="target">The target object to set the value on.</param>
+	/// <param name="member">The member to set the value for.</param>
+	/// <param name="value">The value to set.</param>
+	protected void SetValue( object target, MemberInfo member, object? value ) {
+		try {
+			Logger?.LogTrace( "SetValue: Setting {MemberType} {MemberName} to value of type {ValueType}",
+				member.MemberType, member.Name, value?.GetType( ).Name ?? "null" );
+
+			switch ( member ) {
+				case PropertyInfo p when p.CanWrite:
+					p.SetValue( target, value );
+					Logger?.LogTrace( "Successfully set property {PropertyName}", p.Name );
+					break;
+
+				case FieldInfo f when !f.IsInitOnly && !f.IsLiteral:
+					f.SetValue( target, value );
+					Logger?.LogTrace( "Successfully set field {FieldName}", f.Name );
+					break;
+
+				default:
+					Logger?.LogWarning( "Member {MemberName} is not assignable", member.Name );
+					break;
+			}
+		} catch ( Exception ex ) {
+			Logger?.LogError( ex, "Failed to set value for member {MemberName}", member.Name );
+			throw;
+		}
+	}
+
+	/// <summary>
+	/// Determines whether a member (property or field) can be written to.
+	/// </summary>
+	/// <param name="member">The member to check.</param>
+	/// <returns>True if the member can be written to, false otherwise.</returns>
+	protected bool CanWriteMember( MemberInfo member ) =>
+		member switch {
+			PropertyInfo p => p.CanWrite,
+			FieldInfo f => !f.IsInitOnly && !f.IsLiteral,
+			_ => false
+		};
+
+	/// <summary>
+	/// Gets the type of a member (property or field).
+	/// </summary>
+	/// <param name="member">The member to get the type for.</param>
+	/// <returns>The type of the member, or null if not a property or field.</returns>
+	protected Type? GetMemberType( MemberInfo member ) =>
+		member switch {
+			PropertyInfo p => p.PropertyType,
+			FieldInfo f => f.FieldType,
+			_ => null
+		};
+}

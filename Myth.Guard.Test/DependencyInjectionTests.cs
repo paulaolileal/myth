@@ -1,3 +1,6 @@
+using System.Net;
+using System.Text;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -10,9 +13,6 @@ using Myth.Extensions;
 using Myth.Interfaces;
 using Myth.Models;
 using Myth.Validation;
-using System.Net;
-using System.Text;
-using System.Text.Json;
 
 namespace Myth.Guard.Test;
 

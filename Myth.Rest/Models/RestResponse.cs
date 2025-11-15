@@ -1,7 +1,7 @@
-﻿using Myth.Exceptions;
-using Myth.Extensions;
 using System.Net;
 using System.Text;
+using Myth.Exceptions;
+using Myth.Extensions;
 
 namespace Myth.Models;
 
@@ -14,7 +14,8 @@ public class RestResponse(
 		TimeSpan elapsedTime,
 		int retriesMade,
 		bool fallbackUsed,
-		bool isFileResponse = false ) {
+		bool isFileResponse = false,
+		string? contentType = null ) {
 
 	/// <summary>
 	/// The response status code
@@ -56,7 +57,7 @@ public class RestResponse(
 	public object? Result { get; private set; }
 
 	public dynamic DynamicResult { get; private set; } =
-		isFileResponse ? new { } : rawMessage.FromJson<dynamic>( )!;
+		isFileResponse ? new { } : rawMessage.FromJsonOrThrow<dynamic>( statusCode, contentType );
 
 	internal void SetTypedResult( Type type, object result ) {
 		ResultType = type;

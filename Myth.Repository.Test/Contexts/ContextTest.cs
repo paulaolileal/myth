@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Myth.Contexts;
 using Myth.Repository.Test.Models;
 
