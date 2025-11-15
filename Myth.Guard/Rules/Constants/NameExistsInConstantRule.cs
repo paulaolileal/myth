@@ -1,4 +1,3 @@
-using Ardalis.SmartEnum;
 using Myth.Models;
 using Myth.Rules.Base;
 using Myth.ValueObjects;
@@ -19,10 +18,7 @@ internal sealed class NameExistsInConstantRule<TConstant, TValue> : ValidationRu
 			return Task.FromResult( true ); // Null/empty values are handled by NotEmpty rule if needed
 
 		try {
-			var constant = SmartEnum<TConstant, TValue>.FromName( context.Value );
-			return Task.FromResult( constant != null );
-		} catch ( SmartEnumNotFoundException ) {
-			return Task.FromResult( false );
+			return Task.FromResult( Constant<TConstant, TValue>.TryFromName( context.Value, out _ ) );
 		} catch ( InvalidOperationException ) {
 			return Task.FromResult( false );
 		}
