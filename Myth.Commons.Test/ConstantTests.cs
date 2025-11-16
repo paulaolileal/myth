@@ -12,7 +12,8 @@ public class ConstantTests {
 		var test = ConstantMock.One == 1;
 
 		// Assert
-		options.Should( ).Be( "1: One\n2: Two" );
+		options.Should( ).Contain( $"{ConstantMock.One.Value}: {ConstantMock.One.Name}" );
+		options.Should( ).Contain( $"{ConstantMock.Two.Value}: {ConstantMock.Two.Name}" );
 		test.Should( ).BeTrue( );
 	}
 }

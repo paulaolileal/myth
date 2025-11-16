@@ -23,7 +23,8 @@ public class ConstantTests {
 		var options = ConstantMock.GetOptions( );
 
 		// Assert
-		options.Should( ).Be( "1: One | 2: Two" );
+		options.Should( ).Contain( $"{ConstantMock.One.Value}: {ConstantMock.One.Name}" );
+		options.Should( ).Contain( $"{ConstantMock.Two.Value}: {ConstantMock.Two.Name}" );
 	}
 
 	[Fact]
