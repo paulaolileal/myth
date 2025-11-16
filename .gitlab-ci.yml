@@ -60,10 +60,10 @@ test-job:
   dependencies:
     - build-job
 
-publish-job:
+publish-libraries:
   stage: publish
   only:
-    refs: 
+    refs:
       - tags
   dependencies:
     - build-job
@@ -72,9 +72,9 @@ publish-job:
     - PACKAGE_VERSION=$(echo "$CI_COMMIT_TAG" | cut -d "v" -f2- )
     - mkdir -p nupkgs
     - |
-      # Pack all projects sequentially to ensure proper dependency resolution
-      for project in $(ls **/*.csproj | grep -v '\.Test\.csproj$'); do
-        echo "Packing $project..."
+      # Pack library projects (exclude test and tool projects)
+      for project in $(ls **/*.csproj | grep -v '\.Test\.csproj$' | grep -v 'Myth.Tool.csproj'); do
+        echo "Packing library $project..."
         dotnet pack "$project" \
           --configuration Release \
           --output nupkgs \
@@ -82,3 +82,27 @@ publish-job:
           /p:PackageVersion=${PACKAGE_VERSION}
       done
     - dotnet nuget push "nupkgs/*.nupkg" --skip-duplicate --source $NUGET_API_URL --api-key $NUGET_API_KEY
+
+publish-tool:
+  stage: publish
+  only:
+    refs:
+      - tags
+  dependencies:
+    - build-job
+    - test-job
+  script:
+    - PACKAGE_VERSION=$(echo "$CI_COMMIT_TAG" | cut -d "v" -f2- )
+    - mkdir -p tool-nupkgs
+    - echo "Packing Myth.Tool..."
+    - dotnet pack Myth.Tool/Myth.Tool.csproj \
+        --configuration Release \
+        --output tool-nupkgs \
+        --verbosity minimal \
+        /p:PackageVersion=${PACKAGE_VERSION}
+    - echo "Publishing Myth.Tool to NuGet..."
+    - dotnet nuget push "tool-nupkgs/*.nupkg" --skip-duplicate --source $NUGET_API_URL --api-key $NUGET_API_KEY
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - tool-nupkgs/

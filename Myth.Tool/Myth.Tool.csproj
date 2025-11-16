@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Myth.Tool</RootNamespace>
+    <LangVersion>latest</LangVersion>
+
+    <!-- Global Tool Configuration -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>myth</ToolCommandName>
+    <PackageId>Myth.Tool</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <PackageOutputPath>./nupkg</PackageOutputPath>
+
+    <!-- Package Metadata -->
+    <Title>Myth Code Generation Tool</Title>
+    <Description>Modern CLI tool for generating Myth architecture code with CQRS, DDD, and Clean Architecture patterns</Description>
+    <Authors>Myth Team</Authors>
+    <Company>Myth</Company>
+    <PackageProjectUrl>https://gitlab.com/dotnet-myth/myth</PackageProjectUrl>
+    <RepositoryUrl>https://gitlab.com/dotnet-myth/myth</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageIcon>Logo.jpg</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>dotnet;cli;tool;code-generation;architecture;cqrs;ddd;clean-architecture;myth</PackageTags>
+    <PackageReleaseNotes>Initial release of Myth code generation tool with support for models, commands, and queries generation</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- No external dependencies for now -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../Logo.jpg" Pack="true" PackagePath="" Condition="Exists('../Logo.jpg')" />
+    <None Include="README.md" Pack="true" PackagePath="" />
+    <Content Include="Templates\**\*.sbn-tpl" Pack="true" PackagePath="contentFiles\any\any\Templates" />
+    <Content Include="Templates\**\*.json" Pack="true" PackagePath="contentFiles\any\any\Templates" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Templates\**\*.sbn-tpl" />
+    <EmbeddedResource Include="Templates\**\*.json" />
+  </ItemGroup>
+
+</Project>
