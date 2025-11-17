@@ -11,18 +11,18 @@
 		<!-- Package -->
 		<PackageId>Myth.Specification</PackageId>
 		<Authors>Paula Leal</Authors>
-		<PackageIcon>Logo.jpg</PackageIcon>
+		<PackageIcon>myth-specification-logo.png</PackageIcon>
 		<Description>Query specification pattern for encapsulating business rules in readable, composable, and testable specifications. Supports filtering, sorting, pagination, and conditional logic for clean query construction.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
-		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Specification</RepositoryUrl>
-		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Specification</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Specification</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Specification</PackageProjectUrl>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\Logo.jpg">
+		<None Include="myth-specification-logo.png">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>

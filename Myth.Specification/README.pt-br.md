@@ -1,3 +1,5 @@
+<img  style="float: right;" src="myth-specification-logo.png" alt="drawing" width="250"/>
+
 # Myth.Specification
 
 [![NuGet Version](https://img.shields.io/nuget/v/Myth.Specification?style=for-the-badge&logo=nuget)](https://www.nuget.org/packages/Myth.Specification/) [![NuGet Version](https://img.shields.io/nuget/vpre/Myth.Specification?style=for-the-badge&logo=nuget&color=rgb(255%2C%20185%2C%200))](https://www.nuget.org/packages/Myth.Specification/absoluteLatest)

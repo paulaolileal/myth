@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<!-- Patform -->
@@ -11,18 +11,18 @@
 		<!-- Package -->
 		<PackageId>Myth.DependencyInjection</PackageId>
 		<Authors>Paula Leal</Authors>
-		<PackageIcon>Logo.jpg</PackageIcon>
+		<PackageIcon>myth-dependency-injection-logo.png</PackageIcon>
 		<Description>Type discovery and convention-based service registration with automatic assembly scanning, interface mapping, and plugin architecture support for simplified dependency injection configuration.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
-		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.DependencyInjection</RepositoryUrl>
-		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.DependencyInjection</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/paulaolileal/myth/tree/main/Myth.DependencyInjection</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/paulaolileal/myth/tree/main/Myth.DependencyInjection</PackageProjectUrl>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\Logo.jpg">
+		<None Include="myth-dependency-injection-logo.png">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<!-- Patform -->
@@ -11,12 +11,12 @@
 		<!-- Package -->
 		<PackageId>Myth.Rest</PackageId>
 		<Authors>Paula Leal</Authors>
-		<PackageIcon>Logo.jpg</PackageIcon>
+		<PackageIcon>myth-rest-logo.png</PackageIcon>
 		<Description>Fluent REST client with circuit breaker, retry policies, certificate support, and object pooling. Provides resilient HTTP communication with configurable error handling and response mapping.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
-		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Rest</RepositoryUrl>
-		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Rest</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Rest</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Rest</PackageProjectUrl>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
@@ -30,7 +30,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="..\Logo.jpg">
+		<None Include="myth-rest-logo.png">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>

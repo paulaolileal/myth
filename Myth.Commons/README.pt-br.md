@@ -1,3 +1,5 @@
+<img  style="float: right;" src="myth-commons-logo.jpg" alt="drawing" width="250"/>
+
 # Myth.Commons
 
 [![NuGet Version](https://img.shields.io/nuget/v/Myth.commons?style=for-the-badge&logo=nuget)](https://www.nuget.org/packages/Myth.Commons/) [![NuGet Version](https://img.shields.io/nuget/vpre/Myth.commons?style=for-the-badge&logo=nuget&color=rgb(255%2C%20185%2C%200))](https://www.nuget.org/packages/Myth.Commons/absoluteLatest)
@@ -719,4 +721,4 @@ Este projeto está licenciado sob a Licença Apache 2.0 - veja a [LICENSE](https
 
 ## Suporte
 
-Para problemas, questões ou contribuições, visite o [repositório GitLab](https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Commons).
+Para problemas, questões ou contribuições, visite o [repositório GitLab](https://github.com/paulaolileal/myth/tree/main/Myth.Commons).

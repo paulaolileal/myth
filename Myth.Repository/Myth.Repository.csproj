@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<!-- Patform -->
@@ -11,22 +11,28 @@
 		<!-- Package -->
 		<PackageId>Myth.Repository</PackageId>
 		<Authors>Paula Leal</Authors>
-		<PackageIcon>Logo.jpg</PackageIcon>
+		<PackageIcon>myth-repository-logo.png</PackageIcon>
 		<Description>Generic repository pattern interfaces with async support, specification integration, and pagination. Provides read/write separation, CRUD operations, and extensible repository contracts for clean data access architecture.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<!-- Docs -->
-		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Repository</RepositoryUrl>
-		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Repository</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Repository</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Repository</PackageProjectUrl>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Remove="ValueObjects\**" />
+	  <EmbeddedResource Remove="ValueObjects\**" />
+	  <None Remove="ValueObjects\**" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="..\Logo.jpg">
+		<None Include="myth-repository-logo.png">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
@@ -39,10 +45,6 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Myth.Commons\Myth.Commons.csproj" />
 		<ProjectReference Include="..\Myth.Specification\Myth.Specification.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="ValueObjects\" />
 	</ItemGroup>
 
 </Project>
