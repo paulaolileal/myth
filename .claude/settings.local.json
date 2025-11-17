@@ -11,7 +11,8 @@
       "Bash(ren:*)",
       "Bash(dir:*)",
       "Bash(cat:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(dotnet run:*)"
     ],
     "deny": [],
     "ask": []
