@@ -48,6 +48,7 @@ test-job:
       --collect "XPlat Code Coverage"
       --logger "trx;LogFileName=test-results.trx"
       --filter "FullyQualifiedName!~Rest"
+  coverage: '/Total\s*\|*\s(\d+(?:\.\d+)?)/'
   artifacts:
     expire_in: 1 week
     reports:
