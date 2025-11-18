@@ -1,298 +1,697 @@
+using System.Text.Json;
+using Myth.Tool.Models;
+using Myth.Tool.Services;
+
 namespace Myth.Tool;
 
 /// <summary>
 /// Entry point for the Myth code generation tool
 /// </summary>
 public class Program {
+	private static bool _verbose = false;
+
 	/// <summary>
 	/// Main entry point
 	/// </summary>
 	/// <param name="args">Command line arguments</param>
 	/// <returns>Exit code</returns>
-	public static async Task<int> Main( string[ ] args ) {
-		Console.WriteLine( "🔮 Myth Code Generation Tool v1.0.0" );
-		Console.WriteLine( );
-
-		if ( args.Length == 0 || args[ 0 ] == "--help" || args[ 0 ] == "-h" ) {
-			ShowHelp( );
-
+	public static async Task<int> Main( string[] args ) {
+		if ( args.Length == 0 || args[0] == "--help" || args[0] == "-h" ) {
+			ShowHelp();
 			return 0;
 		}
 
-		var command = args[ 0 ].ToLowerInvariant( );
+		// Check for verbose flag
+		_verbose = args.Contains( "--verbose" ) || args.Contains( "-v" );
+
+		var command = args[0].ToLowerInvariant();
 
 		return command switch {
-			"init" => await HandleInitCommand( args ),
-			"version" => HandleVersionCommand( ),
+			"setup" => await HandleSetupCommand( args ),
+			"create" => await HandleCreateCommand( args ),
+			"test" => await HandleTestCommand( args ),
+			"version" => HandleVersionCommand(),
 			_ => HandleUnknownCommand( command )
 		};
 	}
 
-	private static async Task<int> HandleInitCommand( string[ ] args ) {
-		Console.WriteLine( "🚀 Initializing Myth project structure..." );
-		Console.WriteLine( );
-
+	private static async Task<int> HandleSetupCommand( string[] args ) {
 		try {
-			// Parse options
-			var targetPath = Environment.CurrentDirectory;
-			var force = false;
+			if ( args.Contains( "-h" ) || args.Contains( "--help" ) ) {
+				ShowSetupHelp();
+				return 0;
+			}
 
-			for ( var i = 1; i < args.Length; i++ ) {
-				switch ( args[ i ].ToLowerInvariant( ) ) {
-					case "--path" when i + 1 < args.Length:
-						targetPath = args[ ++i ];
+			if ( args.Length < 2 ) {
+				WriteError( "Project name is required. Use: myth setup <ProjectName>" );
+				return 1;
+			}
 
-						break;
+			var projectName = args[1];
+			var clean = false;
 
-					case "--force":
-						force = true;
-
+			for ( var i = 2; i < args.Length; i++ ) {
+				switch ( args[i].ToLowerInvariant() ) {
+					case "--clean":
+						clean = true;
 						break;
 				}
 			}
 
-			Console.WriteLine( $"📁 Target directory: {targetPath}" );
-			Console.WriteLine( );
-
-			// Create base directory structure
-			var directories = new[ ]
-			{
-				"YourProject.Api",
-				"YourProject.Api/Controllers",
-				"YourProject.Domain",
-				"YourProject.Domain/Models",
-				"YourProject.Domain/Interfaces",
-				"YourProject.Domain/Specifications",
-				"YourProject.Application",
-				"YourProject.Application/Common",
-				"YourProject.Data",
-				"YourProject.Data/Contexts",
-				"YourProject.Data/Repositories",
-				"YourProject.Data/Mappings",
-				"YourProject.ExternalData",
-				"YourProject.Test"
-			};
-
-			Console.WriteLine( "Creating directory structure..." );
-
-			foreach ( var directory in directories ) {
-				var fullPath = Path.Combine( targetPath, directory );
-
-				Directory.CreateDirectory( fullPath );
-				Console.WriteLine( $"✅ Created: {directory}" );
+			if ( string.IsNullOrEmpty( projectName ) ) {
+				WriteError( "Project name is required. Use: myth setup <ProjectName>" );
+				return 1;
 			}
 
-			Console.WriteLine( );
+			if ( !IsValidProjectName( projectName ) ) {
+				WriteError( "Project name must contain only letters, numbers, dots, hyphens or underscores." );
+				return 1;
+			}
 
-			// Create myth.config.json
-			var configContent = """
-                {
-                  "myth": {
-                    "version": "1.0.0",
-                    "projectStructure": "clean-architecture",
-                    "namespaces": {
-                      "domain": "YourProject.Domain",
-                      "application": "YourProject.Application",
-                      "infrastructure": "YourProject.Data",
-                      "api": "YourProject.Api",
-                      "test": "YourProject.Test"
-                    },
-                    "conventions": {
-                      "fileNaming": "PascalCase",
-                      "folderNaming": "PascalCase",
-                      "testSuffix": "Tests"
-                    }
-                  }
-                }
-                """;
+			WriteVerbose( $"Setting up template for project: {projectName}" );
 
-			var configPath = Path.Combine( targetPath, "myth.config.json" );
+			// Rename directories
+			WriteVerbose( "Renaming folders..." );
+			var directories = Directory.GetDirectories( ".", "*Myth.Template*", SearchOption.TopDirectoryOnly );
+			foreach ( var dir in directories ) {
+				var dirName = Path.GetFileName( dir );
+				var newName = dirName.Replace( "Myth.Template", projectName );
+				Directory.Move( dir, newName );
+				WriteVerbose( $"  {dirName} -> {newName}" );
+			}
 
-			if ( !File.Exists( configPath ) || force ) {
-				await File.WriteAllTextAsync( configPath, configContent );
-				Console.WriteLine( "✅ Created myth.config.json" );
+			// Rename files
+			WriteVerbose( "Renaming files..." );
+			var files = Directory.GetFiles( ".", "*Myth.Template*", SearchOption.AllDirectories );
+			foreach ( var file in files ) {
+				try {
+					var fileName = Path.GetFileName( file );
+					var newName = fileName.Replace( "Myth.Template", projectName );
+					var newPath = Path.Combine( Path.GetDirectoryName( file )!, newName );
+					File.Move( file, newPath );
+					WriteVerbose( $"  {fileName} -> {newName}" );
+				} catch ( Exception ex ) {
+					WriteVerbose( $"  Warning: Could not rename {Path.GetFileName(file)}: {ex.Message}" );
+				}
+			}
+
+			// Update content
+			WriteVerbose( "Updating content..." );
+			var contentFiles = Directory.GetFiles( ".", "*", SearchOption.AllDirectories )
+				.Where( f => {
+					var ext = Path.GetExtension( f ).ToLower();
+					return ext is ".cs" or ".csproj" or ".slnx" or ".json" or ".resx" or ".md";
+				} );
+
+			foreach ( var file in contentFiles ) {
+				var content = await File.ReadAllTextAsync( file );
+				if ( content.Contains( "Myth.Template" ) ) {
+					var newContent = content.Replace( "Myth.Template", projectName );
+					await File.WriteAllTextAsync( file, newContent );
+					WriteVerbose( $"  Updated: {Path.GetFileName( file )}" );
+				}
+			}
+
+			// Clean examples if requested
+			if ( clean ) {
+				WriteVerbose( "Cleaning WeatherForecast examples..." );
+
+				var filesToRemove = new[] {
+					$"{projectName}.Domain/Models/WeatherForecast.cs",
+					$"{projectName}.Domain/Models/Summary.cs",
+					$"{projectName}.Domain/Interfaces/IWeatherForecastRepository.cs",
+					$"{projectName}.Domain/Specifications/WeatherForecastSpecification.cs",
+					$"{projectName}.Data/Contexts/ForecastContext.cs",
+					$"{projectName}.Data/Repositories/WeatherForecastRepository.cs",
+					$"{projectName}.Data/Mappings/WeatherForecastMap.cs",
+					$"{projectName}.Application/InitializeFakeData.cs",
+					$"{projectName}.API/Controllers/WeatherForecastController.cs",
+					$"{projectName}.Test/WeatherForecastTests.cs"
+				};
+
+				foreach ( var file in filesToRemove ) {
+					if ( File.Exists( file ) ) {
+						File.Delete( file );
+						WriteVerbose( $"  Removed: {file}" );
+					}
+				}
+
+				if ( Directory.Exists( $"{projectName}.Application/WeatherForecasts" ) ) {
+					Directory.Delete( $"{projectName}.Application/WeatherForecasts", true );
+					WriteVerbose( "  Removed: WeatherForecasts folder" );
+				}
+
+				// Create simple AppContext
+				WriteVerbose( "Creating base AppContext..." );
+				var contextDir = $"{projectName}.Data/Contexts";
+				Directory.CreateDirectory( contextDir );
+
+				var contextContent = $$"""
+					using Microsoft.EntityFrameworkCore;
+					using Myth.Contexts;
+
+					namespace {{projectName}}.Data.Contexts;
+
+					public class AppContext : BaseContext
+					{
+					    public AppContext(DbContextOptions<AppContext> options) : base(options)
+					    {
+					    }
+
+					    protected override void OnModelCreating(ModelBuilder modelBuilder)
+					    {
+					        base.OnModelCreating(modelBuilder);
+					        // Configure your models here
+					    }
+					}
+					""";
+
+				await File.WriteAllTextAsync( Path.Combine( contextDir, "AppContext.cs" ), contextContent );
+				WriteVerbose( "  Created AppContext.cs" );
+			}
+
+			// Reset Git
+			WriteVerbose( "Resetting Git..." );
+			if ( Directory.Exists( ".git" ) ) {
+				Directory.Delete( ".git", true );
+			}
+
+			RunCommand( "git", "init" );
+			RunCommand( "git", "branch -m main" );
+			RunCommand( "git", "add ." );
+
+			var commitMessage = clean
+				? $"feat: setup {projectName} from myth-template with clean structure"
+				: $"feat: setup {projectName} from myth-template with examples";
+
+			RunCommand( "git", $"commit -m \"{commitMessage}\"" );
+
+			WriteSuccess( $"Done! Project renamed to: {projectName}" );
+
+			if ( clean ) {
+				WriteVerbose( "WeatherForecast examples removed, base AppContext created" );
 			} else {
-				Console.WriteLine( "⚠️  myth.config.json already exists. Use --force to overwrite." );
+				WriteVerbose( "WeatherForecast examples kept for reference" );
 			}
 
-			// Create README.md
-			var readmeContent = """
-                # YourProject
-
-                A Myth-based project with Clean Architecture, CQRS, and DDD patterns.
-
-                ## Project Structure
-
-                ```
-                YourProject/
-                ├── 🏗️ YourProject.Api/                    # Web API Layer
-                ├── 🎯 YourProject.Domain/                 # Domain Layer
-                ├── 🔄 YourProject.Application/            # Application Layer
-                ├── 💾 YourProject.Data/                   # Data Access Layer
-                ├── 🌐 YourProject.ExternalData/           # External Integrations
-                └── 🧪 YourProject.Test/                   # Test Projects
-                ```
-
-                ## Getting Started
-
-                ### Future Code Generation Commands (Coming Soon)
-
-                ```bash
-                # Create domain models
-                myth create model User \
-                  -p UserId:Guid:get \
-                  -p Name:string \
-                  -p Email:string \
-                  --validate
-
-                # Create CQRS commands
-                myth create command User CreateUser \
-                  -p Name:string \
-                  -p Email:string \
-                  --return Guid \
-                  --validate
-
-                # Create CQRS queries
-                myth create query User GetUser \
-                  -p Id:Guid \
-                  --return GetUserResponse
-
-                # Generate repositories and controllers
-                myth create repository User
-                myth create controller User --include-crud
-                ```
-
-                ## Manual Setup for Now
-
-                1. Update namespace configuration in `myth.config.json`
-                2. Install Myth NuGet packages in your projects:
-                   - Myth.Commons
-                   - Myth.Flow.Actions
-                   - Myth.Guard
-                   - Myth.Repository
-                   - Myth.Specification
-                3. Start building your domain models and business logic
-
-                ## Recommended Project File Structure
-
-                ### Domain Project (YourProject.Domain.csproj)
-                ```xml
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net10.0</TargetFramework>
-                    <ImplicitUsings>enable</ImplicitUsings>
-                    <Nullable>enable</Nullable>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Myth.Commons" Version="1.0.0" />
-                    <PackageReference Include="Myth.Guard" Version="1.0.0" />
-                  </ItemGroup>
-                </Project>
-                ```
-
-                ### Application Project (YourProject.Application.csproj)
-                ```xml
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net10.0</TargetFramework>
-                    <ImplicitUsings>enable</ImplicitUsings>
-                    <Nullable>enable</Nullable>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <ProjectReference Include="../YourProject.Domain/YourProject.Domain.csproj" />
-                  </ItemGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Myth.Flow.Actions" Version="1.0.0" />
-                    <PackageReference Include="Myth.Morph" Version="1.0.0" />
-                  </ItemGroup>
-                </Project>
-                ```
-
-                ### Data Project (YourProject.Data.csproj)
-                ```xml
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>net10.0</TargetFramework>
-                    <ImplicitUsings>enable</ImplicitUsings>
-                    <Nullable>enable</Nullable>
-                  </PropertyGroup>
-
-                  <ItemGroup>
-                    <ProjectReference Include="../YourProject.Domain/YourProject.Domain.csproj" />
-                  </ItemGroup>
-
-                  <ItemGroup>
-                    <PackageReference Include="Myth.Repository.EntityFramework" Version="1.0.0" />
-                    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
-                    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" />
-                  </ItemGroup>
-                </Project>
-                ```
-
-                For more information, visit: https://gitlab.com/dotnet-myth/myth
-                """;
-
-			var readmePath = Path.Combine( targetPath, "README.md" );
-
-			if ( !File.Exists( readmePath ) || force ) {
-				await File.WriteAllTextAsync( readmePath, readmeContent );
-				Console.WriteLine( "✅ Created README.md with getting started guide" );
-			} else {
-				Console.WriteLine( "⚠️  README.md already exists. Use --force to overwrite." );
-			}
-
-			Console.WriteLine( );
-			Console.WriteLine( "🎉 Myth project structure initialized successfully!" );
-			Console.WriteLine( );
-			Console.WriteLine( "Next steps:" );
-			Console.WriteLine( "1. Update myth.config.json with your project details" );
-			Console.WriteLine( "2. Create .csproj files using the examples in README.md" );
-			Console.WriteLine( "3. Install Myth NuGet packages" );
-			Console.WriteLine( "4. Start building your domain models" );
-			Console.WriteLine( "5. Stay tuned for code generation features in future releases" );
+			WriteVerbose( "\nNext steps:" );
+			WriteVerbose( "1. git remote add origin <repository-url>" );
+			WriteVerbose( "2. Update appsettings.json" );
+			WriteVerbose( "3. Run 'dotnet build' to verify" );
 
 			return 0;
-
 		} catch ( Exception ex ) {
-			Console.WriteLine( $"❌ Error: {ex.Message}" );
-
+			WriteError( $"Error: {ex.Message}" );
 			return 1;
 		}
 	}
 
-	private static int HandleVersionCommand( ) {
-		Console.WriteLine( "Myth Code Generation Tool" );
-		Console.WriteLine( "Version: 1.0.0" );
-		Console.WriteLine( "Framework: .NET 10.0" );
+	private static async Task<int> HandleCreateCommand( string[] args ) {
+		try {
+			if ( args.Contains( "-h" ) || args.Contains( "--help" ) ) {
+				ShowCreateHelp();
+				return 0;
+			}
+
+			if ( args.Length < 3 ) {
+				WriteError( "Invalid syntax. Use: myth create <type> <aggregate> [name] [options]" );
+				return 1;
+			}
+
+			var type = args[1];
+			var aggregate = args[2];
+
+			// For some types, name is provided as third parameter
+			string? providedName = null;
+			var startOptionsAt = 3;
+			if ( args.Length > 3 && !args[3].StartsWith("-") ) {
+				providedName = args[3];
+				startOptionsAt = 4;
+			}
+
+			var properties = new List<Property>();
+			var returnType = "";
+			var hasValidation = false;
+			var events = new List<string>();
+			var targetPath = Environment.CurrentDirectory;
+			var customNamespace = "";
+			var dryRun = false;
+			var force = false;
+
+			for ( var i = startOptionsAt; i < args.Length; i++ ) {
+				switch ( args[i].ToLowerInvariant() ) {
+					case "-p" when i + 1 < args.Length:
+						var propParts = args[++i].Split( ':' );
+						if ( propParts.Length >= 2 ) {
+							properties.Add( new Property {
+								Name = propParts[0],
+								Type = propParts[1],
+								IsRequired = propParts.Length > 2 && propParts[2] == "required"
+							} );
+						}
+						break;
+					case "--return" when i + 1 < args.Length:
+						returnType = args[++i];
+						break;
+					case "--validate":
+						hasValidation = true;
+						break;
+					case "--events" when i + 1 < args.Length:
+						events.AddRange( args[++i].Split( ',' ) );
+						break;
+					case "--path" when i + 1 < args.Length:
+						targetPath = args[++i];
+						break;
+					case "--namespace" when i + 1 < args.Length:
+						customNamespace = args[++i];
+						break;
+					case "--dry-run":
+						dryRun = true;
+						break;
+					case "--force":
+						force = true;
+						break;
+				}
+			}
+
+			var structure = DetectProjectStructure( targetPath );
+			if ( structure == null ) {
+				WriteError( "Unable to detect project structure. Make sure you're in the solution root directory." );
+				return 1;
+			}
+
+			// Determine the final name
+			var finalName = providedName ?? aggregate;
+			var context = new GenerationContext {
+				Name = EnsureCorrectSuffix( type, finalName ),
+				Aggregate = aggregate,
+				Namespace = customNamespace.IsNullOrEmpty() ? GetNamespaceForType( structure, type ) : customNamespace,
+				Properties = properties,
+				ReturnType = returnType,
+				HasValidation = hasValidation,
+				PublishesEvents = events.Count > 0,
+				Events = events,
+				TargetPath = targetPath,
+				ProjectStructure = structure,
+				DryRun = dryRun,
+				Force = force
+			};
+
+			var codeGenerationService = new CodeGenerationService();
+			var artifacts = await codeGenerationService.GenerateAsync( context, type );
+
+			if ( dryRun ) {
+				WriteVerbose( "Files that would be created:" );
+				foreach ( var artifact in artifacts ) {
+					WriteVerbose( $"  Preview: {artifact.FilePath}" );
+				}
+				WriteVerbose( "\nThis was a dry run. Use without --dry-run to create files." );
+			} else {
+				WriteVerbose( "Generated files:" );
+				foreach ( var artifact in artifacts ) {
+					var status = artifact.Exists ? "Updated" : "Created";
+					WriteVerbose( $"  {status}: {artifact.FilePath}" );
+				}
+				WriteSuccess( $"Successfully generated {artifacts.Count} file(s)" );
+			}
+
+			return 0;
+		} catch ( Exception ex ) {
+			WriteError( $"Error: {ex.Message}" );
+			return 1;
+		}
+	}
+
+	private static async Task<int> HandleTestCommand( string[] args ) {
+		try {
+			if ( args.Contains( "-h" ) || args.Contains( "--help" ) ) {
+				ShowTestHelp();
+				return 0;
+			}
+
+			if ( args.Length < 2 ) {
+				WriteError( "Invalid syntax. Use: myth test <controller> [options]" );
+				return 1;
+			}
+
+			var controllerName = args[1];
+			var targetPath = Environment.CurrentDirectory;
+			var dryRun = false;
+			var force = false;
+
+			for ( var i = 2; i < args.Length; i++ ) {
+				switch ( args[i].ToLowerInvariant() ) {
+					case "--path" when i + 1 < args.Length:
+						targetPath = args[++i];
+						break;
+					case "--dry-run":
+						dryRun = true;
+						break;
+					case "--force":
+						force = true;
+						break;
+				}
+			}
+
+			var structure = DetectProjectStructure( targetPath );
+			if ( structure == null ) {
+				WriteError( "Unable to detect project structure. Make sure you're in the solution root directory." );
+				return 1;
+			}
+
+			var testFileName = $"{controllerName}Tests.cs";
+			var testFilePath = Path.Combine( structure.TestPath!, testFileName );
+
+			if ( File.Exists( testFilePath ) && !force ) {
+				WriteError( $"File already exists: {testFilePath}. Use --force to overwrite." );
+				return 1;
+			}
+
+			if ( dryRun ) {
+				WriteVerbose( $"Preview: {testFilePath}" );
+				WriteVerbose( "\nThis was a dry run. Use without --dry-run to create files." );
+				return 0;
+			}
+
+			var testContent = GenerateTestContent( controllerName, structure );
+
+			Directory.CreateDirectory( Path.GetDirectoryName( testFilePath )! );
+			await File.WriteAllTextAsync( testFilePath, testContent );
+
+			WriteVerbose( $"Created: {testFilePath}" );
+			WriteSuccess( "Test file generated successfully" );
+
+			return 0;
+		} catch ( Exception ex ) {
+			WriteError( $"Error: {ex.Message}" );
+			return 1;
+		}
+	}
+
+	private static int HandleVersionCommand() {
+		Console.WriteLine();
+		Console.WriteLine("    ╔═══════════════════════════════════════════════╗");
+		Console.WriteLine("    ║                                               ║");
+		Console.WriteLine("    ║      ███╗   ███╗██╗   ██╗████████╗██╗  ██╗    ║");
+		Console.WriteLine("    ║      ████╗ ████║╚██╗ ██╔╝╚══██╔══╝██║  ██║    ║");
+		Console.WriteLine("    ║      ██╔████╔██║ ╚████╔╝    ██║   ███████║    ║");
+		Console.WriteLine("    ║      ██║╚██╔╝██║  ╚██╔╝     ██║   ██╔══██║    ║");
+		Console.WriteLine("    ║      ██║ ╚═╝ ██║   ██║      ██║   ██║  ██║    ║");
+		Console.WriteLine("    ║      ╚═╝     ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝    ║");
+		Console.WriteLine("    ║                                               ║");
+		Console.WriteLine("    ║      Legendary Code Generation                ║");
+		Console.WriteLine("    ║                                               ║");
+		Console.WriteLine("    ╚═══════════════════════════════════════════════╝");
+		Console.WriteLine();
+		Console.WriteLine("Myth Code Generation Tool");
+		Console.WriteLine("Version: 1.0.0");
+		Console.WriteLine("Framework: .NET 10.0");
+		Console.WriteLine();
+		Console.WriteLine("Resources:");
+		Console.WriteLine("   Libraries: https://github.com/paulaolileal/myth");
+		Console.WriteLine("   Templates: https://github.com/paulaolileal/myth-template");
+		Console.WriteLine();
+		Console.WriteLine("Created by:");
+		Console.WriteLine("   Paula Leal");
+		Console.WriteLine("   LinkedIn: https://linkedin.com/in/paulaolileal");
+		Console.WriteLine();
+		Console.WriteLine("Clean Architecture • CQRS • DDD • Modern .NET");
 
 		return 0;
 	}
 
 	private static int HandleUnknownCommand( string command ) {
-		Console.WriteLine( $"❌ Unknown command: {command}" );
-		Console.WriteLine( );
-		ShowHelp( );
-
+		WriteError( $"Unknown command: {command}" );
+		WriteError( "Use 'myth --help' to see available commands." );
 		return 1;
 	}
 
-	private static void ShowHelp( ) {
-		Console.WriteLine( "Available commands:" );
-		Console.WriteLine( "  init                 Initialize Myth project structure" );
-		Console.WriteLine( "  version              Show version information" );
-		Console.WriteLine( );
-		Console.WriteLine( "Options for 'init' command:" );
-		Console.WriteLine( "  --path <path>        Target directory (default: current)" );
-		Console.WriteLine( "  --force              Overwrite existing files" );
-		Console.WriteLine( );
-		Console.WriteLine( "Examples:" );
-		Console.WriteLine( "  myth init" );
-		Console.WriteLine( "  myth init --path ./my-project" );
-		Console.WriteLine( "  myth init --path ./my-project --force" );
-		Console.WriteLine( );
-		Console.WriteLine( "For more information, visit: https://gitlab.com/dotnet-myth/myth" );
+	private static ProjectStructure? DetectProjectStructure( string path ) {
+		// Find solution file
+		var solutionFiles = Directory.GetFiles( path, "*.sln" ).Concat( Directory.GetFiles( path, "*.slnx" ) ).ToArray();
+		if ( solutionFiles.Length == 0 ) {
+			return null;
+		}
+
+		var solutionFile = solutionFiles.First();
+		var solutionName = Path.GetFileNameWithoutExtension( solutionFile );
+
+		// Detect project paths based on common naming patterns
+		var structure = new ProjectStructure {
+			RootPath = path,
+			BaseNamespace = solutionName
+		};
+
+		structure.ApiPath = FindProjectPath( path, "Api", "API" ) ?? FindProjectPath( path, solutionName + ".Api", solutionName + ".API" );
+		structure.ApplicationPath = FindProjectPath( path, "Application" ) ?? FindProjectPath( path, solutionName + ".Application" );
+		structure.DomainPath = FindProjectPath( path, "Domain" ) ?? FindProjectPath( path, solutionName + ".Domain" );
+		structure.DataPath = FindProjectPath( path, "Data" ) ?? FindProjectPath( path, solutionName + ".Data" );
+		structure.TestPath = FindProjectPath( path, "Test" ) ?? FindProjectPath( path, solutionName + ".Test" );
+
+		return structure;
+	}
+
+	private static string? FindProjectPath( string basePath, params string[] names ) {
+		foreach ( var name in names ) {
+			var fullPath = Path.Combine( basePath, name );
+			if ( Directory.Exists( fullPath ) ) {
+				return fullPath;
+			}
+		}
+		return null;
+	}
+
+	private static string GetNamespaceForType( ProjectStructure structure, string type ) {
+		return type switch {
+			"command" or "query" or "event" or "dto" => $"{structure.BaseNamespace}.Application",
+			"model" => $"{structure.BaseNamespace}.Domain.Models",
+			"repository" => $"{structure.BaseNamespace}.Data.Repositories",
+			"controller" => $"{structure.BaseNamespace}.API.Controllers",
+			_ => $"{structure.BaseNamespace}.Application"
+		};
+	}
+
+	private static string EnsureCorrectSuffix( string type, string name ) {
+		return type switch {
+			"command" => name.EndsWith( "Command", StringComparison.OrdinalIgnoreCase ) ? name : $"{name}Command",
+			"query" => name.EndsWith( "Query", StringComparison.OrdinalIgnoreCase ) ? name : $"{name}Query",
+			"event" => name.EndsWith( "Event", StringComparison.OrdinalIgnoreCase ) ? name : $"{name}Event",
+			_ => name
+		};
+	}
+
+	private static string GenerateTestContent( string controllerName, ProjectStructure structure ) {
+		var namespaceName = $"{structure.BaseNamespace}.Test";
+		var apiNamespace = $"{structure.BaseNamespace}.API.Controllers";
+
+		return $$"""
+			using FluentAssertions;
+			using Microsoft.AspNetCore.Mvc;
+			using Microsoft.Extensions.DependencyInjection;
+			using Myth.Exceptions;
+			using Myth.Extensions;
+			using Myth.Flow.Actions.Extensions;
+			using Myth.Models.Results;
+			using {{apiNamespace}};
+			using {{structure.BaseNamespace}}.Data.Contexts;
+			using Myth.Testing.Extensions;
+			using Myth.Testing.Repositories;
+			using Myth.ValueObjects;
+
+			namespace {{namespaceName}};
+
+			/// <summary>
+			/// Integration test suite for the {{controllerName}}Controller API endpoints.
+			/// Tests all CRUD operations including validation scenarios, error handling, and business logic.
+			/// Inherits from BaseDatabaseTests to provide in-memory database testing capabilities.
+			/// </summary>
+			public class {{controllerName}}Tests : BaseDatabaseTests<AppContext> {
+				/// <summary>
+				/// The controller instance under test, initialized with all required dependencies.
+				/// </summary>
+				private readonly {{controllerName}}Controller _controller;
+
+				/// <summary>
+				/// Initializes a new instance of the {{controllerName}}Tests class.
+				/// Sets up the dependency injection container with all required services for testing.
+				/// </summary>
+				public {{controllerName}}Tests() : base() {
+					AddServices(services => {
+						services.AddLogging();
+						services.AddRepositories();
+						services.AddUnitOfWorkForContext<AppContext>();
+						services.AddScopedServiceProvider();
+						services.AddMorph();
+						services.AddGuard();
+						services.AddFlow(conf => conf
+							.UseExceptionFilter<ValidationException>()
+							.UseActions(x => x
+								.UseInMemory()
+								.ScanAssemblies(typeof({{controllerName}}Controller).Assembly)));
+					});
+
+					_controller = CreateInstance<{{controllerName}}Controller>();
+				}
+
+				/// <summary>
+				/// Test example - replace with actual tests for your controller
+				/// </summary>
+				[Fact]
+				public async Task Example_Test() {
+					// Arrange
+					// TODO: Set up test data
+
+					// Act
+					// TODO: Call controller method
+
+					// Assert
+					// TODO: Verify results
+					Assert.True(true); // Remove this and add real assertions
+				}
+
+				// TODO: Add more specific tests for your controller endpoints
+				// Examples:
+				// - Test GET endpoints with valid/invalid parameters
+				// - Test POST endpoints with valid/invalid data
+				// - Test PUT endpoints for updates
+				// - Test DELETE endpoints
+				// - Test validation scenarios
+				// - Test error handling
+			}
+			""";
+	}
+
+	private static bool IsValidProjectName( string name ) {
+		return !string.IsNullOrEmpty( name ) && name.All( c => char.IsLetterOrDigit( c ) || c == '.' || c == '_' || c == '-' );
+	}
+
+	private static void RunCommand( string command, string arguments ) {
+		var process = new System.Diagnostics.Process {
+			StartInfo = new System.Diagnostics.ProcessStartInfo {
+				FileName = command,
+				Arguments = arguments,
+				UseShellExecute = false,
+				CreateNoWindow = true
+			}
+		};
+		process.Start();
+		process.WaitForExit();
+	}
+
+	private static void WriteVerbose( string message ) {
+		if ( _verbose ) {
+			Console.WriteLine( message );
+		}
+	}
+
+	private static void WriteSuccess( string message ) {
+		if ( _verbose ) {
+			Console.WriteLine( message );
+		} else {
+			Console.ForegroundColor = ConsoleColor.Green;
+			Console.WriteLine( "Done." );
+			Console.ResetColor();
+		}
+	}
+
+	private static void WriteError( string message ) {
+		Console.ForegroundColor = ConsoleColor.Red;
+		Console.WriteLine( message );
+		Console.ResetColor();
+	}
+
+	private static void ShowHelp() {
+		Console.WriteLine("Myth Code Generation Tool");
+		Console.WriteLine();
+		Console.WriteLine("Available commands:");
+		Console.WriteLine("  setup                Setup project from template");
+		Console.WriteLine("  create               Generate code artifacts");
+		Console.WriteLine("  test                 Generate test file");
+		Console.WriteLine("  version              Show version information");
+		Console.WriteLine();
+		Console.WriteLine("Global options:");
+		Console.WriteLine("  --verbose            Show detailed output");
+		Console.WriteLine("  -h, --help           Show help information");
+		Console.WriteLine();
+		Console.WriteLine("Use 'myth <command> -h' for help with specific commands.");
+	}
+
+	private static void ShowSetupHelp() {
+		Console.WriteLine("Setup project from myth-template");
+		Console.WriteLine();
+		Console.WriteLine("Usage: myth setup <ProjectName> [options]");
+		Console.WriteLine();
+		Console.WriteLine("Arguments:");
+		Console.WriteLine("  <ProjectName>        Project name (required)");
+		Console.WriteLine();
+		Console.WriteLine("Options:");
+		Console.WriteLine("  --clean              Remove WeatherForecast examples");
+		Console.WriteLine("  --verbose            Show detailed output");
+		Console.WriteLine("  -h, --help           Show help information");
+		Console.WriteLine();
+		Console.WriteLine("Examples:");
+		Console.WriteLine("  myth setup MyProject");
+		Console.WriteLine("  myth setup MyProject --clean");
+	}
+
+	private static void ShowCreateHelp() {
+		Console.WriteLine("Generate code artifacts");
+		Console.WriteLine();
+		Console.WriteLine("Usage: myth create <type> <aggregate> [name] [options]");
+		Console.WriteLine();
+		Console.WriteLine("Types:");
+		Console.WriteLine("  command              Generate command and handler");
+		Console.WriteLine("  query                Generate query and handler");
+		Console.WriteLine("  event                Generate event and handler");
+		Console.WriteLine("  dto                  Generate DTO");
+		Console.WriteLine("  model                Generate domain model");
+		Console.WriteLine("  repository           Generate repository and interface");
+		Console.WriteLine("  controller           Generate controller");
+		Console.WriteLine();
+		Console.WriteLine("Options:");
+		Console.WriteLine("  -p <name:type>       Add property (e.g., -p Name:string)");
+		Console.WriteLine("  --return <type>      Set return type (for commands/queries)");
+		Console.WriteLine("  --validate           Add validation support");
+		Console.WriteLine("  --events <events>    Events to publish (comma-separated)");
+		Console.WriteLine("  --path <path>        Target directory");
+		Console.WriteLine("  --namespace <ns>     Custom namespace");
+		Console.WriteLine("  --dry-run            Preview without creating files");
+		Console.WriteLine("  --force              Overwrite existing files");
+		Console.WriteLine("  --verbose            Show detailed output");
+		Console.WriteLine("  -h, --help           Show help information");
+		Console.WriteLine();
+		Console.WriteLine("Arguments:");
+		Console.WriteLine("  <type>               Artifact type to generate");
+		Console.WriteLine("  <aggregate>          Aggregate/domain name");
+		Console.WriteLine("  [name]               Optional specific name (defaults to aggregate)");
+		Console.WriteLine();
+		Console.WriteLine("Examples:");
+		Console.WriteLine("  myth create command User CreateUser -p Name:string --validate");
+		Console.WriteLine("  myth create query User GetUser -p Id:Guid --return GetUserResponse");
+		Console.WriteLine("  myth create dto User GetUserDto -p Name:string");
+		Console.WriteLine("  myth create model User -p Name:string -p Email:string");
+	}
+
+	private static void ShowTestHelp() {
+		Console.WriteLine("Generate test file for controller");
+		Console.WriteLine();
+		Console.WriteLine("Usage: myth test <controller> [options]");
+		Console.WriteLine();
+		Console.WriteLine("Options:");
+		Console.WriteLine("  --path <path>        Target directory");
+		Console.WriteLine("  --dry-run            Preview without creating files");
+		Console.WriteLine("  --force              Overwrite existing files");
+		Console.WriteLine("  --verbose            Show detailed output");
+		Console.WriteLine("  -h, --help           Show help information");
+		Console.WriteLine();
+		Console.WriteLine("Examples:");
+		Console.WriteLine("  myth test WeatherForecast");
+		Console.WriteLine("  myth test User --force");
+	}
+}
+
+public static class StringExtensions {
+	public static bool IsNullOrEmpty( this string? value ) {
+		return string.IsNullOrEmpty( value );
 	}
 }

@@ -1,3 +1,5 @@
+<img  style="float: right;" src="myth-tool-logo.png" alt="drawing" width="250"/>
+
 # Myth.Tool - Code Generation CLI
 
 A modern CLI tool for generating Myth architecture code with CQRS, DDD, and Clean Architecture patterns.

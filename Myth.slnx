@@ -34,6 +34,7 @@
     <Project Path="Myth.Rest/Myth.Rest.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
+    <File Path=".gitlab-ci.yml" />
     <File Path="CLAUDE.md" />
     <File Path="LICENSE.txt" />
     <File Path="Logo.jpg" />
@@ -48,5 +49,7 @@
     <Project Path="Myth.Testing.Test/Myth.Testing.Test.csproj" Id="504296be-6acc-4a3e-93b0-320bba2eeee1" />
     <Project Path="Myth.Testing/Myth.Testing.csproj" Id="3187477b-d58e-4632-8c41-6d8efe3bb99a" />
   </Folder>
-  <Project Path="Myth.Tool/Myth.Tool.csproj" />
+  <Folder Name="/Tool/">
+    <Project Path="Myth.Tool/Myth.Tool.csproj" />
+  </Folder>
 </Solution>
