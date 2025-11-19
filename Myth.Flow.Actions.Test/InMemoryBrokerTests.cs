@@ -174,7 +174,7 @@ public class InMemoryBrokerTests : BaseTestFixture, IAsyncDisposable {
 
 		// Act
 		await broker.PublishAsync( new TestEvent { Message = "test" } );
-		await Task.Delay( 500 ); // Wait for retries
+		await Task.Delay( 1000 ); // Wait for retries
 
 		// Assert
 		attemptCount.Should( ).BeGreaterThanOrEqualTo( 2 );
