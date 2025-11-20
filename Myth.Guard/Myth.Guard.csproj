@@ -10,13 +10,17 @@
 		<RootNamespace>Myth</RootNamespace>
 		<!-- Package -->
 		<PackageId>Myth.Guard</PackageId>
+		<Title>Myth Guard Validation Library</Title>
 		<Authors>Paula Leal</Authors>
+		<Company>Myth</Company>
 		<PackageIcon>myth-guard-logo.png</PackageIcon>
 		<Description>Fluent validation library with 100+ rules, context-aware validation, async service integration, and ASP.NET Core middleware. Supports nullable types, custom error messages, and comprehensive field validation.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageTags>dotnet;validation;fluent;guard;aspnetcore;middleware;rules;async;nullable;myth</PackageTags>
 		<!-- Docs -->
 		<RepositoryUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Guard</RepositoryUrl>
 		<PackageProjectUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Guard</PackageProjectUrl>
+		<RepositoryType>git</RepositoryType>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>

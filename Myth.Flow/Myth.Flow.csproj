@@ -10,13 +10,17 @@
 		<RootNamespace>Myth</RootNamespace>
 		<!-- Package -->
 		<PackageId>Myth.Flow</PackageId>
+		<Title>Myth Flow Pipeline Library</Title>
 		<Authors>Paula Leal</Authors>
+		<Company>Myth</Company>
 		<PackageIcon>myth-flow-logo.png</PackageIcon>
 		<Description>Fluent pipeline orchestration with Result pattern, OpenTelemetry integration, retry policies, and global service provider support for building robust data processing workflows.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageTags>dotnet;pipeline;flow;orchestration;result-pattern;opentelemetry;retry;data-processing;fluent-api;myth</PackageTags>
 		<!-- Docs -->
 		<RepositoryUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Flow</RepositoryUrl>
 		<PackageProjectUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Flow</PackageProjectUrl>
+		<RepositoryType>git</RepositoryType>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>

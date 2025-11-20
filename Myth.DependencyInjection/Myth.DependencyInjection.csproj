@@ -10,13 +10,17 @@
 		<RootNamespace>Myth</RootNamespace>
 		<!-- Package -->
 		<PackageId>Myth.DependencyInjection</PackageId>
+		<Title>Myth Dependency Injection Library</Title>
 		<Authors>Paula Leal</Authors>
+		<Company>Myth</Company>
 		<PackageIcon>myth-dependency-injection-logo.png</PackageIcon>
 		<Description>Type discovery and convention-based service registration with automatic assembly scanning, interface mapping, and plugin architecture support for simplified dependency injection configuration.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageTags>dotnet;dependency-injection;ioc;container;assembly-scanning;convention;auto-registration;plugin-architecture;myth</PackageTags>
 		<!-- Docs -->
 		<RepositoryUrl>https://github.com/paulaolileal/myth/tree/main/Myth.DependencyInjection</RepositoryUrl>
 		<PackageProjectUrl>https://github.com/paulaolileal/myth/tree/main/Myth.DependencyInjection</PackageProjectUrl>
+		<RepositoryType>git</RepositoryType>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>

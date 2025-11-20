@@ -10,13 +10,17 @@
 		<RootNamespace>Myth</RootNamespace>
 		<!-- Package -->
 		<PackageId>Myth.Flow.Actions</PackageId>
+		<Title>Myth Flow Actions CQRS Library</Title>
 		<Authors>Paula Leal</Authors>
+		<Company>Myth</Company>
 		<PackageIcon>myth-flow-actions-logo.png</PackageIcon>
 		<Description>CQRS and event-driven architecture extension for Myth.Flow with dispatcher, event bus, message brokers (Kafka, RabbitMQ), caching, circuit breaker, and dead letter queue for resilient distributed systems.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageTags>dotnet;cqrs;event-driven;dispatcher;event-bus;kafka;rabbitmq;messaging;caching;circuit-breaker;myth</PackageTags>
 		<!-- Docs -->
-		<RepositoryUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Flow</RepositoryUrl>
-		<PackageProjectUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Flow</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Flow.Actions</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Flow.Actions</PackageProjectUrl>
+		<RepositoryType>git</RepositoryType>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>

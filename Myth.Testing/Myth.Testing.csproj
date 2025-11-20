@@ -11,16 +11,20 @@
 		<!-- Package -->
 		<IsPackable>true</IsPackable>
 		<PackageId>Myth.Testing</PackageId>
+		<Title>Myth Testing Utilities Library</Title>
 		<Authors>Paula Leal</Authors>
+		<Company>Myth</Company>
 		<PackageIcon>myth-testing-logo.png</PackageIcon>
 		<Description>Testing utilities, mocks, and base test classes for comprehensive unit and integration testing. Includes Bogus data generation, FluentAssertions, Moq, xUnit, and Entity Framework in-memory testing support.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageTags>dotnet;testing;unit-tests;integration-tests;mocking;bogus;fluent-assertions;xunit;entity-framework;myth</PackageTags>
 		<!-- Test Project Configuration -->
 		<IsTestProject>false</IsTestProject>
 		<GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
 		<!-- Docs -->
 		<RepositoryUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Testing</RepositoryUrl>
 		<PackageProjectUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Testing</PackageProjectUrl>
+		<RepositoryType>git</RepositoryType>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>

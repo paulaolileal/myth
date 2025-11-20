@@ -10,13 +10,17 @@
 		<RootNamespace>Myth</RootNamespace>
 		<!-- Package -->
 		<PackageId>Myth.Commons</PackageId>
+		<Title>Myth Commons Library</Title>
 		<Authors>Paula Leal</Authors>
+		<Company>Myth</Company>
 		<PackageIcon>myth-commons-logo.jpg</PackageIcon>
 		<Description>Essential utilities, value objects, JSON extensions, and global service provider management for building clean architecture applications. Includes type-safe constants, value objects, string utilities, and centralized dependency injection.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageTags>dotnet;commons;utilities;value-objects;json;extensions;dependency-injection;clean-architecture;myth</PackageTags>
 		<!-- Docs -->
 		<RepositoryUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Commons</RepositoryUrl>
 		<PackageProjectUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Commons</PackageProjectUrl>
+		<RepositoryType>git</RepositoryType>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>

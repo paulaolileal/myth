@@ -18,10 +18,10 @@
     <!-- Package Metadata -->
     <Title>Myth Code Generation Tool</Title>
     <Description>Modern CLI tool for generating Myth architecture code with CQRS, DDD, and Clean Architecture patterns</Description>
-    <Authors>Myth Team</Authors>
+    <Authors>Paula Leal</Authors>
     <Company>Myth</Company>
-    <PackageProjectUrl>https://gitlab.com/dotnet-myth/myth</PackageProjectUrl>
-    <RepositoryUrl>https://gitlab.com/dotnet-myth/myth</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Tool</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Tool</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageIcon>myth-tool-logo.png</PackageIcon>

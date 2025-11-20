@@ -10,13 +10,17 @@
 		<RootNamespace>Myth</RootNamespace>
 		<!-- Package -->
 		<PackageId>Myth.Repository.EntityFramework</PackageId>
+		<Title>Myth Repository Entity Framework Implementation</Title>
 		<Authors>Paula Leal</Authors>
+		<Company>Myth</Company>
 		<PackageIcon>myth-repository-ef-logo.png</PackageIcon>
 		<Description>Entity Framework Core implementations of repository pattern with Unit of Work, specification support, expression handling, and transaction management for robust data access with EF Core.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageTags>dotnet;entity-framework;ef-core;repository-pattern;unit-of-work;data-access;orm;transactions;myth</PackageTags>
 		<!-- Docs -->
 		<RepositoryUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Repository.EntityFramework</RepositoryUrl>
 		<PackageProjectUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Repository.EntityFramework</PackageProjectUrl>
+		<RepositoryType>git</RepositoryType>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
