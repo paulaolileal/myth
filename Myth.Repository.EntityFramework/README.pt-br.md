@@ -1,3 +1,5 @@
+<img  style="float: right;" src="myth-repository-ef-logo.png" alt="drawing" width="250"/>
+
 # Myth.Repository.EntityFramework
 
 [![NuGet Version](https://img.shields.io/nuget/v/Myth.Repository.EntityFramework?style=for-the-badge&logo=nuget)](https://www.nuget.org/packages/Myth.Repository.EntityFramework/) [![NuGet Version](https://img.shields.io/nuget/vpre/Myth.Repository.EntityFramework?style=for-the-badge&logo=nuget&color=rgb(255%2C%20185%2C%200))](https://www.nuget.org/packages/Myth.Repository.EntityFramework/absoluteLatest)

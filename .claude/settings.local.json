@@ -8,7 +8,11 @@
       "Bash(powershell -Command:*)",
       "Bash(dotnet restore:*)",
       "Bash(move SmartConstantTests.cs ConstantTests.cs)",
-      "Bash(ren:*)"
+      "Bash(ren:*)",
+      "Bash(dir:*)",
+      "Bash(cat:*)",
+      "Bash(xargs:*)",
+      "Bash(dotnet run:*)"
     ],
     "deny": [],
     "ask": []

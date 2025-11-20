@@ -48,6 +48,7 @@ test-job:
       --collect "XPlat Code Coverage"
       --logger "trx;LogFileName=test-results.trx"
       --filter "FullyQualifiedName!~Rest"
+  coverage: '/Total\s*\|*\s(\d+(?:\.\d+)?)/'
   artifacts:
     expire_in: 1 week
     reports:
@@ -60,25 +61,32 @@ test-job:
   dependencies:
     - build-job
 
-publish-job:
+publish:
   stage: publish
   only:
-    refs: 
+    refs:
       - tags
   dependencies:
     - build-job
     - test-job
   script:
     - PACKAGE_VERSION=$(echo "$CI_COMMIT_TAG" | cut -d "v" -f2- )
-    - mkdir -p nupkgs
+    - mkdir -p nupkgs tool-nupkgs
+    - echo "Packing all libraries..."
     - |
-      # Pack all projects sequentially to ensure proper dependency resolution
+      # Pack library projects (exclude test and tool projects)
       for project in $(ls **/*.csproj | grep -v '\.Test\.csproj$'); do
-        echo "Packing $project..."
+        echo "Packing library $project..."
         dotnet pack "$project" \
           --configuration Release \
           --output nupkgs \
           --verbosity minimal \
           /p:PackageVersion=${PACKAGE_VERSION}
       done
+    - echo "Publishing all packages to NuGet..."
     - dotnet nuget push "nupkgs/*.nupkg" --skip-duplicate --source $NUGET_API_URL --api-key $NUGET_API_KEY
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - nupkgs/
+      - tool-nupkgs/

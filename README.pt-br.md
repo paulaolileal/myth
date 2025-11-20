@@ -1,6 +1,8 @@
-<img  style="float: right;" src="Logo.jpg" alt="drawing" width="250"/>
+<img  style="float: right;" src="myth-ecossystem-logo.png" alt="drawing" width="250"/>
 
 # Ecossistema Myth
+
+![Gitlab Pipeline Status](https://img.shields.io/gitlab/pipeline-status/dotnet-myth%2Fmyth?style=for-the-badge) ![Gitlab Code Coverage](https://img.shields.io/gitlab/pipeline-coverage/dotnet-myth%2Fmyth?job_name=test_job&branch=main&style=for-the-badge) ![GitLab Tag](https://img.shields.io/gitlab/v/tag/dotnet-myth%2Fmyth?style=for-the-badge) ![GitLab Last Commit](https://img.shields.io/gitlab/last-commit/dotnet-myth%2Fmyth?ref=develop&style=for-the-badge)
 
 [![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg?style=for-the-badge)](/README.pt-br.md) [![en](https://img.shields.io/badge/lang-en-red.svg?style=for-the-badge)](/README.md)
 

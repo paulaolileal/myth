@@ -1,3 +1,5 @@
+<img  style="float: right;" src="myth-testing-logo.png" alt="drawing" width="250"/>
+
 # Myth.Testing
 
 **Testing utilities, mocks, and base test classes for comprehensive unit and integration testing**

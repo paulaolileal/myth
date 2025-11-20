@@ -238,3 +238,5 @@ Coverage
 *.coverage.xml
 
 nul
+/my-project
+/test-myth

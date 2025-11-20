@@ -1,3 +1,5 @@
+<img  style="float: right;" src="myth-rest-logo.png" alt="drawing" width="250"/>
+
 # Myth.Rest
 
 [![NuGet Version](https://img.shields.io/nuget/v/Myth.Rest?style=for-the-badge&logo=nuget)](https://www.nuget.org/packages/Myth.Rest/) [![NuGet Version](https://img.shields.io/nuget/vpre/Myth.Rest?style=for-the-badge&logo=nuget&color=rgb(255%2C%20185%2C%200))](https://www.nuget.org/packages/Myth.Rest/absoluteLatest)

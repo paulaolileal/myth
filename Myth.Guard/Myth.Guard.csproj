@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<!-- Patform -->
@@ -10,13 +10,17 @@
 		<RootNamespace>Myth</RootNamespace>
 		<!-- Package -->
 		<PackageId>Myth.Guard</PackageId>
+		<Title>Myth Guard Validation Library</Title>
 		<Authors>Paula Leal</Authors>
-		<PackageIcon>Logo.jpg</PackageIcon>
+		<Company>Myth</Company>
+		<PackageIcon>myth-guard-logo.png</PackageIcon>
 		<Description>Fluent validation library with 100+ rules, context-aware validation, async service integration, and ASP.NET Core middleware. Supports nullable types, custom error messages, and comprehensive field validation.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageTags>dotnet;validation;fluent;guard;aspnetcore;middleware;rules;async;nullable;myth</PackageTags>
 		<!-- Docs -->
-		<RepositoryUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Guard</RepositoryUrl>
-		<PackageProjectUrl>https://gitlab.com/dotnet-myth/myth/-/tree/main/Myth.Guard</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Guard</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Guard</PackageProjectUrl>
+		<RepositoryType>git</RepositoryType>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	</PropertyGroup>
@@ -40,7 +44,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="..\Logo.jpg">
+		<None Include="myth-guard-logo.png">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
