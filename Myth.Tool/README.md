@@ -6,13 +6,14 @@ A modern CLI tool for generating Myth architecture code with CQRS, DDD, and Clea
 
 ## Features
 
+- **Project Setup**: Initialize Myth project structure from templates
 - **Domain Models**: Generate domain models with validation and value objects
 - **CQRS Commands**: Create commands with handlers and validation
 - **CQRS Queries**: Generate queries with handlers and DTOs
 - **CQRS Events**: Create domain events with handlers
-- **Repository Pattern**: Generate repositories and data access layer
+- **Repository Pattern**: Generate repositories with read/write separation
 - **API Controllers**: Create REST API controllers with CRUD operations
-- **Unit Tests**: Generate comprehensive test suites
+- **Unit Tests**: Generate comprehensive test suites with xUnit and FluentAssertions
 
 ## Installation
 
@@ -30,30 +31,30 @@ dotnet tool update -g Myth.Tool
 
 ## Quick Start
 
-Initialize a new Myth project:
+Setup a new Myth project:
 
 ```bash
-myth init
+myth setup MyProject --clean
 ```
 
 Create a domain model:
 
 ```bash
 myth create model WeatherForecast \
-  -p WeatherForecastId:Guid:get \
+  -p WeatherForecastId:Guid \
   -p Date:DateOnly \
   -p TemperatureF:int \
-  -p Summary:Summary:get \
+  -p Summary:string \
   --validate
 ```
 
-Create a command:
+Create a command with handler:
 
 ```bash
 myth create command WeatherForecast CreateWeatherForecast \
   -p Date:DateOnly \
   -p TemperatureF:int \
-  -p Summary:Summary \
+  -p Summary:string \
   --return Guid \
   --validate
 ```
@@ -62,54 +63,102 @@ myth create command WeatherForecast CreateWeatherForecast \
 
 ### Project Management
 
-- `myth init` - Initialize Myth project structure
-- `myth list templates` - List available templates
-- `myth list artifacts` - List generated artifacts
-- `myth validate` - Validate project structure
+- `myth setup <ProjectName> [--clean]` - Setup Myth project structure from template
+- `myth version` - Display version information
 
 ### Code Generation
 
-- `myth create model <name>` - Generate domain model
-- `myth create command <aggregate> <name>` - Generate CQRS command
-- `myth create query <aggregate> <name>` - Generate CQRS query
-- `myth create event <aggregate> <name>` - Generate domain event
-- `myth create dto <aggregate> <name>` - Generate DTO
-- `myth create repository <aggregate>` - Generate repository
-- `myth create controller <aggregate>` - Generate API controller
-- `myth create test <aggregate>` - Generate tests
+- `myth create model <name>` - Generate domain entity
+- `myth create command <aggregate> <name>` - Generate CQRS command with handler
+- `myth create query <aggregate> <name>` - Generate CQRS query with handler
+- `myth create event <aggregate> <name>` - Generate domain event with handler
+- `myth create dto <aggregate> <name>` - Generate data transfer object
+- `myth create repository <name>` - Generate repository interfaces and implementations
+- `myth create controller <name>` - Generate API controller with CRUD operations
+- `myth create test <controller>` - Generate unit tests for controllers
 
 ## Options
 
+### Global Options
 - `--dry-run` - Preview changes without creating files
 - `--force` - Overwrite existing files
 - `--path <path>` - Specify target directory
 - `--namespace <namespace>` - Custom namespace
-- `--verbose` - Detailed logging
+
+### Setup Options
+- `--clean` - Remove WeatherForecast examples and create clean base context
+
+### Create Options
+- `-p <property>` - Add property (format: Name:Type or Name:Type:required)
+- `--return <type>` - Specify return type for commands/queries
+- `--validate` - Enable validation support
+- `--events <events>` - Specify events to publish (comma-separated)
+- `--type <type>` - Repository type: read|write|readwrite (default: readwrite)
 
 ## Examples
 
-```bash
-# Create complete CRUD for an aggregate
-myth create model User -p Id:Guid -p Name:string -p Email:string --validate
-myth create command User CreateUser -p Name:string -p Email:string --return Guid
-myth create query User GetUser -p Id:Guid --return GetUserResponse
-myth create repository User
-myth create controller User --include-crud
+### Project Setup
 
-# Create with custom properties
-myth create model Order \
-  -p OrderId:Guid:get \
-  -p CustomerId:Guid \
-  -p OrderDate:DateTime \
-  -p Status:OrderStatus:get \
+```bash
+# Setup new project with clean structure
+myth setup OrderManagement --clean
+
+# Setup project keeping examples
+myth setup OrderManagement
+```
+
+### Complete CRUD Generation
+
+```bash
+# Generate domain model
+myth create model User \
+  -p Id:Guid \
+  -p Name:string:required \
+  -p Email:string:required \
+  -p CreatedAt:DateTime \
   --validate
 
-# Create with relationships
-myth create command Order CreateOrder \
-  -p CustomerId:Guid \
-  -p Items:"List<CreateOrderItemDto>" \
+# Generate command
+myth create command User CreateUser \
+  -p Name:string:required \
+  -p Email:string:required \
   --return Guid \
-  --event OrderCreated
+  --validate \
+  --events UserCreated
+
+# Generate query
+myth create query User GetUser \
+  -p Id:Guid:required \
+  --return GetUserResponse
+
+# Generate repository
+myth create repository User --type readwrite
+
+# Generate controller
+myth create controller User
+
+# Generate tests
+myth create test UserController
+```
+
+### Advanced Examples
+
+```bash
+# Create read-only repository
+myth create repository UserRead --type read
+
+# Create command with multiple events
+myth create command Order ProcessOrder \
+  -p OrderId:Guid:required \
+  -p Status:string:required \
+  --return bool \
+  --events OrderProcessed,OrderStatusChanged
+
+# Create DTO for complex data transfer
+myth create dto Order CreateOrderRequest \
+  -p CustomerId:Guid:required \
+  -p Items:"List<OrderItemDto>":required \
+  -p DeliveryDate:DateTime
 ```
 
 ## Project Structure
@@ -119,12 +168,66 @@ The tool generates code following Clean Architecture principles:
 ```
 YourProject/
 ├── 🏗️ YourProject.Api/                    # Web API Layer
+│   └── Controllers/                       # REST API Controllers
 ├── 🎯 YourProject.Domain/                 # Domain Layer
+│   ├── Entities/                          # Domain Models
+│   └── Events/                            # Domain Events
 ├── 🔄 YourProject.Application/            # Application Layer
+│   ├── Commands/                          # CQRS Commands
+│   ├── Queries/                           # CQRS Queries
+│   ├── Handlers/                          # Command/Query/Event Handlers
+│   └── DTOs/                              # Data Transfer Objects
 ├── 💾 YourProject.Data/                   # Data Access Layer
-├── 🌐 YourProject.ExternalData/           # External Integrations
+│   ├── Repositories/                      # Repository Implementations
+│   └── Context/                           # Entity Framework Context
 └── 🧪 YourProject.Test/                   # Test Projects
+    └── Controllers/                       # Unit Tests
 ```
+
+## Generated Code Features
+
+### Integration with Myth Framework
+
+Generated code uses:
+- **Myth.Flow** - Pipeline pattern for business logic orchestration
+- **Myth.Flow.Actions** - CQRS implementation (ICommand, IQuery, IEvent, IDispatcher)
+- **Myth.Guard** - Fluent validation (IValidatable, ValidationBuilder)
+- **Myth.Repository** - Repository pattern with read/write separation
+- **Myth.Commons** - Common extensions and utilities
+
+### Command Handlers
+- Implement `ICommandHandler<TCommand>` or `ICommandHandler<TCommand, TResponse>`
+- Support validation via Myth.Guard
+- Event publishing via IDispatcher
+- Pipeline integration for complex workflows
+
+### Query Handlers
+- Implement `IQueryHandler<TQuery, TResponse>`
+- Repository integration for data access
+- Support for caching and optimization
+
+### Domain Events
+- Implement `IEvent` interface
+- Event handlers implement `IEventHandler<TEvent>`
+- Async event processing support
+
+### Repositories
+- Support read/write separation
+- Generic repository pattern
+- Entity Framework Core integration
+- Unit of Work pattern
+
+### Controllers
+- Full CRUD operations
+- Async/await patterns
+- Proper HTTP status codes
+- Request/response DTOs
+
+### Tests
+- xUnit framework with FluentAssertions
+- In-memory database testing
+- Service mocking and dependency injection
+- Inherits from `BaseDatabaseTests<TContext>`
 
 ## Contributing
 
