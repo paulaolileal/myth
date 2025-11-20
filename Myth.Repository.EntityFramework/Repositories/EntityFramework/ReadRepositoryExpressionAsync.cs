@@ -48,12 +48,18 @@ public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity
 		if ( orderPredicate is not null )
 			query = query.OrderBy( orderPredicate );
 
-		var items = await query.ToListAsync( cancellationToken );
-
 		var totalItems = await _context
 			.Set<TEntity>( )
 			.Where( filterPredicate )
 			.CountAsync( cancellationToken );
+
+		if ( skip > 0 )
+			query = query.Skip( skip );
+
+		if ( take > 0 )
+			query = query.Take( take );
+
+		var items = await query.ToListAsync( cancellationToken );
 
 		return items.AsPaginated( totalItems, take, skip );
 	}

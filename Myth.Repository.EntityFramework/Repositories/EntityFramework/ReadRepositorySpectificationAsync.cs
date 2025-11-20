@@ -30,25 +30,25 @@ public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity
 	/// <param name="specification">Predicate based on specification</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>A paginated object with collection</returns>
-	public virtual async Task<IPaginated<TEntity>> SearchPaginatedAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) =>
-		await Task.Run( ( ) => {
-			var processedEntitySet = _context
-				.Set<TEntity>( )
-				.Where( specification );
+	public virtual async Task<IPaginated<TEntity>> SearchPaginatedAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) {
+		var baseQuery = _context
+			.Set<TEntity>( )
+			.AsQueryable( )
+			.Where( specification.Predicate );
 
-			var totalItems = processedEntitySet.Count( );
+		var totalItems = await baseQuery.CountAsync( cancellationToken );
 
-			processedEntitySet = specification.Sorted( processedEntitySet.AsQueryable( ) );
+		var processedQuery = specification.Sorted( baseQuery );
 
-			processedEntitySet = specification.Processed( processedEntitySet.AsQueryable( ) );
+		processedQuery = specification.Processed( processedQuery );
 
-			var items = processedEntitySet.ToList( );
+		var items = await processedQuery.ToListAsync( cancellationToken );
 
-			return items.AsPaginated(
-				totalItems,
-				specification.ItemsTaked,
-				specification.ItemsSkiped );
-		}, cancellationToken );
+		return items.AsPaginated(
+			totalItems,
+			specification.ItemsTaked,
+			specification.ItemsSkiped );
+	}
 
 	/// <summary>
 	/// Filter sequence of values based on specification predicate
