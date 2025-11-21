@@ -57,14 +57,15 @@ public class ReadSpecificationsRepositoryTests( DatabaseMock databaseMock ) : IC
 		var spec = SpecBuilder<Person>
 			.Create( )
 			.And( x => x.PersonId > 0 )
-			.Skip;
+			.Skip( 5 )
+			.Take( 10 );
 
 		// Act
-		var result = await _repository.SearchPaginatedAsync( x => x.PersonId > 0, 10, 20 );
+		var result = await _repository.SearchPaginatedAsync( spec );
 
 		// Assert
 		result.Should( ).NotBeNull( );
-		result.PageNumber.Should( ).Be( 3 );
+		result.PageNumber.Should( ).Be( 1 ); // (5/10)+1 = 1
 		result.PageSize.Should( ).Be( 10 );
 		result.Items.Should( ).HaveCount( 10 );
 	}
