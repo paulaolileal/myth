@@ -7,14 +7,9 @@ namespace Myth.Models;
 /// <summary>
 /// In-memory cache provider implementation
 /// </summary>
-internal sealed class MemoryCacheProvider : ICacheProvider {
-	private readonly IMemoryCache _cache;
-	private readonly ILogger<MemoryCacheProvider> _logger;
-
-	public MemoryCacheProvider( IMemoryCache cache, ILogger<MemoryCacheProvider> logger ) {
-		_cache = cache;
-		_logger = logger;
-	}
+internal sealed class MemoryCacheProvider( IMemoryCache cache, ILogger<MemoryCacheProvider> logger ) : ICacheProvider {
+	private readonly IMemoryCache _cache = cache;
+	private readonly ILogger<MemoryCacheProvider> _logger = logger;
 
 	/// <summary>
 	/// Retrieves a value from the memory cache

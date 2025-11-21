@@ -6,13 +6,9 @@ namespace Myth.Flow.Actions;
 /// <summary>
 /// Default event handler registry implementation
 /// </summary>
-internal sealed class EventHandlerRegistry : IEventHandlerRegistry {
-	private readonly IEventSubscriptionManager _subscriptionManager;
+internal sealed class EventHandlerRegistry( IEventSubscriptionManager subscriptionManager ) : IEventHandlerRegistry {
+	private readonly IEventSubscriptionManager _subscriptionManager = subscriptionManager;
 	private readonly ConcurrentDictionary<Type, ConcurrentBag<Type>> _registrations = new( );
-
-	public EventHandlerRegistry( IEventSubscriptionManager subscriptionManager ) {
-		_subscriptionManager = subscriptionManager;
-	}
 
 	/// <summary>
 	/// Registers an event handler for a specific event type

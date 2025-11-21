@@ -7,15 +7,10 @@ namespace Myth.Flow.Resilience;
 /// <summary>
 /// Dead letter queue for failed messages
 /// </summary>
-public sealed class DeadLetterQueue {
+public sealed class DeadLetterQueue( ILogger<DeadLetterQueue> logger, int maxSize = 10000 ) {
 	private readonly ConcurrentQueue<DeadLetterMessage> _queue = new( );
-	private readonly ILogger<DeadLetterQueue> _logger;
-	private readonly int _maxSize;
-
-	public DeadLetterQueue( ILogger<DeadLetterQueue> logger, int maxSize = 10000 ) {
-		_logger = logger;
-		_maxSize = maxSize;
-	}
+	private readonly ILogger<DeadLetterQueue> _logger = logger;
+	private readonly int _maxSize = maxSize;
 
 	/// <summary>
 	/// Adds a failed message to the dead letter queue

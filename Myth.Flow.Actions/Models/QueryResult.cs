@@ -1,7 +1,7 @@
 namespace Myth.Models;
 
 /// <summary>
-/// Represents query execution result
+/// Represents query execution result with HTTP cache metadata
 /// </summary>
 /// <typeparam name="TData">Data type</typeparam>
 public readonly struct QueryResult<TData> {
@@ -36,13 +36,19 @@ public readonly struct QueryResult<TData> {
 	/// </summary>
 	public Dictionary<string, object>? Metadata { get; }
 
-	private QueryResult( bool isSuccess, TData? data, string? errorMessage, Exception? exception, bool fromCache, Dictionary<string, object>? metadata ) {
+	/// <summary>
+	/// HTTP cache metadata for header generation
+	/// </summary>
+	public CacheMetadata? CacheMetadata { get; }
+
+	private QueryResult( bool isSuccess, TData? data, string? errorMessage, Exception? exception, bool fromCache, Dictionary<string, object>? metadata, CacheMetadata? cacheMetadata ) {
 		IsSuccess = isSuccess;
 		Data = data;
 		ErrorMessage = errorMessage;
 		Exception = exception;
 		FromCache = fromCache;
 		Metadata = metadata;
+		CacheMetadata = cacheMetadata;
 	}
 
 	/// <summary>
@@ -51,9 +57,10 @@ public readonly struct QueryResult<TData> {
 	/// <param name="data">The data returned by the query</param>
 	/// <param name="fromCache">Indicates if the data was retrieved from cache</param>
 	/// <param name="metadata">Optional metadata to include with the result</param>
+	/// <param name="cacheMetadata">Optional cache metadata for HTTP headers</param>
 	/// <returns>A successful QueryResult with data</returns>
-	public static QueryResult<TData> Success( TData data, bool fromCache = false, Dictionary<string, object>? metadata = null ) =>
-		new( true, data, null, null, fromCache, metadata );
+	public static QueryResult<TData> Success( TData data, bool fromCache = false, Dictionary<string, object>? metadata = null, CacheMetadata? cacheMetadata = null ) =>
+		new( true, data, null, null, fromCache, metadata, cacheMetadata );
 
 	/// <summary>
 	/// Creates a failed query result
@@ -63,7 +70,7 @@ public readonly struct QueryResult<TData> {
 	/// <param name="metadata">Optional metadata to include with the result</param>
 	/// <returns>A failed QueryResult</returns>
 	public static QueryResult<TData> Failure( string errorMessage, Exception? exception = null, Dictionary<string, object>? metadata = null ) =>
-		new( false, default, errorMessage, exception, false, metadata );
+		new( false, default, errorMessage, exception, false, metadata, null );
 
 	/// <summary>
 	/// Indicates whether the query execution failed

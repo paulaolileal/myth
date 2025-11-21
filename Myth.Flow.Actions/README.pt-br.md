@@ -198,6 +198,29 @@ public async Task<UserDto?> GetUserAsync( Guid userId ) {
 }
 ```
 
+#### Cache Controlado pelo Usuário via Headers HTTP
+
+```csharp
+[HttpGet( "{userId}" )]
+public async Task<IActionResult> GetUser(
+    Guid userId,
+    [FromHeader( Name = "Cache-Control" )] CacheDirective? cacheDirective ) {
+
+    var query = new GetUserQuery { UserId = userId };
+
+    var result = await _dispatcher.DispatchQueryAsync<GetUserQuery, UserDto>(
+        query,
+        cacheOptions: null );
+
+    if ( result.IsSuccess )
+        return Ok( result.Data ); // Headers aplicados automaticamente pelo Dispatcher
+
+    return NotFound( );
+}
+```
+
+> **Nota**: Headers HTTP de cache são aplicados automaticamente quando metadados de cache estão presentes - nenhuma configuração adicional necessária!
+
 #### Publicação de Evento
 
 ```csharp
@@ -309,6 +332,99 @@ services.AddFlow( config => config
         })
         .ScanAssemblies( typeof( Program ).Assembly )));
 ```
+
+### Integração com Cache-Control HTTP
+
+O Myth.Flow.Actions fornece integração perfeita com headers HTTP Cache-Control usando constantes type-safe do Myth.Commons.
+
+#### Diretivas de Cache Integradas
+
+```csharp
+using Myth.ValueObjects;
+
+// Diretivas de cache disponíveis (constantes type-safe)
+CacheDirective.NoCache       // diretiva no-cache
+CacheDirective.NoStore       // diretiva no-store
+CacheDirective.Public        // diretiva public
+CacheDirective.Private       // diretiva private
+CacheDirective.MustRevalidate // diretiva must-revalidate
+CacheDirective.MaxAge        // diretiva max-age
+CacheDirective.SMaxAge       // diretiva s-maxage
+```
+
+#### Cache Controlado pelo Usuário em Controllers
+
+Permita que usuários controlem o cache via headers HTTP usando binding do atributo `[FromHeader]`:
+
+```csharp
+[HttpGet( "{id}" )]
+public async Task<IActionResult> GetProduct(
+    Guid id,
+    [FromHeader( Name = "Cache-Control" )] CacheDirective? cacheDirective ) {
+
+    var query = new GetProductQuery { ProductId = id };
+
+    var result = await _dispatcher.DispatchQueryAsync<GetProductQuery, ProductDto>(
+        query,
+        cacheOptions: null );
+
+    if ( result.IsSuccess )
+        return Ok( result.Data ); // Headers aplicados automaticamente pelo Dispatcher
+
+    return NotFound( );
+}
+```
+
+#### Configuração Fluente de Cache
+
+Configure o comportamento do cache usando a API fluente `.UseCache()`:
+
+```csharp
+.Query<GetProductQuery, ProductDto>( ( query, cache ) => cache
+    .UseCache( cacheDirective ) // Usa diretiva fornecida pelo usuário
+    .WithKey( $"produto:{query.ProductId}" )
+    .WithTtl( TimeSpan.FromMinutes( 15 ))
+    .WithETag( product => $"\"{product.Id}-{product.UpdatedAt.Ticks}\"" )
+    .WithVary( "Accept-Language", "User-Agent" ))
+```
+
+#### Métodos de Política de Cache
+
+Use métodos integrados de política de cache para cenários comuns:
+
+```csharp
+// Cache público com max-age
+.UseCache( cache => cache.Public( TimeSpan.FromMinutes( 30 )))
+
+// Cache privado com max-age
+.UseCache( cache => cache.Private( TimeSpan.FromMinutes( 10 )))
+
+// Desabilitar cache
+.UseCache( cache => cache.NoCache( ))
+
+// Cache imutável para conteúdo estático
+.UseCache( cache => cache.Immutable( TimeSpan.FromDays( 365 )))
+```
+
+#### Aplicação Automática de Headers HTTP
+
+Headers HTTP de cache são automaticamente aplicados quando metadados de cache estão presentes:
+
+```csharp
+// Headers automaticamente adicionados à resposta:
+// Cache-Control: public, max-age=1800
+// ETag: "12345-637891234567890"
+// Expires: Thu, 01 Jan 2025 12:30:00 GMT
+// Vary: Accept-Language, User-Agent
+// Age: 45
+
+var result = await _dispatcher.DispatchQueryAsync<GetUserQuery, UserDto>( query );
+if ( result.IsSuccess ) {
+    return Ok( result.Data ); // Headers aplicados automaticamente pelo Dispatcher
+}
+```
+
+> **Importante**: Headers HTTP de cache são aplicados automaticamente pelo Dispatcher quando metadados de cache estão presentes. Não é necessária aplicação manual de headers nos controllers.
 
 ## Interfaces Principais
 

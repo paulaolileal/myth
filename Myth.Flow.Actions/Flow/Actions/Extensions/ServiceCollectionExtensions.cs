@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -92,18 +93,22 @@ public static class ServiceCollectionExtensions {
 	/// <param name="services">The service collection</param>
 	/// <param name="configuration">The Flow.Actions configuration</param>
 	private static void RegisterCore( IServiceCollection services, FlowActionsConfiguration configuration ) {
+		// Register HttpContextAccessor for automatic header application
+		services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>( );
+
 		services.TryAddSingleton<IDispatcher>( sp => {
 			var eventBus = sp.GetRequiredService<IEventBus>( );
 			var logger = sp.GetRequiredService<ILogger<Dispatcher>>( );
 			var cacheProvider = sp.GetService<ICacheProvider>( );
 			var pipelineConfiguration = sp.GetRequiredService<Myth.Models.PipelineConfiguration>( );
+			var httpContextAccessor = sp.GetService<IHttpContextAccessor>( );
 
 			// Use Flow's ActivitySource if available and telemetry is enabled, otherwise create Actions specific one
 			var activitySource = pipelineConfiguration.EnableTelemetry
 				? ( sp.GetService<ActivitySource>( ) ?? new ActivitySource( "Myth.Flow.Actions" ) )
 				: new ActivitySource( "Myth.Flow.Actions" ); // Inactive source
 
-			return new Dispatcher( eventBus, logger, activitySource, cacheProvider, pipelineConfiguration );
+			return new Dispatcher( eventBus, logger, activitySource, cacheProvider, pipelineConfiguration, httpContextAccessor );
 		} );
 
 		services.TryAddSingleton<IEventBus, EventBus>( );

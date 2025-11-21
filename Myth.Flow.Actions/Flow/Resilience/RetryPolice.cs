@@ -5,18 +5,11 @@ namespace Myth.Flow.Resilience;
 /// <summary>
 /// Retry policy for failed operations
 /// </summary>
-public sealed class RetryPolicy {
-	private readonly int _maxAttempts;
-	private readonly int _baseBackoffMs;
-	private readonly bool _exponentialBackoff;
-	private readonly ILogger? _logger;
-
-	public RetryPolicy( int maxAttempts, int baseBackoffMs, bool exponentialBackoff, ILogger? logger = null ) {
-		_maxAttempts = maxAttempts;
-		_baseBackoffMs = baseBackoffMs;
-		_exponentialBackoff = exponentialBackoff;
-		_logger = logger;
-	}
+public sealed class RetryPolicy( int maxAttempts, int baseBackoffMs, bool exponentialBackoff, ILogger? logger = null ) {
+	private readonly int _maxAttempts = maxAttempts;
+	private readonly int _baseBackoffMs = baseBackoffMs;
+	private readonly bool _exponentialBackoff = exponentialBackoff;
+	private readonly ILogger? _logger = logger;
 
 	/// <summary>
 	/// Executes an operation with retry logic based on the configured policy

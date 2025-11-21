@@ -5,21 +5,15 @@ namespace Myth.Flow.Resilience;
 /// <summary>
 /// Circuit breaker policy for protecting resources
 /// </summary>
-public sealed class CircuitBreakerPolicy {
-	private readonly int _failureThreshold;
-	private readonly TimeSpan _openDuration;
-	private readonly ILogger? _logger;
+public sealed class CircuitBreakerPolicy( int failureThreshold, TimeSpan openDuration, ILogger? logger = null ) {
+	private readonly int _failureThreshold = failureThreshold;
+	private readonly TimeSpan _openDuration = openDuration;
+	private readonly ILogger? _logger = logger;
 
 	private int _failureCount;
 	private DateTimeOffset _lastFailureTime;
 	private CircuitState _state = CircuitState.Closed;
 	private readonly object _lock = new( );
-
-	public CircuitBreakerPolicy( int failureThreshold, TimeSpan openDuration, ILogger? logger = null ) {
-		_failureThreshold = failureThreshold;
-		_openDuration = openDuration;
-		_logger = logger;
-	}
 
 	/// <summary>
 	/// Executes an operation with circuit breaker protection

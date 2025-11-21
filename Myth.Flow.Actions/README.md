@@ -198,6 +198,29 @@ public async Task<UserDto?> GetUserAsync( Guid userId ) {
 }
 ```
 
+#### User-Controlled Caching via HTTP Headers
+
+```csharp
+[HttpGet( "{userId}" )]
+public async Task<IActionResult> GetUser(
+    Guid userId,
+    [FromHeader( Name = "Cache-Control" )] CacheDirective? cacheDirective ) {
+
+    var query = new GetUserQuery { UserId = userId };
+
+    var result = await _dispatcher.DispatchQueryAsync<GetUserQuery, UserDto>(
+        query,
+        cacheOptions: null );
+
+    if ( result.IsSuccess )
+        return Ok( result.Data ); // Headers applied automatically by Dispatcher
+
+    return NotFound( );
+}
+```
+
+> **Note**: HTTP cache headers are automatically applied when cache metadata is present - no additional configuration required!
+
 #### Event Publishing
 
 ```csharp
@@ -309,6 +332,99 @@ services.AddFlow( config => config
         })
         .ScanAssemblies( typeof( Program ).Assembly )));
 ```
+
+### HTTP Cache-Control Integration
+
+Myth.Flow.Actions provides seamless integration with HTTP Cache-Control headers using type-safe constants from Myth.Commons.
+
+#### Built-in Cache Directives
+
+```csharp
+using Myth.ValueObjects;
+
+// Available cache directives (type-safe constants)
+CacheDirective.NoCache       // no-cache directive
+CacheDirective.NoStore       // no-store directive
+CacheDirective.Public        // public directive
+CacheDirective.Private       // private directive
+CacheDirective.MustRevalidate // must-revalidate directive
+CacheDirective.MaxAge        // max-age directive
+CacheDirective.SMaxAge       // s-maxage directive
+```
+
+#### User-Controlled Caching in Controllers
+
+Enable users to control caching via HTTP headers using `[FromHeader]` attribute binding:
+
+```csharp
+[HttpGet( "{id}" )]
+public async Task<IActionResult> GetProduct(
+    Guid id,
+    [FromHeader( Name = "Cache-Control" )] CacheDirective? cacheDirective ) {
+
+    var query = new GetProductQuery { ProductId = id };
+
+    var result = await _dispatcher.DispatchQueryAsync<GetProductQuery, ProductDto>(
+        query,
+        cacheOptions: null );
+
+    if ( result.IsSuccess )
+        return Ok( result.Data ); // Headers applied automatically by Dispatcher
+
+    return NotFound( );
+}
+```
+
+#### Fluent Cache Configuration
+
+Configure cache behavior using the fluent `.UseCache()` API:
+
+```csharp
+.Query<GetProductQuery, ProductDto>( ( query, cache ) => cache
+    .UseCache( cacheDirective ) // Use user-provided directive
+    .WithKey( $"product:{query.ProductId}" )
+    .WithTtl( TimeSpan.FromMinutes( 15 ))
+    .WithETag( product => $"\"{product.Id}-{product.UpdatedAt.Ticks}\"" )
+    .WithVary( "Accept-Language", "User-Agent" ))
+```
+
+#### Cache Policy Methods
+
+Use built-in cache policy methods for common scenarios:
+
+```csharp
+// Public cache with max-age
+.UseCache( cache => cache.Public( TimeSpan.FromMinutes( 30 )))
+
+// Private cache with max-age
+.UseCache( cache => cache.Private( TimeSpan.FromMinutes( 10 )))
+
+// Disable caching
+.UseCache( cache => cache.NoCache( ))
+
+// Immutable cache for static content
+.UseCache( cache => cache.Immutable( TimeSpan.FromDays( 365 )))
+```
+
+#### Automatic HTTP Header Application
+
+HTTP cache headers are automatically applied when cache metadata is present:
+
+```csharp
+// Headers automatically added to response:
+// Cache-Control: public, max-age=1800
+// ETag: "12345-637891234567890"
+// Expires: Thu, 01 Jan 2025 12:30:00 GMT
+// Vary: Accept-Language, User-Agent
+// Age: 45
+
+var result = await _dispatcher.DispatchQueryAsync<GetUserQuery, UserDto>( query );
+if ( result.IsSuccess ) {
+    return Ok( result.Data ); // Headers applied automatically by Dispatcher
+}
+```
+
+> **Important**: HTTP cache headers are applied automatically by the Dispatcher when cache metadata is present. No manual header application is needed in controllers.
 
 ## Core Interfaces
 
