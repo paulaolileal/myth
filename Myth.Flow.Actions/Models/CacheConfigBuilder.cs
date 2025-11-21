@@ -1,6 +1,6 @@
 using Myth.Extensions;
+using Myth.Flow.Actions.ValueObjects;
 using Myth.Interfaces;
-using Myth.ValueObjects;
 
 namespace Myth.Models;
 
@@ -104,16 +104,21 @@ internal class CacheConfigBuilder : ICacheConfig {
 	/// <summary>
 	/// Enables caching based on user-provided Cache-Control directive
 	/// </summary>
-	/// <param name="directive">Cache directive from user request header</param>
+	/// <param name="cacheControl">Cache control from user request header</param>
 	/// <returns>Cache configuration builder for method chaining</returns>
-	public ICacheConfig UseCache( CacheDirective directive ) {
-		if ( directive == null ) {
+	public ICacheConfig UseCache( CacheControl cacheControl ) {
+		if ( cacheControl == null || !cacheControl.IsValid ) {
 			Enabled = false;
 			return this;
 		}
 
-		// Convert the user's directive to cache configuration
-		var userOptions = directive.ToCacheOptions( );
+		// Convert the user's cache control to cache configuration
+		var userOptions = cacheControl.ToCacheOptions( );
+
+		if ( userOptions == null ) {
+			Enabled = false;
+			return this;
+		}
 
 		Enabled = userOptions.Enabled;
 		Policy = userOptions.Policy;

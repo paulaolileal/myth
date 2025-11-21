@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Myth.Flow.Actions.ValueObjects;
 using Myth.Interfaces;
 using Myth.Models;
 using Myth.ValueObjects;
@@ -78,8 +79,8 @@ public class CacheHttpHeadersTests {
 		// Arrange
 		var builder = new CacheConfigBuilder( );
 		var customPolicy = new CachePolicy( )
-			.Add( CacheDirective.Private )
-			.Add( CacheDirective.MustRevalidate )
+			.Add( CacheControl.Private )
+			.Add( CacheControl.MustRevalidate )
 			.WithMaxAge( TimeSpan.FromMinutes( 10 ) );
 
 		// Act

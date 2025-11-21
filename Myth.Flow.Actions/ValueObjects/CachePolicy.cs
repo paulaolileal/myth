@@ -1,18 +1,18 @@
 using Myth.Extensions;
 
-namespace Myth.ValueObjects;
+namespace Myth.Flow.Actions.ValueObjects;
 
 /// <summary>
 /// Represents a complete HTTP cache policy with multiple directives.
 /// Provides simple factory methods for common caching scenarios.
 /// </summary>
 public class CachePolicy {
-	private readonly List<CacheDirective> _directives = new( );
+	private readonly List<CacheControl> _directives = new( );
 
 	/// <summary>
 	/// All cache directives in this policy
 	/// </summary>
-	public IReadOnlyList<CacheDirective> Directives => _directives.AsReadOnly( );
+	public IReadOnlyList<CacheControl> Directives => _directives.AsReadOnly( );
 
 	/// <summary>
 	/// The max-age value if specified
@@ -37,7 +37,7 @@ public class CachePolicy {
 	/// <summary>
 	/// Adds a directive to this policy
 	/// </summary>
-	public CachePolicy Add( CacheDirective directive ) {
+	public CachePolicy Add( CacheControl directive ) {
 		if ( directive == null )
 			throw new ArgumentNullException( nameof( directive ) );
 
@@ -59,7 +59,8 @@ public class CachePolicy {
 	/// </summary>
 	public CachePolicy WithMaxAge( TimeSpan duration ) {
 		MaxAge = duration;
-		_directives.Add( CacheDirective.MaxAge( duration ) );
+		var maxAgeValue = $"max-age={( int )duration.TotalSeconds}";
+		_directives.Add( new CacheControl( "max-age", maxAgeValue ) );
 		return this;
 	}
 
@@ -73,26 +74,26 @@ public class CachePolicy {
 	/// <summary>
 	/// Policy that disables all caching
 	/// </summary>
-	public static CachePolicy NoCache => new CachePolicy( ).Add( CacheDirective.NoCache );
+	public static CachePolicy NoCache => new CachePolicy( ).Add( CacheControl.NoCache );
 
 	/// <summary>
 	/// Policy that prevents storing in any cache
 	/// </summary>
-	public static CachePolicy NoStore => new CachePolicy( ).Add( CacheDirective.NoStore );
+	public static CachePolicy NoStore => new CachePolicy( ).Add( CacheControl.NoStore );
 
 	/// <summary>
 	/// Public cache for the specified duration
 	/// Usage: CachePolicy.Public( TimeSpan.FromMinutes( 15 ) )
 	/// </summary>
 	public static CachePolicy Public( TimeSpan duration ) =>
-		new CachePolicy( ).Add( CacheDirective.Public ).WithMaxAge( duration );
+		new CachePolicy( ).Add( CacheControl.Public ).WithMaxAge( duration );
 
 	/// <summary>
 	/// Private cache for the specified duration
 	/// Usage: CachePolicy.Private( TimeSpan.FromMinutes( 5 ) )
 	/// </summary>
 	public static CachePolicy Private( TimeSpan duration ) =>
-		new CachePolicy( ).Add( CacheDirective.Private ).WithMaxAge( duration );
+		new CachePolicy( ).Add( CacheControl.Private ).WithMaxAge( duration );
 
 	/// <summary>
 	/// Immutable public cache for long-term storage
@@ -100,8 +101,8 @@ public class CachePolicy {
 	/// </summary>
 	public static CachePolicy Immutable( TimeSpan duration ) =>
 		new CachePolicy( )
-			.Add( CacheDirective.Public )
-			.Add( CacheDirective.Immutable )
+			.Add( CacheControl.Public )
+			.Add( CacheControl.Immutable )
 			.WithMaxAge( duration );
 
 	public override string ToString( ) => ToHeaderValue( );

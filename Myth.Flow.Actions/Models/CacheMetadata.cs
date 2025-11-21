@@ -1,4 +1,4 @@
-using Myth.ValueObjects;
+using Myth.Flow.Actions.ValueObjects;
 
 namespace Myth.Models;
 

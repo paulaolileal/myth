@@ -204,7 +204,7 @@ public async Task<UserDto?> GetUserAsync( Guid userId ) {
 [HttpGet( "{userId}" )]
 public async Task<IActionResult> GetUser(
     Guid userId,
-    [FromHeader( Name = "Cache-Control" )] CacheDirective? cacheDirective ) {
+    [FromHeader] CacheControl? cacheControl ) {
 
     var query = new GetUserQuery { UserId = userId };
 
@@ -343,13 +343,13 @@ Myth.Flow.Actions provides seamless integration with HTTP Cache-Control headers 
 using Myth.ValueObjects;
 
 // Available cache directives (type-safe constants)
-CacheDirective.NoCache       // no-cache directive
-CacheDirective.NoStore       // no-store directive
-CacheDirective.Public        // public directive
-CacheDirective.Private       // private directive
-CacheDirective.MustRevalidate // must-revalidate directive
-CacheDirective.MaxAge        // max-age directive
-CacheDirective.SMaxAge       // s-maxage directive
+CacheControl.NoCache       // no-cache directive
+CacheControl.NoStore       // no-store directive
+CacheControl.Public        // public directive
+CacheControl.Private       // private directive
+CacheControl.MustRevalidate // must-revalidate directive
+CacheControl.MaxAge        // max-age directive
+CacheControl.SMaxAge       // s-maxage directive
 ```
 
 #### User-Controlled Caching in Controllers
@@ -360,13 +360,13 @@ Enable users to control caching via HTTP headers using `[FromHeader]` attribute 
 [HttpGet( "{id}" )]
 public async Task<IActionResult> GetProduct(
     Guid id,
-    [FromHeader( Name = "Cache-Control" )] CacheDirective? cacheDirective ) {
+    [FromHeader] CacheControl? cacheControl ) {
 
     var query = new GetProductQuery { ProductId = id };
 
     var result = await _dispatcher.DispatchQueryAsync<GetProductQuery, ProductDto>(
         query,
-        cacheOptions: null );
+        cacheOptions: cacheControl?.ToCacheOptions( ) );
 
     if ( result.IsSuccess )
         return Ok( result.Data ); // Headers applied automatically by Dispatcher
@@ -381,7 +381,7 @@ Configure cache behavior using the fluent `.UseCache()` API:
 
 ```csharp
 .Query<GetProductQuery, ProductDto>( ( query, cache ) => cache
-    .UseCache( cacheDirective ) // Use user-provided directive
+    .UseCache( cacheControl ) // Use user-provided cache control
     .WithKey( $"product:{query.ProductId}" )
     .WithTtl( TimeSpan.FromMinutes( 15 ))
     .WithETag( product => $"\"{product.Id}-{product.UpdatedAt.Ticks}\"" )

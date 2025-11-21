@@ -1,6 +1,6 @@
 using FluentAssertions;
+using Myth.Flow.Actions.ValueObjects;
 using Myth.Models;
-using Myth.ValueObjects;
 using Xunit;
 
 namespace Myth.Flow.Actions.Test;

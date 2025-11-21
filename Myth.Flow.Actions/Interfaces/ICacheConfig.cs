@@ -1,4 +1,4 @@
-using Myth.ValueObjects;
+using Myth.Flow.Actions.ValueObjects;
 
 namespace Myth.Interfaces;
 
@@ -40,11 +40,11 @@ public interface ICacheConfig {
 
 	/// <summary>
 	/// Enables caching based on user-provided Cache-Control directive
-	/// Usage: .UseCache(cacheDirective) where cacheDirective comes from [FromHeader("Cache-Control")]
+	/// Usage: .UseCache(cacheControl) where cacheControl comes from [FromHeader] CacheControl
 	/// </summary>
-	/// <param name="directive">Cache directive from user request header</param>
+	/// <param name="cacheControl">Cache control from user request header</param>
 	/// <returns>Cache configuration builder for method chaining</returns>
-	ICacheConfig UseCache( CacheDirective directive );
+	ICacheConfig UseCache( CacheControl cacheControl );
 
 	/// <summary>
 	/// Sets the cache key for the query result

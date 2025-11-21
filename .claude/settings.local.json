@@ -12,7 +12,9 @@
       "Bash(dir:*)",
       "Bash(cat:*)",
       "Bash(xargs:*)",
-      "Bash(dotnet run:*)"
+      "Bash(dotnet run:*)",
+      "Bash(move \"C:\\Users\\p-lea\\source\\repos\\myth\\Myth.Commons\\ValueObjects\\CacheControl.cs\" \"C:\\Users\\p-lea\\source\\repos\\myth\\Myth.Flow.Actions\\ValueObjects\\CacheControl.cs\")",
+      "Bash(move:*)"
     ],
     "deny": [],
     "ask": []
