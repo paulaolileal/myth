@@ -135,7 +135,8 @@ public class SchemaRegistry {
 		}
 
 		// First try to find a direct builder for the original types
-		if ( !TryGetBuilder( actualSourceType, destinationType, out var builderObj ) ) {
+		if ( !TryGetBuilder( actualSourceType, destinationType, out _ ) ) {
+			object? builderObj;
 			// If not found, try with the concrete type
 			if ( !TryGetBuilder( actualSourceType, concreteDestinationType, out builderObj ) ) {
 				// Try to register dynamically
@@ -146,8 +147,8 @@ public class SchemaRegistry {
 				}
 
 				// Try again after registering
-				if ( !TryGetBuilder( actualSourceType, destinationType, out builderObj ) &&
-					!TryGetBuilder( actualSourceType, concreteDestinationType, out builderObj ) ) {
+				if ( !TryGetBuilder( actualSourceType, destinationType, out _ ) &&
+					!TryGetBuilder( actualSourceType, concreteDestinationType, out _ ) ) {
 					var errorMessage = $"No mapping registered from {actualSourceType} to {destinationType}";
 					_logger?.LogError( errorMessage );
 					throw new BinderNotFoundException( errorMessage );

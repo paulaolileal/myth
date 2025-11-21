@@ -6,11 +6,7 @@ namespace Myth.Rules.Dates;
 /// <summary>
 /// DateOnly rule configurator
 /// </summary>
-public sealed class DateOnlyRules : RuleConfigurator<DateOnly>, IDateOnlyRules {
-
-	public DateOnlyRules( FieldRuleBuilder<DateOnly> builder ) : base( builder ) {
-	}
-
+public sealed class DateOnlyRules( FieldRuleBuilder<DateOnly> builder ) : RuleConfigurator<DateOnly>( builder ), IDateOnlyRules {
 	public FieldRuleBuilder<DateOnly> After( DateOnly date ) {
 		Builder.AddRule( new AfterDateOnlyRule( date ) );
 		return Builder;

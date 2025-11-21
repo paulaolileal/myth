@@ -3,12 +3,8 @@ using Myth.Rules.Base;
 
 namespace Myth.Rules.DateTimes;
 
-internal sealed class AfterDateRule : ValidationRuleBase<DateTime> {
-	private readonly DateTime _date;
-
-	public AfterDateRule( DateTime date ) {
-		_date = date;
-	}
+internal sealed class AfterDateRule( DateTime date ) : ValidationRuleBase<DateTime> {
+	private readonly DateTime _date = date;
 
 	protected override Task<bool> EvaluateAsync( RuleContext<DateTime> context ) {
 		return Task.FromResult( context.Value > _date );

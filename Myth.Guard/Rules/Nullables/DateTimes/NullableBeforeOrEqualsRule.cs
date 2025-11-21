@@ -7,16 +7,12 @@ namespace Myth.Guard.Rules.Nullables.DateTimes;
 /// Validation rule that checks if a nullable DateTime value is before or equal to a specified date/time
 /// If the value is null, the validation passes
 /// </summary>
-internal sealed class NullableBeforeOrEqualsRule : ValidationRuleBase<DateTime?> {
-	private readonly DateTime _compareDate;
-
-	/// <summary>
-	/// Initializes a new instance of the NullableBeforeOrEqualsRule class
-	/// </summary>
-	/// <param name="compareDate">The date/time to compare against</param>
-	public NullableBeforeOrEqualsRule( DateTime compareDate ) {
-		_compareDate = compareDate;
-	}
+/// <remarks>
+/// Initializes a new instance of the NullableBeforeOrEqualsRule class
+/// </remarks>
+/// <param name="compareDate">The date/time to compare against</param>
+internal sealed class NullableBeforeOrEqualsRule( DateTime compareDate ) : ValidationRuleBase<DateTime?> {
+	private readonly DateTime _compareDate = compareDate;
 
 	/// <summary>
 	/// Evaluates whether the nullable DateTime value is before or equal to the specified date/time

@@ -6,11 +6,7 @@ namespace Myth.Rules.Collections;
 /// <summary>
 /// Collection rule configurator
 /// </summary>
-public sealed class CollectionRules<T> : RuleConfigurator<IEnumerable<T>>, ICollectionRules<T> {
-
-	public CollectionRules( FieldRuleBuilder<IEnumerable<T>> builder ) : base( builder ) {
-	}
-
+public sealed class CollectionRules<T>( FieldRuleBuilder<IEnumerable<T>> builder ) : RuleConfigurator<IEnumerable<T>>( builder ), ICollectionRules<T> {
 	public FieldRuleBuilder<IEnumerable<T>> NotEmpty( ) {
 		Builder.AddRule( new NotEmptyCollectionRule<T>( ) );
 		return Builder;

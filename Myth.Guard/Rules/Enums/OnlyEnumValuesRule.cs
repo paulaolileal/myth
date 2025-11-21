@@ -3,12 +3,8 @@ using Myth.Rules.Base;
 
 namespace Myth.Rules.Enums;
 
-internal sealed class OnlyEnumValuesRule<T> : ValidationRuleBase<T> where T : struct, Enum {
-	private readonly T[ ] _allowedValues;
-
-	public OnlyEnumValuesRule( T[ ] allowedValues ) {
-		_allowedValues = allowedValues;
-	}
+internal sealed class OnlyEnumValuesRule<T>( T[ ] allowedValues ) : ValidationRuleBase<T> where T : struct, Enum {
+	private readonly T[ ] _allowedValues = allowedValues;
 
 	protected override Task<bool> EvaluateAsync( RuleContext<T> context ) {
 		return Task.FromResult( _allowedValues.Contains( context.Value ) );

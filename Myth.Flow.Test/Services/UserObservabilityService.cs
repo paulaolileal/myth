@@ -2,16 +2,11 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Myth.Flow.Test.Contexts;
 
-public class UserObservabilityService {
-	private readonly ILogger<UserObservabilityService> _logger;
-	private readonly IUserMetrics _metrics;
-
-	public UserObservabilityService(
-		ILogger<UserObservabilityService> logger,
-		IUserMetrics metrics ) {
-		_logger = logger;
-		_metrics = metrics;
-	}
+public class UserObservabilityService(
+	ILogger<UserObservabilityService> logger,
+	IUserMetrics metrics ) {
+	private readonly ILogger<UserObservabilityService> _logger = logger;
+	private readonly IUserMetrics _metrics = metrics;
 
 	public Task ObserveUserCreationAsync( CreateUserContext context ) {
 		if ( context.CreatedUser != null ) {

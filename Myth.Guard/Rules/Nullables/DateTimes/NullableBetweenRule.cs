@@ -7,19 +7,14 @@ namespace Myth.Guard.Rules.Nullables.DateTimes;
 /// Validation rule that checks if a nullable DateTime value is between two specified dates/times
 /// If the value is null, the validation passes
 /// </summary>
-internal sealed class NullableBetweenRule : ValidationRuleBase<DateTime?> {
-	private readonly DateTime _start;
-	private readonly DateTime _end;
-
-	/// <summary>
-	/// Initializes a new instance of the NullableBetweenRule class
-	/// </summary>
-	/// <param name="start">The start of the range (inclusive)</param>
-	/// <param name="end">The end of the range (inclusive)</param>
-	public NullableBetweenRule( DateTime start, DateTime end ) {
-		_start = start;
-		_end = end;
-	}
+/// <remarks>
+/// Initializes a new instance of the NullableBetweenRule class
+/// </remarks>
+/// <param name="start">The start of the range (inclusive)</param>
+/// <param name="end">The end of the range (inclusive)</param>
+internal sealed class NullableBetweenRule( DateTime start, DateTime end ) : ValidationRuleBase<DateTime?> {
+	private readonly DateTime _start = start;
+	private readonly DateTime _end = end;
 
 	/// <summary>
 	/// Evaluates whether the nullable DateTime value is between the specified range

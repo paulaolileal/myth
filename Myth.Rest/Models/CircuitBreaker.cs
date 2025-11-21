@@ -5,28 +5,22 @@ namespace Myth.Models;
 /// <summary>
 /// Circuit breaker implementation
 /// </summary>
-public class CircuitBreaker : ICircuitBreaker {
-	private readonly int _failureThreshold;
-	private readonly TimeSpan _timeout;
-	private readonly TimeSpan _halfOpenRetryTimeout;
+/// <remarks>
+/// Create a new circuit breaker
+/// </remarks>
+/// <param name="failureThreshold">Number of failures before opening</param>
+/// <param name="timeout">Timeout before attempting half-open</param>
+/// <param name="halfOpenRetryTimeout">Timeout for half-open retry attempts</param>
+public class CircuitBreaker( int failureThreshold = 5, TimeSpan timeout = default, TimeSpan halfOpenRetryTimeout = default ) : ICircuitBreaker {
+	private readonly int _failureThreshold = failureThreshold > 0 ? failureThreshold : 5;
+	private readonly TimeSpan _timeout = timeout == default ? TimeSpan.FromMinutes( 1 ) : timeout;
+	private readonly TimeSpan _halfOpenRetryTimeout = halfOpenRetryTimeout == default ? TimeSpan.FromSeconds( 30 ) : halfOpenRetryTimeout;
 	private readonly object _lock = new( );
 
 	private CircuitBreakerState _state = CircuitBreakerState.Closed;
 	private int _failureCount = 0;
 	private DateTime _lastFailureTime = DateTime.MinValue;
 	private DateTime _nextAttemptTime = DateTime.MinValue;
-
-	/// <summary>
-	/// Create a new circuit breaker
-	/// </summary>
-	/// <param name="failureThreshold">Number of failures before opening</param>
-	/// <param name="timeout">Timeout before attempting half-open</param>
-	/// <param name="halfOpenRetryTimeout">Timeout for half-open retry attempts</param>
-	public CircuitBreaker( int failureThreshold = 5, TimeSpan timeout = default, TimeSpan halfOpenRetryTimeout = default ) {
-		_failureThreshold = failureThreshold > 0 ? failureThreshold : 5;
-		_timeout = timeout == default ? TimeSpan.FromMinutes( 1 ) : timeout;
-		_halfOpenRetryTimeout = halfOpenRetryTimeout == default ? TimeSpan.FromSeconds( 30 ) : halfOpenRetryTimeout;
-	}
 
 	/// <summary>
 	/// Current state of the circuit breaker

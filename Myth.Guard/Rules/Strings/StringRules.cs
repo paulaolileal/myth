@@ -7,11 +7,7 @@ namespace Myth.Rules.Strings;
 /// <summary>
 /// String rule configurator
 /// </summary>
-public sealed class StringRules : RuleConfigurator<string>, IStringRules {
-
-	public StringRules( FieldRuleBuilder<string> builder ) : base( builder ) {
-	}
-
+public sealed class StringRules( FieldRuleBuilder<string> builder ) : RuleConfigurator<string>( builder ), IStringRules {
 	public FieldRuleBuilder<string> NotEmpty( ) {
 		Builder.AddRule( new NotEmptyStringRule( ) );
 		return Builder;

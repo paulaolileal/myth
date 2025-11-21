@@ -3,12 +3,8 @@ using Myth.Rules.Base;
 
 namespace Myth.Rules.Collections;
 
-internal sealed class DistinctByRule<T, TKey> : ValidationRuleBase<IEnumerable<T>> {
-	private readonly Func<T, TKey> _keySelector;
-
-	public DistinctByRule( Func<T, TKey> keySelector ) {
-		_keySelector = keySelector;
-	}
+internal sealed class DistinctByRule<T, TKey>( Func<T, TKey> keySelector ) : ValidationRuleBase<IEnumerable<T>> {
+	private readonly Func<T, TKey> _keySelector = keySelector;
 
 	protected override Task<bool> EvaluateAsync( RuleContext<IEnumerable<T>> context ) {
 		if ( context.Value == null )

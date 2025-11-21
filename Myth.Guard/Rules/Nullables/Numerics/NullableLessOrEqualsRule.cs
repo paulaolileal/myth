@@ -3,13 +3,9 @@ using Myth.Rules.Base;
 
 namespace Myth.Guard.Rules.Nullables.Numerics;
 
-internal sealed class NullableLessOrEqualsRule<T> : ValidationRuleBase<T?>
+internal sealed class NullableLessOrEqualsRule<T>( T compareValue ) : ValidationRuleBase<T?>
 	where T : struct, IComparable<T> {
-	private readonly T _compareValue;
-
-	public NullableLessOrEqualsRule( T compareValue ) {
-		_compareValue = compareValue;
-	}
+	private readonly T _compareValue = compareValue;
 
 	protected override Task<bool> EvaluateAsync( RuleContext<T?> context ) {
 		if ( !context.Value.HasValue )

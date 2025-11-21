@@ -16,21 +16,17 @@ namespace Myth.Rules.Base;
 /// Type-specific configurators (like string or numeric configurators) typically inherit from this class
 /// to extend the available validation rules.
 /// </remarks>
-public class RuleConfigurator<T> : IRuleConfigurator<T>, IRuleBuilder<T> {
+/// <remarks>
+/// Initializes a new instance of the <see cref="RuleConfigurator{T}"/> class with the specified builder.
+/// </remarks>
+/// <param name="builder">The field rule builder that will manage the validation rules.</param>
+/// <exception cref="ArgumentNullException">Thrown when <paramref name="builder"/> is null.</exception>
+public class RuleConfigurator<T>( FieldRuleBuilder<T> builder ) : IRuleConfigurator<T>, IRuleBuilder<T> {
 
 	/// <summary>
 	/// The underlying field rule builder that manages the collection of validation rules.
 	/// </summary>
-	protected readonly FieldRuleBuilder<T> Builder;
-
-	/// <summary>
-	/// Initializes a new instance of the <see cref="RuleConfigurator{T}"/> class with the specified builder.
-	/// </summary>
-	/// <param name="builder">The field rule builder that will manage the validation rules.</param>
-	/// <exception cref="ArgumentNullException">Thrown when <paramref name="builder"/> is null.</exception>
-	public RuleConfigurator( FieldRuleBuilder<T> builder ) {
-		Builder = builder;
-	}
+	protected readonly FieldRuleBuilder<T> Builder = builder;
 
 	/// <summary>
 	/// Validates that the value satisfies a custom predicate condition.

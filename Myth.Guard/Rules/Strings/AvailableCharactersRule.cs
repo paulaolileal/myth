@@ -3,12 +3,8 @@ using Myth.Rules.Base;
 
 namespace Myth.Rules.Strings;
 
-internal sealed class AvailableCharactersRule : ValidationRuleBase<string> {
-	private readonly char[ ] _allowedChars;
-
-	public AvailableCharactersRule( char[ ] allowedChars ) {
-		_allowedChars = allowedChars;
-	}
+internal sealed class AvailableCharactersRule( char[ ] allowedChars ) : ValidationRuleBase<string> {
+	private readonly char[ ] _allowedChars = allowedChars;
 
 	protected override Task<bool> EvaluateAsync( RuleContext<string> context ) {
 		if ( string.IsNullOrEmpty( context.Value ) )

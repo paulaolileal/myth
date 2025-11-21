@@ -5,19 +5,13 @@ using Myth.Flow.Test.Interfaces;
 using Myth.Flow.Test.Models;
 using Myth.Models;
 
-public class UserCreationService {
-	private readonly IUserRepository _repository;
-	private readonly IPasswordValidator _passwordValidator;
-	private readonly IUnitOfWork _unitOfWork;
-
-	public UserCreationService(
-		IUserRepository repository,
-		IPasswordValidator passwordValidator,
-		IUnitOfWork unitOfWork ) {
-		_repository = repository;
-		_passwordValidator = passwordValidator;
-		_unitOfWork = unitOfWork;
-	}
+public class UserCreationService(
+	IUserRepository repository,
+	IPasswordValidator passwordValidator,
+	IUnitOfWork unitOfWork ) {
+	private readonly IUserRepository _repository = repository;
+	private readonly IPasswordValidator _passwordValidator = passwordValidator;
+	private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
 	public async Task<Result<CreateUserContext>> CreateUserAsync( CreateUserContext context ) {
 		try {

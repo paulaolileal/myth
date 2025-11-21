@@ -6,14 +6,11 @@ namespace Myth.Testing.Test.Repositories;
 /// <summary>
 /// Example Entity Framework DbContext
 /// </summary>
-public class UserDbContext : DbContext {
-
-	/// <summary>
-	/// Initialize DbContext
-	/// </summary>
-	/// <param name="options">DbContext options</param>
-	public UserDbContext( DbContextOptions<UserDbContext> options ) : base( options ) {
-	}
+/// <remarks>
+/// Initialize DbContext
+/// </remarks>
+/// <param name="options">DbContext options</param>
+public class UserDbContext( DbContextOptions<UserDbContext> options ) : DbContext( options ) {
 
 	/// <summary>
 	/// Users DbSet

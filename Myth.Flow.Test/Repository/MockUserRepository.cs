@@ -4,13 +4,9 @@ using System.Threading.Tasks;
 using Myth.Flow.Test.Interfaces;
 using Myth.Flow.Test.Models;
 
-public class MockUserRepository : IUserRepository {
+public class MockUserRepository( bool shouldFailOnCreate = false ) : IUserRepository {
 	private readonly List<string> _existingEmails = new( );
-	private readonly bool _shouldFailOnCreate;
-
-	public MockUserRepository( bool shouldFailOnCreate = false ) {
-		_shouldFailOnCreate = shouldFailOnCreate;
-	}
+	private readonly bool _shouldFailOnCreate = shouldFailOnCreate;
 
 	public void AddExistingEmail( string email ) => _existingEmails.Add( email );
 
