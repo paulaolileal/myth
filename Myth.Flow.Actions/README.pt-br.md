@@ -932,6 +932,61 @@ public class UserPipelineTests {
 - **Handlers**: `{Request}Handler` (CreateUserCommandHandler, UserCreatedEventHandler)
 - **Results**: Use CommandResult, QueryResult com tratamento adequado de sucesso/falha
 
+## Integração com Swagger
+
+### Exibição Enum do CacheControl
+
+Para melhor experiência do desenvolvedor no Swagger UI, você pode configurar o `CacheControl` para aparecer como dropdown com valores predefinidos:
+
+```csharp
+using Myth.Flow.Actions.Extensions;
+
+// Em Program.cs ou Startup.cs
+builder.Services.AddSwaggerGen(options => {
+    options.AddFlowActionsSchemaFilters(); // Adiciona todos os filtros do Flow.Actions
+
+    // Ou adicione apenas o filtro do CacheControl
+    options.AddCacheControlSchemaFilter();
+});
+```
+
+Esta configuração faz com que parâmetros `CacheControl` apareçam como dropdown no Swagger UI com diretivas de cache comuns:
+- `no-cache`
+- `no-store`
+- `public`
+- `private`
+- `must-revalidate`
+- `proxy-revalidate`
+- `no-transform`
+- `immutable`
+- `max-age=3600`
+- `public, max-age=1800`
+- `private, max-age=300`
+- `public, immutable, max-age=31536000`
+
+### Uso em Controllers
+
+```csharp
+[HttpGet("users")]
+public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers(
+    [FromHeader("Cache-Control")] CacheControl? cacheControl = null) {
+
+    var query = new GetUsersQuery();
+
+    var result = await _dispatcher.DispatchQueryAsync(query, cache => {
+        if (cacheControl != null) {
+            cache.UseCache(cacheControl);
+        } else {
+            cache.Public(TimeSpan.FromMinutes(5));
+        }
+    });
+
+    return result.IsSuccess ? Ok(result.Data) : BadRequest(result.ErrorMessage);
+}
+```
+
+O model binder analisa automaticamente o header `Cache-Control` e valida a sintaxe, fornecendo acesso type-safe às diretivas de cache em seus controllers.
+
 ## Contribuindo
 
 Contribuições são bem-vindas! Por favor, siga o estilo de código existente e adicione testes para novas funcionalidades.
