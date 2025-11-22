@@ -3,12 +3,8 @@ using Myth.Rules.Base;
 
 namespace Myth.Rules.Strings;
 
-internal sealed class MinimumLengthRule : ValidationRuleBase<string> {
-	private readonly int _minLength;
-
-	public MinimumLengthRule( int minLength ) {
-		_minLength = minLength;
-	}
+internal sealed class MinimumLengthRule( int minLength ) : ValidationRuleBase<string> {
+	private readonly int _minLength = minLength;
 
 	protected override Task<bool> EvaluateAsync( RuleContext<string> context ) {
 		return Task.FromResult( context.Value?.Length >= _minLength );

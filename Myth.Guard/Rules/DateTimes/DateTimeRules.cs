@@ -6,11 +6,7 @@ namespace Myth.Rules.DateTimes;
 /// <summary>
 /// DateTime rule configurator
 /// </summary>
-public sealed class DateTimeRules : RuleConfigurator<DateTime>, IDateTimeRules {
-
-	public DateTimeRules( FieldRuleBuilder<DateTime> builder ) : base( builder ) {
-	}
-
+public sealed class DateTimeRules( FieldRuleBuilder<DateTime> builder ) : RuleConfigurator<DateTime>( builder ), IDateTimeRules {
 	public FieldRuleBuilder<DateTime> After( DateTime date ) {
 		Builder.AddRule( new AfterDateRule( date ) );
 		return Builder;

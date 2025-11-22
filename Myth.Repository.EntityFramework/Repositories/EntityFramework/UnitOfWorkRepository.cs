@@ -4,8 +4,5 @@ using Myth.Repositories.EntityFramework.Base;
 
 namespace Myth.Repositories.EntityFramework;
 
-public class UnitOfWorkRepository<TContext> : BaseUnitOfWorkRepository, IUnitOfWorkRepository where TContext : BaseContext {
-
-	public UnitOfWorkRepository( TContext context ) : base( context ) {
-	}
+public class UnitOfWorkRepository<TContext>( TContext context ) : BaseUnitOfWorkRepository( context ), IUnitOfWorkRepository where TContext : BaseContext {
 }

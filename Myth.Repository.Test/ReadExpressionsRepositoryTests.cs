@@ -135,7 +135,7 @@ public class ReadExpressionsRepositoryTests( DatabaseMock databaseMock ) : IClas
 	[Fact]
 	public async Task To_list_should_return_a_all_items( ) {
 		// Arrange
-		var person = await _mockManyAsync( 100 );
+		_ = await _mockManyAsync( 100 );
 
 		// Act
 		var result = await _repository.ToListAsync( );

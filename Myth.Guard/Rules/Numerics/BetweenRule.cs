@@ -3,14 +3,9 @@ using Myth.Rules.Base;
 
 namespace Myth.Rules.Numerics;
 
-internal sealed class BetweenRule<T> : ValidationRuleBase<T> where T : struct, IComparable<T> {
-	private readonly T _min;
-	private readonly T _max;
-
-	public BetweenRule( T min, T max ) {
-		_min = min;
-		_max = max;
-	}
+internal sealed class BetweenRule<T>( T min, T max ) : ValidationRuleBase<T> where T : struct, IComparable<T> {
+	private readonly T _min = min;
+	private readonly T _max = max;
 
 	protected override Task<bool> EvaluateAsync( RuleContext<T> context ) {
 		return Task.FromResult( context.Value.CompareTo( _min ) >= 0 && context.Value.CompareTo( _max ) <= 0 );

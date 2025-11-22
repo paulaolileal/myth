@@ -7,16 +7,11 @@ namespace Myth.Flow.Actions.Hosting;
 /// <summary>
 /// Hosted service that manages message broker lifecycle
 /// </summary>
-internal sealed class MessageBrokerHostedService : IHostedService {
-	private readonly IMessageBroker _messageBroker;
-	private readonly ILogger<MessageBrokerHostedService> _logger;
-
-	public MessageBrokerHostedService(
-		IMessageBroker messageBroker,
-		ILogger<MessageBrokerHostedService> logger ) {
-		_messageBroker = messageBroker;
-		_logger = logger;
-	}
+internal sealed class MessageBrokerHostedService(
+	IMessageBroker messageBroker,
+	ILogger<MessageBrokerHostedService> logger ) : IHostedService {
+	private readonly IMessageBroker _messageBroker = messageBroker;
+	private readonly ILogger<MessageBrokerHostedService> _logger = logger;
 
 	public async Task StartAsync( CancellationToken cancellationToken ) {
 		_logger.LogInformation( "Starting message broker hosted service" );

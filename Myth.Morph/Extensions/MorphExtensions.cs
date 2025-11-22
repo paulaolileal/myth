@@ -220,7 +220,7 @@ public static class MorphExtensions {
 			var canBind = registry.HasMapping( source.GetType( ), typeof( TDestination ) );
 			logger?.LogTrace( "Binding check for {SourceType} to {DestinationType}: {CanBind}", source.GetType( ).Name, typeof( TDestination ).Name, canBind );
 			return canBind;
-		} catch ( Exception ex ) {
+		} catch ( Exception ) {
 			return false;
 		}
 	}
@@ -257,7 +257,7 @@ public static class MorphExtensions {
 			var canBind = registry.HasMapping( typeof( TSource ), typeof( TDestination ) );
 			logger?.LogTrace( "Binding check for {SourceType} to {DestinationType}: {CanBind}", typeof( TSource ).Name, typeof( TDestination ).Name, canBind );
 			return canBind;
-		} catch ( Exception ex ) {
+		} catch ( Exception ) {
 			return false;
 		}
 	}

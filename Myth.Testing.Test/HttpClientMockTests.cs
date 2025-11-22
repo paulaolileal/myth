@@ -14,12 +14,8 @@ public class HttpClientMockTests : BaseTests {
 	/// <summary>
 	/// Example service that depends on an external HTTP API
 	/// </summary>
-	public class WeatherService {
-		private readonly HttpClient _httpClient;
-
-		public WeatherService( HttpClient httpClient ) {
-			_httpClient = httpClient ?? throw new ArgumentNullException( nameof( httpClient ) );
-		}
+	public class WeatherService( HttpClient httpClient ) {
+		private readonly HttpClient _httpClient = httpClient ?? throw new ArgumentNullException( nameof( httpClient ) );
 
 		/// <summary>
 		/// Get weather data for a city

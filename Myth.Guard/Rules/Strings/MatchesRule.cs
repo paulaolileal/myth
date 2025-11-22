@@ -4,12 +4,8 @@ using Myth.Rules.Base;
 
 namespace Myth.Rules.Strings;
 
-internal sealed class MatchesRule : ValidationRuleBase<string> {
-	private readonly Regex _regex;
-
-	public MatchesRule( Regex regex ) {
-		_regex = regex;
-	}
+internal sealed class MatchesRule( Regex regex ) : ValidationRuleBase<string> {
+	private readonly Regex _regex = regex;
 
 	protected override Task<bool> EvaluateAsync( RuleContext<string> context ) {
 		if ( string.IsNullOrEmpty( context.Value ) )

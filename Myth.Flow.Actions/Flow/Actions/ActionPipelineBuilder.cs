@@ -8,16 +8,12 @@ namespace Myth.Flow.Actions;
 /// Internal implementation of action pipeline builder
 /// </summary>
 /// <typeparam name="TCurrent">The current request type in the pipeline</typeparam>
-internal class ActionPipelineBuilder<TCurrent> : IActionPipelineBuilder<TCurrent> {
-	private readonly IPipelineBuilder<ActionPipelineState<TCurrent>> _innerPipeline;
-
-	/// <summary>
-	/// Initializes a new instance of ActionPipelineBuilder
-	/// </summary>
-	/// <param name="innerPipeline">The underlying Myth.Flow pipeline</param>
-	public ActionPipelineBuilder( IPipelineBuilder<ActionPipelineState<TCurrent>> innerPipeline ) {
-		_innerPipeline = innerPipeline;
-	}
+/// <remarks>
+/// Initializes a new instance of ActionPipelineBuilder
+/// </remarks>
+/// <param name="innerPipeline">The underlying Myth.Flow pipeline</param>
+internal class ActionPipelineBuilder<TCurrent>( IPipelineBuilder<ActionPipelineState<TCurrent>> innerPipeline ) : IActionPipelineBuilder<TCurrent> {
+	private readonly IPipelineBuilder<ActionPipelineState<TCurrent>> _innerPipeline = innerPipeline;
 
 	/// <summary>
 	/// Gets the underlying Myth.Flow pipeline for extending functionality

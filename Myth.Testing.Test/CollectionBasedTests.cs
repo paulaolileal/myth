@@ -6,17 +6,13 @@ namespace Myth.Testing.Test;
 /// <summary>
 /// Test class using collection fixture
 /// </summary>
+/// <remarks>
+/// Initialize with collection fixture
+/// </remarks>
+/// <param name="fixture">The shared fixture</param>
 [Collection( "Shared Service Collection" )]
-public class CollectionBasedTests {
-	private readonly SharedServiceFixture _fixture;
-
-	/// <summary>
-	/// Initialize with collection fixture
-	/// </summary>
-	/// <param name="fixture">The shared fixture</param>
-	public CollectionBasedTests( SharedServiceFixture fixture ) {
-		_fixture = fixture;
-	}
+public class CollectionBasedTests( SharedServiceFixture fixture ) {
+	private readonly SharedServiceFixture _fixture = fixture;
 
 	/// <summary>
 	/// Test using collection-shared services

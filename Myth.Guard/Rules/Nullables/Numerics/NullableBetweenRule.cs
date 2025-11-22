@@ -3,15 +3,10 @@ using Myth.Rules.Base;
 
 namespace Myth.Guard.Rules.Nullables.Numerics;
 
-internal sealed class NullableBetweenRule<T> : ValidationRuleBase<T?>
+internal sealed class NullableBetweenRule<T>( T min, T max ) : ValidationRuleBase<T?>
 	where T : struct, IComparable<T> {
-	private readonly T _min;
-	private readonly T _max;
-
-	public NullableBetweenRule( T min, T max ) {
-		_min = min;
-		_max = max;
-	}
+	private readonly T _min = min;
+	private readonly T _max = max;
 
 	protected override Task<bool> EvaluateAsync( RuleContext<T?> context ) {
 		if ( !context.Value.HasValue )

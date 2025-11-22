@@ -13,7 +13,8 @@ public class ValueObjectTests {
 
 		// Act
 		var compare = valueObject1 != valueObject2;
-		var hash = valueObject1.GetHashCode( );
+
+		_ = valueObject1.GetHashCode( );
 		var copy = valueObject1.Clone( );
 
 		// Assert

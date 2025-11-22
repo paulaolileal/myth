@@ -7,13 +7,9 @@ namespace Myth.Rules.Base;
 /// Fluent rule builder that maintains state for chaining operations like WithMessage, WithCode, When, Unless
 /// </summary>
 /// <typeparam name="T">The type being validated</typeparam>
-public sealed class FluentRuleBuilder<T> {
-	private readonly FieldRuleBuilder<T> _fieldBuilder;
+public sealed class FluentRuleBuilder<T>( FieldRuleBuilder<T> fieldBuilder ) {
+	private readonly FieldRuleBuilder<T> _fieldBuilder = fieldBuilder;
 	private ValidationRuleBase<T>? _lastRule;
-
-	public FluentRuleBuilder( FieldRuleBuilder<T> fieldBuilder ) {
-		_fieldBuilder = fieldBuilder;
-	}
 
 	/// <summary>
 	/// Gets the rules from the underlying field builder

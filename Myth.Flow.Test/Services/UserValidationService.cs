@@ -4,19 +4,13 @@ using Myth.Flow.Test.Contexts;
 using Myth.Flow.Test.Interfaces;
 using Myth.Models;
 
-public class UserValidationService {
-	private readonly IUserRepository _repository;
-	private readonly IPasswordValidator _passwordValidator;
-	private readonly IRoleValidator _roleValidator;
-
-	public UserValidationService(
-		IUserRepository repository,
-		IPasswordValidator passwordValidator,
-		IRoleValidator roleValidator ) {
-		_repository = repository;
-		_passwordValidator = passwordValidator;
-		_roleValidator = roleValidator;
-	}
+public class UserValidationService(
+	IUserRepository repository,
+	IPasswordValidator passwordValidator,
+	IRoleValidator roleValidator ) {
+	private readonly IUserRepository _repository = repository;
+	private readonly IPasswordValidator _passwordValidator = passwordValidator;
+	private readonly IRoleValidator _roleValidator = roleValidator;
 
 	public async Task<Result<CreateUserContext>> ValidateAsync( CreateUserContext context ) {
 		// Validate email uniqueness

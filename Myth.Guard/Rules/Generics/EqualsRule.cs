@@ -3,12 +3,8 @@ using Myth.Rules.Base;
 
 namespace Myth.Rules.Generics;
 
-internal sealed class EqualsRule<T> : ValidationRuleBase<T> {
-	private readonly T _expected;
-
-	public EqualsRule( T expected ) {
-		_expected = expected;
-	}
+internal sealed class EqualsRule<T>( T expected ) : ValidationRuleBase<T> {
+	private readonly T _expected = expected;
 
 	protected override Task<bool> EvaluateAsync( RuleContext<T> context ) {
 		return Task.FromResult( EqualityComparer<T>.Default.Equals( context.Value, _expected ) );

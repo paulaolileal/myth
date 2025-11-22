@@ -16,29 +16,22 @@ public static class EnumerableExtension {
 	/// <param name="skip">The amount of items to skip</param>
 	/// <returns>The paginated object with elements</returns>
 	public static IPaginated<TEntity> AsPaginated<TEntity>( this IEnumerable<TEntity> items, int totalItems, int take = 0, int skip = 0 ) {
-		var pageSize = totalItems;
-		if ( take > 0 )
-			pageSize = take;
+		var pageSize = take > 0 ? take : totalItems;
 
-		int pageNumber = 0;
-		if ( skip > 0 )
-			pageNumber = skip / pageSize;
+		var pageNumber = pageSize > 0 ? ( skip / pageSize ) + 1 : 1;
 
-		int totalPages = 0;
-		if ( totalItems > 0 )
-			totalPages = ( int )Math.Ceiling( decimal.Divide( totalItems, pageSize ) );
+		var totalPages = pageSize > 0 && totalItems > 0
+			? ( int )Math.Ceiling( ( decimal )totalItems / pageSize )
+			: totalItems > 0 ? 1 : 0;
 
-		var itemsProcessed = items
-			.Skip( pageNumber )
-			.Take( pageSize )
-			.ToList( );
+		var itemsList = items.ToList( );
 
 		var paginatedResult = new Paginated<TEntity>(
-			pageNumber + 1,
+			pageNumber,
 			pageSize,
 			totalItems,
 			totalPages,
-			itemsProcessed );
+			itemsList );
 
 		return paginatedResult;
 	}
@@ -62,10 +55,50 @@ public static class EnumerableExtension {
 	/// <param name="pagination">The pagination object containing page number and page size</param>
 	/// <returns>The paginated object with elements</returns>
 	public static IPaginated<TEntity> AsPaginated<TEntity>( this IEnumerable<TEntity> items, Pagination pagination ) {
+		var totalItems = items.Count( );
+		var pageSize = pagination.PageSize;
+
+		// Handle Pagination.All case (PageSize = -1)
+		if ( pageSize < 0 ) {
+			pageSize = totalItems;
+
+			var paginatedResult = new Paginated<TEntity>(
+				1,
+				totalItems,
+				totalItems,
+				1,
+				items.ToList( ) );
+
+			return paginatedResult;
+		}
+
 		var skip = 0;
 		if ( pagination.PageNumber > 0 )
 			skip = ( pagination.PageNumber - 1 ) * pagination.PageSize;
 
-		return items.AsPaginated( pagination.PageSize, skip );
+		var pageNumber = pageSize > 0 ? ( skip / pageSize ) + 1 : 1;
+
+		var totalPages = pageSize > 0 && totalItems > 0
+			? ( int )Math.Ceiling( ( decimal )totalItems / pageSize )
+			: totalItems > 0 ? 1 : 0;
+
+		var query = items.AsQueryable( );
+
+		if ( skip > 0 )
+			query = query.Skip( skip );
+
+		if ( pageSize > 0 )
+			query = query.Take( pageSize );
+
+		var itemsList = query.ToList( );
+
+		var result = new Paginated<TEntity>(
+			pageNumber,
+			pageSize,
+			totalItems,
+			totalPages,
+			itemsList );
+
+		return result;
 	}
 }

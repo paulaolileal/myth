@@ -13,25 +13,17 @@ namespace Myth.Flow.Actions;
 /// <summary>
 /// Default dispatcher implementation that uses MythServiceProvider for dependency resolution
 /// </summary>
-internal sealed class Dispatcher : IDispatcher {
-	private readonly ICacheProvider? _cacheProvider;
-	private readonly IEventBus _eventBus;
-	private readonly ILogger<Dispatcher> _logger;
-	private readonly ActivitySource _activitySource;
-	private readonly Myth.Models.PipelineConfiguration? _pipelineConfiguration;
-
-	public Dispatcher(
-		IEventBus eventBus,
-		ILogger<Dispatcher> logger,
-		ActivitySource activitySource,
-		ICacheProvider? cacheProvider = null,
-		Myth.Models.PipelineConfiguration? pipelineConfiguration = null ) {
-		_cacheProvider = cacheProvider;
-		_eventBus = eventBus;
-		_logger = logger;
-		_activitySource = activitySource;
-		_pipelineConfiguration = pipelineConfiguration;
-	}
+internal sealed class Dispatcher(
+	IEventBus eventBus,
+	ILogger<Dispatcher> logger,
+	ActivitySource activitySource,
+	ICacheProvider? cacheProvider = null,
+	Myth.Models.PipelineConfiguration? pipelineConfiguration = null ) : IDispatcher {
+	private readonly ICacheProvider? _cacheProvider = cacheProvider;
+	private readonly IEventBus _eventBus = eventBus;
+	private readonly ILogger<Dispatcher> _logger = logger;
+	private readonly ActivitySource _activitySource = activitySource;
+	private readonly Myth.Models.PipelineConfiguration? _pipelineConfiguration = pipelineConfiguration;
 
 	/// <summary>
 	/// Dispatches a command to its registered handler

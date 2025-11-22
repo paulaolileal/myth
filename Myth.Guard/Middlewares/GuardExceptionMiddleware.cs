@@ -9,17 +9,11 @@ namespace Myth.Middlewares;
 /// <summary>
 /// Middleware to handle exceptions globally with configurable mappings
 /// </summary>
-internal sealed class GuardExceptionMiddleware {
+internal sealed class GuardExceptionMiddleware( RequestDelegate next, GuardOptions options, ILogger<GuardExceptionMiddleware>? logger = null ) {
 
-	private readonly RequestDelegate _next;
-	private readonly GuardOptions _options;
-	private readonly ILogger<GuardExceptionMiddleware>? _logger;
-
-	public GuardExceptionMiddleware( RequestDelegate next, GuardOptions options, ILogger<GuardExceptionMiddleware>? logger = null ) {
-		_next = next;
-		_options = options;
-		_logger = logger;
-	}
+	private readonly RequestDelegate _next = next;
+	private readonly GuardOptions _options = options;
+	private readonly ILogger<GuardExceptionMiddleware>? _logger = logger;
 
 	public async Task InvokeAsync( HttpContext context ) {
 		try {
