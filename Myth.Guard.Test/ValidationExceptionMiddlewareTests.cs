@@ -145,7 +145,8 @@ public class ValidationExceptionMiddlewareTests {
 		context.Response.Body = new MemoryStream( );
 
 		var validationResult = new ValidationResult( [ ] );
-		var validationException = new ValidationException( validationResult );
+
+		_ = new ValidationException( validationResult );
 
 		// Act
 		await _middleware.InvokeAsync( context );

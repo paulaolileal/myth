@@ -7,16 +7,12 @@ namespace Myth.Testing.Test;
 /// <summary>
 /// Second test class using the same shared fixture
 /// </summary>
-public class SecondSharedServiceTests : IClassFixture<SharedServiceFixture> {
-	private readonly SharedServiceFixture _fixture;
-
-	/// <summary>
-	/// Initialize with shared fixture
-	/// </summary>
-	/// <param name="fixture">The shared fixture</param>
-	public SecondSharedServiceTests( SharedServiceFixture fixture ) {
-		_fixture = fixture;
-	}
+/// <remarks>
+/// Initialize with shared fixture
+/// </remarks>
+/// <param name="fixture">The shared fixture</param>
+public class SecondSharedServiceTests( SharedServiceFixture fixture ) : IClassFixture<SharedServiceFixture> {
+	private readonly SharedServiceFixture _fixture = fixture;
 
 	/// <summary>
 	/// Test using the same shared ExpensiveService instance

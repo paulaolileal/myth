@@ -6,11 +6,7 @@ namespace Myth.Rules.Generics;
 /// <summary>
 /// Generic rule configurator with default implementation
 /// </summary>
-public class GenericRules<T> : RuleConfigurator<T>, IGenericRules<T> {
-
-	public GenericRules( FieldRuleBuilder<T> builder ) : base( builder ) {
-	}
-
+public class GenericRules<T>( FieldRuleBuilder<T> builder ) : RuleConfigurator<T>( builder ), IGenericRules<T> {
 	public FieldRuleBuilder<T> BeDefault( ) {
 		Builder.AddRule( new BeDefaultRule<T>( ) );
 		return Builder;

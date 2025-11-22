@@ -3,12 +3,8 @@ using Myth.Rules.Base;
 
 namespace Myth.Rules.Strings;
 
-internal sealed class NoSymbolsRule : ValidationRuleBase<string> {
-	private readonly char[ ]? _symbols;
-
-	public NoSymbolsRule( char[ ]? symbols ) {
-		_symbols = symbols;
-	}
+internal sealed class NoSymbolsRule( char[ ]? symbols ) : ValidationRuleBase<string> {
+	private readonly char[ ]? _symbols = symbols;
 
 	protected override Task<bool> EvaluateAsync( RuleContext<string> context ) {
 		if ( string.IsNullOrEmpty( context.Value ) )

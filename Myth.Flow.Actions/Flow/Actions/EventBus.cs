@@ -8,20 +8,14 @@ namespace Myth.Flow.Actions;
 /// <summary>
 /// Default event bus implementation that uses MythServiceProvider for dependency resolution
 /// </summary>
-internal sealed class EventBus : IEventBus {
-	private readonly IMessageBroker _messageBroker;
-	private readonly ILogger<EventBus> _logger;
-	private readonly ActivitySource _activitySource;
+internal sealed class EventBus(
+	IMessageBroker messageBroker,
+	ILogger<EventBus> logger,
+	ActivitySource activitySource ) : IEventBus {
+	private readonly IMessageBroker _messageBroker = messageBroker;
+	private readonly ILogger<EventBus> _logger = logger;
+	private readonly ActivitySource _activitySource = activitySource;
 	private readonly ConcurrentDictionary<Type, List<Type>> _subscriptions = new( );
-
-	public EventBus(
-		IMessageBroker messageBroker,
-		ILogger<EventBus> logger,
-		ActivitySource activitySource ) {
-		_messageBroker = messageBroker;
-		_logger = logger;
-		_activitySource = activitySource;
-	}
 
 	/// <summary>
 	/// Publishes an event to the message broker and invokes all registered local handlers

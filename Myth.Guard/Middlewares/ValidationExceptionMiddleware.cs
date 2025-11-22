@@ -8,12 +8,8 @@ namespace Myth.Middlewares;
 /// <summary>
 /// Middleware to handle validation exceptions
 /// </summary>
-internal sealed class ValidationExceptionMiddleware {
-	private readonly RequestDelegate _next;
-
-	public ValidationExceptionMiddleware( RequestDelegate next ) {
-		_next = next;
-	}
+internal sealed class ValidationExceptionMiddleware( RequestDelegate next ) {
+	private readonly RequestDelegate _next = next;
 
 	public async Task InvokeAsync( HttpContext context ) {
 		try {

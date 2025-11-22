@@ -229,7 +229,8 @@ public class InheritanceFallbackTests {
 	public void InheritanceFallback_Should_RespectMaxDepthConfiguration( ) {
 		// Arrange
 		var serviceProvider = CreateServiceProviderWithInheritance( maxDepth: 1 );
-		var registry = serviceProvider.GetRequiredService<SchemaRegistry>( );
+
+		_ = serviceProvider.GetRequiredService<SchemaRegistry>( );
 
 		// This test verifies that the MaxInheritanceDepth configuration is properly set and used
 		// We can verify this by checking that inheritance fallback is enabled with the correct depth

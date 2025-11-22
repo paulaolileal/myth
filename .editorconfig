@@ -134,6 +134,16 @@ csharp_using_directive_placement = outside_namespace:warning
 # Namespace preferences
 csharp_style_namespace_declarations = file_scoped:warning
 
+# Constructor preferences (C# 12+)
+csharp_style_prefer_primary_constructors = true:warning
+
+# Remove unnecessary fields when using primary constructors
+dotnet_diagnostic.IDE0290.severity = warning
+
+# Remove unnecessary assignments and declarations
+dotnet_diagnostic.IDE0059.severity = warning
+dotnet_style_prefer_simplified_boolean_expressions = true:warning
+
 #### .NET Code Style Rules ####
 
 # 'this.' and 'Me.' preferences

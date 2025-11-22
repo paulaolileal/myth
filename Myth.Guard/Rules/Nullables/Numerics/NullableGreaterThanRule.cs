@@ -8,17 +8,13 @@ namespace Myth.Guard.Rules.Nullables.Numerics;
 /// If the value is null, the validation passes
 /// </summary>
 /// <typeparam name="T">The numeric type</typeparam>
-internal sealed class NullableGreaterThanRule<T> : ValidationRuleBase<T?>
+/// <remarks>
+/// Initializes a new instance of the NullableGreaterThanRule class
+/// </remarks>
+/// <param name="compareValue">The value to compare against</param>
+internal sealed class NullableGreaterThanRule<T>( T compareValue ) : ValidationRuleBase<T?>
 	where T : struct, IComparable<T> {
-	private readonly T _compareValue;
-
-	/// <summary>
-	/// Initializes a new instance of the NullableGreaterThanRule class
-	/// </summary>
-	/// <param name="compareValue">The value to compare against</param>
-	public NullableGreaterThanRule( T compareValue ) {
-		_compareValue = compareValue;
-	}
+	private readonly T _compareValue = compareValue;
 
 	/// <summary>
 	/// Evaluates whether the nullable numeric value is greater than the specified value

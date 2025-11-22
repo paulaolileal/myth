@@ -9,19 +9,13 @@ namespace Myth.Flow.Actions.Services;
 /// <summary>
 /// Background service that automatically subscribes discovered event handlers to the EventBus
 /// </summary>
-internal sealed class EventHandlerAutoSubscriptionService : IHostedService {
-	private readonly IServiceProvider _serviceProvider;
-	private readonly FlowActionsConfiguration _configuration;
-	private readonly ILogger<EventHandlerAutoSubscriptionService> _logger;
-
-	public EventHandlerAutoSubscriptionService(
-		IServiceProvider serviceProvider,
-		FlowActionsConfiguration configuration,
-		ILogger<EventHandlerAutoSubscriptionService> logger ) {
-		_serviceProvider = serviceProvider;
-		_configuration = configuration;
-		_logger = logger;
-	}
+internal sealed class EventHandlerAutoSubscriptionService(
+	IServiceProvider serviceProvider,
+	FlowActionsConfiguration configuration,
+	ILogger<EventHandlerAutoSubscriptionService> logger ) : IHostedService {
+	private readonly IServiceProvider _serviceProvider = serviceProvider;
+	private readonly FlowActionsConfiguration _configuration = configuration;
+	private readonly ILogger<EventHandlerAutoSubscriptionService> _logger = logger;
 
 	/// <summary>
 	/// Starts the service and performs auto-subscription of event handlers

@@ -6,16 +6,12 @@ namespace Myth.Testing.Test.Repositories;
 /// <summary>
 /// Example repository using Entity Framework
 /// </summary>
-public class UserRepository {
-	private readonly UserDbContext _context;
-
-	/// <summary>
-	/// Initialize repository with DbContext
-	/// </summary>
-	/// <param name="context">The database context</param>
-	public UserRepository( UserDbContext context ) {
-		_context = context ?? throw new ArgumentNullException( nameof( context ) );
-	}
+/// <remarks>
+/// Initialize repository with DbContext
+/// </remarks>
+/// <param name="context">The database context</param>
+public class UserRepository( UserDbContext context ) {
+	private readonly UserDbContext _context = context ?? throw new ArgumentNullException( nameof( context ) );
 
 	/// <summary>
 	/// Create a new user

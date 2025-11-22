@@ -6,10 +6,7 @@ namespace Myth.Rules.Enums;
 /// <summary>
 /// Enum rule configurator
 /// </summary>
-public sealed class EnumRules<T> : RuleConfigurator<T>, IEnumRules<T> where T : struct, Enum {
-
-	public EnumRules( FieldRuleBuilder<T> builder ) : base( builder ) {
-	}
+public sealed class EnumRules<T>( FieldRuleBuilder<T> builder ) : RuleConfigurator<T>( builder ), IEnumRules<T> where T : struct, Enum {
 
 	/// <summary>
 	/// Adds a validation rule that requires the field value to be a defined member of the specified enumeration type.

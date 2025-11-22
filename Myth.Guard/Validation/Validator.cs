@@ -10,12 +10,8 @@ namespace Myth.Validation;
 /// <summary>
 /// Default implementation of IValidator
 /// </summary>
-internal sealed class Validator : IValidator {
-	private readonly IServiceProvider _serviceProvider;
-
-	public Validator( IServiceProvider serviceProvider ) {
-		_serviceProvider = serviceProvider;
-	}
+internal sealed class Validator( IServiceProvider serviceProvider ) : IValidator {
+	private readonly IServiceProvider _serviceProvider = serviceProvider;
 
 	/// <summary>
 	/// Validates an entity and throws exception on failure

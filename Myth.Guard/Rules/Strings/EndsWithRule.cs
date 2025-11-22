@@ -3,14 +3,9 @@ using Myth.Rules.Base;
 
 namespace Myth.Rules.Strings;
 
-internal sealed class EndsWithRule : ValidationRuleBase<string> {
-	private readonly string _suffix;
-	private readonly bool _ignoreCase;
-
-	public EndsWithRule( string suffix, bool ignoreCase ) {
-		_suffix = suffix;
-		_ignoreCase = ignoreCase;
-	}
+internal sealed class EndsWithRule( string suffix, bool ignoreCase ) : ValidationRuleBase<string> {
+	private readonly string _suffix = suffix;
+	private readonly bool _ignoreCase = ignoreCase;
 
 	protected override Task<bool> EvaluateAsync( RuleContext<string> context ) {
 		if ( string.IsNullOrEmpty( context.Value ) )

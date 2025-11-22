@@ -5,13 +5,11 @@ namespace Myth.Commons.Test.Models;
 /// <summary>
 /// Example of how the new Constant works with Entity Framework
 /// </summary>
-public class OrderStatus : Constant<OrderStatus, string> {
+public class OrderStatus( string name, string value ) : Constant<OrderStatus, string>( name, value ) {
 	public static readonly OrderStatus Pending = new( name: "Pending", value: "P" );
 	public static readonly OrderStatus Processing = new( name: "Processing", value: "PR" );
 	public static readonly OrderStatus Completed = new( name: "Completed", value: "C" );
 	public static readonly OrderStatus Cancelled = new( name: "Cancelled", value: "X" );
-
-	public OrderStatus( string name, string value ) : base( name, value ) { }
 }
 
 /// <summary>
@@ -68,8 +66,9 @@ public static class EntityFrameworkConfiguration {
 public static class UsageExamples {
 	public static void DemonstrateNewSyntax( ) {
 		// ✅ Simplified syntax - no explicit generics needed!
-		var all = OrderStatus.GetAll( );           // Instead of Constant.GetAll<OrderStatus>()
-		var options = OrderStatus.GetOptions( );   // Instead of Constant.GetOptions<OrderStatus>()
+		_ = OrderStatus.GetAll( );           // Instead of Constant.GetAll<OrderStatus>()
+
+		_ = OrderStatus.GetOptions( );   // Instead of Constant.GetOptions<OrderStatus>()
 		var status = OrderStatus.FromValue( "P" ); // Instead of Constant.FromValue<OrderStatus>("P")
 
 		// ✅ Easy iteration for switch statements
@@ -78,7 +77,7 @@ public static class UsageExamples {
 		}
 
 		// ✅ Switch expressions work beautifully
-		var message = status.Value switch {
+		_ = status.Value switch {
 			"P" => "Order is pending",
 			"PR" => "Order is being processed",
 			"C" => "Order completed",
@@ -86,8 +85,9 @@ public static class UsageExamples {
 			_ => "Unknown status"
 		};
 
+
 		// ✅ Pattern matching with constants
-		var statusMessage = status switch {
+		_ = status switch {
 			var s when s == OrderStatus.Pending => "Waiting for processing",
 			var s when s == OrderStatus.Processing => "Currently being handled",
 			var s when s == OrderStatus.Completed => "All done!",
@@ -95,12 +95,15 @@ public static class UsageExamples {
 			_ => "Unknown"
 		};
 
+
 		// ✅ Values class for easy pattern matching
-		var isActive = OrderStatus.Values.All.Contains( status.Value );
+		_ = OrderStatus.Values.All.Contains( status.Value );
+
 
 		// ✅ Implicit conversion to Value works great
-		string statusCode = status;     // Gets the Value via implicit conversion
-		string statusName = status.Name; // Gets the Name via property
+		_ = status;     // Gets the Value via implicit conversion
+
+		_ = status.Name; // Gets the Name via property
 
 		// ✅ Try methods for safe access
 		if ( OrderStatus.TryFromValue( "P", out var found ) ) {
@@ -108,7 +111,7 @@ public static class UsageExamples {
 		}
 
 		// ✅ Entity Framework compatibility maintained
-		var order = new Order {
+		_ = new Order {
 			Status = OrderStatus.Pending,  // Assigns directly
 			CustomerName = "John Doe"
 		};

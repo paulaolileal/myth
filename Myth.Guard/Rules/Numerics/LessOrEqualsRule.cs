@@ -3,12 +3,8 @@ using Myth.Rules.Base;
 
 namespace Myth.Rules.Numerics;
 
-internal sealed class LessOrEqualsRule<T> : ValidationRuleBase<T> where T : struct, IComparable<T> {
-	private readonly T _max;
-
-	public LessOrEqualsRule( T max ) {
-		_max = max;
-	}
+internal sealed class LessOrEqualsRule<T>( T max ) : ValidationRuleBase<T> where T : struct, IComparable<T> {
+	private readonly T _max = max;
 
 	protected override Task<bool> EvaluateAsync( RuleContext<T> context ) {
 		return Task.FromResult( context.Value.CompareTo( _max ) <= 0 );

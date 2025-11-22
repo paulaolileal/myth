@@ -6,11 +6,7 @@ namespace Myth.Rules.Numerics;
 /// <summary>
 /// Numeric rule configurator
 /// </summary>
-public sealed class NumericRules<T> : RuleConfigurator<T>, INumericRules<T> where T : struct, IComparable<T> {
-
-	public NumericRules( FieldRuleBuilder<T> builder ) : base( builder ) {
-	}
-
+public sealed class NumericRules<T>( FieldRuleBuilder<T> builder ) : RuleConfigurator<T>( builder ), INumericRules<T> where T : struct, IComparable<T> {
 	public FieldRuleBuilder<T> GreaterThan( T min ) {
 		Builder.AddRule( new GreaterThanRule<T>( min ) );
 		return Builder;

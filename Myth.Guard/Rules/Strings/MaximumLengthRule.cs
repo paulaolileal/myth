@@ -3,12 +3,8 @@ using Myth.Rules.Base;
 
 namespace Myth.Rules.Strings;
 
-internal sealed class MaximumLengthRule : ValidationRuleBase<string> {
-	private readonly int _maxLength;
-
-	public MaximumLengthRule( int maxLength ) {
-		_maxLength = maxLength;
-	}
+internal sealed class MaximumLengthRule( int maxLength ) : ValidationRuleBase<string> {
+	private readonly int _maxLength = maxLength;
 
 	protected override Task<bool> EvaluateAsync( RuleContext<string> context ) {
 		return Task.FromResult( context.Value?.Length <= _maxLength );

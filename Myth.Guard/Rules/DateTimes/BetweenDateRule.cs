@@ -3,14 +3,9 @@ using Myth.Rules.Base;
 
 namespace Myth.Rules.DateTimes;
 
-internal sealed class BetweenDateRule : ValidationRuleBase<DateTime> {
-	private readonly DateTime _min;
-	private readonly DateTime _max;
-
-	public BetweenDateRule( DateTime min, DateTime max ) {
-		_min = min;
-		_max = max;
-	}
+internal sealed class BetweenDateRule( DateTime min, DateTime max ) : ValidationRuleBase<DateTime> {
+	private readonly DateTime _min = min;
+	private readonly DateTime _max = max;
 
 	protected override Task<bool> EvaluateAsync( RuleContext<DateTime> context ) {
 		return Task.FromResult( context.Value >= _min && context.Value <= _max );

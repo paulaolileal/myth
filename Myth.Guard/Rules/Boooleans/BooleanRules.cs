@@ -6,11 +6,7 @@ namespace Myth.Rules.Boooleans;
 /// <summary>
 /// Boolean rule configurator
 /// </summary>
-public sealed class BooleanRules : RuleConfigurator<bool>, IBooleanRules {
-
-	public BooleanRules( FieldRuleBuilder<bool> builder ) : base( builder ) {
-	}
-
+public sealed class BooleanRules( FieldRuleBuilder<bool> builder ) : RuleConfigurator<bool>( builder ), IBooleanRules {
 	public FieldRuleBuilder<bool> IsTrue( ) {
 		Builder.AddRule( new IsTrueRule( ) );
 		return Builder;

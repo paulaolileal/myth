@@ -80,7 +80,7 @@ public class EventHandlerRegistryTests {
 	[Fact]
 	public void GetRegisteredHandlers_EmptyRegistry_ShouldReturnEmpty( ) {
 		// Arrange
-		var services = new ServiceCollection( );
+		_ = new ServiceCollection( );
 		var subscriptionManager = new EventSubscriptionManager( );
 		var registry = new EventHandlerRegistry( subscriptionManager );
 
