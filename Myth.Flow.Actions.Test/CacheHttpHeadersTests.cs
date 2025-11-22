@@ -196,4 +196,62 @@ public class CacheHttpHeadersTests {
 		// Act & Assert
 		options.ShouldGenerateHeaders.Should( ).BeFalse( );
 	}
+
+	[Fact]
+	public void CacheConfigBuilder_UseCacheFromHeader_WithValidHeader_Should_Parse_And_Apply( ) {
+		// Arrange
+		var builder = new CacheConfigBuilder( );
+		var cacheControlHeader = "public, max-age=3600";
+
+		// Act
+		builder.UseCacheFromHeader( cacheControlHeader );
+		var options = builder.ToCacheOptions( );
+
+		// Assert
+		options.Should( ).NotBeNull( );
+		options!.Enabled.Should( ).BeTrue( );
+		options.Policy.Should( ).NotBeNull( );
+		options.Policy!.IsPublic.Should( ).BeTrue( );
+		options.Policy.MaxAge.Should( ).Be( TimeSpan.FromSeconds( 3600 ) );
+	}
+
+	[Fact]
+	public void CacheConfigBuilder_UseCacheFromHeader_WithInvalidHeader_Should_Disable_Cache( ) {
+		// Arrange
+		var builder = new CacheConfigBuilder( );
+		var invalidHeader = "invalid-cache-control";
+
+		// Act
+		builder.UseCacheFromHeader( invalidHeader );
+		var options = builder.ToCacheOptions( );
+
+		// Assert
+		options.Should( ).BeNull( );
+	}
+
+	[Fact]
+	public void CacheConfigBuilder_UseCacheFromHeader_WithEmptyHeader_Should_Disable_Cache( ) {
+		// Arrange
+		var builder = new CacheConfigBuilder( );
+
+		// Act
+		builder.UseCacheFromHeader( "" );
+		var options = builder.ToCacheOptions( );
+
+		// Assert
+		options.Should( ).BeNull( );
+	}
+
+	[Fact]
+	public void CacheConfigBuilder_UseCacheFromHeader_WithNullHeader_Should_Disable_Cache( ) {
+		// Arrange
+		var builder = new CacheConfigBuilder( );
+
+		// Act
+		builder.UseCacheFromHeader( null! );
+		var options = builder.ToCacheOptions( );
+
+		// Assert
+		options.Should( ).BeNull( );
+	}
 }

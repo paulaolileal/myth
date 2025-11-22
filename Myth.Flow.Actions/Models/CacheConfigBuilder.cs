@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Myth.Extensions;
 using Myth.Flow.Actions.ValueObjects;
 using Myth.Interfaces;
@@ -7,7 +8,13 @@ namespace Myth.Models;
 /// <summary>
 /// Internal implementation of cache configuration builder with HTTP support
 /// </summary>
-internal class CacheConfigBuilder : ICacheConfig {
+/// <remarks>
+/// Initializes a new instance of CacheConfigBuilder
+/// </remarks>
+/// <param name="logger">Logger for warning messages</param>
+internal class CacheConfigBuilder( ILogger<CacheConfigBuilder>? logger = null ) : ICacheConfig {
+
+	private readonly ILogger<CacheConfigBuilder>? _logger = logger;
 
 	/// <summary>
 	/// Gets whether caching is enabled for this query
@@ -99,6 +106,29 @@ internal class CacheConfigBuilder : ICacheConfig {
 		Enabled = true;
 		configure( this );
 		return this;
+	}
+
+	/// <summary>
+	/// Enables caching based on user-provided Cache-Control directive
+	/// </summary>
+	/// <param name="cacheControl">Cache control from user request header as string</param>
+	/// <returns>Cache configuration builder for method chaining</returns>
+	public ICacheConfig UseCacheFromHeader( string cacheControl ) {
+		if ( string.IsNullOrWhiteSpace( cacheControl ) ) {
+			Enabled = false;
+			return this;
+		}
+
+		try {
+			var parsedCacheControl = CacheControl.Parse( cacheControl );
+			return UseCache( parsedCacheControl );
+		} catch ( Exception ex ) {
+			// Log warning and continue without cache
+			_logger?.LogWarning( "Unable to parse Cache-Control directive '{CacheControl}': {Error}. Continuing without cache.",
+				cacheControl, ex.Message );
+			Enabled = false;
+			return this;
+		}
 	}
 
 	/// <summary>

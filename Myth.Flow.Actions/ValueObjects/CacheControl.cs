@@ -1,7 +1,5 @@
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Mvc;
-using Myth.Flow.Actions.ModelBinders;
 using Myth.Models;
 using Myth.ValueObjects;
 
@@ -10,7 +8,6 @@ namespace Myth.Flow.Actions.ValueObjects;
 /// <summary>
 /// Represents HTTP Cache-Control directives with type-safe constants and parsing capabilities
 /// </summary>
-[ModelBinder( typeof( CacheControlModelBinder ) )]
 public sealed class CacheControl : Constant<CacheControl, string> {
 
 	#region Type-Safe Constants
@@ -123,11 +120,6 @@ public sealed class CacheControl : Constant<CacheControl, string> {
 			return new CacheControl( "invalid", headerValue, false, headerValue );
 		}
 	}
-
-	/// <summary>
-	/// Creates a CacheControl from model binding (internal use)
-	/// </summary>
-	internal static CacheControl FromModelBinding( string? headerValue ) => Parse( headerValue );
 
 	/// <summary>
 	/// Creates a CacheControl with max-age directive

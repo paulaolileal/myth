@@ -204,16 +204,21 @@ public async Task<UserDto?> GetUserAsync( Guid userId ) {
 [HttpGet( "{userId}" )]
 public async Task<IActionResult> GetUser(
     Guid userId,
-    [FromHeader] CacheControl? cacheControl ) {
+    [FromHeader( Name = "cache-control" )] string? cacheControl ) {
 
     var query = new GetUserQuery { UserId = userId };
 
-    var result = await _dispatcher.DispatchQueryAsync<GetUserQuery, UserDto>(
-        query,
-        cacheOptions: null );
+    // Use query builder to configure cache from user header
+    var result = await Pipeline.Start( query )
+        .Query<GetUserQuery, UserDto>( ( query, cache ) =>
+            string.IsNullOrEmpty( cacheControl )
+                ? cache.Public( TimeSpan.FromMinutes( 15 ) ) // Default caching
+                : cache.UseCacheFromHeader( cacheControl ) // User-specified caching
+        )
+        .ExecuteAsync( );
 
     if ( result.IsSuccess )
-        return Ok( result.Data ); // Headers applied automatically by Dispatcher
+        return Ok( result.Value );
 
     return NotFound( );
 }
@@ -354,22 +359,27 @@ CacheControl.SMaxAge       // s-maxage directive
 
 #### User-Controlled Caching in Controllers
 
-Enable users to control caching via HTTP headers using `[FromHeader]` attribute binding:
+Enable users to control caching via HTTP headers using `[FromHeader]` parameter:
 
 ```csharp
 [HttpGet( "{id}" )]
 public async Task<IActionResult> GetProduct(
     Guid id,
-    [FromHeader] CacheControl? cacheControl ) {
+    [FromHeader( Name = "cache-control" )] string? cacheControl ) {
 
     var query = new GetProductQuery { ProductId = id };
 
-    var result = await _dispatcher.DispatchQueryAsync<GetProductQuery, ProductDto>(
-        query,
-        cacheOptions: cacheControl?.ToCacheOptions( ) );
+    // Configure cache directly from user header
+    var result = await Pipeline.Start( query )
+        .Query<GetProductQuery, ProductDto>( ( query, cache ) =>
+            string.IsNullOrEmpty( cacheControl )
+                ? cache.Public( TimeSpan.FromHours( 1 ) )
+                : cache.UseCacheFromHeader( cacheControl )
+        )
+        .ExecuteAsync( );
 
     if ( result.IsSuccess )
-        return Ok( result.Data ); // Headers applied automatically by Dispatcher
+        return Ok( result.Value ); // Headers applied automatically by Pipeline
 
     return NotFound( );
 }
@@ -932,62 +942,6 @@ public class UserPipelineTests {
 - **Handlers**: `{Request}Handler` (CreateUserCommandHandler, UserCreatedEventHandler)
 - **Results**: Use CommandResult, QueryResult with proper success/failure handling
 
-## Swagger Integration
-
-### CacheControl Enum Display
-
-For better developer experience in Swagger UI, you can configure `CacheControl` to display as a dropdown with predefined values.
-
-**✅ Compatible with all Swashbuckle versions (6.x, 7.x, 8.x+)** - Safe fallback handling ensures your application won't crash due to version mismatches.
-
-```csharp
-using Myth.Flow.Actions.Extensions;
-
-// In Program.cs or Startup.cs
-builder.Services.AddSwaggerGen(options => {
-    options.AddFlowActionsSchemaFilters(); // Adds all Flow.Actions filters
-
-    // Or add only the CacheControl filter
-    options.AddCacheControlSchemaFilter();
-});
-```
-
-This configuration makes `CacheControl` parameters appear as a dropdown in Swagger UI with common cache directives:
-- `no-cache`
-- `no-store`
-- `public`
-- `private`
-- `must-revalidate`
-- `proxy-revalidate`
-- `no-transform`
-- `immutable`
-- `max-age=3600`
-- `public, max-age=1800`
-- `private, max-age=300`
-- `public, immutable, max-age=31536000`
-
-### Usage in Controllers
-
-```csharp
-[HttpGet("users")]
-public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers(
-    [FromHeader("Cache-Control")] CacheControl? cacheControl = null) {
-
-    var query = new GetUsersQuery();
-
-    var result = await _dispatcher.DispatchQueryAsync(query, cache => {
-        if (cacheControl != null) {
-            cache.UseCache(cacheControl);
-        } else {
-            cache.Public(TimeSpan.FromMinutes(5));
-        }
-    });
-
-    return result.IsSuccess ? Ok(result.Data) : BadRequest(result.ErrorMessage);
-}
-```
-
-The model binder automatically parses the `Cache-Control` header and validates the syntax, providing type-safe access to cache directives in your controllers.
 
 ## Contributing
 

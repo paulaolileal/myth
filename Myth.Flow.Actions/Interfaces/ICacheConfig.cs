@@ -40,6 +40,14 @@ public interface ICacheConfig {
 
 	/// <summary>
 	/// Enables caching based on user-provided Cache-Control directive
+	/// Usage: .UseCacheFromHeader(cacheControl) where cacheControl comes from [FromHeader(Name = "cache-control")] string
+	/// </summary>
+	/// <param name="cacheControl">Cache control from user request header as string</param>
+	/// <returns>Cache configuration builder for method chaining</returns>
+	ICacheConfig UseCacheFromHeader( string cacheControl );
+
+	/// <summary>
+	/// Enables caching based on user-provided Cache-Control directive
 	/// Usage: .UseCache(cacheControl) where cacheControl comes from [FromHeader] CacheControl
 	/// </summary>
 	/// <param name="cacheControl">Cache control from user request header</param>

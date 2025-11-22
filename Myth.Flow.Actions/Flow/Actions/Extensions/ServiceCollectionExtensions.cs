@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -8,7 +7,6 @@ using Microsoft.Extensions.Logging;
 using Myth.Builders;
 using Myth.Flow.Actions.Brokers;
 using Myth.Flow.Actions.Hosting;
-using Myth.Flow.Actions.ModelBinders;
 using Myth.Flow.Actions.Services;
 using Myth.Flow.Actions.Settings;
 using Myth.Flow.Resilience;
@@ -98,10 +96,6 @@ public static class ServiceCollectionExtensions {
 		// Register HttpContextAccessor for automatic header application
 		services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>( );
 
-		// Register CacheControl model binder for automatic Cache-Control header parsing
-		services.Configure<MvcOptions>( options => {
-			options.ModelBinderProviders.Insert( 0, new CacheControlModelBinderProvider( ) );
-		} );
 
 		services.TryAddSingleton<IDispatcher>( sp => {
 			var eventBus = sp.GetRequiredService<IEventBus>( );

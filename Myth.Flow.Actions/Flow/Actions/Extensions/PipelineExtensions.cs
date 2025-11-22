@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Myth.Exceptions;
 using Myth.Flow.Actions.Interfaces;
 using Myth.Interfaces;
@@ -132,7 +133,8 @@ public static class PipelineExtensions {
 				var query = state.CurrentRequest!;
 
 				var cacheOptions = configureCache != null
-					? ( ( CacheConfigBuilder )configureCache( query, new CacheConfigBuilder( ) ) ).ToCacheOptions( )
+					? ( ( CacheConfigBuilder )configureCache( query,
+						new CacheConfigBuilder( state.ServiceProvider?.GetService<ILogger<CacheConfigBuilder>>( ) ) ) ).ToCacheOptions( )
 					: null;
 
 				var result = await dispatcher.DispatchQueryAsync<TQuery, TResponse>( query, cacheOptions );
