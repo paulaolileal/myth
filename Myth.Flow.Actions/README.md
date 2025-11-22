@@ -936,7 +936,9 @@ public class UserPipelineTests {
 
 ### CacheControl Enum Display
 
-For better developer experience in Swagger UI, you can configure `CacheControl` to display as a dropdown with predefined values:
+For better developer experience in Swagger UI, you can configure `CacheControl` to display as a dropdown with predefined values.
+
+**✅ Compatible with all Swashbuckle versions (6.x, 7.x, 8.x+)** - Safe fallback handling ensures your application won't crash due to version mismatches.
 
 ```csharp
 using Myth.Flow.Actions.Extensions;
