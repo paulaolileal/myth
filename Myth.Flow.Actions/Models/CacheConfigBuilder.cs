@@ -1,20 +1,12 @@
-using Microsoft.Extensions.Logging;
 using Myth.Extensions;
-using Myth.Flow.Actions.ValueObjects;
 using Myth.Interfaces;
 
 namespace Myth.Models;
 
 /// <summary>
-/// Internal implementation of cache configuration builder with HTTP support
+/// Internal implementation of cache configuration builder for data caching
 /// </summary>
-/// <remarks>
-/// Initializes a new instance of CacheConfigBuilder
-/// </remarks>
-/// <param name="logger">Logger for warning messages</param>
-internal class CacheConfigBuilder( ILogger<CacheConfigBuilder>? logger = null ) : ICacheConfig {
-
-	private readonly ILogger<CacheConfigBuilder>? _logger = logger;
+internal class CacheConfigBuilder : ICacheConfig {
 
 	/// <summary>
 	/// Gets whether caching is enabled for this query
@@ -41,25 +33,6 @@ internal class CacheConfigBuilder( ILogger<CacheConfigBuilder>? logger = null ) 
 	/// </summary>
 	public Func<object, string>? KeyGenerator { get; private set; }
 
-	/// <summary>
-	/// Gets the HTTP cache policy for generating headers
-	/// </summary>
-	public CachePolicy? Policy { get; private set; }
-
-	/// <summary>
-	/// Gets the ETag generator function
-	/// </summary>
-	public Func<object, string>? ETagGenerator { get; private set; }
-
-	/// <summary>
-	/// Gets the headers for the Vary header
-	/// </summary>
-	public string[ ]? VaryHeaders { get; private set; }
-
-	/// <summary>
-	/// Gets whether HTTP headers should be generated
-	/// </summary>
-	public bool GenerateHeaders { get; private set; } = true;
 
 	/// <summary>
 	/// Enables caching for the query with optional cache key
@@ -108,55 +81,6 @@ internal class CacheConfigBuilder( ILogger<CacheConfigBuilder>? logger = null ) 
 		return this;
 	}
 
-	/// <summary>
-	/// Enables caching based on user-provided Cache-Control directive
-	/// </summary>
-	/// <param name="cacheControl">Cache control from user request header as string</param>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	public ICacheConfig UseCacheFromHeader( string cacheControl ) {
-		if ( string.IsNullOrWhiteSpace( cacheControl ) ) {
-			Enabled = false;
-			return this;
-		}
-
-		try {
-			var parsedCacheControl = CacheControl.Parse( cacheControl );
-			return UseCache( parsedCacheControl );
-		} catch ( Exception ex ) {
-			// Log warning and continue without cache
-			_logger?.LogWarning( "Unable to parse Cache-Control directive '{CacheControl}': {Error}. Continuing without cache.",
-				cacheControl, ex.Message );
-			Enabled = false;
-			return this;
-		}
-	}
-
-	/// <summary>
-	/// Enables caching based on user-provided Cache-Control directive
-	/// </summary>
-	/// <param name="cacheControl">Cache control from user request header</param>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	public ICacheConfig UseCache( CacheControl cacheControl ) {
-		if ( cacheControl == null || !cacheControl.IsValid ) {
-			Enabled = false;
-			return this;
-		}
-
-		// Convert the user's cache control to cache configuration
-		var userOptions = cacheControl.ToCacheOptions( );
-
-		if ( userOptions == null ) {
-			Enabled = false;
-			return this;
-		}
-
-		Enabled = userOptions.Enabled;
-		Policy = userOptions.Policy;
-		Ttl = userOptions.Ttl;
-		GenerateHeaders = userOptions.GenerateHeaders;
-
-		return this;
-	}
 
 	/// <summary>
 	/// Sets the cache key for the query result
@@ -188,95 +112,6 @@ internal class CacheConfigBuilder( ILogger<CacheConfigBuilder>? logger = null ) 
 		return this;
 	}
 
-	/// <summary>
-	/// Sets a public cache policy with max-age
-	/// </summary>
-	/// <param name="maxAge">How long the response can be cached</param>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	public ICacheConfig Public( TimeSpan maxAge ) {
-		Enabled = true;
-		Policy = CachePolicy.Public( maxAge );
-		Ttl = maxAge;
-		return this;
-	}
-
-	/// <summary>
-	/// Sets a private cache policy with max-age
-	/// </summary>
-	/// <param name="maxAge">How long the response can be cached</param>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	public ICacheConfig Private( TimeSpan maxAge ) {
-		Enabled = true;
-		Policy = CachePolicy.Private( maxAge );
-		Ttl = maxAge;
-		return this;
-	}
-
-	/// <summary>
-	/// Disables all caching with no-cache directive
-	/// </summary>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	public ICacheConfig NoCache( ) {
-		Enabled = true;
-		Policy = CachePolicy.NoCache;
-		return this;
-	}
-
-	/// <summary>
-	/// Sets an immutable cache policy for static content
-	/// </summary>
-	/// <param name="maxAge">How long the response can be cached</param>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	public ICacheConfig Immutable( TimeSpan maxAge ) {
-		Enabled = true;
-		Policy = CachePolicy.Immutable( maxAge );
-		Ttl = maxAge;
-		return this;
-	}
-
-	/// <summary>
-	/// Sets a custom cache policy
-	/// </summary>
-	/// <param name="policy">The cache policy to use</param>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	public ICacheConfig WithPolicy( CachePolicy policy ) {
-		Enabled = true;
-		Policy = policy;
-		if ( policy.MaxAge.HasValue )
-			Ttl = policy.MaxAge.Value;
-		return this;
-	}
-
-	/// <summary>
-	/// Configures ETag generation for the cached response
-	/// </summary>
-	/// <param name="generator">Function to generate ETag from result</param>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	public ICacheConfig WithETag( Func<object, string> generator ) {
-		Enabled = true; // Enable cache when ETag is configured
-		ETagGenerator = generator;
-		return this;
-	}
-
-	/// <summary>
-	/// Sets headers that this response varies by
-	/// </summary>
-	/// <param name="headers">Header names to include in Vary header</param>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	public ICacheConfig WithVary( params string[ ] headers ) {
-		Enabled = true; // Enable cache when Vary is configured
-		VaryHeaders = headers;
-		return this;
-	}
-
-	/// <summary>
-	/// Disables HTTP header generation
-	/// </summary>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	public ICacheConfig WithoutHeaders( ) {
-		GenerateHeaders = false;
-		return this;
-	}
 
 	/// <summary>
 	/// Converts this cache configuration to CacheOptions for dispatcher
@@ -291,11 +126,7 @@ internal class CacheConfigBuilder( ILogger<CacheConfigBuilder>? logger = null ) 
 			CacheKey = Key,
 			KeyGenerator = KeyGenerator,
 			Ttl = Ttl ?? TimeSpan.FromMinutes( 5 ),
-			SlidingExpiration = SlidingExpiration,
-			Policy = Policy,
-			GenerateHeaders = GenerateHeaders,
-			ETagGenerator = ETagGenerator,
-			VaryHeaders = VaryHeaders
+			SlidingExpiration = SlidingExpiration
 		};
 	}
 }

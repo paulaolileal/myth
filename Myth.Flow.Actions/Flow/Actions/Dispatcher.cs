@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -140,9 +141,7 @@ internal sealed class Dispatcher(
 					_logger.LogInformation( "Query {QueryType} served from cache", typeof( TQuery ).Name );
 					activity?.SetTag( "cache.hit", true );
 
-					var cacheMetadata = CreateCacheMetadata( cacheOptions, cached.Value, fromCache: true );
-					ApplyResponseHeaders( cacheMetadata );
-					return QueryResult<TResponse>.Success( cached.Value, fromCache: true, cacheMetadata: cacheMetadata );
+					return QueryResult<TResponse>.Success( cached.Value, fromCache: true );
 				}
 			}
 
@@ -165,12 +164,6 @@ internal sealed class Dispatcher(
 			activity?.SetStatus( result.IsSuccess ? ActivityStatusCode.Ok : ActivityStatusCode.Error );
 			activity?.SetTag( "cache.hit", false );
 
-			// Generate cache metadata for HTTP headers if needed
-			if ( result.IsSuccess && cacheOptions?.ShouldGenerateHeaders == true ) {
-				var cacheMetadata = CreateCacheMetadata( cacheOptions, result.Data!, fromCache: false );
-				ApplyResponseHeaders( cacheMetadata );
-				return QueryResult<TResponse>.Success( result.Data!, fromCache: false, cacheMetadata: cacheMetadata );
-			}
 
 			return result;
 		} catch ( Exception ex ) when ( ShouldPropagateException( ex ) ) {
@@ -223,7 +216,7 @@ internal sealed class Dispatcher(
 			var jsonOptions = new JsonSerializerOptions {
 				WriteIndented = false,
 				PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-				IgnoreNullValues = true,
+				DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
 				IncludeFields = false
 			};
 
@@ -267,67 +260,4 @@ internal sealed class Dispatcher(
 			configuredType.IsAssignableFrom( exceptionType ) ) ?? false;
 	}
 
-	/// <summary>
-	/// Creates cache metadata for HTTP header generation
-	/// </summary>
-	/// <param name="cacheOptions">Cache configuration options</param>
-	/// <param name="result">Query result data</param>
-	/// <param name="fromCache">Whether the result came from cache</param>
-	/// <returns>CacheMetadata instance for HTTP headers or null if not needed</returns>
-	private static CacheMetadata? CreateCacheMetadata( CacheOptions cacheOptions, object result, bool fromCache ) {
-		if ( !cacheOptions.ShouldGenerateHeaders )
-			return null;
-
-		var metadata = new CacheMetadata {
-			Policy = cacheOptions.Policy,
-			FromCache = fromCache,
-			VaryHeaders = cacheOptions.VaryHeaders
-		};
-
-		// Set expiration time based on TTL
-		if ( cacheOptions.Policy?.MaxAge.HasValue == true ) {
-			metadata.ExpiresAt = DateTime.UtcNow.Add( cacheOptions.Policy.MaxAge.Value );
-		}
-
-		// Generate ETag if generator is provided
-		if ( cacheOptions.ETagGenerator != null ) {
-			try {
-				metadata.ETag = cacheOptions.ETagGenerator( result );
-			} catch {
-				// Ignore ETag generation errors
-			}
-		}
-
-		// Set Age for cached responses
-		if ( fromCache && cacheOptions.Policy?.MaxAge.HasValue == true ) {
-			// This is an approximation - in a real system you'd store the cache timestamp
-			metadata.Age = TimeSpan.Zero;
-		}
-
-		return metadata;
-	}
-
-	/// <summary>
-	/// Applies cache headers directly to the HTTP response if HttpContext is available
-	/// </summary>
-	/// <param name="cacheMetadata">Cache metadata containing headers to apply</param>
-	private void ApplyResponseHeaders( CacheMetadata? cacheMetadata ) {
-		if ( cacheMetadata?.ShouldGenerateHeaders != true )
-			return;
-
-		var httpContext = _httpContextAccessor?.HttpContext;
-		if ( httpContext == null )
-			return;
-
-		try {
-			foreach ( var header in cacheMetadata.ToHeaders( ) ) {
-				httpContext.Response.Headers[ header.Key ] = header.Value;
-			}
-
-			_logger.LogDebug( "Applied cache headers: {Headers}",
-				string.Join( ", ", cacheMetadata.ToHeaders( ).Keys ) );
-		} catch ( Exception ex ) {
-			_logger.LogWarning( ex, "Failed to apply cache headers to HTTP response" );
-		}
-	}
 }

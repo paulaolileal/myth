@@ -1,141 +1,106 @@
 using FluentAssertions;
-using Myth.Flow.Actions.ValueObjects;
 using Myth.Interfaces;
 using Myth.Models;
-using Myth.ValueObjects;
 using Xunit;
 
 namespace Myth.Flow.Actions.Test;
 
-public class CacheHttpHeadersTests {
+public class CacheDataCachingTests {
 
 	[Fact]
-	public void CacheConfigBuilder_Public_Should_Set_Public_Policy( ) {
+	public void CacheConfigBuilder_UseCache_Should_Enable_Cache( ) {
 		// Arrange
 		var builder = new CacheConfigBuilder( );
-		var duration = TimeSpan.FromMinutes( 15 );
 
 		// Act
-		builder.Public( duration );
+		builder.UseCache( );
 		var options = builder.ToCacheOptions( );
 
 		// Assert
 		options.Should( ).NotBeNull( );
 		options!.Enabled.Should( ).BeTrue( );
-		options.Policy.Should( ).NotBeNull( );
-		options.Policy!.IsPublic.Should( ).BeTrue( );
-		options.Policy.MaxAge.Should( ).Be( duration );
-		options.Ttl.Should( ).Be( duration );
+		options.Ttl.Should( ).Be( TimeSpan.FromMinutes( 5 ) ); // Default TTL
 	}
 
 	[Fact]
-	public void CacheConfigBuilder_Private_Should_Set_Private_Policy( ) {
+	public void CacheConfigBuilder_UseCache_WithKey_Should_Set_Key( ) {
 		// Arrange
 		var builder = new CacheConfigBuilder( );
-		var duration = TimeSpan.FromMinutes( 5 );
+		var key = "custom-cache-key";
 
 		// Act
-		builder.Private( duration );
+		builder.UseCache( key );
 		var options = builder.ToCacheOptions( );
 
 		// Assert
 		options.Should( ).NotBeNull( );
-		options!.Policy!.IsPrivate.Should( ).BeTrue( );
-		options.Policy.MaxAge.Should( ).Be( duration );
+		options!.Enabled.Should( ).BeTrue( );
+		options.CacheKey.Should( ).Be( key );
 	}
 
 	[Fact]
-	public void CacheConfigBuilder_NoCache_Should_Set_NoCache_Policy( ) {
+	public void CacheConfigBuilder_UseCache_WithKeyAndTtl_Should_Set_Both( ) {
 		// Arrange
 		var builder = new CacheConfigBuilder( );
+		var key = "custom-key";
+		var ttl = TimeSpan.FromMinutes( 10 );
 
 		// Act
-		builder.NoCache( );
+		builder.UseCache( key, ttl );
 		var options = builder.ToCacheOptions( );
 
 		// Assert
 		options.Should( ).NotBeNull( );
-		options!.Policy!.IsNoCache.Should( ).BeTrue( );
+		options!.Enabled.Should( ).BeTrue( );
+		options.CacheKey.Should( ).Be( key );
+		options.Ttl.Should( ).Be( ttl );
 	}
 
 	[Fact]
-	public void CacheConfigBuilder_Immutable_Should_Set_Immutable_Policy( ) {
+	public void CacheConfigBuilder_WithTtl_Should_Set_TimeToLive( ) {
 		// Arrange
 		var builder = new CacheConfigBuilder( );
-		var duration = TimeSpan.FromDays( 1 );
+		var ttl = TimeSpan.FromHours( 2 );
 
 		// Act
-		builder.Immutable( duration );
+		builder.UseCache( ).WithTtl( ttl );
 		var options = builder.ToCacheOptions( );
 
 		// Assert
 		options.Should( ).NotBeNull( );
-		options!.Policy!.IsPublic.Should( ).BeTrue( );
-		options.Policy.ToHeaderValue( ).Should( ).Contain( "immutable" );
+		options!.Enabled.Should( ).BeTrue( );
+		options.Ttl.Should( ).Be( ttl );
 	}
 
 	[Fact]
-	public void CacheConfigBuilder_WithPolicy_Should_Set_Custom_Policy( ) {
+	public void CacheConfigBuilder_WithKey_Should_Set_Cache_Key( ) {
 		// Arrange
 		var builder = new CacheConfigBuilder( );
-		var customPolicy = new CachePolicy( )
-			.Add( CacheControl.Private )
-			.Add( CacheControl.MustRevalidate )
-			.WithMaxAge( TimeSpan.FromMinutes( 10 ) );
+		var key = "my-custom-key";
 
 		// Act
-		builder.WithPolicy( customPolicy );
+		builder.UseCache( ).WithKey( key );
 		var options = builder.ToCacheOptions( );
 
 		// Assert
 		options.Should( ).NotBeNull( );
-		options!.Policy.Should( ).Be( customPolicy );
-		options.Ttl.Should( ).Be( TimeSpan.FromMinutes( 10 ) );
+		options!.Enabled.Should( ).BeTrue( );
+		options.CacheKey.Should( ).Be( key );
 	}
 
 	[Fact]
-	public void CacheConfigBuilder_WithETag_Should_Set_ETag_Generator( ) {
-		// Arrange
-		var builder = new CacheConfigBuilder( );
-		Func<object, string> etagGenerator = obj => $"\"{obj.GetHashCode( )}\"";
-
-		// Act
-		builder.WithETag( etagGenerator );
-		var options = builder.ToCacheOptions( );
-
-		// Assert
-		options.Should( ).NotBeNull( );
-		options!.ETagGenerator.Should( ).Be( etagGenerator );
-	}
-
-	[Fact]
-	public void CacheConfigBuilder_WithVary_Should_Set_Vary_Headers( ) {
-		// Arrange
-		var builder = new CacheConfigBuilder( );
-		var varyHeaders = new[ ] { "Accept-Language", "Authorization" };
-
-		// Act
-		builder.WithVary( varyHeaders );
-		var options = builder.ToCacheOptions( );
-
-		// Assert
-		options.Should( ).NotBeNull( );
-		options!.VaryHeaders.Should( ).BeEquivalentTo( varyHeaders );
-	}
-
-	[Fact]
-	public void CacheConfigBuilder_WithoutHeaders_Should_Disable_Header_Generation( ) {
+	public void CacheConfigBuilder_WithSlidingExpiration_Should_Enable_Sliding( ) {
 		// Arrange
 		var builder = new CacheConfigBuilder( );
 
 		// Act
-		builder.Public( TimeSpan.FromMinutes( 10 ) ).WithoutHeaders( );
+		builder.UseCache( ).WithSlidingExpiration( true );
 		var options = builder.ToCacheOptions( );
 
 		// Assert
 		options.Should( ).NotBeNull( );
-		options!.GenerateHeaders.Should( ).BeFalse( );
-		options.ShouldGenerateHeaders.Should( ).BeFalse( );
+		options!.Enabled.Should( ).BeTrue( );
+		options.SlidingExpiration.Should( ).BeTrue( );
 	}
 
 	[Fact]
@@ -145,9 +110,9 @@ public class CacheHttpHeadersTests {
 
 		// Act
 		builder.UseCache( cache => cache
-			.Public( TimeSpan.FromMinutes( 30 ) )
-			.WithETag( obj => $"\"{obj.GetHashCode( )}\"" )
-			.WithVary( "Accept-Language" )
+			.WithKey( "configured-key" )
+			.WithTtl( TimeSpan.FromMinutes( 30 ) )
+			.WithSlidingExpiration( true )
 		);
 
 		var options = builder.ToCacheOptions( );
@@ -155,103 +120,56 @@ public class CacheHttpHeadersTests {
 		// Assert
 		options.Should( ).NotBeNull( );
 		options!.Enabled.Should( ).BeTrue( );
-		options.Policy!.IsPublic.Should( ).BeTrue( );
-		options.Policy.MaxAge.Should( ).Be( TimeSpan.FromMinutes( 30 ) );
-		options.ETagGenerator.Should( ).NotBeNull( );
-		options.VaryHeaders.Should( ).Contain( "Accept-Language" );
+		options.CacheKey.Should( ).Be( "configured-key" );
+		options.Ttl.Should( ).Be( TimeSpan.FromMinutes( 30 ) );
+		options.SlidingExpiration.Should( ).BeTrue( );
 	}
 
 	[Fact]
-	public void CacheOptions_ShouldGenerateHeaders_Should_Return_True_When_Policy_Set( ) {
-		// Arrange
-		var options = new CacheOptions {
-			Policy = CachePolicy.Public( TimeSpan.FromMinutes( 10 ) ),
-			GenerateHeaders = true
-		};
-
-		// Act & Assert
-		options.ShouldGenerateHeaders.Should( ).BeTrue( );
-	}
-
-	[Fact]
-	public void CacheOptions_ShouldGenerateHeaders_Should_Return_False_When_Policy_Null( ) {
-		// Arrange
-		var options = new CacheOptions {
-			Policy = null,
-			GenerateHeaders = true
-		};
-
-		// Act & Assert
-		options.ShouldGenerateHeaders.Should( ).BeFalse( );
-	}
-
-	[Fact]
-	public void CacheOptions_ShouldGenerateHeaders_Should_Return_False_When_GenerateHeaders_False( ) {
-		// Arrange
-		var options = new CacheOptions {
-			Policy = CachePolicy.Public( TimeSpan.FromMinutes( 10 ) ),
-			GenerateHeaders = false
-		};
-
-		// Act & Assert
-		options.ShouldGenerateHeaders.Should( ).BeFalse( );
-	}
-
-	[Fact]
-	public void CacheConfigBuilder_UseCacheFromHeader_WithValidHeader_Should_Parse_And_Apply( ) {
+	public void CacheConfigBuilder_NotEnabled_Should_Return_Null( ) {
 		// Arrange
 		var builder = new CacheConfigBuilder( );
-		var cacheControlHeader = "public, max-age=3600";
 
 		// Act
-		builder.UseCacheFromHeader( cacheControlHeader );
+		var options = builder.ToCacheOptions( );
+
+		// Assert
+		options.Should( ).BeNull( );
+	}
+
+	[Fact]
+	public void CacheOptions_DefaultTtl_Should_Be_Five_Minutes( ) {
+		// Arrange
+		var builder = new CacheConfigBuilder( );
+
+		// Act
+		builder.UseCache( );
+		var options = builder.ToCacheOptions( );
+
+		// Assert
+		options.Should( ).NotBeNull( );
+		options!.Ttl.Should( ).Be( TimeSpan.FromMinutes( 5 ) );
+	}
+
+	[Fact]
+	public void CacheConfigBuilder_KeyGenerator_Should_Be_Set( ) {
+		// Arrange
+		var builder = new CacheConfigBuilder( );
+		Func<object, string> keyGen = obj => $"key-{obj.GetHashCode( )}";
+
+		// Act
+		builder.UseCache( keyGen );
 		var options = builder.ToCacheOptions( );
 
 		// Assert
 		options.Should( ).NotBeNull( );
 		options!.Enabled.Should( ).BeTrue( );
-		options.Policy.Should( ).NotBeNull( );
-		options.Policy!.IsPublic.Should( ).BeTrue( );
-		options.Policy.MaxAge.Should( ).Be( TimeSpan.FromSeconds( 3600 ) );
-	}
+		options.KeyGenerator.Should( ).NotBeNull( );
 
-	[Fact]
-	public void CacheConfigBuilder_UseCacheFromHeader_WithInvalidHeader_Should_Disable_Cache( ) {
-		// Arrange
-		var builder = new CacheConfigBuilder( );
-		var invalidHeader = "invalid-cache-control";
-
-		// Act
-		builder.UseCacheFromHeader( invalidHeader );
-		var options = builder.ToCacheOptions( );
-
-		// Assert
-		options.Should( ).BeNull( );
-	}
-
-	[Fact]
-	public void CacheConfigBuilder_UseCacheFromHeader_WithEmptyHeader_Should_Disable_Cache( ) {
-		// Arrange
-		var builder = new CacheConfigBuilder( );
-
-		// Act
-		builder.UseCacheFromHeader( "" );
-		var options = builder.ToCacheOptions( );
-
-		// Assert
-		options.Should( ).BeNull( );
-	}
-
-	[Fact]
-	public void CacheConfigBuilder_UseCacheFromHeader_WithNullHeader_Should_Disable_Cache( ) {
-		// Arrange
-		var builder = new CacheConfigBuilder( );
-
-		// Act
-		builder.UseCacheFromHeader( null! );
-		var options = builder.ToCacheOptions( );
-
-		// Assert
-		options.Should( ).BeNull( );
+		// Test that the key generator works correctly
+		var testObj = new { Id = 123, Name = "Test" };
+		var expectedKey = keyGen( testObj );
+		var actualKey = options.KeyGenerator!( testObj );
+		actualKey.Should( ).Be( expectedKey );
 	}
 }

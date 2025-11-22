@@ -1,9 +1,7 @@
-using Myth.Flow.Actions.ValueObjects;
-
 namespace Myth.Interfaces;
 
 /// <summary>
-/// Provides fluent configuration for query caching with HTTP header support
+/// Provides fluent configuration for data caching
 /// </summary>
 public interface ICacheConfig {
 
@@ -38,21 +36,6 @@ public interface ICacheConfig {
 	/// <returns>Cache configuration builder for method chaining</returns>
 	ICacheConfig UseCache( Action<ICacheConfig> configure );
 
-	/// <summary>
-	/// Enables caching based on user-provided Cache-Control directive
-	/// Usage: .UseCacheFromHeader(cacheControl) where cacheControl comes from [FromHeader(Name = "cache-control")] string
-	/// </summary>
-	/// <param name="cacheControl">Cache control from user request header as string</param>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	ICacheConfig UseCacheFromHeader( string cacheControl );
-
-	/// <summary>
-	/// Enables caching based on user-provided Cache-Control directive
-	/// Usage: .UseCache(cacheControl) where cacheControl comes from [FromHeader] CacheControl
-	/// </summary>
-	/// <param name="cacheControl">Cache control from user request header</param>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	ICacheConfig UseCache( CacheControl cacheControl );
 
 	/// <summary>
 	/// Sets the cache key for the query result
@@ -75,65 +58,4 @@ public interface ICacheConfig {
 	/// <returns>Cache configuration builder for method chaining</returns>
 	ICacheConfig WithSlidingExpiration( bool sliding = true );
 
-	/// <summary>
-	/// Sets a public cache policy with max-age
-	/// Usage: .Public(TimeSpan.FromMinutes(15))
-	/// </summary>
-	/// <param name="maxAge">How long the response can be cached</param>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	ICacheConfig Public( TimeSpan maxAge );
-
-	/// <summary>
-	/// Sets a private cache policy with max-age
-	/// Usage: .Private(TimeSpan.FromMinutes(5))
-	/// </summary>
-	/// <param name="maxAge">How long the response can be cached</param>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	ICacheConfig Private( TimeSpan maxAge );
-
-	/// <summary>
-	/// Disables all caching with no-cache directive
-	/// Usage: .NoCache()
-	/// </summary>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	ICacheConfig NoCache( );
-
-	/// <summary>
-	/// Sets an immutable cache policy for static content
-	/// Usage: .Immutable(TimeSpan.FromDays(365))
-	/// </summary>
-	/// <param name="maxAge">How long the response can be cached</param>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	ICacheConfig Immutable( TimeSpan maxAge );
-
-	/// <summary>
-	/// Sets a custom cache policy
-	/// Usage: .WithPolicy(CachePolicy.Public(TimeSpan.FromHours(1)))
-	/// </summary>
-	/// <param name="policy">The cache policy to use</param>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	ICacheConfig WithPolicy( CachePolicy policy );
-
-	/// <summary>
-	/// Configures ETag generation for the cached response
-	/// Usage: .WithETag(result => $"\"{result.Id}-{result.UpdatedAt.Ticks}\"")
-	/// </summary>
-	/// <param name="generator">Function to generate ETag from result</param>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	ICacheConfig WithETag( Func<object, string> generator );
-
-	/// <summary>
-	/// Sets headers that this response varies by
-	/// Usage: .WithVary("Accept-Language", "Authorization")
-	/// </summary>
-	/// <param name="headers">Header names to include in Vary header</param>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	ICacheConfig WithVary( params string[ ] headers );
-
-	/// <summary>
-	/// Disables HTTP header generation
-	/// Usage: .WithoutHeaders()
-	/// </summary>
-	/// <returns>Cache configuration builder for method chaining</returns>
-	ICacheConfig WithoutHeaders( );
 }

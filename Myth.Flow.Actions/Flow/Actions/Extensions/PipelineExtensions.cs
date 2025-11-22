@@ -134,7 +134,7 @@ public static class PipelineExtensions {
 
 				var cacheOptions = configureCache != null
 					? ( ( CacheConfigBuilder )configureCache( query,
-						new CacheConfigBuilder( state.ServiceProvider?.GetService<ILogger<CacheConfigBuilder>>( ) ) ) ).ToCacheOptions( )
+						new CacheConfigBuilder( ) ) ).ToCacheOptions( )
 					: null;
 
 				var result = await dispatcher.DispatchQueryAsync<TQuery, TResponse>( query, cacheOptions );
