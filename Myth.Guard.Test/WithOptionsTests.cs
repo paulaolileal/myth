@@ -97,6 +97,8 @@ public class WithOptionsTests : BaseTestFixture {
 		error.Options.Should( ).Contain( "3: Medium" );
 		error.Options.Should( ).Contain( "5: High" );
 		error.Options.Should( ).Contain( "10: Critical" );
+		// Verify new message format when WithOptions is used
+		error.Message.Should( ).Be( "Value '999' is not valid. Use one of the available values in Options field" );
 	}
 
 	[Fact]

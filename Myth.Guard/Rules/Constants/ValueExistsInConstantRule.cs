@@ -26,6 +26,9 @@ internal sealed class ValueExistsInConstantRule<TConstant, TValue> : ValidationR
 	}
 
 	protected override string GetDefaultMessage( TValue value ) {
+		if ( HasOptionsConfigured ) {
+			return $"Value '{value}' is not valid. Use one of the available values in Options field";
+		}
 		return $"Value '{value}' is not valid. Valid options are: {Constant<TConstant, TValue>.GetOptions( )}";
 	}
 
