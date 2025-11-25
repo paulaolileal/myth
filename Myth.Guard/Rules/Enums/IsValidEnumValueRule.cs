@@ -1,3 +1,4 @@
+using Myth.Enums;
 using Myth.Models;
 using Myth.Rules.Base;
 
@@ -17,5 +18,26 @@ internal sealed class IsValidEnumValueRule<T> : ValidationRuleBase<T> where T : 
 
 	protected override string GetDefaultMessage( T value ) {
 		return $"Value {value} ({Convert.ToInt32( value )}) is not a valid {typeof( T ).Name} enum member";
+	}
+
+	protected override IReadOnlyList<string>? GetOptionsForError( T value ) {
+		if ( !HasOptionsConfigured )
+			return null;
+
+		if ( Options != null )
+			return Options;
+
+		// Generate options automatically from enum values
+		var enumValues = Enum.GetValues<T>( );
+		return enumValues.Select( e => FormatEnumOption( e, OptionsType ) ).ToList( ).AsReadOnly( );
+	}
+
+	private string FormatEnumOption( T enumValue, OptionsType type ) {
+		return type switch {
+			OptionsType.OnlyValue => Convert.ToInt32( enumValue ).ToString( ),
+			OptionsType.OnlyName => enumValue.ToString( ),
+			OptionsType.ValueAndName => $"{Convert.ToInt32( enumValue )}: {enumValue}",
+			_ => $"{Convert.ToInt32( enumValue )}: {enumValue}"
+		};
 	}
 }

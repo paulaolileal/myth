@@ -26,7 +26,8 @@ internal sealed class ValidationExceptionMiddleware( RequestDelegate next ) {
 			Errors = [ .. exception.ValidationResult.Errors.Select( e => new ErrorDetail {
 				Field = e.Field,
 				Message = e.Message,
-				Code = e.Code
+				Code = e.Code,
+				Options = e.Options
 			} ) ]
 		};
 

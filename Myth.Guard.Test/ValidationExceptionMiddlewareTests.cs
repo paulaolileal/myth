@@ -282,4 +282,74 @@ public class ValidationExceptionMiddlewareTests {
 		// Assert
 		context.Response.StatusCode.Should( ).Be( ( int )statusCode );
 	}
+
+	[Fact]
+	public async Task InvokeAsync_WithValidationErrorWithOptions_ShouldIncludeOptionsInResponse( ) {
+		// Arrange
+		var context = new DefaultHttpContext( );
+		context.Response.Body = new MemoryStream( );
+
+		var optionsList = new List<string> { "1: Active", "2: Inactive", "3: Pending" }.AsReadOnly( );
+		var validationErrors = new List<ValidationError>
+		{
+			new("Status", "Invalid enum value", "INVALID_OPTION", HttpStatusCode.BadRequest, optionsList)
+		};
+		var validationResult = new ValidationResult( validationErrors );
+		var validationException = new ValidationException( validationResult );
+
+		_next.When( x => x( Arg.Any<HttpContext>( ) ) ).Do( x => throw validationException );
+
+		// Act
+		await _middleware.InvokeAsync( context );
+
+		// Assert
+		context.Response.Body.Seek( 0, SeekOrigin.Begin );
+		var responseBody = await new StreamReader( context.Response.Body ).ReadToEndAsync( );
+
+		var responseObj = JsonSerializer.Deserialize<ValidationErrorResponse>( responseBody, new JsonSerializerOptions {
+			PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+		} );
+
+		responseObj!.Errors.Should( ).HaveCount( 1 );
+		var error = responseObj.Errors.First( );
+		error.Options.Should( ).NotBeNull( );
+		error.Options.Should( ).Contain( "1: Active" );
+		error.Options.Should( ).Contain( "2: Inactive" );
+		error.Options.Should( ).Contain( "3: Pending" );
+	}
+
+	[Fact]
+	public async Task InvokeAsync_WithValidationErrorWithoutOptions_ShouldNotIncludeOptionsProperty( ) {
+		// Arrange
+		var context = new DefaultHttpContext( );
+		context.Response.Body = new MemoryStream( );
+
+		var validationErrors = new List<ValidationError>
+		{
+			new("Name", "Name is required", "REQUIRED", HttpStatusCode.BadRequest, null) // No options
+		};
+		var validationResult = new ValidationResult( validationErrors );
+		var validationException = new ValidationException( validationResult );
+
+		_next.When( x => x( Arg.Any<HttpContext>( ) ) ).Do( x => throw validationException );
+
+		// Act
+		await _middleware.InvokeAsync( context );
+
+		// Assert
+		context.Response.Body.Seek( 0, SeekOrigin.Begin );
+		var responseBody = await new StreamReader( context.Response.Body ).ReadToEndAsync( );
+
+		// Verify JSON does not contain "options" property due to JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)
+		responseBody.Should( ).NotContain( "options" );
+		responseBody.Should( ).NotContain( "Options" );
+
+		var responseObj = JsonSerializer.Deserialize<ValidationErrorResponse>( responseBody, new JsonSerializerOptions {
+			PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+		} );
+
+		responseObj!.Errors.Should( ).HaveCount( 1 );
+		var error = responseObj.Errors.First( );
+		error.Options.Should( ).BeNull( );
+	}
 }
