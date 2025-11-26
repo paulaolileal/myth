@@ -17,6 +17,8 @@ Most validation libraries force you to choose between attribute-based validation
 ## Key Features
 
 - **Declarative Fluent API**: Write readable validation rules with chainable methods
+- **Multi-Validation**: Validate multiple values simultaneously with parallel execution (similar to Task.WhenAll)
+- **Standalone Validation**: Use Guard.For() for independent field validation outside model context
 - **Context-Aware Validation**: Different rules for Create, Update, Delete operations on the same entity
 - **Async Service Integration**: Access dependency injection for database or API validation
 - **Global Exception Handler**: Configure custom exception mappings with status codes and response formats
@@ -649,6 +651,230 @@ When using `app.UseGuard()`, validation exceptions are automatically caught and 
 ```
 
 **HTTP Status Code**: The highest status code from all validation errors (e.g., if one error has `409 Conflict`, the response will be `409`).
+
+## Multi-Validation
+
+Myth.Guard provides powerful multi-validation capabilities for validating multiple values simultaneously with parallel execution, similar to `Task.WhenAll`. This is perfect when you need to validate multiple independent values without the overhead of separate validation calls.
+
+### Parallel Validation with Validate.AllAsync()
+
+Validate multiple values in parallel for optimal performance:
+
+```csharp
+// Basic parallel validation
+var result = await Validate.AllAsync([
+    Guard.For(email, "Email").NotEmpty().Email(),
+    Guard.For(age, "Age").GreaterThan(0).LessThan(150),
+    Guard.For(name, "Name").NotEmpty().MinimumLength(2)
+]);
+
+if (!result.IsValid)
+{
+    Console.WriteLine($"Found {result.ErrorCount} errors across {result.FieldsWithErrorsCount} fields");
+    foreach (var error in result.Errors)
+        Console.WriteLine($"{error.Field}: {error.Message}");
+}
+
+// Validate and throw on failure
+await Validate.AllAndThrowAsync([
+    Guard.For(username, "Username").NotEmpty().Alphanumeric(),
+    Guard.For(password, "Password").NotEmpty().MinimumLength(8)
+]);
+```
+
+### Fluent Builder API
+
+Use the fluent builder for more readable multi-validation scenarios:
+
+```csharp
+var result = await Validate.All()
+    .Add(Guard.For(email, "Email").NotEmpty().Email())
+    .Add(Guard.For(age, "Age").GreaterThan(0).LessThan(150))
+    .Add(Guard.For(name, "Name").NotEmpty().MinimumLength(2))
+    .ValidateAsync();
+
+// Or using extension methods for common scenarios
+var result = await Validate.All()
+    .ValidateEmail(email)
+    .ValidateRange(age, "Age", 0, 150)
+    .ValidateRequired(name, "Name")
+    .ValidateString(password, "Password", p => p
+        .NotEmpty()
+        .MinimumLength(8)
+        .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$")
+        .WithMessage("Password must contain uppercase, lowercase and digit"))
+    .ValidateAsync();
+
+// Fluent with exception throwing
+await Validate.All()
+    .ValidateEmail(userEmail)
+    .ValidateRange(userAge, "Age", 18, 65)
+    .ValidateAndThrowAsync();
+```
+
+### Array Extension Methods
+
+Convenient extension methods for collections of validations:
+
+```csharp
+var validations = new[] {
+    Guard.For("test@example.com", "Email").Email(),
+    Guard.For(25, "Age").GreaterThan(0),
+    Guard.For("John Doe", "Name").NotEmpty()
+};
+
+// Validate all with result
+var result = await validations.ValidateAllAsync();
+
+// Validate all and throw on failure
+await validations.ValidateAllAndThrowAsync();
+```
+
+### Multi-Validation with Async Rules
+
+Combine parallel execution with async service validation:
+
+```csharp
+var result = await Validate.All()
+    .ValidateValue(email, "Email", e => e
+        .NotEmpty()
+        .Email()
+        .RespectAsync(async (email, ct, sp) => {
+            var userService = sp.GetRequiredService<IUserService>();
+            return await userService.IsEmailAvailableAsync(email, ct);
+        })
+        .WithMessage("Email already exists"))
+    .ValidateValue(username, "Username", u => u
+        .NotEmpty()
+        .RespectAsync(async (user, ct, sp) => {
+            var userService = sp.GetRequiredService<IUserService>();
+            return await userService.IsUsernameAvailableAsync(user, ct);
+        })
+        .WithMessage("Username already taken"))
+    .ValidateAsync();
+```
+
+### Complex Multi-Validation Scenarios
+
+Handle complex validation scenarios with multiple fields and business rules:
+
+```csharp
+// User registration validation
+var result = await Validate.All()
+    .ValidateRequired(firstName, "FirstName")
+    .ValidateRequired(lastName, "LastName")
+    .ValidateEmail(email)
+    .ValidateString(password, "Password", p => p
+        .NotEmpty()
+        .MinimumLength(8)
+        .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]")
+        .WithMessage("Password must contain uppercase, lowercase, number and special character"))
+    .ValidateRange(age, "Age", 18, 120)
+    .ValidateString(phone, "Phone", p => p
+        .NotEmpty()
+        .Matches(@"^\+?[1-9]\d{1,14}$")
+        .WithMessage("Please enter a valid phone number"))
+    .ValidateAsync();
+
+if (!result.IsValid)
+{
+    // Group errors by field for better UX
+    foreach (var fieldErrors in result.ErrorsByField)
+    {
+        Console.WriteLine($"{fieldErrors.Key}: {string.Join(", ", fieldErrors.Value.Select(e => e.Message))}");
+    }
+}
+```
+
+### MultiValidationResult Features
+
+The `MultiValidationResult` provides rich functionality for working with aggregated validation results:
+
+```csharp
+var result = await Validate.AllAsync(validations);
+
+// Basic validation status
+Console.WriteLine($"Is Valid: {result.IsValid}");
+Console.WriteLine($"Total Errors: {result.ErrorCount}");
+Console.WriteLine($"Fields with Errors: {result.FieldsWithErrorsCount}");
+
+// Access all error messages
+Console.WriteLine($"All Errors: {result.ErrorMessage}");
+
+// Check specific fields
+if (result.HasErrorsForField("Email"))
+{
+    var emailErrors = result.GetErrorsForField("Email");
+    Console.WriteLine($"Email has {emailErrors.Count} errors");
+}
+
+// Group errors by field
+foreach (var field in result.ErrorsByField)
+{
+    Console.WriteLine($"{field.Key}: {field.Value.Count} errors");
+    foreach (var error in field.Value)
+        Console.WriteLine($"  - {error.Message} ({error.Code})");
+}
+
+// Get first error for quick feedback
+var firstError = result.FirstError;
+if (firstError != null)
+    Console.WriteLine($"First error: {firstError.Field} - {firstError.Message}");
+```
+
+### Standalone Validation with Guard.For()
+
+Use `Guard.For()` for standalone validation outside of model contexts:
+
+```csharp
+// Simple field validation
+var emailResult = await Guard.For(email, "Email")
+    .NotEmpty()
+    .Email()
+    .ValidateAsync();
+
+if (!emailResult.IsValid)
+    Console.WriteLine($"Email error: {emailResult.FirstError?.Message}");
+
+// Validate and throw
+await Guard.For(age, "Age")
+    .GreaterThan(0)
+    .LessThan(150)
+    .ValidateAndThrowAsync();
+
+// Async validation with services
+var usernameResult = await Guard.For(username, "Username")
+    .NotEmpty()
+    .MinimumLength(3)
+    .RespectAsync(async (user, ct, sp) => {
+        var userService = sp.GetService<IUserService>();
+        return await userService?.IsUsernameAvailableAsync(user, ct) ?? true;
+    })
+    .ValidateAsync(serviceProvider);
+```
+
+### Performance Benefits
+
+Multi-validation provides significant performance benefits:
+
+1. **Parallel Execution**: All validations run simultaneously using `Task.WhenAll`
+2. **Single Service Provider Resolution**: DI services resolved once and shared
+3. **Batched Error Collection**: All errors collected in single pass
+4. **Reduced Memory Allocation**: Optimized for multiple validation scenarios
+
+```csharp
+// Instead of multiple sequential calls (slower)
+var emailResult = await Guard.For(email, "Email").Email().ValidateAsync();
+var ageResult = await Guard.For(age, "Age").GreaterThan(0).ValidateAsync();
+var nameResult = await Guard.For(name, "Name").NotEmpty().ValidateAsync();
+
+// Use parallel multi-validation (faster)
+var result = await Validate.AllAsync([
+    Guard.For(email, "Email").Email(),
+    Guard.For(age, "Age").GreaterThan(0),
+    Guard.For(name, "Name").NotEmpty()
+]);
+```
 
 ## Global Exception Handling
 

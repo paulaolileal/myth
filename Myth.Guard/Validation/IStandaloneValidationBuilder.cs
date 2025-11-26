@@ -6,7 +6,7 @@ namespace Myth.Validation;
 /// Base interface for standalone validation builders providing core validation functionality
 /// </summary>
 /// <typeparam name="T">The type of value being validated</typeparam>
-public interface IStandaloneValidationBuilder<T> {
+public interface IStandaloneValidationBuilder<T> : IStandaloneValidationBuilder {
 
 	/// <summary>
 	/// Adds a validation rule that the value must not be null
@@ -102,7 +102,7 @@ public interface IStandaloneValidationBuilder<T> {
 	/// <param name="serviceProvider">Optional service provider for async validation rules</param>
 	/// <param name="cancellationToken">Cancellation token for async operations</param>
 	/// <returns>A validation result containing success status and any validation errors</returns>
-	Task<StandaloneValidationResult> ValidateAsync( IServiceProvider? serviceProvider = null, CancellationToken cancellationToken = default );
+	new Task<StandaloneValidationResult> ValidateAsync( IServiceProvider? serviceProvider = null, CancellationToken cancellationToken = default );
 
 	/// <summary>
 	/// Executes all validation rules and throws ValidationException if validation fails
