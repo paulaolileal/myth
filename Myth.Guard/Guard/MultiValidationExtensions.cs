@@ -1,7 +1,7 @@
 using Myth.Guard;
 using Myth.Validation;
 
-namespace Myth.Extensions;
+namespace Myth.Guard;
 
 /// <summary>
 /// Extension methods for multi-validation scenarios providing fluent API for validating multiple values
@@ -31,7 +31,7 @@ public static class MultiValidationExtensions {
 	/// <param name="configure">Configuration action for the validation builder</param>
 	/// <returns>The multi-validation builder for method chaining</returns>
 	public static IMultiValidationBuilder ValidateValue( this IMultiValidationBuilder builder, string? value, string propertyName, Func<IStandaloneValidationBuilder<string>, IStandaloneValidationBuilder<string>> configure ) {
-		var validation = Guard.Guard.For( value, propertyName );
+		var validation = Guard.For( value, propertyName );
 		var configuredValidation = configure( validation );
 		return builder.Add( configuredValidation );
 	}
@@ -45,7 +45,7 @@ public static class MultiValidationExtensions {
 	/// <param name="configure">Configuration action for the validation builder</param>
 	/// <returns>The multi-validation builder for method chaining</returns>
 	public static IMultiValidationBuilder ValidateValue( this IMultiValidationBuilder builder, int value, string propertyName, Func<IStandaloneValidationBuilder<int>, IStandaloneValidationBuilder<int>> configure ) {
-		var validation = Myth.Guard.Guard.For( value, propertyName );
+		var validation = Guard.For( value, propertyName );
 		var configuredValidation = configure( validation );
 		return builder.Add( configuredValidation );
 	}
@@ -59,7 +59,7 @@ public static class MultiValidationExtensions {
 	/// <param name="configure">Configuration action for the string validation builder</param>
 	/// <returns>The multi-validation builder for method chaining</returns>
 	public static IMultiValidationBuilder ValidateString( this IMultiValidationBuilder builder, string? value, string propertyName, Func<IStandaloneValidationBuilder<string>, IStandaloneValidationBuilder<string>> configure ) {
-		var validation = Myth.Guard.Guard.For( value, propertyName );
+		var validation = Guard.For( value, propertyName );
 		var configuredValidation = configure( validation );
 		return builder.Add( configuredValidation );
 	}
@@ -73,7 +73,7 @@ public static class MultiValidationExtensions {
 	/// <param name="required">Whether the email is required (defaults to true)</param>
 	/// <returns>The multi-validation builder for method chaining</returns>
 	public static IMultiValidationBuilder ValidateEmail( this IMultiValidationBuilder builder, string? email, string propertyName = "Email", bool required = true ) {
-		var validation = Myth.Guard.Guard.For( email, propertyName );
+		var validation = Guard.For( email, propertyName );
 
 		if ( required ) {
 			validation = validation.NotEmpty( );
@@ -92,7 +92,7 @@ public static class MultiValidationExtensions {
 	/// <param name="propertyName">The property name for error context</param>
 	/// <returns>The multi-validation builder for method chaining</returns>
 	public static IMultiValidationBuilder ValidateRequiredString( this IMultiValidationBuilder builder, string? value, string propertyName ) {
-		var validation = Myth.Guard.Guard.For( value, propertyName ).NotNull( ).NotEmpty( );
+		var validation = Guard.For( value, propertyName ).NotNull( ).NotEmpty( );
 		return builder.Add( validation );
 	}
 
@@ -104,7 +104,7 @@ public static class MultiValidationExtensions {
 	/// <param name="propertyName">The property name for error context</param>
 	/// <returns>The multi-validation builder for method chaining</returns>
 	public static IMultiValidationBuilder ValidateRequired( this IMultiValidationBuilder builder, string? value, string propertyName ) {
-		var validation = Myth.Guard.Guard.For( value, propertyName ).NotNull( ).NotEmpty( );
+		var validation = Guard.For( value, propertyName ).NotNull( ).NotEmpty( );
 		return builder.Add( validation );
 	}
 
@@ -119,7 +119,7 @@ public static class MultiValidationExtensions {
 	/// <param name="max">The maximum allowed value</param>
 	/// <returns>The multi-validation builder for method chaining</returns>
 	public static IMultiValidationBuilder ValidateRange( this IMultiValidationBuilder builder, int value, string propertyName, int min, int max ) {
-		var validation = Myth.Guard.Guard.For( value, propertyName ).Between( min, max );
+		var validation = Guard.For( value, propertyName ).Between( min, max );
 		return builder.Add( validation );
 	}
 
@@ -133,7 +133,7 @@ public static class MultiValidationExtensions {
 	/// <param name="max">The maximum allowed value</param>
 	/// <returns>The multi-validation builder for method chaining</returns>
 	public static IMultiValidationBuilder ValidateRange( this IMultiValidationBuilder builder, decimal value, string propertyName, decimal min, decimal max ) {
-		var validation = Myth.Guard.Guard.For( value, propertyName ).Between( min, max );
+		var validation = Guard.For( value, propertyName ).Between( min, max );
 		return builder.Add( validation );
 	}
 
@@ -149,7 +149,7 @@ public static class MultiValidationExtensions {
 		IServiceProvider? serviceProvider = null,
 		CancellationToken cancellationToken = default ) {
 
-		return Validate.AllAsync( validations, serviceProvider, cancellationToken );
+		return Myth.Validation.Validate.AllAsync( validations, serviceProvider, cancellationToken );
 	}
 
 	/// <summary>
@@ -164,6 +164,6 @@ public static class MultiValidationExtensions {
 		IServiceProvider? serviceProvider = null,
 		CancellationToken cancellationToken = default ) {
 
-		return Validate.AllAndThrowAsync( validations, serviceProvider, cancellationToken );
+		return Myth.Validation.Validate.AllAndThrowAsync( validations, serviceProvider, cancellationToken );
 	}
 }

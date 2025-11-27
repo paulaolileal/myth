@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Myth.Extensions;
 using Myth.Guard;
 using Myth.Guard.Test;
 using Myth.Validation;
@@ -21,7 +20,7 @@ public class MultiValidationTests : BaseTestFixture {
 		var name = "John Doe";
 
 		// Act - Traditional approach
-		var result = await Validate.AllAsync( [
+		var result = await Myth.Validation.Validate.AllAsync( [
 			Guard.For( email, "Email" ).NotEmpty( ).Email( ),
 			Guard.For( age, "Age" ).GreaterThan( 0 ).LessThan( 150 ),
 			Guard.For( name, "Name" ).NotEmpty( ).MinimumLength( 2 )
@@ -42,7 +41,7 @@ public class MultiValidationTests : BaseTestFixture {
 		var name = "";
 
 		// Act
-		var result = await Validate.AllAsync( [
+		var result = await Myth.Validation.Validate.AllAsync( [
 			Guard.For( email, "Email" ).NotEmpty( ).Email( ),
 			Guard.For( age, "Age" ).GreaterThan( 0 ).LessThan( 150 ),
 			Guard.For( name, "Name" ).NotEmpty( ).MinimumLength( 2 )
@@ -66,7 +65,7 @@ public class MultiValidationTests : BaseTestFixture {
 	[Fact]
 	public async Task ValidateAll_Empty_ShouldBeSuccessful( ) {
 		// Act
-		var result = await Validate.AllAsync( [ ] );
+		var result = await Myth.Validation.Validate.AllAsync( [ ] );
 
 		// Assert
 		result.IsValid.Should( ).BeTrue( );
@@ -85,7 +84,7 @@ public class MultiValidationTests : BaseTestFixture {
 		var name = "John Doe";
 
 		// Act - Using fluent builder API
-		var result = await Validate.All( )
+		var result = await Myth.Validation.Validate.All( )
 			.Add( Guard.For( email, "Email" ).NotEmpty( ).Email( ) )
 			.Add( Guard.For( age, "Age" ).GreaterThan( 0 ).LessThan( 150 ) )
 			.Add( Guard.For( name, "Name" ).NotEmpty( ).MinimumLength( 2 ) )
@@ -105,7 +104,7 @@ public class MultiValidationTests : BaseTestFixture {
 		var score = 85.5m;
 
 		// Act - Using extension methods for common scenarios
-		var result = await Validate.All( )
+		var result = await Myth.Validation.Validate.All( )
 			.ValidateEmail( email )
 			.ValidateRange( age, "Age", 0, 150 )
 			.ValidateRequired( name, "Name" )
@@ -125,7 +124,7 @@ public class MultiValidationTests : BaseTestFixture {
 		var name = "";
 
 		// Act
-		var result = await Validate.All( )
+		var result = await Myth.Validation.Validate.All( )
 			.ValidateEmail( email )
 			.ValidateRange( age, "Age", 0, 150 )
 			.ValidateRequired( name, "Name" )
@@ -189,7 +188,7 @@ public class MultiValidationTests : BaseTestFixture {
 		var phone = "+1234567890";
 
 		// Act
-		var result = await Validate.All( )
+		var result = await Myth.Validation.Validate.All( )
 			.ValidateRequired( firstName, "FirstName" )
 			.ValidateRequired( lastName, "LastName" )
 			.ValidateEmail( email )
@@ -220,7 +219,7 @@ public class MultiValidationTests : BaseTestFixture {
 		var password = "different_password";
 
 		// Act
-		var result = await Validate.All( )
+		var result = await Myth.Validation.Validate.All( )
 			.ValidateValue( username, "Username", u => u
 				.NotEmpty( )
 				.MinimumLength( 3 )
@@ -252,7 +251,7 @@ public class MultiValidationTests : BaseTestFixture {
 		var username = "john_doe";
 
 		// Act
-		var result = await Validate.All( )
+		var result = await Myth.Validation.Validate.All( )
 			.ValidateValue( email, "Email", e => e
 				.NotEmpty( )
 				.Email( )
@@ -285,7 +284,7 @@ public class MultiValidationTests : BaseTestFixture {
 		var username = "admin_user";
 
 		// Act
-		var result = await Validate.All( )
+		var result = await Myth.Validation.Validate.All( )
 			.ValidateValue( email, "Email", e => e
 				.Email( )
 				.RespectAsync( async ( email, ct, sp ) => {
@@ -364,7 +363,7 @@ public class MultiValidationTests : BaseTestFixture {
 	[Fact]
 	public async Task MultiValidationResult_ErrorsByField_ShouldGroupCorrectly( ) {
 		// Arrange & Act
-		var result = await Validate.All( )
+		var result = await Myth.Validation.Validate.All( )
 			.ValidateString( "", "Name", s => s.NotEmpty( ).MinimumLength( 2 ) ) // 2 errors for same field
 			.ValidateString( "short", "Name", s => s.MinimumLength( 10 ) ) // 1 more error for same field
 			.ValidateRange( -1, "Age", 0, 150 ) // 1 error for different field
@@ -386,7 +385,7 @@ public class MultiValidationTests : BaseTestFixture {
 	[Fact]
 	public async Task MultiValidationResult_ErrorMessage_ShouldConcatenateAllMessages( ) {
 		// Arrange & Act
-		var result = await Validate.All( )
+		var result = await Myth.Validation.Validate.All( )
 			.ValidateString( "", "Name", s => s.NotEmpty( ).WithMessage( "Name is required" ) )
 			.ValidateRange( -1, "Age", 0, 150 )
 			.ValidateAsync( );
@@ -404,7 +403,7 @@ public class MultiValidationTests : BaseTestFixture {
 	[Fact]
 	public async Task ValidateAllAndThrow_Valid_ShouldNotThrow( ) {
 		// Arrange & Act & Assert (should not throw)
-		await Validate.AllAndThrowAsync( [
+		await Myth.Validation.Validate.AllAndThrowAsync( [
 			Guard.For( "test@example.com", "Email" ).Email( ),
 			Guard.For( 25, "Age" ).GreaterThan( 0 )
 		] );
@@ -415,7 +414,7 @@ public class MultiValidationTests : BaseTestFixture {
 	public async Task ValidateAllAndThrow_Invalid_ShouldThrowWithAllErrors( ) {
 		// Arrange & Act & Assert
 		var exception = await Assert.ThrowsAsync<Myth.Exceptions.ValidationException>( async ( ) =>
-			await Validate.AllAndThrowAsync( [
+			await Myth.Validation.Validate.AllAndThrowAsync( [
 				Guard.For( "invalid-email", "Email" ).Email( ),
 				Guard.For( -1, "Age" ).GreaterThan( 0 )
 			] )
@@ -429,7 +428,7 @@ public class MultiValidationTests : BaseTestFixture {
 	public async Task ValidateAllBuilder_AndThrow_Invalid_ShouldThrow( ) {
 		// Arrange & Act & Assert
 		var exception = await Assert.ThrowsAsync<Myth.Exceptions.ValidationException>( async ( ) =>
-			await Validate.All( )
+			await Myth.Validation.Validate.All( )
 				.ValidateEmail( "invalid" )
 				.ValidateRange( -1, "Age", 0, 150 )
 				.ValidateAndThrowAsync( )

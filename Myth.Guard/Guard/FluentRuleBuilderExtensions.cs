@@ -14,7 +14,7 @@ using Myth.Rules.Numerics;
 using Myth.Rules.Strings;
 using Myth.ValueObjects;
 
-namespace Myth.Extensions;
+namespace Myth.Guard;
 
 /// <summary>
 /// Extension methods for <see cref="FluentRuleBuilder{T}"/> providing a complete fluent validation API.

@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Myth.Extensions;
+using Myth.Guard;
 using Myth.Guard.Test.Models;
 using Myth.Validation;
 

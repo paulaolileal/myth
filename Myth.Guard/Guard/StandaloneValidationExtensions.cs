@@ -7,7 +7,7 @@ using Myth.Rules.Strings;
 using Myth.Validation;
 using Myth.ValueObjects;
 
-namespace Myth.Extensions;
+namespace Myth.Guard;
 
 /// <summary>
 /// Extension methods that provide type-specific validation rules for standalone validation builders.
@@ -194,7 +194,7 @@ public static class StandaloneValidationExtensions {
 	/// <param name="builder">The validation builder</param>
 	/// <param name="rule">The validation rule to add</param>
 	/// <returns>The validation builder for method chaining</returns>
-	internal static IStandaloneValidationBuilder<T> AddRule<T>( this IStandaloneValidationBuilder<T> builder, Rules.Base.ValidationRuleBase<T> rule ) {
+	internal static IStandaloneValidationBuilder<T> AddRule<T>( this IStandaloneValidationBuilder<T> builder, Myth.Rules.Base.ValidationRuleBase<T> rule ) {
 		if ( builder is StandaloneValidationBuilder<T> concreteBuilder ) {
 			return concreteBuilder.AddExternalRule( rule );
 		}
