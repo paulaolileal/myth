@@ -8,7 +8,7 @@ namespace Myth.Guard.Test;
 /// <summary>
 /// Tests for Guard.For() standalone validation functionality
 /// </summary>
-public class GuardForTests : BaseTestFixture {
+public class SentryForTests : BaseTestFixture {
 
 	#region String Validation Tests
 
@@ -18,7 +18,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "valid string";
 
 		// Act
-		var result = await Guard.For( value ).NotEmpty( ).ValidateAsync( );
+		var result = await Sentry.For( value ).NotEmpty( ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeTrue( );
@@ -31,7 +31,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "";
 
 		// Act
-		var result = await Guard.For( value ).NotEmpty( ).ValidateAsync( );
+		var result = await Sentry.For( value ).NotEmpty( ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeFalse( );
@@ -46,7 +46,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "";
 
 		// Act
-		var result = await Guard.For( value, "Email" ).NotEmpty( ).ValidateAsync( );
+		var result = await Sentry.For( value, "Email" ).NotEmpty( ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeFalse( );
@@ -59,7 +59,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "";
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.NotEmpty( )
 			.WithMessage( "Custom error message" )
 			.ValidateAsync( );
@@ -75,7 +75,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "";
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.NotEmpty( )
 			.WithCode( "CUSTOM_CODE" )
 			.ValidateAsync( );
@@ -91,7 +91,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "";
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.NotEmpty( )
 			.WithStatusCode( 422 )
 			.ValidateAsync( );
@@ -107,7 +107,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "valid";
 
 		// Act
-		var result = await Guard.For( value ).MinimumLength( 3 ).ValidateAsync( );
+		var result = await Sentry.For( value ).MinimumLength( 3 ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeTrue( );
@@ -119,7 +119,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "hi";
 
 		// Act
-		var result = await Guard.For( value ).MinimumLength( 3 ).ValidateAsync( );
+		var result = await Sentry.For( value ).MinimumLength( 3 ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeFalse( );
@@ -132,7 +132,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "test@example.com";
 
 		// Act
-		var result = await Guard.For( value ).Email( ).ValidateAsync( );
+		var result = await Sentry.For( value ).Email( ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeTrue( );
@@ -144,7 +144,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "not-an-email";
 
 		// Act
-		var result = await Guard.For( value ).Email( ).ValidateAsync( );
+		var result = await Sentry.For( value ).Email( ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeFalse( );
@@ -157,7 +157,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "test123";
 
 		// Act
-		var result = await Guard.For( value ).Matches( @"^[a-z]+\d+$" ).ValidateAsync( );
+		var result = await Sentry.For( value ).Matches( @"^[a-z]+\d+$" ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeTrue( );
@@ -169,7 +169,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "Test123";
 
 		// Act
-		var result = await Guard.For( value ).Matches( @"^[a-z]+\d+$" ).ValidateAsync( );
+		var result = await Sentry.For( value ).Matches( @"^[a-z]+\d+$" ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeFalse( );
@@ -186,7 +186,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = 10;
 
 		// Act
-		var result = await Guard.For( value ).GreaterThan( 5 ).ValidateAsync( );
+		var result = await Sentry.For( value ).GreaterThan( 5 ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeTrue( );
@@ -198,7 +198,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = 3;
 
 		// Act
-		var result = await Guard.For( value ).GreaterThan( 5 ).ValidateAsync( );
+		var result = await Sentry.For( value ).GreaterThan( 5 ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeFalse( );
@@ -211,7 +211,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = 5;
 
 		// Act
-		var result = await Guard.For( value ).Between( 1, 10 ).ValidateAsync( );
+		var result = await Sentry.For( value ).Between( 1, 10 ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeTrue( );
@@ -223,7 +223,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = 15;
 
 		// Act
-		var result = await Guard.For( value ).Between( 1, 10 ).ValidateAsync( );
+		var result = await Sentry.For( value ).Between( 1, 10 ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeFalse( );
@@ -236,7 +236,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = 4.5m;
 
 		// Act
-		var result = await Guard.For( value ).LessThan( 5.0m ).ValidateAsync( );
+		var result = await Sentry.For( value ).LessThan( 5.0m ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeTrue( );
@@ -248,7 +248,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = 6.5m;
 
 		// Act
-		var result = await Guard.For( value ).LessThan( 5.0m ).ValidateAsync( );
+		var result = await Sentry.For( value ).LessThan( 5.0m ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeFalse( );
@@ -265,7 +265,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "not null";
 
 		// Act
-		var result = await Guard.For( value ).NotNull( ).ValidateAsync( );
+		var result = await Sentry.For( value ).NotNull( ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeTrue( );
@@ -277,7 +277,7 @@ public class GuardForTests : BaseTestFixture {
 		string? value = null;
 
 		// Act
-		var result = await Guard.For( value ).NotNull( ).ValidateAsync( );
+		var result = await Sentry.For( value ).NotNull( ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeFalse( );
@@ -290,7 +290,7 @@ public class GuardForTests : BaseTestFixture {
 		string? value = null;
 
 		// Act
-		var result = await Guard.For( value ).Null( ).ValidateAsync( );
+		var result = await Sentry.For( value ).Null( ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeTrue( );
@@ -302,7 +302,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "not null";
 
 		// Act
-		var result = await Guard.For( value ).Null( ).ValidateAsync( );
+		var result = await Sentry.For( value ).Null( ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeFalse( );
@@ -319,7 +319,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = 10;
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.Respect( x => x % 2 == 0 )
 			.WithMessage( "Value must be even" )
 			.ValidateAsync( );
@@ -334,7 +334,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = 11;
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.Respect( x => x % 2 == 0 )
 			.WithMessage( "Value must be even" )
 			.ValidateAsync( );
@@ -350,7 +350,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "test@example.com";
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.RespectAsync( async ( email, ct, sp ) => {
 				// Simulate async validation (e.g., checking if email exists in database)
 				await Task.Delay( 1, ct );
@@ -369,7 +369,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "invalid-email";
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.RespectAsync( async ( email, ct, sp ) => {
 				await Task.Delay( 1, ct );
 				return email.Contains( "@" );
@@ -392,7 +392,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = TestStatus.Active;
 
 		// Act
-		var result = await Guard.For( value ).IsValidEnumValue( ).ValidateAsync( );
+		var result = await Sentry.For( value ).IsValidEnumValue( ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeTrue( );
@@ -404,7 +404,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = ( TestStatus )999;
 
 		// Act
-		var result = await Guard.For( value ).IsValidEnumValue( ).ValidateAsync( );
+		var result = await Sentry.For( value ).IsValidEnumValue( ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeFalse( );
@@ -417,7 +417,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = ( TestStatus )999;
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.IsValidEnumValue( )
 			.WithOptions( )
 			.ValidateAsync( );
@@ -439,7 +439,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = 1; // Low priority
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.ExistsInConstant<TestPriorityLevels, int>( )
 			.ValidateAsync( );
 
@@ -453,7 +453,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = 999; // Invalid priority
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.ExistsInConstant<TestPriorityLevels, int>( )
 			.ValidateAsync( );
 
@@ -468,7 +468,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = 999; // Invalid priority
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.ExistsInConstant<TestPriorityLevels, int>( )
 			.WithOptions( )
 			.ValidateAsync( );
@@ -492,7 +492,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = new[ ] { 1, 2, 3 };
 
 		// Act
-		var result = await Guard.For( value ).NotEmpty( ).ValidateAsync( );
+		var result = await Sentry.For( value ).NotEmpty( ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeTrue( );
@@ -504,7 +504,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = Array.Empty<int>( );
 
 		// Act
-		var result = await Guard.For( value ).NotEmpty( ).ValidateAsync( );
+		var result = await Sentry.For( value ).NotEmpty( ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeFalse( );
@@ -517,7 +517,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = new[ ] { 1, 2, 3 };
 
 		// Act
-		var result = await Guard.For( value ).CountBetween( 1, 5 ).ValidateAsync( );
+		var result = await Sentry.For( value ).CountBetween( 1, 5 ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeTrue( );
@@ -529,7 +529,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = new[ ] { 1, 2, 3, 4, 5, 6 };
 
 		// Act
-		var result = await Guard.For( value ).CountBetween( 1, 3 ).ValidateAsync( );
+		var result = await Sentry.For( value ).CountBetween( 1, 3 ).ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeFalse( );
@@ -546,7 +546,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "test@example.com";
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.NotNull( )
 			.NotEmpty( )
 			.MinimumLength( 5 )
@@ -564,7 +564,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "ab"; // Too short
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.NotNull( )
 			.NotEmpty( )
 			.MinimumLength( 5 )
@@ -582,7 +582,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "";
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.NotEmpty( )
 			.MinimumLength( 5 )
 			.Email( )
@@ -603,7 +603,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "valid@example.com";
 
 		// Act & Assert
-		await Guard.For( value ).Email( ).ValidateAndThrowAsync( );
+		await Sentry.For( value ).Email( ).ValidateAndThrowAsync( );
 		// Should complete without throwing
 	}
 
@@ -614,7 +614,7 @@ public class GuardForTests : BaseTestFixture {
 
 		// Act & Assert
 		var exception = await Assert.ThrowsAsync<Myth.Exceptions.ValidationException>(
-			async ( ) => await Guard.For( value ).Email( ).ValidateAndThrowAsync( )
+			async ( ) => await Sentry.For( value ).Email( ).ValidateAndThrowAsync( )
 		);
 
 		exception.ValidationResult.IsValid.Should( ).BeFalse( );
@@ -632,7 +632,7 @@ public class GuardForTests : BaseTestFixture {
 		var customOptions = new[ ] { "option1", "option2", "option3" };
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.Respect( x => false ) // Always fail
 			.WithOptions( customOptions )
 			.ValidateAsync( );
@@ -653,7 +653,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "";
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.NotEmpty( )
 			.When( x => true ) // Always apply
 			.ValidateAsync( );
@@ -668,7 +668,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "";
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.NotEmpty( )
 			.When( x => false ) // Never apply
 			.ValidateAsync( );
@@ -683,7 +683,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "";
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.NotEmpty( )
 			.Unless( x => false ) // Apply unless false (so apply)
 			.ValidateAsync( );
@@ -698,7 +698,7 @@ public class GuardForTests : BaseTestFixture {
 		var value = "";
 
 		// Act
-		var result = await Guard.For( value )
+		var result = await Sentry.For( value )
 			.NotEmpty( )
 			.Unless( x => true ) // Don't apply if true (so skip)
 			.ValidateAsync( );

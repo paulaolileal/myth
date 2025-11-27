@@ -42,7 +42,10 @@ internal sealed class NameExistsInConstantRule<TConstant, TValue> : ValidationRu
 		// Generate options automatically from constant names/values
 		try {
 			var constantValues = Constant<TConstant, TValue>.GetAll( );
-			return constantValues.Select( c => FormatConstantOption( c.Name, c.Value, OptionsType ) ).ToList( ).AsReadOnly( );
+			return constantValues
+				.Select( c => FormatConstantOption( c.Name, c.Value, OptionsType ) )
+				.ToList( )
+				.AsReadOnly( );
 		} catch ( InvalidOperationException ) {
 			return null;
 		}

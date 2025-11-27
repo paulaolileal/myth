@@ -22,7 +22,7 @@ public sealed class GuardOptions {
 	/// <param name="includeStackTrace">Whether to include formatted stack traces in development mode</param>
 	/// <returns>The GuardOptions instance for method chaining</returns>
 	public GuardOptions AutoGuardCommonExceptions( bool includeStackTrace = true ) {
-		GuardException<ArgumentNullException>( )
+		Guard<ArgumentNullException>( )
 			.WithStatusCode( 400 )
 			.WithErrorCode( "ARGUMENT_NULL" )
 			.WithResponse( ex => new {
@@ -31,7 +31,7 @@ public sealed class GuardOptions {
 			} )
 			.Build( );
 
-		GuardException<ArgumentException>( )
+		Guard<ArgumentException>( )
 			.WithStatusCode( 400 )
 			.WithErrorCode( "ARGUMENT_INVALID" )
 			.WithResponse( ex => new {
@@ -40,7 +40,7 @@ public sealed class GuardOptions {
 			} )
 			.Build( );
 
-		GuardException<InvalidOperationException>( )
+		Guard<InvalidOperationException>( )
 			.WithStatusCode( 409 )
 			.WithErrorCode( "INVALID_OPERATION" )
 			.WithResponse( ex => new {
@@ -48,7 +48,7 @@ public sealed class GuardOptions {
 			} )
 			.Build( );
 
-		GuardException<UnauthorizedAccessException>( )
+		Guard<UnauthorizedAccessException>( )
 			.WithStatusCode( 403 )
 			.WithErrorCode( "FORBIDDEN" )
 			.WithResponse( ex => new {
@@ -56,7 +56,7 @@ public sealed class GuardOptions {
 			} )
 			.Build( );
 
-		GuardException<NotImplementedException>( )
+		Guard<NotImplementedException>( )
 			.WithStatusCode( 501 )
 			.WithErrorCode( "NOT_IMPLEMENTED" )
 			.WithResponse( ex => new {
@@ -64,7 +64,7 @@ public sealed class GuardOptions {
 			} )
 			.Build( );
 
-		GuardException<TimeoutException>( )
+		Guard<TimeoutException>( )
 			.WithStatusCode( 408 )
 			.WithErrorCode( "TIMEOUT" )
 			.WithResponse( ex => new {
@@ -79,8 +79,12 @@ public sealed class GuardOptions {
 				var isDevelopment = Environment?.IsDevelopment( ) ?? false;
 
 				return new {
-					error = isDevelopment ? ex.Message : "An internal error occurred",
-					trace = isDevelopment && includeStackTrace ? FormatStackTrace( ex.StackTrace ) : null
+					error = isDevelopment
+						? ex.Message
+						: "An internal error occurred",
+					trace = isDevelopment && includeStackTrace
+						? FormatStackTrace( ex.StackTrace )
+						: null
 				};
 			} )
 			.Build( );
@@ -91,7 +95,7 @@ public sealed class GuardOptions {
 	/// <summary>
 	/// Guards against a specific exception type with a handler configuration
 	/// </summary>
-	public Builder.ExceptionMappingBuilder<TException> GuardException<TException>( ) where TException : Exception {
+	public Builder.ExceptionMappingBuilder<TException> Guard<TException>( ) where TException : Exception {
 		return new Builder.ExceptionMappingBuilder<TException>( this );
 	}
 
@@ -129,21 +133,15 @@ public sealed class GuardOptions {
 		return this;
 	}
 
-	private static string? FormatStackTrace( string? stackTrace ) {
+	private static ICollection<string>? FormatStackTrace( string? stackTrace ) {
 		if ( string.IsNullOrWhiteSpace( stackTrace ) )
 			return null;
 
-		var lines = stackTrace.Split( new[ ] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries );
+		var lines = stackTrace
+			.Split( [ "\r\n", "\n" ], StringSplitOptions.RemoveEmptyEntries )
+			.Select( line => line.Trim( ) )
+			.ToArray( ) ?? [ ];
 
-		var formatted = string.Join( "\n", lines.Select( line => {
-			var trimmed = line.Trim( );
-
-			if ( trimmed.StartsWith( "at " ) )
-				return $"  {trimmed}";
-
-			return trimmed;
-		} ) );
-
-		return formatted;
+		return lines;
 	}
 }

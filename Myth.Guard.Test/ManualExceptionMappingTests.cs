@@ -36,7 +36,7 @@ public class ManualExceptionMappingTests {
 		var options = new GuardOptions { Environment = _environment };
 
 		// Manual mapping without calling Build() - this should fail
-		options.GuardException<FileNotFoundException>( )
+		options.Guard<FileNotFoundException>( )
 			.WithStatusCode( 404 )
 			.WithErrorCode( "FILE_NOT_FOUND" )
 			.WithResponse( ex => new {
@@ -67,7 +67,7 @@ public class ManualExceptionMappingTests {
 		var options = new GuardOptions { Environment = _environment };
 
 		// Manual mapping WITH calling Build() - this should work
-		options.GuardException<FileNotFoundException>( )
+		options.Guard<FileNotFoundException>( )
 			.WithStatusCode( 404 )
 			.WithErrorCode( "FILE_NOT_FOUND" )
 			.WithResponse( ex => new {
@@ -111,7 +111,7 @@ public class ManualExceptionMappingTests {
 		var options = new GuardOptions { Environment = _environment };
 
 		// Manual mapping using .And() method - this should automatically build
-		options.GuardException<DirectoryNotFoundException>( )
+		options.Guard<DirectoryNotFoundException>( )
 			.WithStatusCode( 404 )
 			.WithErrorCode( "DIRECTORY_NOT_FOUND" )
 			.WithResponse( ex => new {
@@ -155,7 +155,7 @@ public class ManualExceptionMappingTests {
 		// Manual mapping using implicit conversion - this should automatically build
 		var options = new GuardOptions { Environment = _environment };
 
-		GuardOptions configuredOptions = options.GuardException<UnauthorizedAccessException>( )
+		GuardOptions configuredOptions = options.Guard<UnauthorizedAccessException>( )
 			.WithStatusCode( HttpStatusCode.Forbidden )
 			.WithErrorCode( "ACCESS_DENIED" )
 			.WithResponse( ex => new {
@@ -198,7 +198,7 @@ public class ManualExceptionMappingTests {
 		var options = new GuardOptions { Environment = _environment };
 
 		// Manual mapping with dynamic status code
-		options.GuardException<HttpRequestException>( )
+		options.Guard<HttpRequestException>( )
 			.WithStatusCode( ex => {
 				// Extract status code from message or default to 502
 				if ( ex.Message.Contains( "404" ) )
@@ -252,7 +252,7 @@ public class ManualExceptionMappingTests {
 		string? capturedMessage = null;
 
 		// Manual mapping with OnBeforeResponse callback
-		options.GuardException<OperationCanceledException>( )
+		options.Guard<OperationCanceledException>( )
 			.WithStatusCode( 499 ) // Client Closed Request
 			.WithErrorCode( "OPERATION_CANCELLED" )
 			.WithResponse( ex => new {

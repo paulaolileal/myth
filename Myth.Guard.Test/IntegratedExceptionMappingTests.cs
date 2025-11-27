@@ -39,7 +39,7 @@ public class IntegratedExceptionMappingTests {
 		options.AutoGuardCommonExceptions( );
 
 		// Then add manual mapping for custom exception
-		options.GuardException<FileNotFoundException>( )
+		options.Guard<FileNotFoundException>( )
 			.WithStatusCode( 404 )
 			.WithErrorCode( "FILE_NOT_FOUND" )
 			.WithResponse( ex => new {
@@ -86,7 +86,7 @@ public class IntegratedExceptionMappingTests {
 		options.AutoGuardCommonExceptions( );
 
 		// Then override ArgumentNullException with custom mapping
-		options.GuardException<ArgumentNullException>( )
+		options.Guard<ArgumentNullException>( )
 			.WithStatusCode( 422 ) // Different from auto-mapping (400)
 			.WithErrorCode( "CUSTOM_ARGUMENT_NULL" )
 			.WithResponse( ex => new {
@@ -155,7 +155,7 @@ public class IntegratedExceptionMappingTests {
 
 		responseObj.GetProperty( "error" ).GetString( ).Should( ).Be( "Invalid format detected" );
 		responseObj.TryGetProperty( "trace", out var trace ).Should( ).BeTrue( );
-		trace.ValueKind.Should( ).Be( JsonValueKind.String );
+		trace.ValueKind.Should( ).Be( JsonValueKind.Array );
 	}
 
 	[Fact]

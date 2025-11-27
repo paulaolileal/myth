@@ -6,7 +6,7 @@ namespace Myth.Guard;
 /// Static entry point for standalone validation operations outside of model context.
 /// Provides a fluent API for validating individual values with comprehensive validation rules.
 /// </summary>
-public static class Guard {
+public static class Sentry {
 
 	/// <summary>
 	/// Starts validation for a string value

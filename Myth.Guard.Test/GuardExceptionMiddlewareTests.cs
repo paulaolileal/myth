@@ -238,7 +238,7 @@ public class GuardExceptionMiddlewareTests {
 
 		responseObj.GetProperty( "error" ).GetString( ).Should( ).Be( "Cannot divide by zero" );
 		responseObj.TryGetProperty( "trace", out var trace ).Should( ).BeTrue( );
-		trace.ValueKind.Should( ).Be( JsonValueKind.String );
+		trace.ValueKind.Should( ).Be( JsonValueKind.Array );
 	}
 
 	[Fact]

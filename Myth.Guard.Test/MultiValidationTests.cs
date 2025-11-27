@@ -21,9 +21,9 @@ public class MultiValidationTests : BaseTestFixture {
 
 		// Act - Traditional approach
 		var result = await Myth.Validation.Validate.AllAsync( [
-			Guard.For( email, "Email" ).NotEmpty( ).Email( ),
-			Guard.For( age, "Age" ).GreaterThan( 0 ).LessThan( 150 ),
-			Guard.For( name, "Name" ).NotEmpty( ).MinimumLength( 2 )
+			Sentry.For( email, "Email" ).NotEmpty( ).Email( ),
+			Sentry.For( age, "Age" ).GreaterThan( 0 ).LessThan( 150 ),
+			Sentry.For( name, "Name" ).NotEmpty( ).MinimumLength( 2 )
 		] );
 
 		// Assert
@@ -42,9 +42,9 @@ public class MultiValidationTests : BaseTestFixture {
 
 		// Act
 		var result = await Myth.Validation.Validate.AllAsync( [
-			Guard.For( email, "Email" ).NotEmpty( ).Email( ),
-			Guard.For( age, "Age" ).GreaterThan( 0 ).LessThan( 150 ),
-			Guard.For( name, "Name" ).NotEmpty( ).MinimumLength( 2 )
+			Sentry.For( email, "Email" ).NotEmpty( ).Email( ),
+			Sentry.For( age, "Age" ).GreaterThan( 0 ).LessThan( 150 ),
+			Sentry.For( name, "Name" ).NotEmpty( ).MinimumLength( 2 )
 		] );
 
 		// Assert
@@ -85,9 +85,9 @@ public class MultiValidationTests : BaseTestFixture {
 
 		// Act - Using fluent builder API
 		var result = await Myth.Validation.Validate.All( )
-			.Add( Guard.For( email, "Email" ).NotEmpty( ).Email( ) )
-			.Add( Guard.For( age, "Age" ).GreaterThan( 0 ).LessThan( 150 ) )
-			.Add( Guard.For( name, "Name" ).NotEmpty( ).MinimumLength( 2 ) )
+			.Add( Sentry.For( email, "Email" ).NotEmpty( ).Email( ) )
+			.Add( Sentry.For( age, "Age" ).GreaterThan( 0 ).LessThan( 150 ) )
+			.Add( Sentry.For( name, "Name" ).NotEmpty( ).MinimumLength( 2 ) )
 			.ValidateAsync( );
 
 		// Assert
@@ -147,9 +147,9 @@ public class MultiValidationTests : BaseTestFixture {
 	public async Task ValidateAllArray_AllValid_ShouldBeSuccessful( ) {
 		// Arrange & Act - Using extension method on array
 		var validations = new IStandaloneValidationBuilder[ ] {
-			Guard.For( "test@example.com", "Email" ).NotEmpty( ).Email( ),
-			Guard.For( 25, "Age" ).GreaterThan( 0 ).LessThan( 150 ),
-			Guard.For( "John", "Name" ).NotEmpty( ).MinimumLength( 2 )
+			Sentry.For( "test@example.com", "Email" ).NotEmpty( ).Email( ),
+			Sentry.For( 25, "Age" ).GreaterThan( 0 ).LessThan( 150 ),
+			Sentry.For( "John", "Name" ).NotEmpty( ).MinimumLength( 2 )
 		};
 		var result = await validations.ValidateAllAsync( );
 
@@ -162,8 +162,8 @@ public class MultiValidationTests : BaseTestFixture {
 	public async Task ValidateAllArrayAndThrow_Invalid_ShouldThrow( ) {
 		// Arrange & Act & Assert
 		var validations = new IStandaloneValidationBuilder[ ] {
-			Guard.For( "invalid-email", "Email" ).Email( ),
-			Guard.For( -1, "Age" ).GreaterThan( 0 )
+			Sentry.For( "invalid-email", "Email" ).Email( ),
+			Sentry.For( -1, "Age" ).GreaterThan( 0 )
 		};
 		var exception = await Assert.ThrowsAsync<Myth.Exceptions.ValidationException>( async ( ) =>
 			await validations.ValidateAllAndThrowAsync( )
@@ -404,8 +404,8 @@ public class MultiValidationTests : BaseTestFixture {
 	public async Task ValidateAllAndThrow_Valid_ShouldNotThrow( ) {
 		// Arrange & Act & Assert (should not throw)
 		await Myth.Validation.Validate.AllAndThrowAsync( [
-			Guard.For( "test@example.com", "Email" ).Email( ),
-			Guard.For( 25, "Age" ).GreaterThan( 0 )
+			Sentry.For( "test@example.com", "Email" ).Email( ),
+			Sentry.For( 25, "Age" ).GreaterThan( 0 )
 		] );
 		// Test passes if no exception is thrown
 	}
@@ -415,8 +415,8 @@ public class MultiValidationTests : BaseTestFixture {
 		// Arrange & Act & Assert
 		var exception = await Assert.ThrowsAsync<Myth.Exceptions.ValidationException>( async ( ) =>
 			await Myth.Validation.Validate.AllAndThrowAsync( [
-				Guard.For( "invalid-email", "Email" ).Email( ),
-				Guard.For( -1, "Age" ).GreaterThan( 0 )
+				Sentry.For( "invalid-email", "Email" ).Email( ),
+				Sentry.For( -1, "Age" ).GreaterThan( 0 )
 			] )
 		);
 

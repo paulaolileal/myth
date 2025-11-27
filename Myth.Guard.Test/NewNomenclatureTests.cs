@@ -32,7 +32,7 @@ public class NewNomenclatureTests {
 		services.AddSingleton( _environment );
 
 		services.AddGuard( config => config
-			.GuardException<ArgumentNullException>( )
+			.Guard<ArgumentNullException>( )
 			.WithStatusCode( HttpStatusCode.BadRequest )
 			.WithErrorCode( "NULL_ARGUMENT" )
 			.WithResponse( ex => new {
@@ -183,7 +183,7 @@ public class NewNomenclatureTests {
 
 		services.AddGuard( config => config
 			.AutoGuardCommonExceptions( ) // New nomenclature
-			.GuardException<FileNotFoundException>( ) // New nomenclature
+			.Guard<FileNotFoundException>( ) // New nomenclature
 			.WithStatusCode( 404 )
 			.WithResponse( ex => new { error = "File not found", fileName = ex.FileName } ) );
 
