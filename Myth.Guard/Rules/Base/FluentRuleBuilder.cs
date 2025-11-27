@@ -1,3 +1,4 @@
+using Myth.Enums;
 using Myth.Interfaces;
 using Myth.Rules.Generics;
 
@@ -96,6 +97,36 @@ public sealed class FluentRuleBuilder<T>( FieldRuleBuilder<T> fieldBuilder ) {
 	/// </summary>
 	public FluentRuleBuilder<T> UnlessEntity( Func<object, bool> condition ) {
 		_lastRule?.UnlessEntity( condition );
+		return this;
+	}
+
+	/// <summary>
+	/// Configures validation to include options in error response using manual options list
+	/// </summary>
+	/// <param name="options">List of valid options to include in error response</param>
+	/// <returns>The fluent rule builder for method chaining</returns>
+	public FluentRuleBuilder<T> WithOptions( IReadOnlyList<string> options ) {
+		_lastRule?.WithOptions( options );
+		return this;
+	}
+
+	/// <summary>
+	/// Configures validation to include options in error response using automatic option generation
+	/// </summary>
+	/// <param name="optionsType">Format type for options display</param>
+	/// <returns>The fluent rule builder for method chaining</returns>
+	public FluentRuleBuilder<T> WithOptions( OptionsType optionsType = OptionsType.ValueAndName ) {
+		_lastRule?.WithOptions( optionsType );
+		return this;
+	}
+
+	/// <summary>
+	/// Configures validation to include options in error response using manual options array
+	/// </summary>
+	/// <param name="options">Array of valid options to include in error response</param>
+	/// <returns>The fluent rule builder for method chaining</returns>
+	public FluentRuleBuilder<T> WithOptions( params string[ ] options ) {
+		_lastRule?.WithOptions( options );
 		return this;
 	}
 

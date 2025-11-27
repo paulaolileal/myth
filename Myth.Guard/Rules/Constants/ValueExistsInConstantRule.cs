@@ -1,3 +1,4 @@
+using Myth.Enums;
 using Myth.Models;
 using Myth.Rules.Base;
 using Myth.ValueObjects;
@@ -25,6 +26,34 @@ internal sealed class ValueExistsInConstantRule<TConstant, TValue> : ValidationR
 	}
 
 	protected override string GetDefaultMessage( TValue value ) {
+		if ( HasOptionsConfigured ) {
+			return $"Value '{value}' is not valid. Use one of the available values in Options field";
+		}
 		return $"Value '{value}' is not valid. Valid options are: {Constant<TConstant, TValue>.GetOptions( )}";
+	}
+
+	protected override IReadOnlyList<string>? GetOptionsForError( TValue value ) {
+		if ( !HasOptionsConfigured )
+			return null;
+
+		if ( Options != null )
+			return Options;
+
+		// Generate options automatically from constant values
+		try {
+			var constantValues = Constant<TConstant, TValue>.GetAll( );
+			return constantValues.Select( c => FormatConstantOption( c.Name, c.Value, OptionsType ) ).ToList( ).AsReadOnly( );
+		} catch ( InvalidOperationException ) {
+			return null;
+		}
+	}
+
+	private string FormatConstantOption( string name, TValue value, OptionsType type ) {
+		return type switch {
+			OptionsType.OnlyValue => value?.ToString( ) ?? string.Empty,
+			OptionsType.OnlyName => name,
+			OptionsType.ValueAndName => $"{value}: {name}",
+			_ => $"{value}: {name}"
+		};
 	}
 }

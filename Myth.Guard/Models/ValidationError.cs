@@ -51,6 +51,17 @@ public sealed class ValidationError {
 	public HttpStatusCode StatusCode { get; init; } = HttpStatusCode.BadRequest;
 
 	/// <summary>
+	/// Gets or sets the list of valid options that can be used for this field.
+	/// This property is useful when validation fails and the client needs to know what valid values are available.
+	/// </summary>
+	/// <value>
+	/// A read-only list of strings representing valid options for the field.
+	/// Each string can be formatted according to the OptionsType used (value only, name only, or value and name).
+	/// This property is null when no options are available or when options were not requested.
+	/// </value>
+	public IReadOnlyList<string>? Options { get; init; }
+
+	/// <summary>
 	/// Initializes a new instance of the <see cref="ValidationError"/> class with default values.
 	/// </summary>
 	public ValidationError( ) {
@@ -63,11 +74,13 @@ public sealed class ValidationError {
 	/// <param name="message">The human-readable error message.</param>
 	/// <param name="code">The error code that categorizes the validation failure.</param>
 	/// <param name="statusCode">The HTTP status code for this error.</param>
-	public ValidationError( string field, string message, string code, HttpStatusCode statusCode ) {
+	/// <param name="options">Optional list of valid values for this field.</param>
+	public ValidationError( string field, string message, string code, HttpStatusCode statusCode, IReadOnlyList<string>? options = null ) {
 		Field = field;
 		Message = message;
 		Code = code;
 		StatusCode = statusCode;
+		Options = options;
 	}
 
 	/// <summary>

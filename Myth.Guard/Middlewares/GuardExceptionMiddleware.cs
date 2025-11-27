@@ -63,12 +63,13 @@ internal sealed class GuardExceptionMiddleware( RequestDelegate next, GuardOptio
 	private static async Task HandleValidationExceptionAsync( HttpContext context, ValidationException exception ) {
 		var response = new ValidationErrorResponse {
 			Code = exception.ValidationResult.Errors.Count > 1
-				? "MULTIPLE_ERRORS"
-				: exception.ValidationResult.Errors[ 0 ].Code,
+					? "MULTIPLE_ERRORS"
+					: exception.ValidationResult.Errors[ 0 ].Code,
 			Errors = [ .. exception.ValidationResult.Errors.Select( e => new ErrorDetail {
 				Field = e.Field,
 				Message = e.Message,
-				Code = e.Code
+				Code = e.Code,
+				Options = e.Options
 			} ) ]
 		};
 

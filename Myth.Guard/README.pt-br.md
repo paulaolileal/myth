@@ -17,6 +17,8 @@ A maioria das bibliotecas de validação forçam você a escolher entre validaç
 ## Características Principais
 
 - **API Fluente Declarativa**: Escreva regras de validação legíveis com métodos encadeáveis
+- **Multi-Validação**: Valide múltiplos valores simultaneamente com execução paralela (similar ao Task.WhenAll)
+- **Validação Standalone**: Use Guard.For() para validação independente de campos fora do contexto do modelo
 - **Validação Consciente de Contexto**: Regras diferentes para operações Create, Update, Delete na mesma entidade
 - **Integração Assíncrona com Serviços**: Acesse injeção de dependência para validação de banco de dados ou API
 - **Tratador Global de Exceções**: Configure mapeamentos customizados de exceções com códigos de status e formatos de resposta

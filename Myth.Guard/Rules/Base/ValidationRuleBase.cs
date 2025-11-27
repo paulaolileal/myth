@@ -1,4 +1,5 @@
 using System.Net;
+using Myth.Enums;
 using Myth.Interfaces;
 using Myth.Models;
 
@@ -17,6 +18,9 @@ public abstract class ValidationRuleBase<T> : IValidationRule<T> {
 	protected Func<T, bool>? UnlessCondition { get; private set; }
 	protected Func<object, bool>? EntityCondition { get; private set; }
 	protected Func<object, bool>? EntityUnlessCondition { get; private set; }
+	protected IReadOnlyList<string>? Options { get; private set; }
+	protected OptionsType OptionsType { get; private set; } = OptionsType.ValueAndName;
+	protected bool HasOptionsConfigured { get; private set; }
 
 	public bool StopOnFailure { get; private set; }
 
@@ -58,11 +62,14 @@ public abstract class ValidationRuleBase<T> : IValidationRule<T> {
 			?? CustomMessage
 			?? GetDefaultMessage( context.Value );
 
+		var options = GetOptionsForError( context.Value );
+
 		return new ValidationError {
 			Field = context.FieldName,
 			Message = message,
 			Code = Code,
-			StatusCode = StatusCode
+			StatusCode = StatusCode,
+			Options = options
 		};
 	}
 
@@ -109,5 +116,54 @@ public abstract class ValidationRuleBase<T> : IValidationRule<T> {
 	public ValidationRuleBase<T> UnlessEntity( Func<object, bool> condition ) {
 		EntityUnlessCondition = condition;
 		return this;
+	}
+
+	/// <summary>
+	/// Configures validation to include options in error response using manual options list
+	/// </summary>
+	/// <param name="options">List of valid options to include in error response</param>
+	/// <returns>The rule instance for method chaining</returns>
+	public ValidationRuleBase<T> WithOptions( IReadOnlyList<string> options ) {
+		Options = options;
+		HasOptionsConfigured = true;
+		return this;
+	}
+
+	/// <summary>
+	/// Configures validation to include options in error response using automatic option generation
+	/// </summary>
+	/// <param name="optionsType">Format type for options display</param>
+	/// <returns>The rule instance for method chaining</returns>
+	public ValidationRuleBase<T> WithOptions( OptionsType optionsType = OptionsType.ValueAndName ) {
+		OptionsType = optionsType;
+		HasOptionsConfigured = true;
+		return this;
+	}
+
+	/// <summary>
+	/// Configures validation to include options in error response using manual options array
+	/// </summary>
+	/// <param name="options">Array of valid options to include in error response</param>
+	/// <returns>The rule instance for method chaining</returns>
+	public ValidationRuleBase<T> WithOptions( params string[ ] options ) {
+		Options = options?.ToList( ).AsReadOnly( );
+		HasOptionsConfigured = true;
+		return this;
+	}
+
+	/// <summary>
+	/// Gets options for error response. Override in derived classes to provide automatic options
+	/// </summary>
+	/// <param name="value">The invalid value</param>
+	/// <returns>Options list for error response, or null if no options configured</returns>
+	protected virtual IReadOnlyList<string>? GetOptionsForError( T value ) {
+		if ( !HasOptionsConfigured )
+			return null;
+
+		if ( Options != null )
+			return Options;
+
+		// Override in derived classes to provide automatic option generation
+		return null;
 	}
 }
