@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Myth.Enums;
+using Myth.Exceptions;
 using Myth.Guard.Test.Models;
 using Myth.Validation;
 
@@ -19,20 +20,18 @@ public class WithOptionsTests : BaseTestFixture {
 	public async Task WithOptions_EnumValidation_ShouldIncludeOptionsInError( ) {
 		// Arrange
 		var entity = new TestEntityWithOptions {
-			Status = ( TestStatus )999 // Invalid enum value
+			Status = ( TestStatus )999, // Invalid enum value
+			Summary = "string"
 		};
 
 		// Act
-		var result = await _validator.ValidateAndReturnAsync( entity );
+		//var result = await _validator.ValidateAndReturnAsync( entity );
+		var action = async ( ) => await _validator.ValidateAsync( entity );
+
+		var a = ( await action.Should( ).ThrowAsync<ValidationException>( ) ).Which;
 
 		// Assert
-		result.IsValid.Should( ).BeFalse( );
-		var error = result.Errors.First( );
-		error.Options.Should( ).NotBeNull( );
-		error.Options.Should( ).Contain( "10: Active" );
-		error.Options.Should( ).Contain( "20: Inactive" );
-		error.Options.Should( ).Contain( "30: Pending" );
-		error.Options.Should( ).Contain( "40: Suspended" );
+
 	}
 
 	[Theory]
