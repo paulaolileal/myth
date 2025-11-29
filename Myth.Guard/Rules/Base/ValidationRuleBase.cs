@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.Extensions.DependencyInjection;
 using Myth.Enums;
 using Myth.Interfaces;
 using Myth.Models;
@@ -13,7 +14,8 @@ public abstract class ValidationRuleBase<T> : IValidationRule<T> {
 	protected string? CustomMessage { get; private set; }
 	protected Func<T, string>? DynamicMessage { get; private set; }
 	protected string Code { get; private set; } = "VIOLATION";
-	protected HttpStatusCode StatusCode { get; private set; } = HttpStatusCode.BadRequest;
+	protected HttpStatusCode? StatusCode { get; private set; }
+	protected bool HasCustomStatusCode { get; private set; }
 	protected Func<T, bool>? Condition { get; private set; }
 	protected Func<T, bool>? UnlessCondition { get; private set; }
 	protected Func<object, bool>? EntityCondition { get; private set; }
@@ -63,12 +65,13 @@ public abstract class ValidationRuleBase<T> : IValidationRule<T> {
 			?? GetDefaultMessage( context.Value );
 
 		var options = GetOptionsForError( context.Value );
+		var statusCode = GetStatusCode( context.ServiceProvider );
 
 		return new ValidationError {
 			Field = context.FieldName,
 			Message = message,
 			Code = Code,
-			StatusCode = StatusCode,
+			StatusCode = statusCode,
 			Options = options
 		};
 	}
@@ -90,6 +93,8 @@ public abstract class ValidationRuleBase<T> : IValidationRule<T> {
 
 	public ValidationRuleBase<T> WithStatusCode( HttpStatusCode statusCode ) {
 		StatusCode = statusCode;
+		HasCustomStatusCode = true;
+
 		return this;
 	}
 
@@ -165,5 +170,25 @@ public abstract class ValidationRuleBase<T> : IValidationRule<T> {
 
 		// Override in derived classes to provide automatic option generation
 		return null;
+	}
+
+	/// <summary>
+	/// Gets the appropriate status code for this validation error
+	/// Uses custom status code if specified, otherwise falls back to global default or BadRequest
+	/// </summary>
+	/// <param name="serviceProvider">The service provider to resolve GuardOptions</param>
+	/// <returns>The HTTP status code to use for this validation error</returns>
+	private HttpStatusCode GetStatusCode( IServiceProvider serviceProvider ) {
+		// If a custom status code was explicitly set, use it
+		if ( HasCustomStatusCode && StatusCode.HasValue )
+			return StatusCode.Value;
+
+		// Try to get the global default from GuardOptions
+		var guardOptions = serviceProvider.GetService<GuardOptions>( );
+		if ( guardOptions?.DefaultValidationStatusCode.HasValue == true )
+			return guardOptions.DefaultValidationStatusCode.Value;
+
+		// Fall back to BadRequest as default
+		return HttpStatusCode.BadRequest;
 	}
 }

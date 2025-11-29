@@ -37,6 +37,38 @@ public interface IRuleConfigurator<T> {
 	FieldRuleBuilder<T> RespectAsync( Func<T, CancellationToken, IServiceProvider, Task<bool>> predicate );
 
 	/// <summary>
+	/// Validates that the value satisfies a custom predicate condition with access to the entire entity being validated.
+	/// This method allows for cross-property validation within the same object.
+	/// </summary>
+	/// <typeparam name="TEntity">The type of the entity being validated.</typeparam>
+	/// <param name="predicate">A function that receives both the property value and the parent entity, and returns true if validation passes.</param>
+	/// <returns>A <see cref="FieldRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// builder.For(x => x.Email, r => r.Respect&lt;User&gt;((email, user) =>
+	///     user.IsActive || string.IsNullOrEmpty(email)));
+	/// </code>
+	/// </example>
+	FieldRuleBuilder<T> Respect<TEntity>( Func<T, TEntity, bool> predicate ) where TEntity : class;
+
+	/// <summary>
+	/// Validates that the value satisfies a custom asynchronous predicate condition with access to the entire entity being validated and service provider.
+	/// This method allows for cross-property validation with external services like database lookups or API calls.
+	/// </summary>
+	/// <typeparam name="TEntity">The type of the entity being validated.</typeparam>
+	/// <param name="predicate">An async function that receives the property value, parent entity, cancellation token, and service provider, and returns true if validation passes.</param>
+	/// <returns>A <see cref="FieldRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// builder.For(x => x.Email, r => r.RespectAsync&lt;LoginDto&gt;(async (email, loginData, ct, sp) => {
+	///     var userRepo = sp.GetRequiredService&lt;IUserRepository&gt;();
+	///     return await userRepo.AnyAsync(u => u.Email == email && u.Password == loginData.Password, ct);
+	/// }));
+	/// </code>
+	/// </example>
+	FieldRuleBuilder<T> RespectAsync<TEntity>( Func<T, TEntity, CancellationToken, IServiceProvider, Task<bool>> predicate ) where TEntity : class;
+
+	/// <summary>
 	/// Validates that the value is equal to the specified expected value.
 	/// </summary>
 	/// <param name="value">The expected value that the field must equal.</param>

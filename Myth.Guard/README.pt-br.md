@@ -28,7 +28,7 @@ A maioria das bibliotecas de validação forçam você a escolher entre validaç
 - **Regras Customizadas**: Fácil extensibilidade com métodos `Respect()` e `RespectAsync()`
 - **Validação Condicional**: Regras condicionais no nível de campo e entidade
 - **Parar em Falha**: Otimize a validação parando após falhas críticas
-- **Customização de Status HTTP**: Configure códigos de status apropriados por erro de validação
+- **Customização de Status HTTP**: Configure status codes padrão globalmente e sobrescreva por erro de validação
 
 ## Instalação
 
@@ -63,7 +63,14 @@ public class CreateUserDto : IValidatable<CreateUserDto>
 ```csharp
 var builder = WebApplication.CreateBuilder( args );
 
+// Configuração básica
 builder.Services.AddGuard();
+
+// Configuração avançada com status code padrão para validação
+builder.Services.AddGuard( config => config
+    .UseDefaultStatusCode( 422 ) // UnprocessableEntity para erros de validação
+    .AutoGuardCommonExceptions()
+);
 
 var app = builder.Build();
 

@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 
@@ -15,6 +16,11 @@ public sealed class GuardOptions {
 	internal IWebHostEnvironment? Environment { get; set; }
 
 	internal List<object> PendingBuilders { get; } = new( );
+
+	/// <summary>
+	/// Gets or sets the default HTTP status code for validation errors when not explicitly specified
+	/// </summary>
+	public HttpStatusCode? DefaultValidationStatusCode { get; set; }
 
 	/// <summary>
 	/// Automatically guards against common .NET exceptions with sensible defaults
@@ -104,6 +110,28 @@ public sealed class GuardOptions {
 	/// </summary>
 	public Builder.ExceptionMappingBuilder<Exception> GuardDefaultException( ) {
 		return new Builder.ExceptionMappingBuilder<Exception>( this, isDefault: true );
+	}
+
+	/// <summary>
+	/// Sets the default HTTP status code for validation errors when not explicitly specified
+	/// </summary>
+	/// <param name="statusCode">The HTTP status code to use as default for validation errors</param>
+	/// <returns>The GuardOptions instance for method chaining</returns>
+	public GuardOptions UseDefaultStatusCode( HttpStatusCode statusCode ) {
+		DefaultValidationStatusCode = statusCode;
+
+		return this;
+	}
+
+	/// <summary>
+	/// Sets the default HTTP status code for validation errors when not explicitly specified
+	/// </summary>
+	/// <param name="statusCode">The HTTP status code as integer to use as default for validation errors</param>
+	/// <returns>The GuardOptions instance for method chaining</returns>
+	public GuardOptions UseDefaultStatusCode( int statusCode ) {
+		DefaultValidationStatusCode = ( HttpStatusCode )statusCode;
+
+		return this;
 	}
 
 
