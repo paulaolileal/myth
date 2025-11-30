@@ -28,7 +28,7 @@ Most validation libraries force you to choose between attribute-based validation
 - **Custom Rules**: Easy extensibility with `Respect()` and `RespectAsync()` methods
 - **Conditional Validation**: Field-level and entity-level conditional rules
 - **Stop on Failure**: Optimize validation by stopping after critical failures
-- **HTTP Status Customization**: Configure appropriate status codes per validation error
+- **HTTP Status Customization**: Configure default status codes globally and override per validation error
 
 ## Installation
 
@@ -63,7 +63,14 @@ public class CreateUserDto : IValidatable<CreateUserDto>
 ```csharp
 var builder = WebApplication.CreateBuilder( args );
 
+// Basic configuration
 builder.Services.AddGuard();
+
+// Advanced configuration with default validation status code
+builder.Services.AddGuard( config => config
+    .UseDefaultStatusCode( 422 ) // UnprocessableEntity for validation errors
+    .AutoGuardCommonExceptions()
+);
 
 var app = builder.Build();
 
@@ -315,6 +322,8 @@ builder.For( Email, x => x
 - `BeDefault()`, `NotDefault()` - Default value checks
 - `Respect(Func<T, bool>)` - Custom sync validation
 - `RespectAsync(Func<T, CancellationToken, IServiceProvider, Task<bool>>)` - Custom async validation
+- `Respect<TEntity>(Func<T, TEntity, bool>)` - Custom sync validation with entity access
+- `RespectAsync<TEntity>(Func<T, TEntity, CancellationToken, IServiceProvider, Task<bool>>)` - Custom async validation with entity access
 
 ### Nullable Type Support
 
@@ -440,6 +449,210 @@ builder.For( Salary, x => x
     .GreaterThan( 0 )
     .When<decimal, EmployeeDto>( emp => emp.EmploymentType == EmploymentType.FullTime ) );
 ```
+
+## Cross-Property Validation with Entity Access
+
+Myth.Guard provides powerful cross-property validation capabilities, allowing validation rules to access the entire entity being validated, not just the individual property value. This enables complex business rules that span multiple properties.
+
+### Basic Entity Access
+
+Use `Respect<TEntity>()` and `RespectAsync<TEntity>()` to access the parent object:
+
+```csharp
+public class LoginDto : IValidatable<LoginDto>
+{
+    public string Email { get; set; }
+    public string Password { get; set; }
+    public bool IsActive { get; set; }
+
+    public void Validate( ValidationBuilder<LoginDto> builder, ValidationContextKey? context = null )
+    {
+        // Email validation with access to the entire LoginDto object
+        builder.For( Email, x => x
+            .NotEmpty()
+            .Email()
+            .Respect<LoginDto>( ( email, login ) => !login.IsActive || !string.IsNullOrEmpty( email ) )
+            .WithMessage( "Email is required for active users" )
+            .WithCode( "EMAIL_REQUIRED_FOR_ACTIVE" ) );
+
+        // Password validation with async entity access and external service
+        builder.For( Password, x => x
+            .NotEmpty()
+            .MinimumLength( 6 )
+            .RespectAsync<LoginDto>( async ( password, login, ct, sp ) => {
+                var userService = sp.GetRequiredService<IUserService>();
+                return await userService.ValidateCredentialsAsync( login.Email, password, ct );
+            } )
+            .WithMessage( "Invalid email and password combination" )
+            .WithCode( "INVALID_CREDENTIALS" ) );
+    }
+}
+```
+
+### Advanced Cross-Property Rules
+
+Create complex validation logic that considers multiple properties:
+
+```csharp
+public class UserProfileDto : IValidatable<UserProfileDto>
+{
+    public string Name { get; set; }
+    public string Role { get; set; }
+    public int Age { get; set; }
+    public decimal Salary { get; set; }
+    public bool IsActive { get; set; }
+
+    public void Validate( ValidationBuilder<UserProfileDto> builder, ValidationContextKey? context = null )
+    {
+        // Name length requirements vary by role
+        builder.For( Name, x => x
+            .NotEmpty()
+            .Respect<UserProfileDto>( ( name, profile ) => {
+                return profile.Role switch {
+                    "Admin" => name.Length >= 5,
+                    "Manager" => name.Length >= 4,
+                    "User" => name.Length >= 3,
+                    _ => name.Length >= 2
+                };
+            } )
+            .WithMessage( "Name length requirement not met for role" )
+            .WithCode( "NAME_LENGTH_ROLE_MISMATCH" ) );
+
+        // Age requirements based on role
+        builder.For( Age, x => x
+            .GreaterThan( 0 )
+            .Respect<UserProfileDto>( ( age, profile ) => {
+                return profile.Role switch {
+                    "Admin" => age >= 25,
+                    "Manager" => age >= 21,
+                    "User" => age >= 18,
+                    _ => age >= 16
+                };
+            } )
+            .WithMessage( "Age requirement not met for role" )
+            .WithCode( "AGE_ROLE_MISMATCH" ) );
+
+        // Salary validation with role and activity status
+        builder.For( Salary, x => x
+            .GreaterOrEquals( 0 )
+            .Respect<UserProfileDto>( ( salary, profile ) => {
+                if ( !profile.IsActive ) return true; // Inactive users can have any salary
+
+                return profile.Role switch {
+                    "Admin" => salary >= 80000,
+                    "Manager" => salary >= 60000,
+                    "User" => salary >= 30000,
+                    _ => salary >= 20000
+                };
+            } )
+            .WithMessage( "Salary below minimum for active user role" )
+            .WithCode( "SALARY_BELOW_MINIMUM" ) );
+    }
+}
+```
+
+### Entity Access with Async Services
+
+Combine entity access with external service validation:
+
+```csharp
+public class OrderDto : IValidatable<OrderDto>
+{
+    public int CustomerId { get; set; }
+    public decimal Amount { get; set; }
+    public string CustomerType { get; set; }
+    public string ShippingAddress { get; set; }
+
+    public void Validate( ValidationBuilder<OrderDto> builder, ValidationContextKey? context = null )
+    {
+        builder.For( Amount, x => x
+            .GreaterThan( 0 )
+            .RespectAsync<OrderDto>( async ( amount, order, ct, sp ) => {
+                var customerService = sp.GetRequiredService<ICustomerService>();
+                var customer = await customerService.GetByIdAsync( order.CustomerId, ct );
+
+                if ( customer == null ) return false;
+
+                // Different limits for different customer types
+                var maxAmount = order.CustomerType switch {
+                    "Premium" => 50000m,
+                    "Gold" => 25000m,
+                    "Silver" => 10000m,
+                    _ => 5000m
+                };
+
+                return amount <= maxAmount;
+            } )
+            .WithMessage( "Order amount exceeds limit for customer type" )
+            .WithCode( "AMOUNT_EXCEEDS_CUSTOMER_LIMIT" ) );
+
+        // Address validation based on customer location
+        builder.For( ShippingAddress, x => x
+            .NotEmpty()
+            .RespectAsync<OrderDto>( async ( address, order, ct, sp ) => {
+                var customerService = sp.GetRequiredService<ICustomerService>();
+                var addressService = sp.GetRequiredService<IAddressService>();
+
+                var customer = await customerService.GetByIdAsync( order.CustomerId, ct );
+                if ( customer == null ) return false;
+
+                return await addressService.IsValidForCustomerAsync( address, customer.Country, ct );
+            } )
+            .WithMessage( "Shipping address not valid for customer location" )
+            .WithCode( "INVALID_SHIPPING_ADDRESS" ) );
+    }
+}
+```
+
+### Backward Compatibility
+
+The new entity access methods are fully backward compatible. All existing `Respect()` and `RespectAsync()` methods continue to work exactly as before:
+
+```csharp
+// Existing syntax still works
+builder.For( Email, x => x
+    .Respect( email => !string.IsNullOrEmpty( email ) && email.Contains( "@" ) ) );
+
+builder.For( UserId, x => x
+    .RespectAsync( async ( id, ct, sp ) => {
+        var userService = sp.GetRequiredService<IUserService>();
+        return await userService.ExistsAsync( id, ct );
+    } ) );
+
+// New entity access syntax
+builder.For( Email, x => x
+    .Respect<UserDto>( ( email, user ) => user.IsActive || string.IsNullOrEmpty( email ) ) );
+
+builder.For( UserId, x => x
+    .RespectAsync<UserDto>( async ( id, user, ct, sp ) => {
+        var userService = sp.GetRequiredService<IUserService>();
+        return await userService.HasPermissionAsync( id, user.Role, ct );
+    } ) );
+```
+
+### Type Safety
+
+The generic constraint `where TEntity : class` ensures type safety and provides full IntelliSense support:
+
+```csharp
+// Compile-time type checking
+builder.For( Email, x => x
+    .Respect<LoginDto>( ( email, login ) => {
+        // 'login' is strongly typed as LoginDto
+        return login.IsActive && !string.IsNullOrEmpty( email );
+    } ) );
+
+// Compiler error if wrong type is used
+builder.For( Email, x => x
+    .Respect<WrongType>( ( email, wrong ) => true ) ); // ❌ Compilation error
+```
+
+### Performance Considerations
+
+- **Minimal overhead**: Entity access adds only a single cast operation
+- **No reflection**: Uses compile-time generics for optimal performance
+- **Lazy evaluation**: Rules only execute when validation runs
+- **Service sharing**: Single service provider instance shared across all rules
 
 ## Async Validation with Service Provider
 
@@ -651,6 +864,47 @@ When using `app.UseGuard()`, validation exceptions are automatically caught and 
 ```
 
 **HTTP Status Code**: The highest status code from all validation errors (e.g., if one error has `409 Conflict`, the response will be `409`).
+
+### Status Code Configuration
+
+Configure default and custom status codes for validation errors:
+
+```csharp
+// Configure default status code globally
+builder.Services.AddGuard( config => config
+    .UseDefaultStatusCode( 422 ) // UnprocessableEntity
+    // or
+    .UseDefaultStatusCode( HttpStatusCode.UnprocessableEntity )
+);
+
+// Override per validation rule
+public void Validate( ValidationBuilder<UserDto> builder, ValidationContextKey? context = null )
+{
+    builder.For( Email, x => x
+        .NotEmpty()
+        .Email()
+        .RespectAsync( async ( email, ct, sp ) =>
+        {
+            var userService = sp.GetRequiredService<IUserService>();
+            return await userService.IsEmailAvailableAsync( email, ct );
+        } )
+        .WithMessage( "Email already exists" )
+        .WithCode( "EMAIL_EXISTS" )
+        .WithStatusCode( HttpStatusCode.Conflict ) // 409 - Override global default
+    );
+
+    builder.For( Age, x => x
+        .GreaterThan( 0 )
+        .LessThan( 150 )
+        // Uses global default status code (422) when no WithStatusCode() is specified
+    );
+}
+```
+
+**Precedence Order**:
+1. **Custom status code** (`.WithStatusCode()`) - highest priority
+2. **Global default** (`.UseDefaultStatusCode()`) - medium priority
+3. **BadRequest (400)** - fallback when no configuration provided
 
 ## Multi-Validation
 

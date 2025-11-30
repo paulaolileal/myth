@@ -19,7 +19,6 @@ cache:
 build-job:
   stage: build
   only:
-    - branches
     - tags
   script:
     - dotnet restore --verbosity minimal
@@ -36,7 +35,6 @@ build-job:
 test-job:
   stage: test
   only:
-    - branches
     - tags
   script:
     - dotnet test
@@ -71,7 +69,6 @@ publish:
     - test-job
   script:
     - PACKAGE_VERSION=$(echo "$CI_COMMIT_TAG" | cut -d "v" -f2- )
-    - mkdir -p nupkgs tool-nupkgs
     - echo "Packing all libraries..."
     - |
       # Pack library projects (exclude test and tool projects)
@@ -89,4 +86,3 @@ publish:
     expire_in: 1 week
     paths:
       - nupkgs/
-      - tool-nupkgs/
