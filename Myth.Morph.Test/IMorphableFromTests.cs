@@ -460,4 +460,47 @@ public class IMorphableFromTests {
 		dto.IsEmailVerified.Should( ).Be( user.IsEmailVerified );
 		dto.LastLoginAt.Should( ).Be( user.LastLoginAt );
 	}
+
+	[Fact]
+	public void UserWithRole_To_UserDto_Should_MapConstantToString_Correctly( ) {
+		// Arrange
+		var user = new UserWithRole {
+			UserId = Guid.NewGuid( ),
+			Name = "John Doe",
+			Email = "john@example.com",
+			Avatar = "avatar.jpg",
+			Role = UserRole.Admin
+		};
+
+		// Act
+		var dto = user.To<UserDto>( _serviceProvider );
+
+		// Assert
+		dto.Should( ).NotBeNull( );
+		dto.Id.Should( ).Be( user.UserId );
+		dto.Name.Should( ).Be( user.Name );
+		dto.Email.Should( ).Be( user.Email );
+		dto.Avatar.Should( ).Be( user.Avatar );
+		dto.Role.Should( ).Be( "Admin" ); // Should map from UserRole.Admin.Name to string via manual binding
+	}
+
+	[Fact]
+	public void UserWithRole_To_UserDto_Should_MapDifferentConstantValues_Correctly( ) {
+		// Arrange
+		var users = new[ ] {
+			new UserWithRole { UserId = Guid.NewGuid( ), Name = "Owner", Email = "owner@test.com", Role = UserRole.Owner },
+			new UserWithRole { UserId = Guid.NewGuid( ), Name = "Admin", Email = "admin@test.com", Role = UserRole.Admin },
+			new UserWithRole { UserId = Guid.NewGuid( ), Name = "Editor", Email = "editor@test.com", Role = UserRole.Editor },
+			new UserWithRole { UserId = Guid.NewGuid( ), Name = "Viewer", Email = "viewer@test.com", Role = UserRole.Viewer }
+		};
+
+		// Act
+		var dtos = users.Select( u => u.To<UserDto>( _serviceProvider ) ).ToArray( );
+
+		// Assert
+		dtos[ 0 ].Role.Should( ).Be( "Owner" );
+		dtos[ 1 ].Role.Should( ).Be( "Admin" );
+		dtos[ 2 ].Role.Should( ).Be( "Editor" );
+		dtos[ 3 ].Role.Should( ).Be( "Viewer" );
+	}
 }

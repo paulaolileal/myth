@@ -203,6 +203,9 @@ public class Schema<TDestination> {
 			throw new BindException( "Invalid destination property expression. Use () => PropertyName syntax." );
 		}
 
+		// Mark this property as manually mapped to prevent auto-mapping from overriding
+		_manuallyMappedDestProps.Add( destinationPropertyName );
+
 		_reverseMappings.Add( ( source, destination, sp ) => {
 			var logger = GetLogger( sp );
 			try {
@@ -247,6 +250,9 @@ public class Schema<TDestination> {
 			throw new BindException( "Invalid destination property expression. Use () => PropertyName syntax." );
 		}
 
+		// Mark this property as manually mapped to prevent auto-mapping from overriding
+		_manuallyMappedDestProps.Add( destinationPropertyName );
+
 		_reverseMappings.Add( ( source, destination, sp ) => {
 			var logger = GetLogger( sp );
 			try {
@@ -290,6 +296,9 @@ public class Schema<TDestination> {
 		if ( destinationPropertyName == null ) {
 			throw new BindException( "Invalid destination property expression. Use () => PropertyName syntax." );
 		}
+
+		// Mark this property as manually mapped to prevent auto-mapping from overriding
+		_manuallyMappedDestProps.Add( destinationPropertyName );
 
 		_asyncReverseMappings.Add( async ( source, destination, sp ) => {
 			var logger = GetLogger( sp );

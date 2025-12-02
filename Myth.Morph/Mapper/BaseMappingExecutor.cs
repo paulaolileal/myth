@@ -208,6 +208,15 @@ public abstract class BaseMappingExecutor<TDestination> {
 				return true;
 			}
 
+			// Check if source is a Constant<T,V> and target is the value type
+			if ( IsConstantType( value.GetType( ), out var constantValueType ) &&
+				 targetType.IsAssignableFrom( constantValueType ) ) {
+				Logger?.LogTrace( "Converting Constant<T,V> to its underlying value type" );
+				var valueProperty = value.GetType( ).GetProperty( "Value" );
+				result = valueProperty?.GetValue( value );
+				return true;
+			}
+
 			if ( targetType.IsPrimitive ||
 				 targetType == typeof( string ) ||
 				 targetType == typeof( DateTime ) ||
@@ -296,4 +305,34 @@ public abstract class BaseMappingExecutor<TDestination> {
 			FieldInfo f => f.FieldType,
 			_ => null
 		};
+
+	/// <summary>
+	/// Checks if a type is a Constant&lt;T,V&gt; and returns the value type.
+	/// </summary>
+	/// <param name="type">The type to check.</param>
+	/// <param name="valueType">The value type if the input type is a Constant, otherwise null.</param>
+	/// <returns>True if the type is a Constant&lt;T,V&gt;, false otherwise.</returns>
+	protected bool IsConstantType( Type type, out Type? valueType ) {
+		valueType = null;
+
+		// Check if the type or any of its base types is a generic type with 2 type arguments
+		var currentType = type;
+		while ( currentType != null && currentType != typeof( object ) ) {
+			if ( currentType.IsGenericType ) {
+				var genericTypeDef = currentType.GetGenericTypeDefinition( );
+				var genericArgs = currentType.GetGenericArguments( );
+
+				// Check if it matches the pattern Constant<TSelf, TValue> where TSelf is the current type
+				if ( genericArgs.Length == 2 &&
+					 genericArgs[ 0 ] == type && // TSelf should be the concrete type
+					 genericTypeDef.Name.StartsWith( "Constant" ) ) {
+					valueType = genericArgs[ 1 ]; // TValue
+					return true;
+				}
+			}
+			currentType = currentType.BaseType;
+		}
+
+		return false;
+	}
 }
