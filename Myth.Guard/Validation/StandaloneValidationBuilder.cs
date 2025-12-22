@@ -62,15 +62,6 @@ internal class StandaloneValidationBuilder<T>( T value, string propertyName ) : 
 	}
 
 	/// <inheritdoc />
-	public IStandaloneValidationBuilder<T> WithCode( string code ) {
-		if ( _lastRule == null )
-			throw new InvalidOperationException( "No rule to apply code to. Call a validation method first." );
-
-		_lastRule.WithCode( code );
-		return this;
-	}
-
-	/// <inheritdoc />
 	public IStandaloneValidationBuilder<T> WithStatusCode( int statusCode ) {
 		if ( _lastRule == null )
 			throw new InvalidOperationException( "No rule to apply status code to. Call a validation method first." );

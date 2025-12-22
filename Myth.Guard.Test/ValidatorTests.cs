@@ -168,7 +168,7 @@ public class ValidatorTests {
 		// Assert
 		var exception = await act.Should( ).ThrowAsync<ValidationException>( );
 		exception.Which.ValidationResult.Errors
-			.Should( ).Contain( e => e.Field == "Email" && e.Code == "EMAIL_EXISTS" );
+			.Should( ).Contain( e => e.Field == "Email" && e.Message.Contains( "already exists" ) );
 	}
 
 	[Fact]

@@ -29,8 +29,8 @@ public class ValidationResultTests {
 		// Arrange
 		var errors = new List<ValidationError>
 		{
-			new("Name", "Name is required", "REQUIRED", HttpStatusCode.BadRequest),
-			new("Email", "Invalid email format", "INVALID_FORMAT", HttpStatusCode.BadRequest)
+			new("Name", "Name is required", HttpStatusCode.BadRequest),
+			new("Email", "Invalid email format", HttpStatusCode.BadRequest)
 		};
 
 		// Act
@@ -48,9 +48,9 @@ public class ValidationResultTests {
 		// Arrange
 		var errors = new List<ValidationError>
 		{
-			new("Field1", "Error 1", "ERROR1", HttpStatusCode.BadRequest),
-			new("Field2", "Error 2", "ERROR2", HttpStatusCode.UnprocessableEntity),
-			new("Field3", "Error 3", "ERROR3", HttpStatusCode.BadRequest)
+			new("Field1", "Error 1", HttpStatusCode.BadRequest),
+			new("Field2", "Error 2", HttpStatusCode.UnprocessableEntity),
+			new("Field3", "Error 3", HttpStatusCode.BadRequest)
 		};
 
 		// Act
@@ -65,8 +65,8 @@ public class ValidationResultTests {
 		// Arrange
 		var errors = new List<ValidationError>
 		{
-			new("Field1", "Access denied", "ACCESS_DENIED", HttpStatusCode.Forbidden),
-			new("Field2", "Invalid data", "INVALID", HttpStatusCode.BadRequest)
+			new("Field1", "Access denied", HttpStatusCode.Forbidden),
+			new("Field2", "Invalid data", HttpStatusCode.BadRequest)
 		};
 
 		// Act
@@ -81,8 +81,8 @@ public class ValidationResultTests {
 		// Arrange
 		var errors = new List<ValidationError>
 		{
-			new("Auth", "Unauthorized", "UNAUTHORIZED", HttpStatusCode.Unauthorized),
-			new("Field", "Invalid", "INVALID", HttpStatusCode.BadRequest)
+			new("Auth", "Unauthorized", HttpStatusCode.Unauthorized),
+			new("Field", "Invalid", HttpStatusCode.BadRequest)
 		};
 
 		// Act
@@ -97,7 +97,7 @@ public class ValidationResultTests {
 		// Arrange
 		var errors = new List<ValidationError>
 		{
-			new("Field", "Error", "CODE", HttpStatusCode.BadRequest)
+			new("Field", "Error", HttpStatusCode.BadRequest)
 		};
 		var result = new ValidationResult( errors );
 
@@ -124,7 +124,7 @@ public class ValidationResultTests {
 		// Arrange
 		var errors = new List<ValidationError>
 		{
-			new("Field", "Error", "CODE", HttpStatusCode.BadRequest)
+			new("Field", "Error", HttpStatusCode.BadRequest)
 		};
 
 		// Act
@@ -146,7 +146,7 @@ public class ValidationResultTests {
 		// Arrange
 		var errors = new List<ValidationError>
 		{
-			new("Field", "Error", "CODE", errorStatusCode)
+			new("Field", "Error", errorStatusCode)
 		};
 
 		// Act
@@ -161,9 +161,9 @@ public class ValidationResultTests {
 		// Arrange
 		var errors = new List<ValidationError>
 		{
-			new("Field1", "Error 1", "CODE1", HttpStatusCode.BadRequest),
-			new("Field2", "Error 2", "CODE2", HttpStatusCode.BadRequest),
-			new("Field3", "Error 3", "CODE3", HttpStatusCode.BadRequest)
+			new("Field1", "Error 1", HttpStatusCode.BadRequest),
+			new("Field2", "Error 2", HttpStatusCode.BadRequest),
+			new("Field3", "Error 3", HttpStatusCode.BadRequest)
 		};
 
 		// Act

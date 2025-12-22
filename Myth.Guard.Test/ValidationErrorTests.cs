@@ -14,17 +14,15 @@ public class ValidationErrorTests {
 		// Arrange
 		const string field = "TestField";
 		const string message = "Test message";
-		const string code = "TEST_CODE";
 		const HttpStatusCode statusCode = HttpStatusCode.BadRequest;
 
 		// Act
-		var error = new ValidationError( field, message, code, statusCode );
+		var error = new ValidationError( field, message, statusCode );
 
 		// Assert
 		error.Should( ).NotBeNull( );
 		error.Field.Should( ).Be( field );
 		error.Message.Should( ).Be( message );
-		error.Code.Should( ).Be( code );
 		error.StatusCode.Should( ).Be( statusCode );
 	}
 
@@ -38,7 +36,6 @@ public class ValidationErrorTests {
 		error.Should( ).NotBeNull( );
 		error.Field.Should( ).Be( string.Empty );
 		error.Message.Should( ).Be( string.Empty );
-		error.Code.Should( ).Be( "VIOLATION" );
 		error.StatusCode.Should( ).Be( HttpStatusCode.BadRequest );
 	}
 
@@ -47,13 +44,11 @@ public class ValidationErrorTests {
 		// Arrange
 		const string field = "Email";
 		const string message = "Invalid email format";
-		const string code = "INVALID_EMAIL";
 
 		// Act
-		var error = new ValidationError( field, message, code, HttpStatusCode.BadRequest );
+		var error = new ValidationError( field, message, HttpStatusCode.BadRequest );
 
 		// Assert
-		error.Code.Should( ).Be( code );
 		error.StatusCode.Should( ).Be( HttpStatusCode.BadRequest );
 	}
 
@@ -62,7 +57,7 @@ public class ValidationErrorTests {
 	[InlineData( null )]
 	public void Constructor_WithNullOrEmptyField_ShouldAcceptValue( string? field ) {
 		// Act
-		var error = new ValidationError( field, "Message", "CODE", HttpStatusCode.BadRequest );
+		var error = new ValidationError( field, "Message", HttpStatusCode.BadRequest );
 
 		// Assert
 		error.Field.Should( ).Be( field );
@@ -73,21 +68,10 @@ public class ValidationErrorTests {
 	[InlineData( null )]
 	public void Constructor_WithNullOrEmptyMessage_ShouldAcceptValue( string? message ) {
 		// Act
-		var error = new ValidationError( "Field", message, "CODE", HttpStatusCode.BadRequest );
+		var error = new ValidationError( "Field", message, HttpStatusCode.BadRequest );
 
 		// Assert
 		error.Message.Should( ).Be( message );
-	}
-
-	[Theory]
-	[InlineData( "" )]
-	[InlineData( null )]
-	public void Constructor_WithNullOrEmptyCode_ShouldAcceptValue( string? code ) {
-		// Act
-		var error = new ValidationError( "Field", "Message", code, HttpStatusCode.BadRequest );
-
-		// Assert
-		error.Code.Should( ).Be( code );
 	}
 
 	[Theory]
@@ -99,7 +83,7 @@ public class ValidationErrorTests {
 	[InlineData( HttpStatusCode.InternalServerError )]
 	public void Constructor_WithVariousStatusCodes_ShouldSetStatusCode( HttpStatusCode statusCode ) {
 		// Act
-		var error = new ValidationError( "Field", "Message", "CODE", statusCode );
+		var error = new ValidationError( "Field", "Message", statusCode );
 
 		// Assert
 		error.StatusCode.Should( ).Be( statusCode );
@@ -108,8 +92,8 @@ public class ValidationErrorTests {
 	[Fact]
 	public void ValidationError_ShouldHaveCorrectProperties( ) {
 		// Arrange
-		var error1 = new ValidationError( "Field", "Message", "CODE", HttpStatusCode.BadRequest );
-		var error2 = new ValidationError( "Field", "Different Message", "CODE", HttpStatusCode.BadRequest );
+		var error1 = new ValidationError( "Field", "Message", HttpStatusCode.BadRequest );
+		var error2 = new ValidationError( "Field", "Different Message", HttpStatusCode.BadRequest );
 
 		// Assert
 		error1.Field.Should( ).Be( "Field" );
@@ -120,7 +104,7 @@ public class ValidationErrorTests {
 	[Fact]
 	public void ToString_ShouldReturnMeaningfulString( ) {
 		// Arrange
-		var error = new ValidationError( "Email", "Invalid format", "INVALID_EMAIL", HttpStatusCode.BadRequest );
+		var error = new ValidationError( "Email", "Invalid format", HttpStatusCode.BadRequest );
 
 		// Act
 		var toString = error.ToString( );
@@ -129,18 +113,16 @@ public class ValidationErrorTests {
 		toString.Should( ).NotBeNullOrWhiteSpace( );
 		toString.Should( ).Contain( "Email" );
 		toString.Should( ).Contain( "Invalid format" );
-		toString.Should( ).Contain( "INVALID_EMAIL" );
 	}
 
 	[Fact]
 	public void Properties_ShouldBeAccessible( ) {
 		// Arrange
-		var error = new ValidationError( "TestField", "Test message", "TEST_CODE", HttpStatusCode.UnprocessableEntity );
+		var error = new ValidationError( "TestField", "Test message", HttpStatusCode.UnprocessableEntity );
 
 		// Act & Assert
 		error.Field.Should( ).Be( "TestField" );
 		error.Message.Should( ).Be( "Test message" );
-		error.Code.Should( ).Be( "TEST_CODE" );
 		error.StatusCode.Should( ).Be( HttpStatusCode.UnprocessableEntity );
 	}
 }

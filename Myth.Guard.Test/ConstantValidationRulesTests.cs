@@ -43,7 +43,6 @@ public partial class ConstantValidationRulesTests : BaseTestFixture {
 		statusCodeErrors.Should( ).HaveCount( 1 );
 		statusCodeErrors[ 0 ].Message.Should( ).Contain( "Value 'X' is not valid" );
 		statusCodeErrors[ 0 ].Message.Should( ).Contain( $"Valid options are: {TestStatus.GetOptions( )}" );
-		statusCodeErrors[ 0 ].Code.Should( ).Be( "VIOLATION" );
 	}
 
 	[Fact]
@@ -74,7 +73,6 @@ public partial class ConstantValidationRulesTests : BaseTestFixture {
 		priorityErrors.Should( ).HaveCount( 1 );
 		priorityErrors[ 0 ].Message.Should( ).Contain( "Value '999' is not valid" );
 		priorityErrors[ 0 ].Message.Should( ).Contain( $"Valid options are: {TestPriority.GetOptions( )}" );
-		priorityErrors[ 0 ].Code.Should( ).Be( "VIOLATION" );
 	}
 
 	[Fact]
@@ -125,7 +123,6 @@ public partial class ConstantValidationRulesTests : BaseTestFixture {
 		statusNameErrors.Should( ).HaveCount( 1 );
 		statusNameErrors[ 0 ].Message.Should( ).Contain( "Name 'Unknown' is not valid" );
 		statusNameErrors[ 0 ].Message.Should( ).Contain( $"Valid options are: {TestStatus.GetOptions( )}" );
-		statusNameErrors[ 0 ].Code.Should( ).Be( "VIOLATION" );
 	}
 
 	[Fact]
@@ -156,7 +153,6 @@ public partial class ConstantValidationRulesTests : BaseTestFixture {
 		priorityNameErrors.Should( ).HaveCount( 1 );
 		priorityNameErrors[ 0 ].Message.Should( ).Contain( "Name 'Critical' is not valid" );
 		priorityNameErrors[ 0 ].Message.Should( ).Contain( $"Valid options are: {TestPriority.GetOptions( )}" );
-		priorityNameErrors[ 0 ].Code.Should( ).Be( "VIOLATION" );
 	}
 
 	[Fact]
@@ -276,7 +272,6 @@ public partial class ConstantValidationRulesTests : BaseTestFixture {
 		var statusError = result.Errors.FirstOrDefault( e => e.Field == "StatusCode" );
 		statusError.Should( ).NotBeNull( );
 		statusError!.Message.Should( ).Be( "Please select a valid status" );
-		statusError.Code.Should( ).Be( "INVALID_STATUS" );
 	}
 
 	#endregion

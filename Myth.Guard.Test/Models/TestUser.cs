@@ -66,8 +66,7 @@ public class TestUser : IValidatable<TestUser> {
 					var userService = sp.GetService( typeof( ITestUserService ) ) as ITestUserService;
 					return userService == null || await userService.IsEmailAvailableAsync( email, ct );
 				} )
-				.WithMessage( "Email already exists" )
-				.WithCode( "EMAIL_EXISTS" ) );
+				.WithMessage( "Email already exists" ) );
 
 			b.For( IsActive, x => x.IsTrue( ) );
 		} );

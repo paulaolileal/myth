@@ -112,23 +112,19 @@ public class UserController : ControllerBase
 
 ### Resposta Automática de Erro
 
-Com o middleware `app.UseGuard()`, exceções de validação são automaticamente formatadas:
+Com o middleware `app.UseGuard()`, exceções de validação são automaticamente formatadas seguindo [RFC 9457 (Problem Details for HTTP APIs)](https://www.rfc-editor.org/rfc/rfc9457.html):
 
 ```json
 {
-    "code": "MULTIPLE_ERRORS",
-    "errors": [
-        {
-            "field": "email",
-            "message": "Email é obrigatório",
-            "code": "VIOLATION"
-        },
-        {
-            "field": "age",
-            "message": "Valor deve ser maior que 0",
-            "code": "VIOLATION"
-        }
-    ]
+    "type": "https://github.com/paulaolileal/myth/blob/main/docs/errors/validation.md",
+    "title": "One or more validation errors occurred",
+    "status": 400,
+    "instance": "/api/users",
+    "traceId": "00-abc123...",
+    "errors": {
+        "email": ["Email é obrigatório"],
+        "age": ["Valor deve ser maior que 0"]
+    }
 }
 ```
 
@@ -367,7 +363,7 @@ public class UserDto : IValidatable<UserDto>
                     return await userService.IsEmailAvailableAsync( email, ct );
                 } )
                 .WithMessage( "Email já existe" )
-                .WithCode( "EMAIL_EXISTS" )
+                
                 .WithStatusCode( HttpStatusCode.Conflict ) );
 
             b.For( Password, x => x
@@ -469,7 +465,7 @@ public class CreateOrderDto : IValidatable<CreateOrderDto>
                 return await productService.ExistsAsync( productId, ct );
             } )
             .WithMessage( "Produto não existe" )
-            .WithCode( "PRODUCT_NOT_FOUND" ) );
+            );
 
         builder.For( Quantity, x => x
             .GreaterThan( 0 )
@@ -480,7 +476,7 @@ public class CreateOrderDto : IValidatable<CreateOrderDto>
                 return quantity <= stock;
             } )
             .WithMessage( "Estoque insuficiente" )
-            .WithCode( "INSUFFICIENT_STOCK" ) );
+            );
 
         builder.For( CustomerEmail, x => x
             .NotEmpty()
@@ -491,7 +487,7 @@ public class CreateOrderDto : IValidatable<CreateOrderDto>
                 return await customerService.IsActiveCustomerAsync( email, ct );
             } )
             .WithMessage( "Cliente não encontrado ou inativo" )
-            .WithCode( "CUSTOMER_INACTIVE" )
+            
             .WithStatusCode( HttpStatusCode.NotFound ) );
     }
 }
@@ -515,7 +511,7 @@ builder.For( Age, x => x
 // Código de erro customizado
 builder.For( Email, x => x
     .Email()
-    .WithCode( "INVALID_EMAIL_FORMAT" ) );
+    );
 
 // Código de status HTTP customizado
 builder.For( UserId, x => x
@@ -525,7 +521,7 @@ builder.For( UserId, x => x
         return await userService.ExistsAsync( id, ct );
     } )
     .WithMessage( "Usuário não encontrado" )
-    .WithCode( "USER_NOT_FOUND" )
+    
     .WithStatusCode( HttpStatusCode.NotFound ) ); // Retorna 404 em vez de 400
 ```
 
@@ -583,7 +579,7 @@ public class OrderDto : IValidatable<OrderDto>
                 return isValid && isApplicable;
             } )
             .WithMessage( "Código de cupom inválido ou inaplicável" )
-            .WithCode( "INVALID_COUPON" ) );
+            );
     }
 }
 ```
@@ -604,7 +600,6 @@ if ( !result.IsValid )
     {
         Console.WriteLine( $"Campo: {error.Field}" );
         Console.WriteLine( $"Mensagem: {error.Message}" );
-        Console.WriteLine( $"Código: {error.Code}" );
         Console.WriteLine( $"Status: {error.StatusCode}" );
     }
 }
@@ -628,8 +623,7 @@ catch ( ValidationException ex )
         errors = errors.Select( e => new
         {
             field = e.Field,
-            message = e.Message,
-            code = e.Code
+            message = e.Message
         } )
     } );
 }

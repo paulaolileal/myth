@@ -5,6 +5,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -94,7 +95,7 @@ public class DependencyInjectionTests {
 							var validator = context.RequestServices.GetRequiredService<IValidator>( );
 							var errors = new List<ValidationError>
 							{
-								new("Field", "Error message", "ERROR_CODE", HttpStatusCode.BadRequest)
+								new("Field", "Error message", HttpStatusCode.BadRequest)
 							};
 							var result = new ValidationResult( errors );
 							throw new Exceptions.ValidationException( result );
@@ -110,18 +111,17 @@ public class DependencyInjectionTests {
 
 		// Assert
 		response.StatusCode.Should( ).Be( HttpStatusCode.BadRequest );
-		response.Content.Headers.ContentType?.MediaType.Should( ).Be( "application/json" );
+		response.Content.Headers.ContentType?.MediaType.Should( ).Be( "application/problem+json", "RFC 9457 standard content type" );
 
 		var responseBody = await response.Content.ReadAsStringAsync( );
-		var responseObj = JsonSerializer.Deserialize<ValidationErrorResponse>( responseBody, new JsonSerializerOptions {
+		var responseObj = JsonSerializer.Deserialize<ValidationProblemDetails>( responseBody, new JsonSerializerOptions {
 			PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 		} );
 
 		responseObj.Should( ).NotBeNull( );
-		responseObj!.Errors.Should( ).HaveCount( 1 );
-		responseObj.Errors.First( ).Field.Should( ).Be( "Field" );
-		responseObj.Errors.First( ).Message.Should( ).Be( "Error message" );
-		responseObj.Errors.First( ).Code.Should( ).Be( "ERROR_CODE" );
+		responseObj!.Status.Should( ).Be( 400 );
+		responseObj.Errors.Should( ).ContainKey( "Field" );
+		responseObj.Errors[ "Field" ].Should( ).Contain( "Error message" );
 	}
 
 	[Fact]
@@ -252,13 +252,13 @@ public class DependencyInjectionTests {
 		response.StatusCode.Should( ).Be( HttpStatusCode.BadRequest );
 
 		var responseBody = await response.Content.ReadAsStringAsync( );
-		var responseObj = JsonSerializer.Deserialize<ValidationErrorResponse>( responseBody, new JsonSerializerOptions {
+		var responseObj = JsonSerializer.Deserialize<ValidationProblemDetails>( responseBody, new JsonSerializerOptions {
 			PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 		} );
 
 		responseObj.Should( ).NotBeNull( );
-		responseObj!.Errors.Should( ).HaveCount( 1 );
-		responseObj.Errors.First( ).Field.Should( ).Be( "Value" );
+		responseObj!.Status.Should( ).Be( 400 );
+		responseObj.Errors.Should( ).ContainKey( "Value" );
 	}
 
 	// Helper class for testing custom validator registration

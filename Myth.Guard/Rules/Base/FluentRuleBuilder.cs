@@ -45,14 +45,6 @@ public sealed class FluentRuleBuilder<T>( FieldRuleBuilder<T> fieldBuilder ) {
 	}
 
 	/// <summary>
-	/// Sets custom code on the last added rule
-	/// </summary>
-	public FluentRuleBuilder<T> WithCode( string code ) {
-		_lastRule?.WithCode( code );
-		return this;
-	}
-
-	/// <summary>
 	/// Sets custom status code on the last added rule
 	/// </summary>
 	public FluentRuleBuilder<T> WithStatusCode( System.Net.HttpStatusCode statusCode ) {

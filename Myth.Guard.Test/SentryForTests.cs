@@ -77,12 +77,12 @@ public class SentryForTests : BaseTestFixture {
 		// Act
 		var result = await Sentry.For( value )
 			.NotEmpty( )
-			.WithCode( "CUSTOM_CODE" )
+			.WithStatusCode( 400 )
 			.ValidateAsync( );
 
 		// Assert
 		result.IsValid.Should( ).BeFalse( );
-		result.FirstError!.Code.Should( ).Be( "CUSTOM_CODE" );
+		result.FirstError!.StatusCode.Should( ).Be( System.Net.HttpStatusCode.BadRequest );
 	}
 
 	[Fact]

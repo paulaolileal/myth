@@ -67,16 +67,14 @@ public class StandaloneValidationResult( IEnumerable<ValidationError> errors ) {
 	/// </summary>
 	/// <param name="propertyName">The property name that failed validation</param>
 	/// <param name="message">The error message</param>
-	/// <param name="code">Optional error code</param>
 	/// <param name="statusCode">Optional HTTP status code</param>
 	/// <param name="options">Optional list of valid options</param>
 	/// <returns>A failed validation result</returns>
-	public static StandaloneValidationResult Failure( string propertyName, string message, string? code = null, int? statusCode = null, IReadOnlyList<string>? options = null ) {
+	public static StandaloneValidationResult Failure( string propertyName, string message, int? statusCode = null, IReadOnlyList<string>? options = null ) {
 		var httpStatusCode = statusCode.HasValue ? ( System.Net.HttpStatusCode )statusCode.Value : System.Net.HttpStatusCode.BadRequest;
 		var error = new ValidationError {
 			Field = propertyName,
 			Message = message,
-			Code = code ?? "VIOLATION",
 			StatusCode = httpStatusCode,
 			Options = options
 		};

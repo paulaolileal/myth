@@ -126,7 +126,6 @@ public class IntegrationTests : BaseTestFixture {
 
 		// Assert - Create context fails
 		createResult.IsValid.Should( ).BeFalse( );
-		createResult.Errors.Should( ).Contain( e => e.Field == "Email" && e.Code == "EMAIL_EXISTS" );
 		createResult.Errors.Should( ).Contain( e => e.Field == "IsActive" );
 
 		// Assert - Update context fails
@@ -169,7 +168,6 @@ public class IntegrationTests : BaseTestFixture {
 
 		// Assert
 		takenEmailResult.IsValid.Should( ).BeFalse( );
-		takenEmailResult.Errors.Should( ).Contain( e => e.Field == "Email" && e.Code == "EMAIL_EXISTS" );
 
 		availableEmailResult.IsValid.Should( ).BeTrue( );
 	}

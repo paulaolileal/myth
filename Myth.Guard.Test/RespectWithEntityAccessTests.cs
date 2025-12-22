@@ -56,7 +56,6 @@ public class RespectWithEntityAccessTests : BaseTestFixture {
 		var emailError = result.Errors.FirstOrDefault( e => e.Field == "Email" );
 		emailError.Should( ).NotBeNull( );
 		emailError!.Message.Should( ).Be( "Email is required for active users" );
-		emailError.Code.Should( ).Be( "EMAIL_REQUIRED_FOR_ACTIVE" );
 	}
 
 	[Fact]
@@ -113,7 +112,6 @@ public class RespectWithEntityAccessTests : BaseTestFixture {
 		var passwordError = result.Errors.FirstOrDefault( e => e.Field == "Password" );
 		passwordError.Should( ).NotBeNull( );
 		passwordError!.Message.Should( ).Be( "Invalid email and password combination" );
-		passwordError.Code.Should( ).Be( "INVALID_CREDENTIALS" );
 	}
 
 	[Fact]
@@ -236,8 +234,7 @@ public class LoginDto : IValidatable<LoginDto> {
 		// Email validation with entity access - more specific validation first
 		builder.For( Email, x => x
 			.Respect<LoginDto>( ( email, login ) => !login.IsActive || !string.IsNullOrEmpty( email ) )
-			.WithMessage( "Email is required for active users" )
-			.WithCode( "EMAIL_REQUIRED_FOR_ACTIVE" ) );
+			.WithMessage( "Email is required for active users" ) );
 
 		// Basic email validation
 		builder.For( Email, x => x
@@ -251,8 +248,7 @@ public class LoginDto : IValidatable<LoginDto> {
 				var loginService = sp.GetRequiredService<ILoginService>( );
 				return await loginService.ValidateCredentialsAsync( login.Email, password, ct );
 			} )
-			.WithMessage( "Invalid email and password combination" )
-			.WithCode( "INVALID_CREDENTIALS" ) );
+			.WithMessage( "Invalid email and password combination" ) );
 	}
 }
 
@@ -278,8 +274,7 @@ public class UserProfileDto : IValidatable<UserProfileDto> {
 					return name.Length >= 5;
 				return name.Length >= 3;
 			} )
-			.WithMessage( "Name length requirement not met for role" )
-			.WithCode( "NAME_LENGTH_ROLE_MISMATCH" ) );
+			.WithMessage( "Name length requirement not met for role" ) );
 
 		builder.For( MinimumAge, x => x
 			.GreaterThan( 0 )
@@ -290,8 +285,7 @@ public class UserProfileDto : IValidatable<UserProfileDto> {
 					_ => age >= 13
 				};
 			} )
-			.WithMessage( "Age requirement not met for role" )
-			.WithCode( "AGE_ROLE_MISMATCH" ) );
+			.WithMessage( "Age requirement not met for role" ) );
 	}
 }
 

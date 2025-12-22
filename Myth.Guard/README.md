@@ -112,23 +112,19 @@ public class UserController : ControllerBase
 
 ### Automatic Error Response
 
-With `app.UseGuard()` middleware, validation exceptions are automatically formatted:
+With `app.UseGuard()` middleware, validation exceptions are automatically formatted following [RFC 9457 (Problem Details for HTTP APIs)](https://www.rfc-editor.org/rfc/rfc9457.html):
 
 ```json
 {
-    "code": "MULTIPLE_ERRORS",
-    "errors": [
-        {
-            "field": "email",
-            "message": "Email is required",
-            "code": "VIOLATION"
-        },
-        {
-            "field": "age",
-            "message": "Value must be greater than 0",
-            "code": "VIOLATION"
-        }
-    ]
+    "type": "https://github.com/paulaolileal/myth/blob/main/docs/errors/validation.md",
+    "title": "One or more validation errors occurred",
+    "status": 400,
+    "instance": "/api/users",
+    "traceId": "00-abc123...",
+    "errors": {
+        "email": ["Email is required"],
+        "age": ["Value must be greater than 0"]
+    }
 }
 ```
 
@@ -369,7 +365,6 @@ public class UserDto : IValidatable<UserDto>
                     return await userService.IsEmailAvailableAsync( email, ct );
                 } )
                 .WithMessage( "Email already exists" )
-                .WithCode( "EMAIL_EXISTS" )
                 .WithStatusCode( HttpStatusCode.Conflict ) );
 
             b.For( Password, x => x
@@ -472,8 +467,7 @@ public class LoginDto : IValidatable<LoginDto>
             .NotEmpty()
             .Email()
             .Respect<LoginDto>( ( email, login ) => !login.IsActive || !string.IsNullOrEmpty( email ) )
-            .WithMessage( "Email is required for active users" )
-            .WithCode( "EMAIL_REQUIRED_FOR_ACTIVE" ) );
+            .WithMessage( "Email is required for active users" ) );
 
         // Password validation with async entity access and external service
         builder.For( Password, x => x
@@ -484,7 +478,7 @@ public class LoginDto : IValidatable<LoginDto>
                 return await userService.ValidateCredentialsAsync( login.Email, password, ct );
             } )
             .WithMessage( "Invalid email and password combination" )
-            .WithCode( "INVALID_CREDENTIALS" ) );
+            );
     }
 }
 ```
@@ -516,7 +510,7 @@ public class UserProfileDto : IValidatable<UserProfileDto>
                 };
             } )
             .WithMessage( "Name length requirement not met for role" )
-            .WithCode( "NAME_LENGTH_ROLE_MISMATCH" ) );
+            );
 
         // Age requirements based on role
         builder.For( Age, x => x
@@ -530,7 +524,7 @@ public class UserProfileDto : IValidatable<UserProfileDto>
                 };
             } )
             .WithMessage( "Age requirement not met for role" )
-            .WithCode( "AGE_ROLE_MISMATCH" ) );
+            );
 
         // Salary validation with role and activity status
         builder.For( Salary, x => x
@@ -546,7 +540,7 @@ public class UserProfileDto : IValidatable<UserProfileDto>
                 };
             } )
             .WithMessage( "Salary below minimum for active user role" )
-            .WithCode( "SALARY_BELOW_MINIMUM" ) );
+            );
     }
 }
 ```
@@ -584,7 +578,7 @@ public class OrderDto : IValidatable<OrderDto>
                 return amount <= maxAmount;
             } )
             .WithMessage( "Order amount exceeds limit for customer type" )
-            .WithCode( "AMOUNT_EXCEEDS_CUSTOMER_LIMIT" ) );
+            );
 
         // Address validation based on customer location
         builder.For( ShippingAddress, x => x
@@ -599,7 +593,7 @@ public class OrderDto : IValidatable<OrderDto>
                 return await addressService.IsValidForCustomerAsync( address, customer.Country, ct );
             } )
             .WithMessage( "Shipping address not valid for customer location" )
-            .WithCode( "INVALID_SHIPPING_ADDRESS" ) );
+            );
     }
 }
 ```
@@ -675,7 +669,7 @@ public class CreateOrderDto : IValidatable<CreateOrderDto>
                 return await productService.ExistsAsync( productId, ct );
             } )
             .WithMessage( "Product does not exist" )
-            .WithCode( "PRODUCT_NOT_FOUND" ) );
+            );
 
         builder.For( Quantity, x => x
             .GreaterThan( 0 )
@@ -686,7 +680,7 @@ public class CreateOrderDto : IValidatable<CreateOrderDto>
                 return quantity <= stock;
             } )
             .WithMessage( "Insufficient stock" )
-            .WithCode( "INSUFFICIENT_STOCK" ) );
+            );
 
         builder.For( CustomerEmail, x => x
             .NotEmpty()
@@ -697,7 +691,7 @@ public class CreateOrderDto : IValidatable<CreateOrderDto>
                 return await customerService.IsActiveCustomerAsync( email, ct );
             } )
             .WithMessage( "Customer not found or inactive" )
-            .WithCode( "CUSTOMER_INACTIVE" )
+            
             .WithStatusCode( HttpStatusCode.NotFound ) );
     }
 }
@@ -718,10 +712,8 @@ builder.For( Age, x => x
     .GreaterThan( 18 )
     .WithMessage( age => $"User must be at least 18 years old, but is {age}" ) );
 
-// Custom error code
 builder.For( Email, x => x
-    .Email()
-    .WithCode( "INVALID_EMAIL_FORMAT" ) );
+    .Email() );
 
 // Custom HTTP status code
 builder.For( UserId, x => x
@@ -731,7 +723,6 @@ builder.For( UserId, x => x
         return await userService.ExistsAsync( id, ct );
     } )
     .WithMessage( "User not found" )
-    .WithCode( "USER_NOT_FOUND" )
     .WithStatusCode( HttpStatusCode.NotFound ) ); // Returns 404 instead of 400
 ```
 
@@ -789,7 +780,7 @@ public class OrderDto : IValidatable<OrderDto>
                 return isValid && isApplicable;
             } )
             .WithMessage( "Invalid or inapplicable coupon code" )
-            .WithCode( "INVALID_COUPON" ) );
+            );
     }
 }
 ```
@@ -810,7 +801,6 @@ if ( !result.IsValid )
     {
         Console.WriteLine( $"Field: {error.Field}" );
         Console.WriteLine( $"Message: {error.Message}" );
-        Console.WriteLine( $"Code: {error.Code}" );
         Console.WriteLine( $"Status: {error.StatusCode}" );
     }
 }
@@ -834,8 +824,7 @@ catch ( ValidationException ex )
         errors = errors.Select( e => new
         {
             field = e.Field,
-            message = e.Message,
-            code = e.Code
+            message = e.Message
         } )
     } );
 }
@@ -843,27 +832,25 @@ catch ( ValidationException ex )
 
 ### Middleware Error Response
 
-When using `app.UseGuard()`, validation exceptions are automatically caught and formatted:
+When using `app.UseGuard()`, validation exceptions are automatically caught and formatted following [RFC 9457 (Problem Details for HTTP APIs)](https://www.rfc-editor.org/rfc/rfc9457.html):
 
 ```json
 {
-    "code": "MULTIPLE_ERRORS",
-    "errors": [
-        {
-            "field": "email",
-            "message": "Email already exists",
-            "code": "EMAIL_EXISTS"
-        },
-        {
-            "field": "password",
-            "message": "Password must contain at least 8 characters",
-            "code": "VIOLATION"
-        }
-    ]
+    "type": "https://github.com/paulaolileal/myth/blob/main/docs/errors/validation.md",
+    "title": "One or more validation errors occurred",
+    "status": 409,
+    "instance": "/api/users",
+    "traceId": "00-abc123...",
+    "errors": {
+        "email": ["Email already exists"],
+        "password": ["Password must contain at least 8 characters"]
+    }
 }
 ```
 
 **HTTP Status Code**: The highest status code from all validation errors (e.g., if one error has `409 Conflict`, the response will be `409`).
+
+**Content-Type**: `application/problem+json` (standard for RFC 9457)
 
 ### Status Code Configuration
 
@@ -889,7 +876,7 @@ public void Validate( ValidationBuilder<UserDto> builder, ValidationContextKey? 
             return await userService.IsEmailAvailableAsync( email, ct );
         } )
         .WithMessage( "Email already exists" )
-        .WithCode( "EMAIL_EXISTS" )
+        
         .WithStatusCode( HttpStatusCode.Conflict ) // 409 - Override global default
     );
 

@@ -15,8 +15,8 @@ public class ValidationExceptionTests {
 		// Arrange
 		var errors = new List<ValidationError>
 		{
-			new("Field1", "Error 1", "CODE1", HttpStatusCode.BadRequest),
-			new("Field2", "Error 2", "CODE2", HttpStatusCode.BadRequest)
+			new("Field1", "Error 1", HttpStatusCode.BadRequest),
+			new("Field2", "Error 2", HttpStatusCode.BadRequest)
 		};
 		var validationResult = new ValidationResult( errors );
 
@@ -35,7 +35,7 @@ public class ValidationExceptionTests {
 		// Arrange
 		var errors = new List<ValidationError>
 		{
-			new("Field", "Error message", "CODE", HttpStatusCode.BadRequest)
+			new("Field", "Error message", HttpStatusCode.BadRequest)
 		};
 		var validationResult = new ValidationResult( errors );
 
@@ -51,7 +51,7 @@ public class ValidationExceptionTests {
 		// Arrange
 		var errors = new List<ValidationError>
 		{
-			new("Field", "Error", "CODE", HttpStatusCode.BadRequest)
+			new("Field", "Error", HttpStatusCode.BadRequest)
 		};
 		var validationResult = new ValidationResult( errors );
 
@@ -68,7 +68,7 @@ public class ValidationExceptionTests {
 		// Arrange
 		var errors = new List<ValidationError>
 		{
-			new("Field", "Error", "CODE", HttpStatusCode.BadRequest)
+			new("Field", "Error", HttpStatusCode.BadRequest)
 		};
 		var validationResult = new ValidationResult( errors );
 
@@ -96,7 +96,7 @@ public class ValidationExceptionTests {
 		// Arrange
 		var errors = new List<ValidationError>
 		{
-			new("Field", "Error", "CODE", HttpStatusCode.BadRequest)
+			new("Field", "Error", HttpStatusCode.BadRequest)
 		};
 		var validationResult = new ValidationResult( errors );
 
@@ -113,7 +113,7 @@ public class ValidationExceptionTests {
 		// Arrange
 		var errors = new List<ValidationError>
 		{
-			new("Field", "Error message", "ERROR_CODE", HttpStatusCode.BadRequest)
+			new("Field", "Error message", HttpStatusCode.BadRequest)
 		};
 		var validationResult = new ValidationResult( errors );
 		var exception = new ValidationException( validationResult );
@@ -132,10 +132,10 @@ public class ValidationExceptionTests {
 		// Arrange
 		var errors = new List<ValidationError>
 		{
-			new("Name", "Name is required", "REQUIRED", HttpStatusCode.BadRequest),
-			new("Email", "Invalid email format", "INVALID_EMAIL", HttpStatusCode.BadRequest),
-			new("Age", "Age must be positive", "INVALID_AGE", HttpStatusCode.UnprocessableEntity),
-			new("Address", "Address is too long", "TOO_LONG", HttpStatusCode.BadRequest)
+			new("Name", "Name is required", HttpStatusCode.BadRequest),
+			new("Email", "Invalid email format", HttpStatusCode.BadRequest),
+			new("Age", "Age must be positive", HttpStatusCode.UnprocessableEntity),
+			new("Address", "Address is too long", HttpStatusCode.BadRequest)
 		};
 		var validationResult = new ValidationResult( errors );
 
@@ -157,7 +157,7 @@ public class ValidationExceptionTests {
 	public void Constructor_WithVariousErrorCounts_ShouldGenerateCorrectMessage( int errorCount, string expectedErrorText ) {
 		// Arrange
 		var errors = Enumerable.Range( 1, errorCount )
-			.Select( i => new ValidationError( $"Field{i}", $"Error {i}", $"CODE{i}", HttpStatusCode.BadRequest ) )
+			.Select( i => new ValidationError( $"Field{i}", $"Error {i}", HttpStatusCode.BadRequest ) )
 			.ToList( );
 		var validationResult = new ValidationResult( errors );
 
@@ -174,7 +174,7 @@ public class ValidationExceptionTests {
 		// Arrange
 		var errors = new List<ValidationError>
 		{
-			new("Field", "Error message", "ERROR_CODE", HttpStatusCode.BadRequest)
+			new("Field", "Error message", HttpStatusCode.BadRequest)
 		};
 		var validationResult = new ValidationResult( errors );
 		var exception = new ValidationException( validationResult );

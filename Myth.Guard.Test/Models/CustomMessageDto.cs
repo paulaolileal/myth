@@ -16,8 +16,7 @@ public partial class ConstantValidationRulesTests {
 		public void Validate( ValidationBuilder<CustomMessageDto> builder, ValidationContextKey? context = null ) {
 			builder.For( StatusCode, x => x
 				.ExistsInConstant<TestStatus, string>( )
-				.WithMessage( "Please select a valid status" )
-				.WithCode( "INVALID_STATUS" ) );
+				.WithMessage( "Please select a valid status" ) );
 		}
 	}
 

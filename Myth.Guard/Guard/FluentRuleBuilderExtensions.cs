@@ -727,10 +727,6 @@ public static class FluentRuleBuilderExtensions {
 		return builder.WithMessage( messageFunc );
 	}
 
-	public static FluentRuleBuilder<T> WithCode<T>( this FluentRuleBuilder<T> builder, string code ) {
-		return builder.WithCode( code );
-	}
-
 	public static FluentRuleBuilder<T> WithStatusCode<T>( this FluentRuleBuilder<T> builder, HttpStatusCode statusCode ) {
 		return builder.WithStatusCode( statusCode );
 	}

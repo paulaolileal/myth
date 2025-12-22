@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Myth.Constants;
 using Myth.Exceptions;
@@ -68,8 +69,8 @@ public class ValidationExceptionMiddlewareTests {
 
 		var validationErrors = new List<ValidationError>
 		{
-			new("Name", "Name is required", "REQUIRED", HttpStatusCode.BadRequest),
-			new("Email", "Invalid email format", "INVALID_EMAIL", HttpStatusCode.BadRequest)
+			new("Name", "Name is required", HttpStatusCode.BadRequest),
+			new("Email", "Invalid email format", HttpStatusCode.BadRequest)
 		};
 		var validationResult = new ValidationResult( validationErrors );
 		var validationException = new ValidationException( validationResult );
@@ -83,7 +84,7 @@ public class ValidationExceptionMiddlewareTests {
 
 		// Assert
 		context.Response.StatusCode.Should( ).Be( ( int )HttpStatusCode.BadRequest );
-		context.Response.ContentType.Should( ).Contain( "application/json" );
+		context.Response.ContentType.Should( ).Contain( "application/problem+json" );
 
 		// Read response body
 		context.Response.Body.Seek( 0, SeekOrigin.Begin );
@@ -91,13 +92,16 @@ public class ValidationExceptionMiddlewareTests {
 		responseBody.Should( ).NotBeNullOrEmpty( );
 
 		// Deserialize and verify response
-		var responseObj = responseBody.FromJson<ValidationErrorResponse>( x => x.UseCaseStrategy( CaseStrategy.CamelCase ) );
+		var responseObj = JsonSerializer.Deserialize<ValidationProblemDetails>( responseBody, new JsonSerializerOptions {
+			PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+		} );
 
 		responseObj.Should( ).NotBeNull( );
-		responseObj!.Code.Should( ).Be( "MULTIPLE_ERRORS" );
-		responseObj.Errors.Should( ).HaveCount( 2 );
-		responseObj.Errors.Should( ).Contain( e => e.Field == "Name" && e.Message == "Name is required" && e.Code == "REQUIRED" );
-		responseObj.Errors.Should( ).Contain( e => e.Field == "Email" && e.Message == "Invalid email format" && e.Code == "INVALID_EMAIL" );
+		responseObj!.Status.Should( ).Be( 400 );
+		responseObj.Errors.Should( ).ContainKey( "Name" );
+		responseObj.Errors[ "Name" ].Should( ).Contain( "Name is required" );
+		responseObj.Errors.Should( ).ContainKey( "Email" );
+		responseObj.Errors[ "Email" ].Should( ).Contain( "Invalid email format" );
 	}
 
 	[Fact]
@@ -108,7 +112,7 @@ public class ValidationExceptionMiddlewareTests {
 
 		var validationErrors = new List<ValidationError>
 		{
-			new("Field", "Unprocessable data", "UNPROCESSABLE", HttpStatusCode.UnprocessableEntity)
+			new("Field", "Unprocessable data", HttpStatusCode.UnprocessableEntity)
 		};
 		var validationResult = new ValidationResult( validationErrors );
 		var validationException = new ValidationException( validationResult );
@@ -132,9 +136,9 @@ public class ValidationExceptionMiddlewareTests {
 
 		var validationErrors = new List<ValidationError>
 		{
-			new("Field1", "Error 1", "ERROR1", HttpStatusCode.BadRequest),
-			new("Field2", "Error 2", "ERROR2", HttpStatusCode.UnprocessableEntity),
-			new("Field3", "Error 3", "ERROR3", HttpStatusCode.BadRequest)
+			new("Field1", "Error 1", HttpStatusCode.BadRequest),
+			new("Field2", "Error 2", HttpStatusCode.UnprocessableEntity),
+			new("Field3", "Error 3", HttpStatusCode.BadRequest)
 		};
 		var validationResult = new ValidationResult( validationErrors );
 		var validationException = new ValidationException( validationResult );
@@ -179,7 +183,7 @@ public class ValidationExceptionMiddlewareTests {
 
 		var validationResult = new ValidationResult( new List<ValidationError>
 		{
-			new("Field", "Error", "CODE", HttpStatusCode.BadRequest)
+			new("Field", "Error", HttpStatusCode.BadRequest)
 		} );
 		var validationException = new ValidationException( validationResult );
 
@@ -192,20 +196,20 @@ public class ValidationExceptionMiddlewareTests {
 
 		// Assert
 		context.Response.StatusCode.Should( ).Be( ( int )HttpStatusCode.BadRequest );
-		context.Response.ContentType.Should( ).Contain( "application/json" );
+		context.Response.ContentType.Should( ).Contain( "application/problem+json" );
 	}
 
 	[Fact]
-	public async Task InvokeAsync_WithCustomErrorCodes_ShouldPreserveErrorCodes( ) {
+	public async Task InvokeAsync_WithMultipleFieldErrors_ShouldGroupByField( ) {
 		// Arrange
 		var context = new DefaultHttpContext( );
 		context.Response.Body = new MemoryStream( );
 
 		var validationErrors = new List<ValidationError>
 		{
-			new("Email", "Email already exists", "EMAIL_EXISTS", HttpStatusCode.BadRequest),
-			new("Username", "Username taken", "USERNAME_TAKEN", HttpStatusCode.BadRequest),
-			new("Age", "Invalid age", "INVALID_AGE", HttpStatusCode.UnprocessableEntity)
+			new("Email", "Email already exists", HttpStatusCode.Conflict),
+			new("Username", "Username taken", HttpStatusCode.Conflict),
+			new("Age", "Invalid age", HttpStatusCode.UnprocessableEntity)
 		};
 		var validationResult = new ValidationResult( validationErrors );
 		var validationException = new ValidationException( validationResult );
@@ -219,13 +223,16 @@ public class ValidationExceptionMiddlewareTests {
 		context.Response.Body.Seek( 0, SeekOrigin.Begin );
 		var responseBody = await new StreamReader( context.Response.Body ).ReadToEndAsync( );
 
-		var responseObj = JsonSerializer.Deserialize<ValidationErrorResponse>( responseBody, new JsonSerializerOptions {
+		var responseObj = JsonSerializer.Deserialize<ValidationProblemDetails>( responseBody, new JsonSerializerOptions {
 			PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 		} );
 
-		responseObj!.Errors.Should( ).Contain( e => e.Code == "EMAIL_EXISTS" );
-		responseObj.Errors.Should( ).Contain( e => e.Code == "USERNAME_TAKEN" );
-		responseObj.Errors.Should( ).Contain( e => e.Code == "INVALID_AGE" );
+		responseObj!.Errors.Should( ).ContainKey( "Email" );
+		responseObj.Errors[ "Email" ].Should( ).Contain( "Email already exists" );
+		responseObj.Errors.Should( ).ContainKey( "Username" );
+		responseObj.Errors[ "Username" ].Should( ).Contain( "Username taken" );
+		responseObj.Errors.Should( ).ContainKey( "Age" );
+		responseObj.Errors[ "Age" ].Should( ).Contain( "Invalid age" );
 	}
 
 	[Fact]
@@ -236,9 +243,9 @@ public class ValidationExceptionMiddlewareTests {
 
 		var validationErrors = new List<ValidationError>
 		{
-			new("Field", "Message with \"quotes\" and 'apostrophes'", "CODE", HttpStatusCode.BadRequest),
-			new("Field2", "Message with <html> tags", "CODE2", HttpStatusCode.BadRequest),
-			new("Field3", "Message with unicode: ñáéíóú", "CODE3", HttpStatusCode.BadRequest)
+			new("Field", "Message with \"quotes\" and 'apostrophes'", HttpStatusCode.BadRequest),
+			new("Field2", "Message with <html> tags", HttpStatusCode.BadRequest),
+			new("Field3", "Message with unicode: ñáéíóú", HttpStatusCode.BadRequest)
 		};
 		var validationResult = new ValidationResult( validationErrors );
 		var validationException = new ValidationException( validationResult );
@@ -253,15 +260,15 @@ public class ValidationExceptionMiddlewareTests {
 		var responseBody = await new StreamReader( context.Response.Body, Encoding.UTF8 ).ReadToEndAsync( );
 
 		// Should not throw when deserializing
-		var responseObj = JsonSerializer.Deserialize<ValidationErrorResponse>( responseBody, new JsonSerializerOptions {
+		var responseObj = JsonSerializer.Deserialize<ValidationProblemDetails>( responseBody, new JsonSerializerOptions {
 			PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 		} );
 
 		responseObj.Should( ).NotBeNull( );
 		responseObj!.Errors.Should( ).HaveCount( 3 );
-		responseObj.Errors.Should( ).Contain( e => e.Message.Contains( "quotes" ) );
-		responseObj.Errors.Should( ).Contain( e => e.Message.Contains( "<html>" ) );
-		responseObj.Errors.Should( ).Contain( e => e.Message.Contains( "unicode" ) );
+		responseObj.Errors[ "Field" ].First( ).Should( ).Contain( "quotes" );
+		responseObj.Errors[ "Field2" ].First( ).Should( ).Contain( "<html>" );
+		responseObj.Errors[ "Field3" ].First( ).Should( ).Contain( "unicode" );
 	}
 
 	[Theory]
@@ -275,9 +282,9 @@ public class ValidationExceptionMiddlewareTests {
 
 		var validationErrors = new List<ValidationError>
 		{
-			new("Field1", "Error 1", "ERROR1", HttpStatusCode.BadRequest),
-			new("Field2", "Error 2", "ERROR2", statusCode), // High priority status
-            new("Field3", "Error 3", "ERROR3", HttpStatusCode.Unauthorized)
+			new("Field1", "Error 1", HttpStatusCode.BadRequest),
+			new("Field2", "Error 2", statusCode), // High priority status
+            new("Field3", "Error 3", HttpStatusCode.Unauthorized)
 		};
 		var validationResult = new ValidationResult( validationErrors );
 		var validationException = new ValidationException( validationResult );
@@ -302,7 +309,7 @@ public class ValidationExceptionMiddlewareTests {
 		var optionsList = new List<string> { "1: Active", "2: Inactive", "3: Pending" }.AsReadOnly( );
 		var validationErrors = new List<ValidationError>
 		{
-			new("Status", "Invalid enum value", "INVALID_OPTION", HttpStatusCode.BadRequest, optionsList)
+			new("Status", "Invalid enum value", HttpStatusCode.BadRequest, optionsList)
 		};
 		var validationResult = new ValidationResult( validationErrors );
 		var validationException = new ValidationException( validationResult );
@@ -316,16 +323,23 @@ public class ValidationExceptionMiddlewareTests {
 		context.Response.Body.Seek( 0, SeekOrigin.Begin );
 		var responseBody = await new StreamReader( context.Response.Body ).ReadToEndAsync( );
 
-		var responseObj = JsonSerializer.Deserialize<ValidationErrorResponse>( responseBody, new JsonSerializerOptions {
+		var responseObj = JsonSerializer.Deserialize<ValidationProblemDetails>( responseBody, new JsonSerializerOptions {
 			PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 		} );
 
-		responseObj!.Errors.Should( ).HaveCount( 1 );
-		var error = responseObj.Errors.First( );
-		error.Options.Should( ).NotBeNull( );
-		error.Options.Should( ).Contain( "1: Active" );
-		error.Options.Should( ).Contain( "2: Inactive" );
-		error.Options.Should( ).Contain( "3: Pending" );
+		responseObj.Should( ).NotBeNull( );
+		responseObj!.Errors.Should( ).ContainKey( "Status" );
+
+		// Options should be in Extensions
+		responseObj.Extensions.Should( ).ContainKey( "options" );
+		var optionsDict = JsonSerializer.Deserialize<Dictionary<string, IReadOnlyList<string>>>(
+			responseObj.Extensions[ "options" ].ToString( )!,
+			new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
+		);
+		optionsDict.Should( ).ContainKey( "Status" );
+		optionsDict![ "Status" ].Should( ).Contain( "1: Active" );
+		optionsDict[ "Status" ].Should( ).Contain( "2: Inactive" );
+		optionsDict[ "Status" ].Should( ).Contain( "3: Pending" );
 	}
 
 	[Fact]
@@ -336,7 +350,7 @@ public class ValidationExceptionMiddlewareTests {
 
 		var validationErrors = new List<ValidationError>
 		{
-			new("Name", "Name is required", "REQUIRED", HttpStatusCode.BadRequest, null) // No options
+			new("Name", "Name is required", HttpStatusCode.BadRequest, null) // No options
 		};
 		var validationResult = new ValidationResult( validationErrors );
 		var validationException = new ValidationException( validationResult );
@@ -350,16 +364,14 @@ public class ValidationExceptionMiddlewareTests {
 		context.Response.Body.Seek( 0, SeekOrigin.Begin );
 		var responseBody = await new StreamReader( context.Response.Body ).ReadToEndAsync( );
 
-		// Verify JSON does not contain "options" property due to JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)
-		responseBody.Should( ).NotContain( "options" );
-		responseBody.Should( ).NotContain( "Options" );
-
-		var responseObj = JsonSerializer.Deserialize<ValidationErrorResponse>( responseBody, new JsonSerializerOptions {
+		var responseObj = JsonSerializer.Deserialize<ValidationProblemDetails>( responseBody, new JsonSerializerOptions {
 			PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 		} );
 
-		responseObj!.Errors.Should( ).HaveCount( 1 );
-		var error = responseObj.Errors.First( );
-		error.Options.Should( ).BeNull( );
+		responseObj.Should( ).NotBeNull( );
+		responseObj!.Errors.Should( ).ContainKey( "Name" );
+
+		// Options should not be in Extensions when null
+		responseObj.Extensions.Should( ).NotContainKey( "options" );
 	}
 }

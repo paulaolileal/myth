@@ -13,7 +13,6 @@ namespace Myth.Rules.Base;
 public abstract class ValidationRuleBase<T> : IValidationRule<T> {
 	protected string? CustomMessage { get; private set; }
 	protected Func<T, string>? DynamicMessage { get; private set; }
-	protected string Code { get; private set; } = "VIOLATION";
 	protected HttpStatusCode? StatusCode { get; private set; }
 	protected bool HasCustomStatusCode { get; private set; }
 	protected Func<T, bool>? Condition { get; private set; }
@@ -70,7 +69,6 @@ public abstract class ValidationRuleBase<T> : IValidationRule<T> {
 		return new ValidationError {
 			Field = context.FieldName,
 			Message = message,
-			Code = Code,
 			StatusCode = statusCode,
 			Options = options
 		};
@@ -83,11 +81,6 @@ public abstract class ValidationRuleBase<T> : IValidationRule<T> {
 
 	public ValidationRuleBase<T> WithMessage( Func<T, string> messageFunc ) {
 		DynamicMessage = messageFunc;
-		return this;
-	}
-
-	public ValidationRuleBase<T> WithCode( string code ) {
-		Code = code;
 		return this;
 	}
 
