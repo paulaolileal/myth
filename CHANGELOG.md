@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Myth.Guard
 
+#### ✨ Added
+
+- **Manual Validation Failure Methods**
+  - Added `Sentry.Fail()` methods for manually throwing validation exceptions
+  - Overloads: `Fail(string message)`, `Fail(string field, string message)`, `Fail(ValidationError error)`, `Fail(IEnumerable<ValidationError> errors)`
+  - Allows manual validation failure with custom messages and status codes
+  - Supports throwing multiple validation errors at once
+
+- **Dictionary Validation Support**
+  - Added `IDictionaryRules<TKey, TValue>` interface with comprehensive dictionary validation rules
+  - Added `Sentry.For<TKey, TValue>(IDictionary<TKey, TValue>? value)` for standalone dictionary validation
+  - Added dictionary validation support in `IValidatable<T>` entities via `builder.For(dictionary, r => ...)`
+  - Dictionary validation rules:
+    - `NotEmpty()` - validates dictionary is not null and has entries
+    - `CountGreaterThan(min)` - validates entry count exceeds minimum
+    - `CountLessThan(max)` - validates entry count is below maximum
+    - `CountBetween(min, max)` - validates entry count is within range
+    - `ContainsKey(key)` - validates specific key exists
+    - `NotContainsKey(key)` - validates specific key does not exist
+    - `ContainsValue(value)` - validates specific value exists
+    - `AllKeys(predicate)` - validates all keys satisfy condition
+    - `AllValues(predicate)` - validates all values satisfy condition
+    - `AnyKey(predicate)` - validates at least one key satisfies condition
+    - `AnyValue(predicate)` - validates at least one value satisfies condition
+    - `NoKeys(predicate)` - validates no keys satisfy condition
+    - `NoValues(predicate)` - validates no values satisfy condition
+
 #### 🚨 BREAKING CHANGES
 
 - **Migrated to RFC 9457 (Problem Details for HTTP APIs)**

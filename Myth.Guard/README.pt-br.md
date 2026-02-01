@@ -1016,6 +1016,104 @@ public class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand>
 }
 ```
 
+### Validação de Dicionários
+
+Valide dicionários com regras abrangentes para chaves, valores e contagens:
+
+```csharp
+// Validação standalone de dicionário
+var headers = new Dictionary<string, string> { ["Authorization"] = "Bearer token" };
+
+await Sentry.For(headers, "Headers")
+    .NotEmpty()
+    .ContainsKey("Authorization")
+    .AllKeys(k => !string.IsNullOrEmpty(k))
+    .AllValues(v => v.Length > 0)
+    .ValidateAndThrowAsync();
+
+// Validação de dicionário em entidade
+public class ApiRequest : IValidatable<ApiRequest>
+{
+    public Dictionary<string, string> Headers { get; set; }
+    public Dictionary<string, object> Metadata { get; set; }
+
+    public void Validate(ValidationBuilder<ApiRequest> builder, ValidationContextKey? context = null)
+    {
+        builder.For(Headers, r => r
+            .NotEmpty()
+            .ContainsKey("Authorization")
+            .CountBetween(1, 20)
+            .NoKeys(k => k.Contains("Debug")));
+
+        builder.For(Metadata, r => r
+            .CountLessThan(100)
+            .AllValues(v => v != null));
+    }
+}
+```
+
+Regras de validação de dicionário disponíveis:
+- `NotEmpty()` - Dicionário deve ter pelo menos uma entrada
+- `CountGreaterThan(min)` - Contagem de entradas deve exceder o mínimo
+- `CountLessThan(max)` - Contagem de entradas deve estar abaixo do máximo
+- `CountBetween(min, max)` - Contagem de entradas deve estar dentro do intervalo
+- `ContainsKey(key)` - Chave específica deve existir
+- `NotContainsKey(key)` - Chave específica não deve existir
+- `ContainsValue(value)` - Valor específico deve existir
+- `AllKeys(predicate)` - Todas as chaves devem satisfazer a condição
+- `AllValues(predicate)` - Todos os valores devem satisfazer a condição
+- `AnyKey(predicate)` - Pelo menos uma chave deve satisfazer a condição
+- `AnyValue(predicate)` - Pelo menos um valor deve satisfazer a condição
+- `NoKeys(predicate)` - Nenhuma chave deve satisfazer a condição
+- `NoValues(predicate)` - Nenhum valor deve satisfazer a condição
+
+### Falha Manual de Validação
+
+Use `Sentry.Fail()` para lançar exceções de validação manualmente com mensagens de erro customizadas:
+
+```csharp
+// Falha simples com campo padrão "Value"
+if (complexCondition)
+{
+    Sentry.Fail("Regra de negócio complexa violada");
+}
+
+// Falha para campo específico
+if (user.Age < 18 && user.RequiresParentalConsent)
+{
+    Sentry.Fail("Age", "Usuário deve ter 18 anos ou mais ou ter consentimento parental");
+}
+
+// Falha com código de status customizado
+if (email.Domain == "competitor.com")
+{
+    Sentry.Fail("Email", "Domínio de email não permitido", HttpStatusCode.Forbidden);
+}
+
+// Falha com controle total do erro de validação
+var error = new ValidationError(
+    "Email",
+    "Email já existe no sistema",
+    HttpStatusCode.Conflict,
+    new[] { "user@example.com", "admin@example.com" }
+);
+Sentry.Fail(error);
+
+// Múltiplas falhas de uma vez
+var errors = new List<ValidationError>
+{
+    new ValidationError("Name", "Nome é obrigatório", HttpStatusCode.BadRequest),
+    new ValidationError("Email", "Email é inválido", HttpStatusCode.BadRequest)
+};
+Sentry.Fail(errors);
+```
+
+Isso é útil para:
+- Regras de negócio complexas que não se encaixam em padrões de validação padrão
+- Validações entre campos
+- Validação dinâmica baseada em estado externo
+- Integração com código de validação legado
+
 ## Considerações de Performance
 
 1. **Regras Assíncronas**: Use `RespectAsync()` apenas quando necessário (chamadas de banco de dados/API)

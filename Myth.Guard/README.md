@@ -1094,6 +1094,104 @@ var usernameResult = await Guard.For(username, "Username")
     .ValidateAsync(serviceProvider);
 ```
 
+### Dictionary Validation
+
+Validate dictionaries with comprehensive rules for keys, values, and counts:
+
+```csharp
+// Standalone dictionary validation
+var headers = new Dictionary<string, string> { ["Authorization"] = "Bearer token" };
+
+await Sentry.For(headers, "Headers")
+    .NotEmpty()
+    .ContainsKey("Authorization")
+    .AllKeys(k => !string.IsNullOrEmpty(k))
+    .AllValues(v => v.Length > 0)
+    .ValidateAndThrowAsync();
+
+// Entity dictionary validation
+public class ApiRequest : IValidatable<ApiRequest>
+{
+    public Dictionary<string, string> Headers { get; set; }
+    public Dictionary<string, object> Metadata { get; set; }
+
+    public void Validate(ValidationBuilder<ApiRequest> builder, ValidationContextKey? context = null)
+    {
+        builder.For(Headers, r => r
+            .NotEmpty()
+            .ContainsKey("Authorization")
+            .CountBetween(1, 20)
+            .NoKeys(k => k.Contains("Debug")));
+
+        builder.For(Metadata, r => r
+            .CountLessThan(100)
+            .AllValues(v => v != null));
+    }
+}
+```
+
+Available dictionary validation rules:
+- `NotEmpty()` - Dictionary must have at least one entry
+- `CountGreaterThan(min)` - Entry count must exceed minimum
+- `CountLessThan(max)` - Entry count must be below maximum
+- `CountBetween(min, max)` - Entry count must be within range
+- `ContainsKey(key)` - Specific key must exist
+- `NotContainsKey(key)` - Specific key must not exist
+- `ContainsValue(value)` - Specific value must exist
+- `AllKeys(predicate)` - All keys must satisfy condition
+- `AllValues(predicate)` - All values must satisfy condition
+- `AnyKey(predicate)` - At least one key must satisfy condition
+- `AnyValue(predicate)` - At least one value must satisfy condition
+- `NoKeys(predicate)` - No keys should satisfy condition
+- `NoValues(predicate)` - No values should satisfy condition
+
+### Manual Validation Failure
+
+Use `Sentry.Fail()` to manually throw validation exceptions with custom error messages:
+
+```csharp
+// Simple failure with default field "Value"
+if (complexCondition)
+{
+    Sentry.Fail("Complex business rule violated");
+}
+
+// Failure for specific field
+if (user.Age < 18 && user.RequiresParentalConsent)
+{
+    Sentry.Fail("Age", "User must be 18 or older or have parental consent");
+}
+
+// Failure with custom status code
+if (email.Domain == "competitor.com")
+{
+    Sentry.Fail("Email", "Email domain not allowed", HttpStatusCode.Forbidden);
+}
+
+// Failure with full validation error control
+var error = new ValidationError(
+    "Email",
+    "Email already exists in the system",
+    HttpStatusCode.Conflict,
+    new[] { "user@example.com", "admin@example.com" }
+);
+Sentry.Fail(error);
+
+// Multiple failures at once
+var errors = new List<ValidationError>
+{
+    new ValidationError("Name", "Name is required", HttpStatusCode.BadRequest),
+    new ValidationError("Email", "Email is invalid", HttpStatusCode.BadRequest)
+};
+Sentry.Fail(errors);
+```
+
+This is useful for:
+- Complex business rules that don't fit standard validation patterns
+- Cross-field validations
+- Dynamic validation based on external state
+- Integration with legacy validation code
+
 ### Performance Benefits
 
 Multi-validation provides significant performance benefits:

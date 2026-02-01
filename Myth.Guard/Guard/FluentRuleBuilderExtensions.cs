@@ -9,6 +9,7 @@ using Myth.Rules.Collections;
 using Myth.Rules.Constants;
 using Myth.Rules.Dates;
 using Myth.Rules.DateTimes;
+using Myth.Rules.Dictionaries;
 using Myth.Rules.Enums;
 using Myth.Rules.Numerics;
 using Myth.Rules.Strings;
@@ -790,4 +791,229 @@ public static class FluentRuleBuilderExtensions {
 	}
 
 	#endregion Constant Extensions
+
+	#region Dictionary Extensions
+
+	/// <summary>
+	/// Validates that the dictionary is not null and contains at least one entry.
+	/// </summary>
+	/// <typeparam name="TKey">The dictionary key type.</typeparam>
+	/// <typeparam name="TValue">The dictionary value type.</typeparam>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// builder.For(x => x.Settings, r => r.NotEmpty());
+	/// </code>
+	/// </example>
+	public static FluentRuleBuilder<IDictionary<TKey, TValue>> NotEmpty<TKey, TValue>( this FluentRuleBuilder<IDictionary<TKey, TValue>> builder ) {
+		return builder.AddRule( new NotEmptyDictionaryRule<TKey, TValue>( ) );
+	}
+
+	/// <summary>
+	/// Validates that the dictionary contains more than the specified minimum number of entries.
+	/// </summary>
+	/// <typeparam name="TKey">The dictionary key type.</typeparam>
+	/// <typeparam name="TValue">The dictionary value type.</typeparam>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <param name="min">The minimum count (exclusive).</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// builder.For(x => x.Headers, r => r.CountGreaterThan(0));
+	/// </code>
+	/// </example>
+	public static FluentRuleBuilder<IDictionary<TKey, TValue>> CountGreaterThan<TKey, TValue>( this FluentRuleBuilder<IDictionary<TKey, TValue>> builder, int min ) {
+		return builder.AddRule( new DictionaryCountGreaterThanRule<TKey, TValue>( min ) );
+	}
+
+	/// <summary>
+	/// Validates that the dictionary contains fewer than the specified maximum number of entries.
+	/// </summary>
+	/// <typeparam name="TKey">The dictionary key type.</typeparam>
+	/// <typeparam name="TValue">The dictionary value type.</typeparam>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <param name="max">The maximum count (exclusive).</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// builder.For(x => x.Tags, r => r.CountLessThan(20));
+	/// </code>
+	/// </example>
+	public static FluentRuleBuilder<IDictionary<TKey, TValue>> CountLessThan<TKey, TValue>( this FluentRuleBuilder<IDictionary<TKey, TValue>> builder, int max ) {
+		return builder.AddRule( new DictionaryCountLessThanRule<TKey, TValue>( max ) );
+	}
+
+	/// <summary>
+	/// Validates that the dictionary contains a number of entries within the specified range (inclusive).
+	/// </summary>
+	/// <typeparam name="TKey">The dictionary key type.</typeparam>
+	/// <typeparam name="TValue">The dictionary value type.</typeparam>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <param name="min">The minimum count (inclusive).</param>
+	/// <param name="max">The maximum count (inclusive).</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// builder.For(x => x.Config, r => r.CountBetween(1, 10));
+	/// </code>
+	/// </example>
+	public static FluentRuleBuilder<IDictionary<TKey, TValue>> CountBetween<TKey, TValue>( this FluentRuleBuilder<IDictionary<TKey, TValue>> builder, int min, int max ) {
+		return builder.AddRule( new DictionaryCountBetweenRule<TKey, TValue>( min, max ) );
+	}
+
+	/// <summary>
+	/// Validates that the dictionary contains the specified key.
+	/// </summary>
+	/// <typeparam name="TKey">The dictionary key type.</typeparam>
+	/// <typeparam name="TValue">The dictionary value type.</typeparam>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <param name="key">The key that must exist in the dictionary.</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// builder.For(x => x.Headers, r => r.ContainsKey("Authorization"));
+	/// </code>
+	/// </example>
+	public static FluentRuleBuilder<IDictionary<TKey, TValue>> ContainsKey<TKey, TValue>( this FluentRuleBuilder<IDictionary<TKey, TValue>> builder, TKey key ) {
+		return builder.AddRule( new ContainsKeyRule<TKey, TValue>( key ) );
+	}
+
+	/// <summary>
+	/// Validates that the dictionary does not contain the specified key.
+	/// </summary>
+	/// <typeparam name="TKey">The dictionary key type.</typeparam>
+	/// <typeparam name="TValue">The dictionary value type.</typeparam>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <param name="key">The key that must not exist in the dictionary.</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// builder.For(x => x.Headers, r => r.NotContainsKey("X-Debug"));
+	/// </code>
+	/// </example>
+	public static FluentRuleBuilder<IDictionary<TKey, TValue>> NotContainsKey<TKey, TValue>( this FluentRuleBuilder<IDictionary<TKey, TValue>> builder, TKey key ) {
+		return builder.AddRule( new NotContainsKeyRule<TKey, TValue>( key ) );
+	}
+
+	/// <summary>
+	/// Validates that the dictionary contains the specified value.
+	/// </summary>
+	/// <typeparam name="TKey">The dictionary key type.</typeparam>
+	/// <typeparam name="TValue">The dictionary value type.</typeparam>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <param name="value">The value that must exist in the dictionary.</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// builder.For(x => x.Permissions, r => r.ContainsValue("admin"));
+	/// </code>
+	/// </example>
+	public static FluentRuleBuilder<IDictionary<TKey, TValue>> ContainsValue<TKey, TValue>( this FluentRuleBuilder<IDictionary<TKey, TValue>> builder, TValue value ) {
+		return builder.AddRule( new ContainsValueRule<TKey, TValue>( value ) );
+	}
+
+	/// <summary>
+	/// Validates that all keys in the dictionary satisfy the specified predicate condition.
+	/// </summary>
+	/// <typeparam name="TKey">The dictionary key type.</typeparam>
+	/// <typeparam name="TValue">The dictionary value type.</typeparam>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <param name="predicate">The predicate that all keys must satisfy.</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// builder.For(x => x.Headers, r => r.AllKeys(k => !string.IsNullOrEmpty(k)));
+	/// </code>
+	/// </example>
+	public static FluentRuleBuilder<IDictionary<TKey, TValue>> AllKeys<TKey, TValue>( this FluentRuleBuilder<IDictionary<TKey, TValue>> builder, Func<TKey, bool> predicate ) {
+		return builder.AddRule( new AllKeysRule<TKey, TValue>( predicate ) );
+	}
+
+	/// <summary>
+	/// Validates that all values in the dictionary satisfy the specified predicate condition.
+	/// </summary>
+	/// <typeparam name="TKey">The dictionary key type.</typeparam>
+	/// <typeparam name="TValue">The dictionary value type.</typeparam>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <param name="predicate">The predicate that all values must satisfy.</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// builder.For(x => x.Scores, r => r.AllValues(v => v >= 0));
+	/// </code>
+	/// </example>
+	public static FluentRuleBuilder<IDictionary<TKey, TValue>> AllValues<TKey, TValue>( this FluentRuleBuilder<IDictionary<TKey, TValue>> builder, Func<TValue, bool> predicate ) {
+		return builder.AddRule( new AllValuesRule<TKey, TValue>( predicate ) );
+	}
+
+	/// <summary>
+	/// Validates that at least one key in the dictionary satisfies the specified predicate condition.
+	/// </summary>
+	/// <typeparam name="TKey">The dictionary key type.</typeparam>
+	/// <typeparam name="TValue">The dictionary value type.</typeparam>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <param name="predicate">The predicate that at least one key must satisfy.</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// builder.For(x => x.Headers, r => r.AnyKey(k => k.StartsWith("X-Custom")));
+	/// </code>
+	/// </example>
+	public static FluentRuleBuilder<IDictionary<TKey, TValue>> AnyKey<TKey, TValue>( this FluentRuleBuilder<IDictionary<TKey, TValue>> builder, Func<TKey, bool> predicate ) {
+		return builder.AddRule( new AnyKeyRule<TKey, TValue>( predicate ) );
+	}
+
+	/// <summary>
+	/// Validates that at least one value in the dictionary satisfies the specified predicate condition.
+	/// </summary>
+	/// <typeparam name="TKey">The dictionary key type.</typeparam>
+	/// <typeparam name="TValue">The dictionary value type.</typeparam>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <param name="predicate">The predicate that at least one value must satisfy.</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// builder.For(x => x.Permissions, r => r.AnyValue(v => v == "write"));
+	/// </code>
+	/// </example>
+	public static FluentRuleBuilder<IDictionary<TKey, TValue>> AnyValue<TKey, TValue>( this FluentRuleBuilder<IDictionary<TKey, TValue>> builder, Func<TValue, bool> predicate ) {
+		return builder.AddRule( new AnyValueRule<TKey, TValue>( predicate ) );
+	}
+
+	/// <summary>
+	/// Validates that no keys in the dictionary satisfy the specified predicate condition.
+	/// </summary>
+	/// <typeparam name="TKey">The dictionary key type.</typeparam>
+	/// <typeparam name="TValue">The dictionary value type.</typeparam>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <param name="predicate">The predicate that no keys should satisfy.</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// builder.For(x => x.Headers, r => r.NoKeys(k => k.Contains("Debug")));
+	/// </code>
+	/// </example>
+	public static FluentRuleBuilder<IDictionary<TKey, TValue>> NoKeys<TKey, TValue>( this FluentRuleBuilder<IDictionary<TKey, TValue>> builder, Func<TKey, bool> predicate ) {
+		return builder.AddRule( new NoKeysRule<TKey, TValue>( predicate ) );
+	}
+
+	/// <summary>
+	/// Validates that no values in the dictionary satisfy the specified predicate condition.
+	/// </summary>
+	/// <typeparam name="TKey">The dictionary key type.</typeparam>
+	/// <typeparam name="TValue">The dictionary value type.</typeparam>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <param name="predicate">The predicate that no values should satisfy.</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	/// <example>
+	/// <code>
+	/// builder.For(x => x.Permissions, r => r.NoValues(v => v == "root"));
+	/// </code>
+	/// </example>
+	public static FluentRuleBuilder<IDictionary<TKey, TValue>> NoValues<TKey, TValue>( this FluentRuleBuilder<IDictionary<TKey, TValue>> builder, Func<TValue, bool> predicate ) {
+		return builder.AddRule( new NoValuesRule<TKey, TValue>( predicate ) );
+	}
+
+	#endregion Dictionary Extensions
 }
