@@ -232,7 +232,7 @@ using Myth.Extensions;
 
 // Convert any IEnumerable to paginated result
 var items = new List<Product> { /* ... */ };
-var paginated = items.AsPaginated( pageSize: 20, skip: 0 );
+var paginated = items.AsPaginated( take: 20, skip: 0 );
 
 // Or with Pagination object
 var pagination = new Pagination( pageNumber: 2, pageSize: 20 );
