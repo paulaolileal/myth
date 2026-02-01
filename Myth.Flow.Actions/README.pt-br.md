@@ -10,6 +10,50 @@
 
 Uma poderosa biblioteca .NET que implementa os padrões CQRS e Arquitetura Orientada a Eventos com integração perfeita aos pipelines Myth.Flow. Construída para escalabilidade com suporte a múltiplos message brokers, estratégias de cache e recursos de resiliência de nível empresarial.
 
+## 🎯 Por Que Usar Myth.Flow.Actions?
+
+Aplicações empresariais **lutam com escalabilidade e manutenibilidade** quando lógica de negócio, consultas e efeitos colaterais estão emaranhados. Controllers chamando repositórios diretamente, serviços chamando outros serviços, sem limites claros—código vira um monolito que não escala horizontalmente, não pode ser testado adequadamente, e não se adapta a mudanças de negócio. **Myth.Flow.Actions traz CQRS e Arquitetura Orientada a Eventos para .NET sem cerimônia**, transformando monolitos fortemente acoplados em sistemas escaláveis orientados a mensagens.
+
+### O Problema: Serviços Monolíticos São Gargalos
+
+Código tradicional mistura writes (comandos), reads (queries) e side effects (eventos) em um único lugar. Controllers conhecem payment, inventory, email, auditing—acoplamento forte, respostas lentas (side effects síncronos), impossível escalar reads e writes independentemente, testes caóticos mockando 6 dependências.
+
+### A Solução: CQRS + Arquitetura Orientada a Eventos
+
+**Separação clara**: Commands modificam estado, Queries leem dados, Events notificam subscribers. **Desacoplamento**: Event handlers rodam independentemente, podem escalar separadamente. **Respostas rápidas**: Side effects assíncronos via message queue. **Escalável**: Escale read e write databases independentemente.
+
+### Por Que Escolher Myth.Flow.Actions?
+
+**Setup em uma linha**: `UseActions()` configura tudo. **Message Brokers integrados**: InMemory, Kafka, RabbitMQ sem configuração complexa. **Query Caching built-in**: Memory/Redis automático. **Dispatcher centralizado**: Um `IDispatcher` para commands, queries, events. **Auto-retry e DLQ**: Falhas transitórias retentam automaticamente, falhas permanentes vão para Dead Letter Queue. **OpenTelemetry**: Rastreamento automático de cada mensagem.
+
+### Aplicações no Mundo Real
+
+**E-Commerce**: Command cria pedido → Event dispara payment, inventory, shipping, email handlers independentemente. Escale cada concern separadamente.
+
+**Plataformas SaaS Multi-Tenant**: Commands modificam dados tenant. Events propagam mudanças para search indexes, analytics, billing. Escale reads (buscas) independentemente de writes.
+
+**IoT Device Management**: Commands configuram devices. Events de devices disparam analytics, alerting, dashboards. Queue events quando devices offline.
+
+### Fundamentos Conceituais
+
+**CQRS**: Separa write models (commands) de read models (queries). Otimize cada independentemente (Greg Young, Martin Fowler).
+
+**Event-Driven Architecture**: Publique eventos de negócio quando estado muda. Subscribers reagem assincronamente. Loose coupling e escalabilidade.
+
+**Message Brokers**: Kafka para high-throughput, RabbitMQ para reliable delivery, InMemory para dev/test.
+
+**Domain Events (DDD)**: Capture fatos de negócio: `OrderPlaced`, `PaymentProcessed`. Parte da Ubiquitous Language.
+
+### Valor de Negócio
+
+**Desenvolvedores**: Padrões claros (CQRS), menos boilerplate (auto-discovery), testes fáceis (mock apenas dependencies do handler).
+
+**Arquitetos**: Escalabilidade (reads/writes independentes), desacoplamento (microservices via events), resiliência (message brokers), audit trail (event log).
+
+**DevOps/SRE**: Observabilidade (OpenTelemetry), confiabilidade (DLQ), flexibilidade (trocar brokers sem código).
+
+**Times de Produto**: Features mais rápidas (decouple via events), melhor performance (cache queries), compliance ready (event logs para auditoria).
+
 ## Funcionalidades
 
 - **Padrão CQRS**: Separação clara de Commands, Queries e Events com dispatcher centralizado

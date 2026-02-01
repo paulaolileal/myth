@@ -249,7 +249,6 @@ public async Task<IPaginated<OrderDto>> GetCustomerOrdersAsync(CustomerId custom
 ## 🔮 Core Foundation
 - **[Myth.Commons](Myth.Commons/README.md)** - Essential utilities, value objects, and global service provider management
 - **[Myth.DependencyInjection](Myth.DependencyInjection/README.md)** - Auto-discovery and convention-based service registration
-- **[Myth.DependencyInjection.Providers](Myth.DependencyInjection.Providers/README.md)** - Pre-configured integrations for Swagger, AutoMapper, and API versioning
 
 ## 🔄 Data Flow & Orchestration
 - **[Myth.Flow](Myth.Flow/README.md)** - Pipeline orchestration with Result pattern and OpenTelemetry integration
@@ -269,8 +268,9 @@ public async Task<IPaginated<OrderDto>> GetCustomerOrdersAsync(CustomerId custom
 ## 🌐 HTTP & APIs
 - **[Myth.Rest](Myth.Rest/README.md)** - Fluent REST client with circuit breaker, retry policies, and certificate support
 
-## 🧪 Testing
+## 🧪 Testing & Development Tools
 - **[Myth.Testing](Myth.Testing/README.md)** - Testing utilities, mocks, and base test classes for comprehensive testing
+- **[Myth.Tool](Myth.Tool/README.md)** - CLI tool for code generation with CQRS, DDD, and Clean Architecture patterns
 
 ## 🏗️ Integration Examples
 

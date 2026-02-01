@@ -4,6 +4,16 @@
 
 Uma ferramenta CLI moderna para gerar código com arquitetura Myth usando padrões CQRS, DDD e Clean Architecture.
 
+## 🎯 Por Que Usar Myth.Tool?
+
+**Configurar projetos CQRS, DDD e Clean Architecture leva dias.** Criar estrutura de projeto, escrever commands/queries/events do zero, copy-paste de código de repository, setup de controllers—repetitivo e propenso a erros. **Myth.Tool gera código production-ready em segundos**, scaffolding de workflows CQRS inteiros, aggregates DDD, repositories, controllers e testes com um comando.
+
+### O Problema: Novos projetos levam dias para estruturar. Boilerplate CQRS (commands, handlers, queries) copy-pasted. Padrões DDD implementados manualmente. Código de repository duplicado. CRUD de controller repetido. Testes não gerados—desenvolvedores pulam eles.
+
+### A Solução: **Scaffolding de projeto**: `myth init` cria estrutura completa de Clean Architecture. **Geração de código**: Gere commands, queries, events com handlers em segundos. **Suporte DDD**: Domain models com value objects e validation. **Repositories**: Auto-gere com read/write separation. **Controllers**: CRUD endpoints auto-criados. **Testes**: Gere test suites xUnit automaticamente.
+
+### Benefícios: 10x setup de projeto mais rápido (dias → minutos). Padrões consistentes. Testes incluídos. Ferramenta de aprendizado (estude código gerado).
+
 ## Recursos
 
 - **Configuração de Projeto**: Inicializar estrutura de projeto Myth a partir de templates

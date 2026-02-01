@@ -10,6 +10,16 @@
 
 Uma poderosa biblioteca .NET para consumir APIs REST com uma interface fluente e encadeável. Construída com funcionalidades de nível empresarial, incluindo políticas de retry avançadas, circuit breakers, injeção de dependência e tratamento abrangente de erros.
 
+## 🎯 Por Que Usar Myth.Rest?
+
+**Chamar APIs externas com HttpClient é verboso e propenso a erros.** Serialização JSON manual, sem retry logic, esquecimento de dispose de clients, sem circuit breakers, setup de autenticação complexo. **Myth.Rest fornece um API client fluente e type-safe** com retries built-in, circuit breakers, gerenciamento de HttpClient pooled e JSON handling automático.
+
+### O Problema: Boilerplate `HttpClient` em todo lugar. `JsonSerializer.Deserialize` manual. Sem retry logic (falhas de rede crasham). Memory leaks de disposal inadequado. Uploads de arquivo complexos.
+
+### A Solução: **API fluente**: `await _rest.Post("api/users").Body(user).ExecuteAsync<UserDto>()`. **Resiliência built-in**: Retry com exponential backoff, circuit breakers. **Type-safe**: JSON serialization/deserialization automático. **HttpClient pooling**: Gerenciamento adequado de recursos. **Arquivos**: Upload/download com código mínimo.
+
+### Benefícios: 90% menos código vs HttpClient puro. Resiliente (automatic retry e circuit breaker). Type-safe (sem JSON manual). Production-ready (pooled clients, disposal adequado).
+
 # ⭐ Funcionalidades
 
 - **Interface Fluente**: API simples e encadeável

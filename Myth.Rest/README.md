@@ -10,6 +10,22 @@
 
 A modern, fluent REST client for .NET with enterprise-grade resilience patterns. Built for developers who value clean code, type safety, and minimal boilerplate.
 
+## 🎯 Why Myth.Rest?
+
+**Calling external APIs with HttpClient is verbose and error-prone.** Manual JSON serialization, no retry logic, forgetting to dispose clients, no circuit breakers, complex authentication setup. **Myth.Rest provides a fluent, type-safe API client** with built-in retries, circuit breakers, pooled HttpClient management, and automatic JSON handling. Call APIs in one fluent chain, resilience patterns included.
+
+### The Problem
+
+`HttpClient` boilerplate everywhere. Manual `JsonSerializer.Deserialize`. No retry logic (network failures crash). Memory leaks from improper disposal. Authentication scattered. File uploads complex.
+
+### The Solution
+
+**Fluent API**: `await _rest.Post("api/users").Body(user).ExecuteAsync<UserDto>()`. **Resilience built-in**: Retry with exponential backoff, circuit breakers. **Type-safe**: Automatic JSON serialization/deserialization. **HttpClient pooling**: Proper resource management. **Files**: Upload/download with minimal code. **Auth**: Bearer tokens, certificates, custom headers.
+
+### Key Benefits
+
+**90% less code** vs raw HttpClient. **Resilient**: Automatic retry and circuit breaker. **Type-safe**: No manual JSON. **Production-ready**: Pooled clients, proper disposal.
+
 ## Why Myth.Rest?
 
 - **Fluent API**: Intuitive, chainable interface that reads like natural language

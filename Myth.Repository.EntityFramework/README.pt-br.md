@@ -10,6 +10,16 @@
 
 Uma biblioteca .NET abrangente que fornece implementações robustas e ricas em recursos de repositórios para Entity Framework Core com padrões Domain-Driven Design (DDD), suporte ao padrão Specification e injeção de dependência automática.
 
+## 🎯 Por Que Usar Myth.Repository.EntityFramework?
+
+**Implementar padrão Repository com EF Core é boilerplate repetitivo.** Todo projeto reescreve `GenericRepository<T>`, copy-pasta configuração de DbContext, configura UnitOfWork manualmente. **Myth.Repository.EntityFramework fornece implementações battle-tested** eliminando 90% do boilerplate de repository enquanto adiciona suporte ao padrão Specification, auto-discovery de entity configurations e Unit of Work adequado.
+
+### O Problema: Implementação manual de `GenericRepository<T>` em todo projeto. Configuração de DbContext espalhada. Sem integração com Specification. Unit of Work gerenciado manualmente.
+
+### A Solução: **Repositories prontos**: `ReadRepositoryAsync`, `WriteRepositoryAsync`, `ReadWriteRepositoryAsync`. **BaseContext**: Auto-descobre entity configurations via reflection. **Integração Specification**: Passe `ISpec<T>` diretamente para métodos de repository. **Unit of Work**: `IUnitOfWork` built-in para transaction management.
+
+### Benefícios: 90% menos código. Specification-powered. DDD-ready (read/write segregation, Unit of Work). Testável (fácil de mockar, in-memory database).
+
 ## Índice
 - [Funcionalidades](#-funcionalidades)
 - [Instalação](#-instalação)

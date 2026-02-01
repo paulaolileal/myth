@@ -10,13 +10,21 @@
 
 Uma biblioteca .NET fluente e type-safe que implementa o **Padrão Specification** para construir consultas complexas, combináveis e testáveis. Mantenha sua lógica de negócio legível, manutenível e firmemente enraizada em conceitos de domínio.
 
-## Por que usar Myth.Specification?
+## 🎯 Por Que Usar Myth.Specification?
 
-A construção tradicional de consultas geralmente leva a:
-- Regras de negócio espalhadas por serviços e repositórios
-- Lógica de consulta difícil de testar
-- Lógica de filtragem duplicada em vários lugares
-- Má legibilidade e manutenibilidade
+**Lógica de query espalhada em repositórios mata manutenibilidade.** Cláusulas WHERE duplicadas em todo lugar, regras de negócio enterradas em SQL, impossível reutilizar queries, não pode testar lógica de query independentemente. **Myth.Specification encapsula regras de negócio como objetos reutilizáveis, compostos e testáveis** que funcionam com EF Core, LINQ e collections in-memory. Construa queries complexas combinando specifications simples. Teste lógica de query sem database. Mude queries sem tocar em repositories.
+
+### O Problema: Duplicação de Lógica de Query
+
+Mesma lógica de filtragem duplicada em 10 repositories. Regras de negócio (`"produtos ativos"`) enterradas em SQL. Não pode reutilizar ou testar queries. Mudar critérios quebra app em todo lugar.
+
+### A Solução: Padrão Specification
+
+**Encapsule queries**: `ActiveProducts`, `ExpensiveProducts` como specifications. **Componha**: Combine com `.And()`, `.Or()`, `.Not()`. **Reutilize**: Mesma specification em repository, controller, validation. **Teste**: In-memory `.IsSatisfiedBy()` valida sem database. **Fluente**: `.Order()`, `.Take()`, `.Skip()` para queries completas.
+
+### Benefícios Chave
+
+**Reutilizável**: Escreva query uma vez, use em todo lugar. **Testável**: Valide specifications in-memory sem DB. **Componível**: Combine specs simples em queries complexas. **DDD-aligned**: Specifications são padrão tático DDD para regras de negócio. **Type-safe**: Baseado em expressões, checado em compile-time.
 
 Myth.Specification resolve esses problemas ao:
 - Encapsular lógica de consulta em especificações reutilizáveis e combináveis

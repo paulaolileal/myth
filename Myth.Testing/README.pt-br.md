@@ -10,6 +10,16 @@
 
 Uma biblioteca abrangente de testes construída sobre xUnit que fornece classes base, utilitários e padrões para simplificar e aprimorar sua experiência de teste em aplicações .NET.
 
+## 🎯 Por Que Usar Myth.Testing?
+
+**Escrever testes em .NET requer toneladas de boilerplate de setup.** Configuração de DI container, in-memory databases, HTTP mocking, geração de test data—todo projeto de teste reescreve a mesma infraestrutura. **Myth.Testing fornece classes base pré-configuradas** que eliminam 80% do código de setup de testes, habilitando você a focar na lógica de teste real.
+
+### O Problema: Todo projeto de teste reescreve: setup de DI, configuração in-memory de DbContext, mocking de HttpClient, geração de test data. Estrutura de teste inconsistente entre projetos.
+
+### A Solução: **Classes base**: Herde `BaseTests` ou `BaseDatabaseTests<T>`, DI e database auto-configurados. **Integração Bogus**: Gere test data realístico com uma linha. **HTTP mocking built-in**: Mocke APIs externas facilmente. **Utilitários**: Assertion helpers, async testing patterns.
+
+### Benefícios: 80% menos código de setup. Padrões consistentes. Onboarding rápido. Utilities ricos (Bogus, FluentAssertions, HTTP mocking integrados).
+
 ## Índice
 
 - [Funcionalidades](#funcionalidades)

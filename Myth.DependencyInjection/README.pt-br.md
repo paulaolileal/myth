@@ -10,6 +10,130 @@
 
 Uma biblioteca .NET que simplifica a injeção de dependências com descoberta automática de tipos e registro de serviços baseado em convenções. Elimine código repetitivo e habilite arquiteturas de plugins com capacidades poderosas de escaneamento de assemblies e resolução de tipos.
 
+## 🎯 Por Que Usar Myth.DependencyInjection?
+
+Em aplicações .NET corporativas, **o registro manual de serviços se torna um assassino de produtividade**. Imagine manter centenas de registros de repositórios, serviços e handlers manualmente—cada nova classe requer mudanças em três lugares (interface, implementação, registro). Um registro esquecido causa erros em runtime. Revisões de código ficam poluídas com mudanças de registro. **Myth.DependencyInjection resolve isso de uma vez por todas.**
+
+### O Problema
+
+**Inferno do Registro Manual**
+```csharp
+// Startup.cs vira um pesadelo para manter
+services.AddScoped<IUserRepository, UserRepository>();
+services.AddScoped<IOrderRepository, OrderRepository>();
+services.AddScoped<IProductRepository, ProductRepository>();
+services.AddScoped<ICustomerRepository, CustomerRepository>();
+services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+// ... 200 linhas a mais ...
+// Novo desenvolvedor adiciona IPaymentRepository mas esquece de registrar → crash em runtime
+```
+
+**Problemas com registro manual:**
+- **Carga de manutenção**: Cada novo serviço = 3 lugares para mudar
+- **Propenso a erros**: Registros esquecidos causam falhas em runtime
+- **PRs bagunçados**: Revisões de código cheias de ruído de registro
+- **Dor no onboarding**: Novos desenvolvedores precisam entender convenções de registro
+- **Sem descoberta**: Difícil saber o que está registrado sem ler Startup.cs
+
+### A Solução
+
+**Auto-Registro Baseado em Convenções**
+```csharp
+// Uma linha registra TODOS os repositórios seguindo sua convenção de nomenclatura
+services.AddServiceFromType<IRepository>();
+
+// Uma linha registra TODOS os command handlers
+services.AddServiceFromType<ICommandHandler>(ServiceLifetime.Transient);
+```
+
+**Adicionar um novo repositório?** Apenas siga a convenção de nomenclatura (`IUserRepository` → `UserRepository`). É automaticamente descoberto e registrado. Sem mudanças no Startup.cs. Sem registros esquecidos. **Simplesmente funciona.**
+
+### Por Que Escolher Myth.DependencyInjection?
+
+| Aspecto | Myth.DependencyInjection | Registro Manual | Scrutor/Outras Ferramentas |
+|---------|--------------------------|-----------------|----------------------------|
+| **Linhas de Código** | 1 linha por camada | 1 linha por serviço | Múltiplas chamadas de configuração |
+| **Manutenção** | Adicione novo serviço, pronto | Atualize Startup.cs toda vez | Configure regras de escaneamento |
+| **Segurança em Runtime** | Convenção forçada | Fácil de esquecer | Depende da configuração |
+| **Experiência do Desenvolvedor** | Convenção intuitiva | Tedioso e propenso a erros | Curva de aprendizado para API |
+| **Descoberta de Tipos** | TypeProvider embutido | Reflection manual | Limitado ou ausente |
+| **Suporte a Plugins** | Escaneamento nativo | Código customizado complexo | Não é foco principal |
+| **Performance** | Escaneamento otimizado | N/A (manual) | Varia |
+
+### Aplicações no Mundo Real
+
+**Microserviços Baseados em CQRS**
+Auto-registre 100+ command/query handlers sem tocar no Startup.cs. Convenção garante que todos os handlers sigam o mesmo padrão.
+
+**Plataformas SaaS Multi-Tenant**
+Descubra e registre dinamicamente serviços específicos por tenant. TypeProvider habilita multi-tenancy baseado em plugins onde cada tenant pode carregar implementações customizadas.
+
+**Aplicações Domain-Driven Design (DDD)**
+Auto-registre repositórios por camada (IRepository, IDomainService, IApplicationService). Separação limpa sem poluição de registro.
+
+**Arquitetura Monolito Modular**
+Cada módulo registra seus serviços com uma chamada. Adicionar um novo módulo é tão simples quanto chamar `AddServiceFromType<IModuleService>()`.
+
+**Arquiteturas Baseadas em Plugins**
+Construa sistemas extensíveis onde plugins são colocados em uma pasta e são automaticamente descobertos, carregados e registrados. Sem listas hardcoded de plugins.
+
+### Principais Diferenciais
+
+🎯 **Convenção Sobre Configuração**
+Siga uma convenção simples de nomenclatura (`IUserRepository` → `UserRepository`) e o registro é automático. Sem XML, sem atributos, sem configuração manual.
+
+🔍 **Descoberta Poderosa de Tipos**
+TypeProvider dá escaneamento de assemblies, filtragem de tipos e detecção de namespace pronto para uso. Construa geradores de código, analisadores e sistemas de plugins facilmente.
+
+⚡ **Cerimônia Mínima**
+Uma linha de código para registrar uma camada inteira. Reduz Startup.cs em 80-90% em aplicações grandes.
+
+🏗️ **Imposição de Arquitetura**
+Convenções de nomenclatura impõem consistência. Times naturalmente seguem padrões porque é assim que os serviços são registrados.
+
+📦 **Suporte Perfeito a Plugins**
+Escaneie assemblies em runtime, descubra tipos implementando `IPlugin` e carregue-os dinamicamente. Perfeito para plataformas SaaS extensíveis.
+
+🧪 **Testabilidade**
+TypeProvider torna trivial escrever testes que verificam se todos os handlers estão registrados, ou que suas regras de arquitetura são seguidas.
+
+### Fundamentos Conceituais
+
+**Convenção sobre Configuração**
+Inspirado por Ruby on Rails e ASP.NET MVC, Myth.DependencyInjection reduz boilerplate inferindo registro a partir de convenções ao invés de configuração explícita.
+
+**Reflection e Escaneamento de Assemblies**
+Usa capacidades de reflection do .NET para escanear assemblies, descobrir tipos e construir o grafo de dependências automaticamente. Inspirado por ferramentas como Scrutor e StructureMap.
+
+**Padrão Marker Interface**
+Use interfaces marcadoras (ex: `IRepository`, `IDomainService`) para categorizar serviços por camada arquitetural, então registre camadas inteiras com uma chamada.
+
+**Arquitetura de Plugins**
+Habilita Inversão de Controle no nível arquitetural—sua aplicação não sabe quais plugins existem; eles se declaram implementando interfaces.
+
+**Princípio Fail-Fast**
+Lança `InterfaceNotFoundException` na inicialização (não em runtime) se convenções não forem seguidas, garantindo que problemas sejam detectados cedo.
+
+### Valor de Negócio
+
+**Para Desenvolvedores**
+- **80% menos código de registro** em aplicações grandes
+- **Sem mais registros esquecidos** causando bugs em produção
+- **Foco na lógica de negócio**, não em plumbing de infraestrutura
+- **Onboarding mais rápido**—novos desenvolvedores veem a convenção e começam a seguir
+
+**Para Arquitetos**
+- **Imponha padrões arquiteturais** através de convenções de nomenclatura
+- **Habilite ecossistemas de plugins** para produtos extensíveis
+- **Reduza ruído em code reviews**—sem diffs de Startup.cs em todo PR
+- **Arquitetura escalável** conforme times e serviços crescem
+
+**Para Times de Produto**
+- **Entrega de features mais rápida**—menos tempo em infraestrutura
+- **Menos erros em runtime** por erros de registro
+- **Custos de manutenção menores** conforme codebase escala
+- **Navegação mais fácil no código** com padrões consistentes
+
 ## Funcionalidades
 
 - **Descoberta de Tipos**: Descubra e escaneie automaticamente assemblies e tipos da aplicação

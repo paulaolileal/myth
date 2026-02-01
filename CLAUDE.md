@@ -6,6 +6,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Myth is a collection of .NET libraries providing reusable functionality for enterprise applications. The codebase is organized as a multi-project solution with core libraries and their corresponding test projects.
 
+## Comprehensive Documentation
+
+**SKILL.md**: For complete, detailed documentation on using the entire Myth ecosystem, refer to [SKILL.md](SKILL.md). This file contains:
+- Complete API reference for all libraries
+- Detailed examples and workflows
+- Integration patterns and best practices
+- Step-by-step guides for common scenarios
+- Full CQRS, validation, pipeline, and repository examples
+
+This SKILL.md is designed to teach both humans and AI assistants how to use Myth in detail. Use it as the primary reference for comprehensive guidance.
+
 ## Solution Structure
 
 The solution follows a feature-based folder structure with solution folders:
@@ -173,7 +184,8 @@ Test projects use:
 - Configuration: `services.AddGuard()` and `app.UseGuard()` for middleware
 - Pre-defined contexts: `ValidationContextKey.Create`, `.Update`, `.Delete`, `.Search`, etc.
 - Custom rules: `.Respect()` for sync predicates, `.RespectAsync()` for async with service access
-- Rule modifiers: `.WithMessage()`, `.WithCode()`, `.WithStatusCode()`, `.When()`, `.Unless()`, `.SetStopOnFailure()`
+- Rule modifiers: `.WithMessage()`, `.WithStatusCode()`, `.WithOptions()`, `.When()`, `.Unless()`, `.SetStopOnFailure()`
+- Error format: RFC 9457 Problem Details with `application/problem+json` content type
 
 ### Myth.Repository
 - Generic repository interfaces: `IRepository<TEntity>`
@@ -375,7 +387,7 @@ public class CreateUserDto : IValidatable<CreateUserDto> {
                     return await userService.IsEmailAvailableAsync(email, ct);
                 })
                 .WithMessage("Email already exists")
-                .WithCode("EMAIL_EXISTS"));
+                .WithStatusCode(HttpStatusCode.Conflict));
         });
     }
 }

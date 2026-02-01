@@ -10,6 +10,22 @@
 
 **Myth.Repository** é uma biblioteca .NET que fornece um conjunto limpo e padronizado de interfaces de repositório para acesso a dados. Promove separação de responsabilidades através da segregação leitura/escrita, integra perfeitamente com o padrão Specification, e suporta paginação nativa. Perfeita para construir aplicações maintíveis, testáveis e orientadas a domínio.
 
+## 🎯 Por Que Usar Myth.Repository?
+
+**Código de acesso a dados é frequentemente a parte mais bagunçada das aplicações.** Controllers chamando DbContext diretamente, lógica de negócio misturada com SQL, impossível testar sem database real, acoplamento forte com EF Core dificultando migrações. **Myth.Repository fornece abstrações limpas** que desacoplam lógica de negócio de acesso a dados, habilitam testes unitários verdadeiros com mocks, suportam CQRS com segregação read/write, e funcionam com Specification pattern para queries reutilizáveis.
+
+### O Problema: Acesso a Dados Vazado
+
+Controllers injetam `DbContext` diretamente, lógica de negócio conhece EF Core, queries espalhadas, não pode testar sem database, trocar ORM requer reescrever app inteiro.
+
+### A Solução: Padrão Repository
+
+**Abstração limpa**: `IRepository<T>` esconde detalhes de EF Core. **Segregação read/write**: `IReadRepository` para queries (CQRS queries), `IWriteRepository` para modificações (CQRS commands). **Integração Specification**: Passe `ISpec<T>` para queries complexas encapsulando regras de negócio. **Testável**: Mocke `IRepository<T>`, sem database. **Paginação built-in**: resultados `IPaginated<T>`.
+
+### Benefícios Chave
+
+**Testabilidade**: Mock repositories em testes unitários. **CQRS-ready**: Segregação read/write alinha com CQRS. **DDD-aligned**: Repositories são padrão tático DDD para persistência de aggregates. **ORM-agnóstico**: Interfaces funcionam com qualquer implementação. **Integração Specification**: Lógica de query reutilizável e testável.
+
 ## Funcionalidades
 
 - **Interfaces de Repositório**: Contratos padronizados para operações de acesso a dados
