@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Myth.Exceptions;
 using Myth.Models;
@@ -61,27 +62,50 @@ internal sealed class GuardExceptionMiddleware( RequestDelegate next, GuardOptio
 	}
 
 	private static async Task HandleValidationExceptionAsync( HttpContext context, ValidationException exception ) {
-		var response = new ValidationErrorResponse {
-			Code = exception.ValidationResult.Errors.Count > 1
-					? "MULTIPLE_ERRORS"
-					: exception.ValidationResult.Errors[ 0 ].Code,
-			Errors = [ .. exception.ValidationResult.Errors.Select( e => new ErrorDetail {
-				Field = e.Field,
-				Message = e.Message,
-				Code = e.Code,
-				Options = e.Options
-			} ) ]
+		// Group errors by field for RFC 7807 format
+		var errorsByField = exception.ValidationResult.Errors
+			.GroupBy( e => e.Field )
+			.ToDictionary(
+				g => g.Key,
+				g => g.Select( e => e.Message ).ToArray( )
+			);
+
+		var problemDetails = new ValidationProblemDetails( errorsByField ) {
+			Type = "https://github.com/paulaolileal/myth/blob/main/docs/errors/validation.md",
+			Title = "One or more validation errors occurred",
+			Status = ( int )exception.ValidationResult.StatusCode,
+			Instance = context.Request.Path
 		};
 
+		// Add traceId for correlation
+		if ( context.TraceIdentifier != null ) {
+			problemDetails.Extensions[ "traceId" ] = context.TraceIdentifier;
+		}
+
+		// Add options for fields that have them (enum/constant validation)
+		var fieldsWithOptions = exception.ValidationResult.Errors
+			.Where( e => e.Options != null && e.Options.Count > 0 )
+			.GroupBy( e => e.Field )
+			.ToDictionary(
+				g => g.Key,
+				g => g.First( ).Options
+			);
+
+		if ( fieldsWithOptions.Count > 0 ) {
+			problemDetails.Extensions[ "options" ] = fieldsWithOptions;
+		}
+
 		context.Response.StatusCode = ( int )exception.ValidationResult.StatusCode;
-		context.Response.ContentType = "application/json";
+		context.Response.ContentType = "application/problem+json";
 
 		var options = new JsonSerializerOptions {
 			PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-			WriteIndented = false
+			WriteIndented = false,
+			DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
 		};
 
-		await context.Response.WriteAsJsonAsync( response, options );
+		var json = JsonSerializer.Serialize( problemDetails, options );
+		await context.Response.WriteAsync( json );
 	}
 
 	private ExceptionHandler? FindHandler( Exception exception ) {

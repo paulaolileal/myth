@@ -29,17 +29,6 @@ public sealed class ValidationError {
 	public string Message { get; init; } = string.Empty;
 
 	/// <summary>
-	/// Gets or sets the error code that categorizes the type of validation failure.
-	/// </summary>
-	/// <value>
-	/// A string code that identifies the type of validation error.
-	/// Common codes include "VIOLATION" for general validation failures,
-	/// "EMAIL_EXISTS" for duplicate email addresses, or custom codes defined by validation rules.
-	/// Default value is "VIOLATION".
-	/// </value>
-	public string Code { get; init; } = "VIOLATION";
-
-	/// <summary>
 	/// Gets or sets the HTTP status code that should be returned for this validation error.
 	/// </summary>
 	/// <value>
@@ -72,13 +61,11 @@ public sealed class ValidationError {
 	/// </summary>
 	/// <param name="field">The name of the field that failed validation.</param>
 	/// <param name="message">The human-readable error message.</param>
-	/// <param name="code">The error code that categorizes the validation failure.</param>
 	/// <param name="statusCode">The HTTP status code for this error.</param>
 	/// <param name="options">Optional list of valid values for this field.</param>
-	public ValidationError( string field, string message, string code, HttpStatusCode statusCode, IReadOnlyList<string>? options = null ) {
+	public ValidationError( string field, string message, HttpStatusCode statusCode, IReadOnlyList<string>? options = null ) {
 		Field = field;
 		Message = message;
-		Code = code;
 		StatusCode = statusCode;
 		Options = options;
 	}
@@ -87,12 +74,12 @@ public sealed class ValidationError {
 	/// Returns a string representation of the validation error in a structured format.
 	/// </summary>
 	/// <returns>
-	/// A string in the format "Error on field `{Field}` with `{Code}: {Message}`
+	/// A string in the format "Error on field `{Field}`: {Message}"
 	/// that provides a concise summary of the validation error.
 	/// </returns>
 	/// <example>
-	/// For a validation error with Field="Email", Code="INVALID_FORMAT", and Message="Email address is invalid",
-	/// this method returns: "Error on field `Email` with `INVALID_FORMAT: Email address is invalid`"
+	/// For a validation error with Field="Email" and Message="Email address is invalid",
+	/// this method returns: "Error on field `Email`: Email address is invalid"
 	/// </example>
-	public override string ToString( ) => $"Error on field `{Field}` with `{Code}: {Message}";
+	public override string ToString( ) => $"Error on field `{Field}`: {Message}";
 }

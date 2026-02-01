@@ -42,13 +42,6 @@ public interface IStandaloneValidationBuilder<T> : IStandaloneValidationBuilder 
 	IStandaloneValidationBuilder<T> WithMessage( string message );
 
 	/// <summary>
-	/// Sets a custom error code for the last added validation rule
-	/// </summary>
-	/// <param name="code">The error code to use when validation fails</param>
-	/// <returns>The validation builder for method chaining</returns>
-	IStandaloneValidationBuilder<T> WithCode( string code );
-
-	/// <summary>
 	/// Sets a custom HTTP status code for the last added validation rule
 	/// </summary>
 	/// <param name="statusCode">The HTTP status code to use when validation fails</param>

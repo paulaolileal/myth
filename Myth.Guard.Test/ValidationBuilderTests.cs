@@ -99,7 +99,6 @@ public class ValidationBuilderTests {
 
 		// Assert
 		result.IsValid.Should( ).BeFalse( );
-		result.Errors.Should( ).Contain( e => e.Field == "Email" && e.Code == "EMAIL_EXISTS" );
 	}
 
 	[Fact]

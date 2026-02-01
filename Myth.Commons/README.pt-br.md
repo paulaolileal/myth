@@ -10,6 +10,94 @@
 
 **Myth.Commons** é uma biblioteca .NET fundamental que fornece utilitários essenciais e padrões para construir aplicações corporativas robustas e sustentáveis. Oferece serialização JSON, manipulação de strings, blocos de construção DDD e gerenciamento centralizado de service provider para resolução de dependências entre bibliotecas.
 
+## 🎯 Por Que Usar Myth.Commons?
+
+Toda aplicação .NET corporativa enfrenta os mesmos desafios fundamentais: gerenciar cross-cutting concerns, implementar modelos de domínio limpos, orquestrar injeção de dependências entre bibliotecas e lidar com serialização de forma consistente. **Myth.Commons resolve esses problemas de uma vez por todas**, fornecendo padrões testados em produção que eliminam código boilerplate e aceleram o desenvolvimento.
+
+### O Problema
+
+Construir aplicações empresariais requer:
+- **Integração entre bibliotecas** sem acoplamento forte ou anti-padrões de service locator
+- **Primitivas de Domain-Driven Design** (Value Objects, constantes type-safe) sem reinventar a roda
+- **Manipulação de JSON consistente** em APIs HTTP, filas de mensagens e armazenamento de dados
+- **Gerenciamento de serviços com escopo** para handlers transientes acessando DbContext do EF Core
+- **Paginação** implementada corretamente com binding de query e type safety
+
+A maioria das equipes constrói isso do zero (desperdiçando semanas) ou usa bibliotecas fragmentadas que não se integram bem.
+
+### A Solução
+
+Myth.Commons fornece **blocos de construção prontos para produção** que funcionam perfeitamente juntos:
+
+✅ **Global Service Provider** - Resolução centralizada de DI thread-safe permitindo que bibliotecas Myth trabalhem juntas sem acoplamento
+✅ **Padrão IScopedService** - Execute operações em escopos gerenciados, perfeito para handlers CQRS com EF Core
+✅ **Value Objects & Constants** - Primitivas DDD com igualdade estrutural e type safety
+✅ **Extensões JSON** - API fluente com configuração global, conversores customizados e tratamento de erros consistente
+✅ **Utilitários de String & Coleções** - Operações comuns sem dependências externas
+
+### Por Que Escolher Myth.Commons?
+
+| Aspecto | Myth.Commons | Abordagem DIY | Outras Bibliotecas |
+|---------|--------------|---------------|---------------------|
+| **Integração** | Projetado para ecossistema Myth | Configuração manual | Fragmentado |
+| **Suporte DDD** | Value Objects & Constants nativos | Construir do zero | Limitado ou ausente |
+| **Escopos de Serviço** | Padrão IScopedService | Gerenciamento manual | Não abordado |
+| **DI Global** | MythServiceProvider thread-safe | Anti-padrão service locator | Não fornecido |
+| **JSON** | Fluente, config global, conversores | Verbosidade System.Text.Json | Dependência Newtonsoft.Json |
+| **Curva de Aprendizado** | Intuitivo, documentado | Alta (padrões de design) | Média |
+| **Pronto para Produção** | Testado em batalha | Não testado | Varia |
+
+### Aplicações no Mundo Real
+
+**Plataforma de E-Commerce**
+Use Value Objects para `Money`, `Address`, `ProductSku`. Constantes type-safe para `OrderStatus`. IScopedService para handlers CQRS acessando repositórios de pedidos com EF Core.
+
+**Serviços Financeiros**
+Value Objects imutáveis para `AccountNumber`, `TransactionAmount`. Configuração JSON global para respostas de API consistentes. Paginação para histórico de transações.
+
+**Sistemas SaaS Multi-Tenant**
+Global Service Provider habilita serviços com escopo por tenant. IScopedService garante DbContext por requisição. Constantes type-safe para `SubscriptionTier`.
+
+**Arquitetura de Microserviços**
+Configurações de serialização JSON compartilhadas entre serviços. Value Objects para eventos de domínio. DI global para cross-cutting concerns como logging e telemetria.
+
+### Principais Diferenciais
+
+🏗️ **Design Arquitetural em Primeiro Lugar**
+Construído para Clean Architecture e DDD desde o início. Não é uma adaptação posterior.
+
+🔄 **Integração Perfeita**
+Todas as bibliotecas Myth usam MythServiceProvider para resolução de dependências entre bibliotecas sem acoplamento.
+
+⚡ **Experiência do Desenvolvedor**
+APIs fluentes, padrões sensatos, documentação abrangente. Comece em minutos.
+
+🧪 **Testabilidade**
+Cada padrão projetado para fácil mocking e testes unitários. Reset de estado global para isolamento de testes.
+
+🎯 **Type Safety**
+Elimine obsessão por primitivos com Value Objects e Constants type-safe. Checagens em tempo de compilação previnem erros em runtime.
+
+📦 **Zero Lock-In**
+Use apenas o que precisa. Cada feature funciona independentemente ou em conjunto.
+
+### Fundamentos Conceituais
+
+**Domain-Driven Design (DDD)**
+Value Objects fornecem igualdade estrutural para conceitos de domínio. Constants eliminam strings/números mágicos enquanto adicionam riqueza ao domínio.
+
+**Injeção de Dependências**
+Global Service Provider habilita integração entre bibliotecas seguindo o padrão "Inversion of Control" de Martin Fowler sem o anti-padrão service locator.
+
+**CQRS (Command Query Responsibility Segregation)**
+Padrão IScopedService resolve elegantemente o problema de "handler transiente com DbContext com escopo".
+
+**Clean Architecture**
+Serialização JSON independente de infraestrutura. Modelos de domínio no núcleo, detalhes técnicos nas camadas externas.
+
+**Padrão Fluent Interface**
+Configurações JSON usam method chaining para configuração legível: `.Minify().IgnoreNull().UseCaseStrategy(CaseStrategy.SnakeCase)`
+
 ## Funcionalidades
 
 - **Extensões JSON**: Serialização/desserialização flexível com configurações personalizáveis

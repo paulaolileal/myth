@@ -10,6 +10,195 @@
 
 Uma poderosa biblioteca .NET para construir pipelines de processamento de dados manuteníveis e testáveis com uma interface fluente e encadeável. Construída com recursos de nível empresarial incluindo políticas de retry automáticas, integração com OpenTelemetry, service provider global e tratamento abrangente de erros.
 
+## 🎯 Por Que Usar Myth.Flow?
+
+Fluxos de trabalho de negócio complexos são **dolorosos de implementar e manter**. Pirâmides de try-catch, lógica de validação espalhada, tratamento de erros inconsistente, sem observabilidade, lógica manual de retry—o código vira uma bagunça emaranhada difícil de testar e impossível de raciocinar. **Myth.Flow transforma esse caos em pipelines elegantes e legíveis** que tratam caminhos de sucesso/falha automaticamente.
+
+### O Problema
+
+**Código de Workflow Tradicional é um Pesadelo**
+```csharp
+public async Task<OrderDto> ProcessOrderAsync(CreateOrderCommand command) {
+    try {
+        // Validação espalhada por todo lugar
+        if (string.IsNullOrEmpty(command.CustomerId)) {
+            throw new ValidationException("ID do cliente obrigatório");
+        }
+
+        // Lógica manual de retry (duplicada em todos os serviços)
+        Order? order = null;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            try {
+                order = await _repository.CreateAsync(command);
+                break;
+            } catch (DbException) {
+                if (attempt == 2) throw;
+                await Task.Delay(100 * (int)Math.Pow(2, attempt));
+            }
+        }
+
+        // Sem telemetria - debug é cego
+        // Pirâmide try-catch - tratamento de erro aninhado
+        try {
+            await _paymentService.ProcessAsync(order.Id);
+            try {
+                await _inventoryService.ReserveAsync(order.Items);
+                try {
+                    await _emailService.SendConfirmationAsync(order.Id);
+                } catch (EmailException ex) {
+                    // Logar? Retry? Ignorar? Quem sabe...
+                    _logger.LogError(ex, "Email falhou");
+                }
+            } catch (InventoryException ex) {
+                // Reverter pagamento? Boa sorte com isso
+                throw;
+            }
+        } catch (PaymentException ex) {
+            // Cancelar pedido? Limpeza manual
+            await _repository.DeleteAsync(order.Id);
+            throw;
+        }
+
+        return order.ToDto();
+    } catch (Exception ex) {
+        // Catch genérico - o que deu errado?
+        _logger.LogError(ex, "Falha no processamento do pedido");
+        throw;
+    }
+}
+```
+
+**Problemas:**
+- **Ilegível**: Lógica de negócio enterrada em código de infraestrutura
+- **Não testável**: Fortemente acoplado, difícil de mockar
+- **Sem observabilidade**: Debug requer mergulhar em logs
+- **Tratamento de erro inconsistente**: Cada método trata falhas diferentemente
+- **Retries manuais**: Lógica de retry copy-paste em todo lugar
+- **Sem resiliência**: Uma falha quebra tudo
+
+### A Solução
+
+**Programação Pipeline Orientada a Railway**
+```csharp
+public async Task<Result<OrderDto>> ProcessOrderAsync(CreateOrderCommand command) {
+    return await Pipeline.Start(command)
+        .WithTelemetry("CreateOrder")                    // Rastreamento automático
+        .WithRetry(maxAttempts: 3, backoffMs: 100)      // Retries automáticos
+
+        .StepResultAsync(cmd => _validator.ValidateAsync(cmd))       // Para em falha de validação
+        .StepAsync(cmd => _repository.CreateAsync(cmd))              // Continua se válido
+        .StepAsync(order => _paymentService.ProcessAsync(order.Id))  // Auto retry em falha transiente
+        .StepAsync(order => _inventoryService.ReserveAsync(order.Items))
+        .TapAsync(order => _emailService.SendConfirmationAsync(order.Id))  // Efeito colateral - não para pipeline
+
+        .Transform<OrderDto>(order => order.ToDto())     // Transformação de tipo
+        .ExecuteAsync();
+}
+```
+
+**Benefícios:**
+- **Cristalino**: Lógica de negócio lê como inglês simples
+- **Orientado a railway**: Caminho de sucesso flui, caminho de falha sai cedo
+- **Resiliência embutida**: Retry, telemetria, tratamento de erros automáticos
+- **Totalmente testável**: Mocke cada serviço, teste cada etapa independentemente
+- **Observável**: OpenTelemetry rastreia cada etapa automaticamente
+
+### Por Que Escolher Myth.Flow?
+
+| Aspecto | Myth.Flow | Código Tradicional | MediatR/Outros Pipelines |
+|---------|-----------|-------------------|--------------------------|
+| **Legibilidade** | Fluente, auto-documentado | Pirâmides try-catch | Boilerplate de behavior |
+| **Tratamento de Erros** | Result<T> orientado a railway | Try-catch manual em todo lugar | Exceções ou wrappers customizados |
+| **Lógica de Retry** | Embutido com backoff exponencial | Implementação manual | Bibliotecas externas (Polly) |
+| **Observabilidade** | OpenTelemetry integrado | Logging manual | Instrumentação manual |
+| **Transformações de Tipo** | `.Transform<T>()` nativo | Mapeamento manual | Não abordado |
+| **Testabilidade** | Mocking passo a passo | Testes de integração necessários | Complexidade de pipeline behavior |
+| **Curva de Aprendizado** | API fluente intuitiva | N/A (C# padrão) | Íngreme (pipeline behaviors) |
+| **Boilerplate** | Próximo de zero | Alto | Médio-Alto |
+
+### Aplicações no Mundo Real
+
+**Processamento de Pedidos E-Commerce**
+Validar → Criar Pedido → Processar Pagamento → Reservar Estoque → Enviar Email → Retornar DTO. Cada etapa auto-retried, rastreada e tratada graciosamente. Falhas fazem rollback automaticamente.
+
+**Processamento de Transações Financeiras**
+Validar Conta → Checar Saldo → Aplicar Transação → Atualizar Razão → Notificar Auditoria. OpenTelemetry rastreia fluxo através de sistemas distribuídos para compliance.
+
+**Pipelines ETL de Dados**
+Extrair → Validar → Transformar → Carregar → Publicar Evento. Retry de falhas transitórias, pular registros ruins com `.When()`, rastrear pipeline inteiro.
+
+**Workflow de Registro de Usuário**
+Validar → Criar Usuário → Enviar Email de Verificação → Criar Tenant → Provisionar Recursos → Publicar Evento. Etapas executam condicionalmente baseado em tier da conta.
+
+**Orquestração de Saga em Microserviços**
+Encadear chamadas de serviço com compensação: Criar Pedido → Reservar Estoque → Processar Pagamento. Se pagamento falha, auto-compensa liberando estoque.
+
+### Principais Diferenciais
+
+🚂 **Programação Orientada a Railway**
+Caminho de sucesso flui suavemente. Primeira falha faz curto-circuito para tratamento de erro. Sem pirâmides try-catch aninhadas.
+
+📊 **Observabilidade Embutida**
+Integração OpenTelemetry rastreia cada etapa do pipeline automaticamente. Debug workflows distribuídos com zero instrumentação manual.
+
+🔄 **Políticas de Retry Inteligentes**
+Backoff exponencial com tentativas configuráveis. Falhas transitórias (rede, banco) tratadas automaticamente.
+
+🎯 **Transformações Type-Safe**
+`.Transform<TNew>()` muda tipo de contexto do pipeline. Vá de Command → Entity → DTO sem cerimônia.
+
+🧪 **Nirvana de Testes**
+Mocke um serviço, teste uma etapa. Não precisa orquestrar workflow inteiro. Testes de integração opcionais.
+
+⚡ **Zero Configuração**
+Funciona out of the box. Adicione `.WithTelemetry()` e `.WithRetry()` quando necessário. Defaults sensatos em todo lugar.
+
+### Fundamentos Conceituais
+
+**Programação Orientada a Railway (ROP)**
+Inspirado por "Railway Oriented Programming" de Scott Wlaschin (F# for fun and profit). Sucesso e falha são trilhos separados. Operações tem sucesso e continuam, ou falham e fazem curto-circuito.
+
+**Padrão Result (Railway Pattern)**
+Retorne `Result<T>` ao invés de lançar exceções para falhas esperadas. Tratamento explícito de sucesso/falha sem overhead de try-catch.
+
+**Fluent Interface / Method Chaining**
+Inspirado por LINQ e bibliotecas como FluentValidation. Encadeie operações em pipelines legíveis e declarativos.
+
+**Programação Orientada a Aspectos (AOP)**
+Cross-cutting concerns (retry, telemetria, logging) aplicados via decoradores de pipeline (`.WithRetry()`, `.WithTelemetry()`), não espalhados pela lógica de negócio.
+
+**Padrão Saga (Orquestração)**
+Use pipelines para orquestrar transações distribuídas multi-etapa com lógica de compensação para falhas.
+
+**Padrões OpenTelemetry**
+W3C Trace Context para rastreamento distribuído. Spans criados automaticamente para cada etapa do pipeline.
+
+### Valor de Negócio
+
+**Para Desenvolvedores**
+- **60-80% menos código** para workflows complexos
+- **10x mais legível** que pirâmides try-catch
+- **Debug fácil** com rastreamento automático
+- **Teste rápido** com mocks passo a passo
+
+**Para Arquitetos**
+- **Imponha padrões** via design de API fluente
+- **Rastreamento distribuído** entre microserviços
+- **Resiliência embutida** (retry, circuit breaker pronto)
+- **Code reviews mais claros** - lógica de negócio óbvia
+
+**Para DevOps/SRE**
+- **Integração OpenTelemetry** = observabilidade instantânea
+- **Políticas de retry** reduzem impacto de falhas transitórias
+- **Traces distribuídos** resolvem problemas de produção mais rápido
+- **Menos apagar incêndio** com tratamento de erro previsível
+
+**Para Times de Produto**
+- **Features mais rápidas** com menos código de infraestrutura
+- **Menos bugs em produção** por erros de tratamento de erro
+- **Melhor performance** sob falhas transitórias (auto-retry)
+- **Onboarding mais fácil** - pipelines são auto-explicativos
+
 # ⭐ Recursos
 
 - **Interface Fluente**: Design de API simples e encadeável para código legível

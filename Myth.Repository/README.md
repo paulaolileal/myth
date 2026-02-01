@@ -10,6 +10,26 @@
 
 **Myth.Repository** is a .NET library that provides a clean, standardized set of repository interfaces for data access. It promotes separation of concerns through read/write segregation, integrates seamlessly with the Specification pattern, and supports pagination out of the box. Perfect for building maintainable, testable, and domain-driven applications.
 
+## 🎯 Why Myth.Repository?
+
+**Data access code is often the messiest part of applications.** Controllers directly calling DbContext, business logic mixed with SQL, impossible to test without a real database, tight coupling to EF Core making migrations painful. **Myth.Repository provides clean abstractions** that decouple business logic from data access, enable true unit testing with mocks, support CQRS with read/write segregation, and work with the Specification pattern for reusable queries.
+
+### The Problem: Leaky Data Access
+
+Controllers directly inject `DbContext`, business logic knows about EF Core, queries scattered everywhere, can't test without database, changing ORM requires rewriting entire app.
+
+### The Solution: Repository Pattern
+
+**Clean abstraction**: `IRepository<T>` hides EF Core details. **Read/Write segregation**: `IReadRepository` for queries (CQRS queries), `IWriteRepository` for modifications (CQRS commands). **Specification integration**: Pass `ISpec<T>` for complex queries encapsulating business rules. **Testable**: Mock `IRepository<T>`, no database needed. **Pagination built-in**: `IPaginated<T>` results.
+
+### Key Benefits
+
+**Testability**: Mock repositories in unit tests, no DbContext needed. **CQRS-ready**: Read/write segregation aligns perfectly with CQRS. **DDD-aligned**: Repositories are tactical DDD pattern for aggregate persistence. **ORM-agnostic**: Interfaces work with any implementation (EF Core, Dapper, Cosmos). **Specification integration**: Reusable, testable query logic.
+
+### Real-World Applications
+
+**E-Commerce**: `IProductRepository`, `IOrderRepository` with specifications for complex filters (active products, orders by customer, price ranges). **SaaS Multi-Tenant**: Repositories automatically filter by tenant ID via specification. **Event-Sourced Systems**: Repository stores aggregates, encapsulates event storage logic.
+
 ## Features
 
 - **Repository Interfaces**: Standard contracts for data access operations
@@ -212,7 +232,7 @@ using Myth.Extensions;
 
 // Convert any IEnumerable to paginated result
 var items = new List<Product> { /* ... */ };
-var paginated = items.AsPaginated( pageSize: 20, skip: 0 );
+var paginated = items.AsPaginated( take: 20, skip: 0 );
 
 // Or with Pagination object
 var pagination = new Pagination( pageNumber: 2, pageSize: 20 );

@@ -10,17 +10,55 @@
 
 Uma biblioteca .NET leve para transformação de objetos projetada para arquitetura limpa e Domain-Driven Design. Myth.Morph fornece uma abordagem declarativa baseada em esquemas para mapeamento de objetos com zero overhead de reflexão durante a transformação e integração completa com injeção de dependência.
 
-## Por que Myth.Morph?
+## 🎯 Por que Myth.Morph?
 
-Diferente de bibliotecas de mapeamento pesadas que dependem de reflexão em tempo de execução e convenções, Myth.Morph oferece controle explícito sobre transformações mantendo seu código limpo e sustentável:
+**Mapeamento de objetos é um pesadelo oculto de performance e manutenção.** Bibliotecas estilo AutoMapper usam reflexão em runtime que mata performance e obscurece lógica de transformação. Mapeamento manual é verboso e propenso a erros—esquecer uma propriedade e dados são perdidos. DTOs poluem modelos de domínio, ou pior, entidades de domínio são expostas diretamente a APIs quebrando encapsulamento. **Myth.Morph resolve isso com transformações explícitas e compile-time safe** que são rápidas (schema compilado no startup, zero reflexão durante mapping), claras (mappings vivem com types) e DI-aware (transformações assíncronas com acesso a serviços).
 
-- **Mapeamentos autodocumentados**: Transformações são definidas onde pertencem - no tipo de origem
-- **Type-safe**: Verificação em tempo de compilação para bindings de propriedades
-- **Integrado com DI**: Acesso ao service provider para transformações complexas e operações assíncronas
-- **Foco em performance**: Compilação de esquema na inicialização, zero reflexão durante mapeamento
-- **Separação limpa**: Mantenha DTOs, entidades e view models claramente separados com regras de transformação explícitas
+### O Problema: Reflexão em Runtime = Performance Hell & Mágica
 
-Perfeito para aplicações CQRS, Arquitetura Limpa e DDD onde transformações explícitas importam.
+**AutoMapper**: Convenções baseadas em mágica. Reflexão em runtime em cada chamada de mapeamento—lento. Caixa preta—o que acontece? Sem ideia até runtime.
+
+**Mapeamento Manual**: Verboso e duplicado em 10 lugares. Esqueceu de mapear `Address`? Shipping falha em produção. Atualizar modelo `User`? Boa sorte encontrando todos os mapeamentos.
+
+**Problemas**: Performance (reflexão), manutenibilidade (mágica baseada em convenções), propenso a erros (propriedades esquecidas), sem acesso DI, não async.
+
+### A Solução: Transformações Explícitas, Compile-Time Safe, DI-Aware
+
+Mapeamento definido onde pertence—com o type. **Bindings explícitos**: compile-time safe via lambdas. **DI-aware**: acesso completo a service provider. **Async-ready**: await database/API calls naturalmente. **Rápido**: schema compilado uma vez, zero reflexão durante mapping.
+
+### Por Que Escolher Myth.Morph?
+
+**Performance**: Rápido (pre-compiled schema) vs lento (AutoMapper runtime reflection). **Explicitness**: Bindings explícitos vs mágica de convenções. **Location**: Com type (DDD) vs perfil separado. **Type Safety**: Compile-time (lambdas) vs runtime. **DI Access**: Nativo em transformações vs limitado. **Async Support**: First-class `.BindAsync()` vs limitado.
+
+### Aplicações no Mundo Real
+
+**APIs CQRS**: Map `CreateUserCommand` → `User` entity → `UserDto` response. Transformações diferentes por operação. Async validation/enrichment durante mapping.
+
+**Clean Architecture**: Entities de domínio ficam puros. ViewModels sabem como serem criados de entities. Separação clara entre camadas.
+
+**Microservices**: Transformar respostas de APIs third-party em modelos de domínio com async enrichment (chamar internal APIs, cache, DB).
+
+**Event-Driven**: Transform domain entities em integration events. Async loading de dados relacionados antes de publicar.
+
+### Fundamentos Conceituais
+
+**Schema-Based Mapping**: Defina transformation schema uma vez, aplique muitas vezes. Compile schema para performance.
+
+**Explicit over Implicit**: LINQ philosophy—bindings explícitos com compile-time safety beats mágica baseada em convenções.
+
+**Single Responsibility (DDD)**: Mappings são responsabilidade do type que precisa deles. DTOs sabem como serem criados de entities.
+
+**Fluent Interface**: Method chaining para configuração legível.
+
+### Valor de Negócio
+
+**Desenvolvedores**: 50% menos código de mapping vs manual. 10x mais rápido vs AutoMapper (reflexão). Debug claro (bindings explícitos, sem mágica). Transformações async.
+
+**Arquitetos**: DDD-aligned (mappings pertencem a types). Clean separation (entities, DTOs, ViewModels). Performance (pre-compiled schemas). Escalável (async transformations).
+
+**DevOps/SRE**: Performance previsível (sem reflexão). Fácil monitoramento (call stacks claros). Debuggable (código explícito).
+
+**Times de Produto**: Desenvolvimento mais rápido (menos boilerplate). Menos bugs (bindings type-safe). Melhor API design (DTOs limpos, entities puros). Refactoring mais fácil.
 
 ## Funcionalidades
 

@@ -10,6 +10,130 @@
 
 A .NET library that simplifies dependency injection with automatic type discovery and convention-based service registration. Eliminate boilerplate code and enable plugin architectures with powerful assembly scanning and type resolution capabilities.
 
+## 🎯 Why Myth.DependencyInjection?
+
+In enterprise .NET applications, **manual service registration becomes a productivity killer**. Imagine maintaining hundreds of repository, service, and handler registrations by hand—every new class requires three places to change (interface, implementation, registration). One forgotten registration causes runtime errors. Code reviews get cluttered with registration changes. **Myth.DependencyInjection solves this once and for all.**
+
+### The Problem
+
+**Manual Registration Hell**
+```csharp
+// Startup.cs becomes a nightmare to maintain
+services.AddScoped<IUserRepository, UserRepository>();
+services.AddScoped<IOrderRepository, OrderRepository>();
+services.AddScoped<IProductRepository, ProductRepository>();
+services.AddScoped<ICustomerRepository, CustomerRepository>();
+services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+// ... 200 more lines ...
+// New developer adds IPaymentRepository but forgets to register it → runtime crash
+```
+
+**Problems with manual registration:**
+- **Maintenance burden**: Every new service = 3 places to change
+- **Error-prone**: Forgotten registrations cause runtime failures
+- **Messy PRs**: Code reviews filled with registration noise
+- **Onboarding pain**: New developers must understand registration conventions
+- **No discoverability**: Hard to know what's registered without reading Startup.cs
+
+### The Solution
+
+**Convention-Based Auto-Registration**
+```csharp
+// One line registers ALL repositories following your naming convention
+services.AddServiceFromType<IRepository>();
+
+// One line registers ALL command handlers
+services.AddServiceFromType<ICommandHandler>(ServiceLifetime.Transient);
+```
+
+**Add a new repository?** Just follow the naming convention (`IUserRepository` → `UserRepository`). It's automatically discovered and registered. No Startup.cs changes. No forgotten registrations. **It just works.**
+
+### Why Choose Myth.DependencyInjection?
+
+| Aspect | Myth.DependencyInjection | Manual Registration | Scrutor/Other Tools |
+|--------|--------------------------|---------------------|---------------------|
+| **Lines of Code** | 1 line per layer | 1 line per service | Multiple configuration calls |
+| **Maintenance** | Add new service, done | Update Startup.cs every time | Configure scanning rules |
+| **Runtime Safety** | Convention enforced | Easy to forget | Depends on configuration |
+| **Developer Experience** | Intuitive naming convention | Tedious and error-prone | Learning curve for API |
+| **Type Discovery** | Built-in TypeProvider | Manual reflection | Limited or missing |
+| **Plugin Support** | Native type scanning | Complex custom code | Not primary focus |
+| **Performance** | Optimized assembly scanning | N/A (manual) | Varies |
+
+### Real-World Applications
+
+**CQRS-Based Microservices**
+Auto-register 100+ command/query handlers without touching Startup.cs. Convention ensures all handlers follow the same pattern.
+
+**Multi-Tenant SaaS Platforms**
+Dynamically discover and register tenant-specific services. TypeProvider enables plugin-based multi-tenancy where each tenant can load custom implementations.
+
+**Domain-Driven Design (DDD) Applications**
+Auto-register repositories by layer (IRepository, IDomainService, IApplicationService). Clean separation without registration clutter.
+
+**Modular Monolith Architecture**
+Each module registers its services with one call. Adding a new module is as simple as calling `AddServiceFromType<IModuleService>()`.
+
+**Plugin-Based Architectures**
+Build extensible systems where plugins drop into a folder and are automatically discovered, loaded, and registered. No hardcoded plugin lists.
+
+### Key Differentiators
+
+🎯 **Convention Over Configuration**
+Follow a simple naming convention (`IUserRepository` → `UserRepository`) and registration is automatic. No XML, no attributes, no manual wiring.
+
+🔍 **Powerful Type Discovery**
+TypeProvider gives you assembly scanning, type filtering, and namespace detection out of the box. Build code generators, analyzers, and plugin systems easily.
+
+⚡ **Minimal Ceremony**
+One line of code to register an entire layer. Reduces Startup.cs by 80-90% in large applications.
+
+🏗️ **Architecture Enforcement**
+Naming conventions enforce consistency. Teams naturally follow patterns because that's how services get registered.
+
+📦 **Seamless Plugin Support**
+Scan assemblies at runtime, discover types implementing `IPlugin`, and dynamically load them. Perfect for extensible SaaS platforms.
+
+🧪 **Testability**
+TypeProvider makes it trivial to write tests that verify all handlers are registered, or that your architecture rules are followed.
+
+### Conceptual Foundations
+
+**Convention over Configuration**
+Inspired by Ruby on Rails and ASP.NET MVC, Myth.DependencyInjection reduces boilerplate by inferring registration from conventions rather than explicit configuration.
+
+**Reflection and Assembly Scanning**
+Uses .NET's reflection capabilities to scan assemblies, discover types, and build the dependency graph automatically. Inspired by tools like Scrutor and StructureMap.
+
+**Marker Interface Pattern**
+Use marker interfaces (e.g., `IRepository`, `IDomainService`) to categorize services by architectural layer, then register entire layers with one call.
+
+**Plugin Architecture**
+Enables Inversion of Control at the architectural level—your application doesn't know what plugins exist; they declare themselves by implementing interfaces.
+
+**Fail-Fast Principle**
+Throws `InterfaceNotFoundException` at startup (not runtime) if conventions aren't followed, ensuring problems are caught early.
+
+### Business Value
+
+**For Developers**
+- **80% less registration code** in large applications
+- **No more forgotten registrations** causing production bugs
+- **Focus on business logic**, not infrastructure plumbing
+- **Faster onboarding**—new developers see the convention and start following it
+
+**For Architects**
+- **Enforce architectural patterns** through naming conventions
+- **Enable plugin ecosystems** for extensible products
+- **Reduce code review noise**—no Startup.cs diffs for every PR
+- **Scalable architecture** as teams and services grow
+
+**For Product Teams**
+- **Faster feature delivery**—less time on infrastructure
+- **Fewer runtime errors** from registration mistakes
+- **Lower maintenance costs** as codebase scales
+- **Easier codebase navigation** with consistent patterns
+
 ## Features
 
 - **Type Discovery**: Automatically discover and scan application assemblies and types

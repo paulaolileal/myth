@@ -1,6 +1,7 @@
 using Myth.Rules.Collections;
 using Myth.Rules.Constants;
 using Myth.Rules.DateTimes;
+using Myth.Rules.Dictionaries;
 using Myth.Rules.Enums;
 using Myth.Rules.Numerics;
 using Myth.Rules.Strings;
@@ -181,6 +182,140 @@ public static class StandaloneValidationExtensions {
 	/// <returns>The validation builder for method chaining</returns>
 	public static IStandaloneValidationBuilder<IEnumerable<T>> CountBetween<T>( this IStandaloneValidationBuilder<IEnumerable<T>> builder, int min, int max ) {
 		return builder.AddRule( new CountBetweenRule<T>( min, max ) );
+	}
+
+	#endregion
+
+	#region Dictionary Validation Extensions
+
+	/// <summary>
+	/// Adds a validation rule that the dictionary must not be empty
+	/// </summary>
+	/// <param name="builder">The validation builder</param>
+	/// <returns>The validation builder for method chaining</returns>
+	public static IStandaloneValidationBuilder<IDictionary<TKey, TValue>> NotEmpty<TKey, TValue>( this IStandaloneValidationBuilder<IDictionary<TKey, TValue>> builder ) {
+		return builder.AddRule( new NotEmptyDictionaryRule<TKey, TValue>( ) );
+	}
+
+	/// <summary>
+	/// Adds a validation rule that the dictionary count must be greater than the specified value
+	/// </summary>
+	/// <param name="builder">The validation builder</param>
+	/// <param name="min">The minimum count (exclusive)</param>
+	/// <returns>The validation builder for method chaining</returns>
+	public static IStandaloneValidationBuilder<IDictionary<TKey, TValue>> CountGreaterThan<TKey, TValue>( this IStandaloneValidationBuilder<IDictionary<TKey, TValue>> builder, int min ) {
+		return builder.AddRule( new DictionaryCountGreaterThanRule<TKey, TValue>( min ) );
+	}
+
+	/// <summary>
+	/// Adds a validation rule that the dictionary count must be less than the specified value
+	/// </summary>
+	/// <param name="builder">The validation builder</param>
+	/// <param name="max">The maximum count (exclusive)</param>
+	/// <returns>The validation builder for method chaining</returns>
+	public static IStandaloneValidationBuilder<IDictionary<TKey, TValue>> CountLessThan<TKey, TValue>( this IStandaloneValidationBuilder<IDictionary<TKey, TValue>> builder, int max ) {
+		return builder.AddRule( new DictionaryCountLessThanRule<TKey, TValue>( max ) );
+	}
+
+	/// <summary>
+	/// Adds a validation rule that the dictionary count must be between the specified bounds
+	/// </summary>
+	/// <param name="builder">The validation builder</param>
+	/// <param name="min">The minimum count (inclusive)</param>
+	/// <param name="max">The maximum count (inclusive)</param>
+	/// <returns>The validation builder for method chaining</returns>
+	public static IStandaloneValidationBuilder<IDictionary<TKey, TValue>> CountBetween<TKey, TValue>( this IStandaloneValidationBuilder<IDictionary<TKey, TValue>> builder, int min, int max ) {
+		return builder.AddRule( new DictionaryCountBetweenRule<TKey, TValue>( min, max ) );
+	}
+
+	/// <summary>
+	/// Adds a validation rule that the dictionary must contain the specified key
+	/// </summary>
+	/// <param name="builder">The validation builder</param>
+	/// <param name="key">The key that must exist in the dictionary</param>
+	/// <returns>The validation builder for method chaining</returns>
+	public static IStandaloneValidationBuilder<IDictionary<TKey, TValue>> ContainsKey<TKey, TValue>( this IStandaloneValidationBuilder<IDictionary<TKey, TValue>> builder, TKey key ) {
+		return builder.AddRule( new ContainsKeyRule<TKey, TValue>( key ) );
+	}
+
+	/// <summary>
+	/// Adds a validation rule that the dictionary must not contain the specified key
+	/// </summary>
+	/// <param name="builder">The validation builder</param>
+	/// <param name="key">The key that must not exist in the dictionary</param>
+	/// <returns>The validation builder for method chaining</returns>
+	public static IStandaloneValidationBuilder<IDictionary<TKey, TValue>> NotContainsKey<TKey, TValue>( this IStandaloneValidationBuilder<IDictionary<TKey, TValue>> builder, TKey key ) {
+		return builder.AddRule( new NotContainsKeyRule<TKey, TValue>( key ) );
+	}
+
+	/// <summary>
+	/// Adds a validation rule that the dictionary must contain the specified value
+	/// </summary>
+	/// <param name="builder">The validation builder</param>
+	/// <param name="value">The value that must exist in the dictionary</param>
+	/// <returns>The validation builder for method chaining</returns>
+	public static IStandaloneValidationBuilder<IDictionary<TKey, TValue>> ContainsValue<TKey, TValue>( this IStandaloneValidationBuilder<IDictionary<TKey, TValue>> builder, TValue value ) {
+		return builder.AddRule( new ContainsValueRule<TKey, TValue>( value ) );
+	}
+
+	/// <summary>
+	/// Adds a validation rule that all keys in the dictionary must satisfy a predicate
+	/// </summary>
+	/// <param name="builder">The validation builder</param>
+	/// <param name="predicate">The predicate that all keys must satisfy</param>
+	/// <returns>The validation builder for method chaining</returns>
+	public static IStandaloneValidationBuilder<IDictionary<TKey, TValue>> AllKeys<TKey, TValue>( this IStandaloneValidationBuilder<IDictionary<TKey, TValue>> builder, Func<TKey, bool> predicate ) {
+		return builder.AddRule( new AllKeysRule<TKey, TValue>( predicate ) );
+	}
+
+	/// <summary>
+	/// Adds a validation rule that all values in the dictionary must satisfy a predicate
+	/// </summary>
+	/// <param name="builder">The validation builder</param>
+	/// <param name="predicate">The predicate that all values must satisfy</param>
+	/// <returns>The validation builder for method chaining</returns>
+	public static IStandaloneValidationBuilder<IDictionary<TKey, TValue>> AllValues<TKey, TValue>( this IStandaloneValidationBuilder<IDictionary<TKey, TValue>> builder, Func<TValue, bool> predicate ) {
+		return builder.AddRule( new AllValuesRule<TKey, TValue>( predicate ) );
+	}
+
+	/// <summary>
+	/// Adds a validation rule that at least one key in the dictionary must satisfy a predicate
+	/// </summary>
+	/// <param name="builder">The validation builder</param>
+	/// <param name="predicate">The predicate that at least one key must satisfy</param>
+	/// <returns>The validation builder for method chaining</returns>
+	public static IStandaloneValidationBuilder<IDictionary<TKey, TValue>> AnyKey<TKey, TValue>( this IStandaloneValidationBuilder<IDictionary<TKey, TValue>> builder, Func<TKey, bool> predicate ) {
+		return builder.AddRule( new AnyKeyRule<TKey, TValue>( predicate ) );
+	}
+
+	/// <summary>
+	/// Adds a validation rule that at least one value in the dictionary must satisfy a predicate
+	/// </summary>
+	/// <param name="builder">The validation builder</param>
+	/// <param name="predicate">The predicate that at least one value must satisfy</param>
+	/// <returns>The validation builder for method chaining</returns>
+	public static IStandaloneValidationBuilder<IDictionary<TKey, TValue>> AnyValue<TKey, TValue>( this IStandaloneValidationBuilder<IDictionary<TKey, TValue>> builder, Func<TValue, bool> predicate ) {
+		return builder.AddRule( new AnyValueRule<TKey, TValue>( predicate ) );
+	}
+
+	/// <summary>
+	/// Adds a validation rule that no keys in the dictionary must satisfy a predicate
+	/// </summary>
+	/// <param name="builder">The validation builder</param>
+	/// <param name="predicate">The predicate that no keys should satisfy</param>
+	/// <returns>The validation builder for method chaining</returns>
+	public static IStandaloneValidationBuilder<IDictionary<TKey, TValue>> NoKeys<TKey, TValue>( this IStandaloneValidationBuilder<IDictionary<TKey, TValue>> builder, Func<TKey, bool> predicate ) {
+		return builder.AddRule( new NoKeysRule<TKey, TValue>( predicate ) );
+	}
+
+	/// <summary>
+	/// Adds a validation rule that no values in the dictionary must satisfy a predicate
+	/// </summary>
+	/// <param name="builder">The validation builder</param>
+	/// <param name="predicate">The predicate that no values should satisfy</param>
+	/// <returns>The validation builder for method chaining</returns>
+	public static IStandaloneValidationBuilder<IDictionary<TKey, TValue>> NoValues<TKey, TValue>( this IStandaloneValidationBuilder<IDictionary<TKey, TValue>> builder, Func<TValue, bool> predicate ) {
+		return builder.AddRule( new NoValuesRule<TKey, TValue>( predicate ) );
 	}
 
 	#endregion

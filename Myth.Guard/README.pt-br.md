@@ -10,9 +10,49 @@
 
 Uma poderosa biblioteca de validação fluente .NET projetada para aplicações enterprise. Construída com princípios de arquitetura limpa, Myth.Guard fornece validação declarativa com consciência de contexto, integração assíncrona com serviços e middleware automático para ASP.NET Core.
 
-## Por que Myth.Guard?
+## 🎯 Por que Myth.Guard?
 
-A maioria das bibliotecas de validação forçam você a escolher entre validação baseada em atributos (inflexível) ou código de validação imperativo (verboso e disperso). Myth.Guard oferece uma terceira opção: **validação declarativa e fluente que vive com suas entidades**, promovendo Domain-Driven Design mantendo a lógica de validação sustentável e testável.
+**Validação de dados é onde a maioria dos bugs se esconde.** Entrada inválida quebra sistemas, corrompe bancos de dados, expõe vulnerabilidades de segurança e custa milhões. Data Annotations são inflexíveis e não acessam serviços, FluentValidation separa regras de entidades quebrando princípios DDD, if-checks manuais espalham validação pelo código tornando-o insustentável. **Myth.Guard resolve isso com validação declarativa que vive com seus modelos de domínio**, combinando o melhor de todas as abordagens e adicionando consciência de contexto, integração assíncrona com serviços e tratamento automático de erros de API.
+
+### O Problema: Validação Espalhada, Inconsistente e Quebrada
+
+Validação tradicional está espalhada entre controller, service, repository e database. Regras diferentes para Create vs Update duplicadas em todo lugar. Não pode acessar serviços para checar banco de dados. Mensagens de erro genéricas. Não testável (validation misturada com lógica de negócio). Não segue DDD (entidades podem estar em estado inválido).
+
+### A Solução: Validação Declarativa e Context-Aware com Modelos de Domínio
+
+Validação vive com o modelo (princípio DDD). **Regras globais** aplicam a todos os contextos. **Regras específicas de contexto** (Create, Update, Delete) sem duplicação. **Acesso a serviços**: Validação assíncrona chama database/APIs via DI. **Erros automáticos**: Middleware retorna JSON estruturado com erros por campo. **Controller limpo**: Uma linha valida, garantia de dados válidos.
+
+### Por Que Escolher Myth.Guard?
+
+**DDD-native**: Validação é parte do modelo de domínio. **Context-aware**: Regras diferentes por operação (Create/Update/Delete) sem duplicação. **Async service integration**: Chame database, APIs, serviços externos dentro de regras de validação. **Structured errors**: Middleware automático retorna RFC 9457 Problem Details com erros por campo. **Parallel multi-validation**: `ValidateMultipleAsync()` valida múltiplos objetos em paralelo (10x mais rápido para batch imports). **Standalone field validation**: `Guard.For(email).Email()` valida valores únicos fora de contexto de modelo.
+
+### Aplicações no Mundo Real
+
+**E-Commerce**: Validação diferente para Create (SKU único), Update (mudanças de preço requerem aprovação), Delete (checar se há pedidos). Tudo em um modelo.
+
+**SaaS Multi-Tenant**: Email único por tenant, role válido para tier do tenant, limites de quota. Context-aware por operação.
+
+**Healthcare EHR**: Validação HIPAA-compliant com audit trail. Regras diferentes por role do usuário (médico vs enfermeiro). Erros estruturados para UI.
+
+### Fundamentos Conceituais
+
+**DDD**: Padrão "always-valid entity" de Eric Evans. Validação é lógica de domínio, pertence aos modelos de domínio.
+
+**Fluent Interface**: Method chaining para validação legível. Inspirado por FluentValidation e LINQ.
+
+**Railway-Oriented Programming**: Validação retorna `ValidationResult` (success/failure), integra com padrão `Result<T>` do Myth.Flow.
+
+**RFC 9457 Problem Details**: Formato HTTP de erro padrão com type, title, status, detail. Extensões de campo para erros de validação.
+
+### Valor de Negócio
+
+**Desenvolvedores**: 80% menos código de validação eliminando duplicação. DDD-aligned. Async validation fácil. Teste rápido.
+
+**Arquitetos**: Integridade de dados na camada de domínio. Error handling consistente via middleware. Compliance ready (GDPR, HIPAA). Validação escalável (parallel batch).
+
+**DevOps/SRE**: Logs estruturados. HTTP status codes consistentes. Menos carga de database (catch invalid data cedo). Melhor error tracking.
+
+**Times de Produto**: Melhor UX (erros estruturados por campo para forms). Desenvolvimento mais rápido (regras reusáveis). Menos bugs (dados inválidos não chegam ao database).
 
 ## Características Principais
 
@@ -112,23 +152,19 @@ public class UserController : ControllerBase
 
 ### Resposta Automática de Erro
 
-Com o middleware `app.UseGuard()`, exceções de validação são automaticamente formatadas:
+Com o middleware `app.UseGuard()`, exceções de validação são automaticamente formatadas seguindo [RFC 9457 (Problem Details for HTTP APIs)](https://www.rfc-editor.org/rfc/rfc9457.html):
 
 ```json
 {
-    "code": "MULTIPLE_ERRORS",
-    "errors": [
-        {
-            "field": "email",
-            "message": "Email é obrigatório",
-            "code": "VIOLATION"
-        },
-        {
-            "field": "age",
-            "message": "Valor deve ser maior que 0",
-            "code": "VIOLATION"
-        }
-    ]
+    "type": "https://github.com/paulaolileal/myth/blob/main/docs/errors/validation.md",
+    "title": "One or more validation errors occurred",
+    "status": 400,
+    "instance": "/api/users",
+    "traceId": "00-abc123...",
+    "errors": {
+        "email": ["Email é obrigatório"],
+        "age": ["Valor deve ser maior que 0"]
+    }
 }
 ```
 
@@ -367,7 +403,6 @@ public class UserDto : IValidatable<UserDto>
                     return await userService.IsEmailAvailableAsync( email, ct );
                 } )
                 .WithMessage( "Email já existe" )
-                .WithCode( "EMAIL_EXISTS" )
                 .WithStatusCode( HttpStatusCode.Conflict ) );
 
             b.For( Password, x => x
@@ -469,7 +504,7 @@ public class CreateOrderDto : IValidatable<CreateOrderDto>
                 return await productService.ExistsAsync( productId, ct );
             } )
             .WithMessage( "Produto não existe" )
-            .WithCode( "PRODUCT_NOT_FOUND" ) );
+            );
 
         builder.For( Quantity, x => x
             .GreaterThan( 0 )
@@ -480,7 +515,7 @@ public class CreateOrderDto : IValidatable<CreateOrderDto>
                 return quantity <= stock;
             } )
             .WithMessage( "Estoque insuficiente" )
-            .WithCode( "INSUFFICIENT_STOCK" ) );
+            );
 
         builder.For( CustomerEmail, x => x
             .NotEmpty()
@@ -491,7 +526,7 @@ public class CreateOrderDto : IValidatable<CreateOrderDto>
                 return await customerService.IsActiveCustomerAsync( email, ct );
             } )
             .WithMessage( "Cliente não encontrado ou inativo" )
-            .WithCode( "CUSTOMER_INACTIVE" )
+            
             .WithStatusCode( HttpStatusCode.NotFound ) );
     }
 }
@@ -515,7 +550,7 @@ builder.For( Age, x => x
 // Código de erro customizado
 builder.For( Email, x => x
     .Email()
-    .WithCode( "INVALID_EMAIL_FORMAT" ) );
+    );
 
 // Código de status HTTP customizado
 builder.For( UserId, x => x
@@ -525,7 +560,7 @@ builder.For( UserId, x => x
         return await userService.ExistsAsync( id, ct );
     } )
     .WithMessage( "Usuário não encontrado" )
-    .WithCode( "USER_NOT_FOUND" )
+    
     .WithStatusCode( HttpStatusCode.NotFound ) ); // Retorna 404 em vez de 400
 ```
 
@@ -583,7 +618,7 @@ public class OrderDto : IValidatable<OrderDto>
                 return isValid && isApplicable;
             } )
             .WithMessage( "Código de cupom inválido ou inaplicável" )
-            .WithCode( "INVALID_COUPON" ) );
+            );
     }
 }
 ```
@@ -604,7 +639,6 @@ if ( !result.IsValid )
     {
         Console.WriteLine( $"Campo: {error.Field}" );
         Console.WriteLine( $"Mensagem: {error.Message}" );
-        Console.WriteLine( $"Código: {error.Code}" );
         Console.WriteLine( $"Status: {error.StatusCode}" );
     }
 }
@@ -628,8 +662,7 @@ catch ( ValidationException ex )
         errors = errors.Select( e => new
         {
             field = e.Field,
-            message = e.Message,
-            code = e.Code
+            message = e.Message
         } )
     } );
 }
@@ -641,19 +674,15 @@ Ao usar `app.UseGuard()`, exceções de validação são automaticamente captura
 
 ```json
 {
-    "code": "MULTIPLE_ERRORS",
-    "errors": [
-        {
-            "field": "email",
-            "message": "Email já existe",
-            "code": "EMAIL_EXISTS"
-        },
-        {
-            "field": "password",
-            "message": "Senha deve conter pelo menos 8 caracteres",
-            "code": "VIOLATION"
-        }
-    ]
+    "type": "https://github.com/paulaolileal/myth/blob/main/docs/errors/validation.md",
+    "title": "One or more validation errors occurred",
+    "status": 409,
+    "instance": "/api/users",
+    "traceId": "00-abc123...",
+    "errors": {
+        "email": ["Email já existe"],
+        "password": ["Senha deve conter pelo menos 8 caracteres"]
+    }
 }
 ```
 
@@ -856,14 +885,14 @@ public class UsersController : ControllerBase {
 
 ```json
 {
-    "code": "MULTIPLE_ERRORS",
-    "errors": [
-        {
-            "field": "email",
-            "message": "Email é obrigatório",
-            "code": "VIOLATION"
-        }
-    ]
+    "type": "https://github.com/paulaolileal/myth/blob/main/docs/errors/validation.md",
+    "title": "One or more validation errors occurred",
+    "status": 400,
+    "instance": "/api/users",
+    "traceId": "00-abc123...",
+    "errors": {
+        "email": ["Email é obrigatório"]
+    }
 }
 ```
 
@@ -898,7 +927,7 @@ public async Task CreateUser_WithInvalidEmail_ShouldFail()
 
     exception.ValidationResult.Errors.Should().HaveCount( 1 );
     exception.ValidationResult.Errors.First().Field.Should().Be( "Email" );
-    exception.ValidationResult.Errors.First().Code.Should().Be( "VIOLATION" );
+    exception.ValidationResult.Errors.First().Message.Should().Contain( "Email" );
 }
 
 [Fact]
@@ -921,7 +950,7 @@ public async Task CreateUser_WithExistingEmail_ShouldReturnConflict()
     // Assert
     result.IsValid.Should().BeFalse();
     result.StatusCode.Should().Be( HttpStatusCode.Conflict );
-    result.Errors.Should().ContainSingle( e => e.Code == "EMAIL_EXISTS" );
+    result.Errors.Should().ContainSingle( e => e.Field == "Email" && e.Message.Contains( "existe" ) );
 }
 ```
 
@@ -1021,6 +1050,104 @@ public class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand>
     }
 }
 ```
+
+### Validação de Dicionários
+
+Valide dicionários com regras abrangentes para chaves, valores e contagens:
+
+```csharp
+// Validação standalone de dicionário
+var headers = new Dictionary<string, string> { ["Authorization"] = "Bearer token" };
+
+await Sentry.For(headers, "Headers")
+    .NotEmpty()
+    .ContainsKey("Authorization")
+    .AllKeys(k => !string.IsNullOrEmpty(k))
+    .AllValues(v => v.Length > 0)
+    .ValidateAndThrowAsync();
+
+// Validação de dicionário em entidade
+public class ApiRequest : IValidatable<ApiRequest>
+{
+    public Dictionary<string, string> Headers { get; set; }
+    public Dictionary<string, object> Metadata { get; set; }
+
+    public void Validate(ValidationBuilder<ApiRequest> builder, ValidationContextKey? context = null)
+    {
+        builder.For(Headers, r => r
+            .NotEmpty()
+            .ContainsKey("Authorization")
+            .CountBetween(1, 20)
+            .NoKeys(k => k.Contains("Debug")));
+
+        builder.For(Metadata, r => r
+            .CountLessThan(100)
+            .AllValues(v => v != null));
+    }
+}
+```
+
+Regras de validação de dicionário disponíveis:
+- `NotEmpty()` - Dicionário deve ter pelo menos uma entrada
+- `CountGreaterThan(min)` - Contagem de entradas deve exceder o mínimo
+- `CountLessThan(max)` - Contagem de entradas deve estar abaixo do máximo
+- `CountBetween(min, max)` - Contagem de entradas deve estar dentro do intervalo
+- `ContainsKey(key)` - Chave específica deve existir
+- `NotContainsKey(key)` - Chave específica não deve existir
+- `ContainsValue(value)` - Valor específico deve existir
+- `AllKeys(predicate)` - Todas as chaves devem satisfazer a condição
+- `AllValues(predicate)` - Todos os valores devem satisfazer a condição
+- `AnyKey(predicate)` - Pelo menos uma chave deve satisfazer a condição
+- `AnyValue(predicate)` - Pelo menos um valor deve satisfazer a condição
+- `NoKeys(predicate)` - Nenhuma chave deve satisfazer a condição
+- `NoValues(predicate)` - Nenhum valor deve satisfazer a condição
+
+### Falha Manual de Validação
+
+Use `Sentry.Fail()` para lançar exceções de validação manualmente com mensagens de erro customizadas:
+
+```csharp
+// Falha simples com campo padrão "Value"
+if (complexCondition)
+{
+    Sentry.Fail("Regra de negócio complexa violada");
+}
+
+// Falha para campo específico
+if (user.Age < 18 && user.RequiresParentalConsent)
+{
+    Sentry.Fail("Age", "Usuário deve ter 18 anos ou mais ou ter consentimento parental");
+}
+
+// Falha com código de status customizado
+if (email.Domain == "competitor.com")
+{
+    Sentry.Fail("Email", "Domínio de email não permitido", HttpStatusCode.Forbidden);
+}
+
+// Falha com controle total do erro de validação
+var error = new ValidationError(
+    "Email",
+    "Email já existe no sistema",
+    HttpStatusCode.Conflict,
+    new[] { "user@example.com", "admin@example.com" }
+);
+Sentry.Fail(error);
+
+// Múltiplas falhas de uma vez
+var errors = new List<ValidationError>
+{
+    new ValidationError("Name", "Nome é obrigatório", HttpStatusCode.BadRequest),
+    new ValidationError("Email", "Email é inválido", HttpStatusCode.BadRequest)
+};
+Sentry.Fail(errors);
+```
+
+Isso é útil para:
+- Regras de negócio complexas que não se encaixam em padrões de validação padrão
+- Validações entre campos
+- Validação dinâmica baseada em estado externo
+- Integração com código de validação legado
 
 ## Considerações de Performance
 

@@ -249,7 +249,6 @@ public async Task<IPaginated<OrderDto>> GetCustomerOrdersAsync(CustomerId custom
 ## 🔮 Fundação Central
 - **[Myth.Commons](Myth.Commons/README.pt-br.md)** - Utilitários essenciais, objetos de valor e gerenciamento global de provedor de serviços
 - **[Myth.DependencyInjection](Myth.DependencyInjection/README.pt-br.md)** - Auto-descoberta e registro de serviços baseado em convenções
-- **[Myth.DependencyInjection.Providers](Myth.DependencyInjection.Providers/README.pt-br.md)** - Integrações pré-configuradas para Swagger, AutoMapper e versionamento de API
 
 ## 🔄 Fluxo de Dados & Orquestração
 - **[Myth.Flow](Myth.Flow/README.pt-br.md)** - Orquestração de pipeline com padrão Result e integração OpenTelemetry
@@ -269,8 +268,9 @@ public async Task<IPaginated<OrderDto>> GetCustomerOrdersAsync(CustomerId custom
 ## 🌐 HTTP & APIs
 - **[Myth.Rest](Myth.Rest/README.pt-br.md)** - Cliente REST fluente com circuit breaker, políticas de retry e suporte a certificados
 
-## 🧪 Testes
+## 🧪 Testes & Ferramentas de Desenvolvimento
 - **[Myth.Testing](Myth.Testing/README.pt-br.md)** - Utilitários de teste, mocks e classes base para testes abrangentes
+- **[Myth.Tool](Myth.Tool/README.pt-br.md)** - Ferramenta CLI para geração de código com padrões CQRS, DDD e Clean Architecture
 
 ## 🏗️ Exemplos de Integração
 
