@@ -276,6 +276,99 @@ var app = builder.BuildApp( );
 app.Run( );
 ```
 
+## 💉 Dependency Injection in Handlers
+
+**IMPORTANT**: Starting with the current version, **handlers are registered as Scoped** and the Dispatcher **automatically creates a scope** before resolving them. This means you can:
+
+✅ **Inject repositories directly** (that use DbContext)
+✅ **Inject Scoped services** without `IServiceScopeFactory`
+✅ **Simplify your handlers** - no need to create scopes manually
+
+### How It Works
+
+The Dispatcher manages the lifecycle automatically:
+
+```csharp
+// The Dispatcher does this internally for each command/query:
+using var scope = MythServiceProvider.GetRequired().CreateScope();
+var handler = scope.ServiceProvider.GetService<ICommandHandler<TCommand>>();
+var result = await handler.HandleAsync(command, cancellationToken);
+// Scope is automatically disposed, releasing DbContext and other resources
+```
+
+### Practical Example
+
+```csharp
+// ✅ DO THIS - Direct injection (simple and clean)
+public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
+    private readonly IOrderRepository _orderRepository;
+    private readonly IProductRepository _productRepository;
+    private readonly ILogger<CreateOrderHandler> _logger;
+
+    public CreateOrderHandler(
+        IOrderRepository orderRepository,
+        IProductRepository productRepository,
+        ILogger<CreateOrderHandler> logger) {
+        _orderRepository = orderRepository;
+        _productRepository = productRepository;
+        _logger = logger;
+    }
+
+    public async Task<CommandResult<Guid>> HandleAsync(
+        CreateOrderCommand command,
+        CancellationToken cancellationToken) {
+
+        // Use repositories directly - the scope has already been created by the Dispatcher
+        var products = await _productRepository.GetByIdsAsync(
+            command.ProductIds,
+            cancellationToken);
+
+        var order = new Order { /* ... */ };
+        await _orderRepository.AddAsync(order, cancellationToken);
+
+        _logger.LogInformation("Order {OrderId} created", order.Id);
+        return CommandResult<Guid>.Success(order.Id);
+    }
+}
+
+// ❌ DON'T DO THIS - No longer necessary to use IServiceScopeFactory
+public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
+    private readonly IServiceScopeFactory _scopeFactory; // ❌ Unnecessary!
+
+    public async Task<CommandResult<Guid>> HandleAsync(...) {
+        // ❌ Manual scope creation is no longer needed!
+        using var scope = _scopeFactory.CreateScope();
+        var orderRepository = scope.ServiceProvider.GetRequiredService<IOrderRepository>();
+        // ...
+    }
+}
+```
+
+### When to Still Use IScopedService<T>?
+
+The `IScopedService<T>` pattern is still available and useful in specific cases:
+
+- **Background Services** (hosted services that are singleton)
+- **Singleton Services** that need to access Scoped services
+- **Special cases** where you need multiple scopes within the same operation
+
+```csharp
+// For background services or singletons that need scoped services
+public class OrderProcessingBackgroundService : BackgroundService {
+    private readonly IScopedService<IOrderRepository> _orderRepository;
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
+        while (!stoppingToken.IsCancellationRequested) {
+            await _orderRepository.ExecuteAsync(async repo => {
+                var pendingOrders = await repo.GetPendingOrdersAsync();
+                // Process orders...
+            });
+            await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+        }
+    }
+}
+```
+
 ### 2. Define Commands, Queries, and Events
 
 #### Command

@@ -65,18 +65,47 @@ var provider = MythServiceProvider.Current;
 var service = MythServiceProvider.GetRequired();
 ```
 
-#### IScopedService<T>
+#### Dependency Injection in Handlers
 
-Allows transient services (like handlers) to use scoped services safely:
+**IMPORTANT**: Handlers are **registered as Scoped** and the Dispatcher **automatically creates scopes**.
+You can now **inject repositories and scoped services directly**:
 
 ```csharp
-public class CreateOrderHandler : ICommandHandler<CreateOrderCommand> {
+// ✅ RECOMMENDED - Direct injection (simple and clean)
+public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
+    private readonly IOrderRepository _repository;
+    private readonly IProductRepository _productRepository;
+    private readonly ILogger<CreateOrderHandler> _logger;
+
+    public CreateOrderHandler(
+        IOrderRepository repository,
+        IProductRepository productRepository,
+        ILogger<CreateOrderHandler> logger) {
+        _repository = repository;
+        _productRepository = productRepository;
+        _logger = logger;
+    }
+
+    public async Task<CommandResult<Guid>> HandleAsync(CreateOrderCommand command, CancellationToken ct) {
+        var products = await _productRepository.GetByIdsAsync(command.ProductIds, ct);
+        var order = await _repository.CreateAsync(command, ct);
+        return CommandResult<Guid>.Success(order.Id);
+    }
+}
+```
+
+**IScopedService<T>** is still available for special cases:
+- Background services (singletons that need scoped dependencies)
+- Services that need multiple scopes in one operation
+
+```csharp
+// For background services or special cases only
+public class OrderProcessingService : BackgroundService {
     private readonly IScopedService<IOrderRepository> _repository;
 
-    public async Task<CommandResult> HandleAsync(CreateOrderCommand command, CancellationToken ct) {
-        return await _repository.ExecuteAsync(async repo => {
-            var order = await repo.CreateAsync(command, ct);
-            return CommandResult.Success();
+    protected override async Task ExecuteAsync(CancellationToken ct) {
+        await _repository.ExecuteAsync(async repo => {
+            // Process orders periodically
         });
     }
 }
@@ -338,9 +367,18 @@ public record CreateOrderCommand(CreateOrderDto Data) : ICommand<Guid>;
 
 // Command handler
 public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
-    private readonly IScopedService<IOrderRepository> _repository;
+    private readonly IOrderRepository _repository;
     private readonly IValidator _validator;
     private readonly IDispatcher _dispatcher;
+
+    public CreateOrderHandler(
+        IOrderRepository repository,
+        IValidator validator,
+        IDispatcher dispatcher) {
+        _repository = repository;
+        _validator = validator;
+        _dispatcher = dispatcher;
+    }
 
     public async Task<CommandResult<Guid>> HandleAsync(
         CreateOrderCommand command,
@@ -349,11 +387,11 @@ public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
         // Validate
         await _validator.ValidateAsync(command.Data, ValidationContextKey.Create, ct);
 
-        // Process with pipeline
+        // Process with pipeline - direct repository access
         var result = await Pipeline.Start(command.Data)
             .StepResultAsync(async dto => {
                 var order = dto.To<Order>();
-                await _repository.ExecuteAsync(repo => repo.AddAsync(order, ct));
+                await _repository.AddAsync(order, ct);
                 return Result<Order>.Success(order);
             })
             .TapAsync(async order => {
@@ -390,7 +428,11 @@ public record GetOrderQuery(Guid OrderId) : IQuery<OrderDto>;
 
 // Query handler
 public class GetOrderHandler : IQueryHandler<GetOrderQuery, OrderDto> {
-    private readonly IScopedService<IOrderRepository> _repository;
+    private readonly IOrderRepository _repository;
+
+    public GetOrderHandler(IOrderRepository repository) {
+        _repository = repository;
+    }
 
     public async Task<QueryResult<OrderDto>> HandleAsync(
         GetOrderQuery query,
@@ -399,8 +441,7 @@ public class GetOrderHandler : IQueryHandler<GetOrderQuery, OrderDto> {
         var spec = SpecBuilder<Order>.Create()
             .And(o => o.Id == query.OrderId);
 
-        var order = await _repository.ExecuteAsync(repo =>
-            repo.FirstOrDefaultAsync(spec, ct));
+        var order = await _repository.FirstOrDefaultAsync(spec, ct);
 
         if (order == null) {
             return QueryResult<OrderDto>.Failure("Order not found");
@@ -437,18 +478,23 @@ public record OrderCreatedEvent(Guid OrderId, decimal Total, string CustomerEmai
 
 // Event handler
 public class OrderCreatedHandler : IEventHandler<OrderCreatedEvent> {
-    private readonly IScopedService<IEmailService> _emailService;
-    private readonly IScopedService<IInventoryService> _inventoryService;
+    private readonly IEmailService _emailService;
+    private readonly IInventoryService _inventoryService;
+
+    public OrderCreatedHandler(
+        IEmailService emailService,
+        IInventoryService inventoryService) {
+        _emailService = emailService;
+        _inventoryService = inventoryService;
+    }
 
     public async Task HandleAsync(OrderCreatedEvent @event, CancellationToken ct) {
         await Pipeline.Start(@event)
             .TapAsync(async evt => {
-                await _emailService.ExecuteAsync(svc =>
-                    svc.SendOrderConfirmationAsync(evt.CustomerEmail, evt.OrderId, ct));
+                await _emailService.SendOrderConfirmationAsync(evt.CustomerEmail, evt.OrderId, ct);
             })
             .TapAsync(async evt => {
-                await _inventoryService.ExecuteAsync(svc =>
-                    svc.UpdateStockAsync(evt.OrderId, ct));
+                await _inventoryService.UpdateStockAsync(evt.OrderId, ct);
             })
             .ExecuteAsync(ct);
     }
@@ -1294,10 +1340,21 @@ public record OrderCreatedEvent(Guid OrderId, decimal Total) : IEvent;
 
 // 4. Command Handler with full pipeline
 public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
-    private readonly IScopedService<IOrderRepository> _repository;
-    private readonly IScopedService<IUnitOfWorkRepository> _unitOfWork;
+    private readonly IOrderRepository _repository;
+    private readonly IUnitOfWorkRepository _unitOfWork;
     private readonly IValidator _validator;
     private readonly IDispatcher _dispatcher;
+
+    public CreateOrderHandler(
+        IOrderRepository repository,
+        IUnitOfWorkRepository unitOfWork,
+        IValidator validator,
+        IDispatcher dispatcher) {
+        _repository = repository;
+        _unitOfWork = unitOfWork;
+        _validator = validator;
+        _dispatcher = dispatcher;
+    }
 
     public async Task<CommandResult<Guid>> HandleAsync(
         CreateOrderCommand command,
@@ -1334,8 +1391,8 @@ public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
 
                 order.TotalAmount = order.Items.Sum(i => i.Price * i.Quantity);
 
-                await _repository.ExecuteAsync(repo => repo.AddAsync(order, ct));
-                await _unitOfWork.ExecuteAsync(uow => uow.SaveChangesAsync(ct));
+                await _repository.AddAsync(order, ct);
+                await _unitOfWork.SaveChangesAsync(ct);
 
                 return Result<Order>.Success(order);
             })
@@ -1360,7 +1417,11 @@ public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
 public record GetOrderQuery(Guid OrderId) : IQuery<OrderDto>;
 
 public class GetOrderHandler : IQueryHandler<GetOrderQuery, OrderDto> {
-    private readonly IScopedService<IOrderRepository> _repository;
+    private readonly IOrderRepository _repository;
+
+    public GetOrderHandler(IOrderRepository repository) {
+        _repository = repository;
+    }
 
     public async Task<QueryResult<OrderDto>> HandleAsync(
         GetOrderQuery query,
@@ -1369,8 +1430,7 @@ public class GetOrderHandler : IQueryHandler<GetOrderQuery, OrderDto> {
         var spec = SpecBuilder<Order>.Create()
             .And(o => o.Id == query.OrderId);
 
-        var order = await _repository.ExecuteAsync(repo =>
-            repo.FirstOrDefaultAsync(spec, ct));
+        var order = await _repository.FirstOrDefaultAsync(spec, ct);
 
         if (order == null) {
             return QueryResult<OrderDto>.Failure("Order not found");
@@ -1383,11 +1443,14 @@ public class GetOrderHandler : IQueryHandler<GetOrderQuery, OrderDto> {
 
 // 6. Event Handler
 public class OrderCreatedHandler : IEventHandler<OrderCreatedEvent> {
-    private readonly IScopedService<IEmailService> _emailService;
+    private readonly IEmailService _emailService;
+
+    public OrderCreatedHandler(IEmailService emailService) {
+        _emailService = emailService;
+    }
 
     public async Task HandleAsync(OrderCreatedEvent @event, CancellationToken ct) {
-        await _emailService.ExecuteAsync(svc =>
-            svc.SendOrderConfirmationAsync(@event.OrderId, ct));
+        await _emailService.SendOrderConfirmationAsync(@event.OrderId, ct);
     }
 }
 
@@ -1444,22 +1507,42 @@ var serviceProvider = services.BuildWithGlobalProvider();
 var serviceProvider = services.BuildServiceProvider();
 ```
 
-### 2. Use IScopedService<T> for Transient Handlers
+### 2. Inject Scoped Services Directly in Handlers
 
 ```csharp
-// ✅ CORRECT - Handlers are transient but need scoped repos
+// ✅ CORRECT - Handlers are Scoped, inject repositories directly
 public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
+    private readonly IOrderRepository _repository;
+    private readonly ILogger<CreateOrderHandler> _logger;
+
+    public CreateOrderHandler(
+        IOrderRepository repository,
+        ILogger<CreateOrderHandler> logger) {
+        _repository = repository;
+        _logger = logger;
+    }
+
+    public async Task<CommandResult<Guid>> HandleAsync(
+        CreateOrderCommand command,
+        CancellationToken ct) {
+        var order = await _repository.CreateAsync(command, ct);
+        _logger.LogInformation("Order {OrderId} created", order.Id);
+        return CommandResult<Guid>.Success(order.Id);
+    }
+}
+
+// ✅ ALSO CORRECT - Use IScopedService<T> for background services
+public class OrderBackgroundService : BackgroundService {
     private readonly IScopedService<IOrderRepository> _repository;
 
-    public async Task<CommandResult<Guid>> HandleAsync(...) {
-        return await _repository.ExecuteAsync(async repo => {
-            var order = await repo.CreateAsync(...);
-            return CommandResult<Guid>.Success(order.Id);
+    protected override async Task ExecuteAsync(CancellationToken ct) {
+        await _repository.ExecuteAsync(async repo => {
+            // Process orders...
         });
     }
 }
 
-// ❌ INCORRECT - Injecting scoped service directly into transient handler
+// ❌ INCORRECT - Don't inject IServiceScopeFactory in handlers
 public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
     private readonly IOrderRepository _repository; // ❌ Will cause issues!
 }
@@ -1782,7 +1865,8 @@ When asked to use the Myth skill, an AI assistant should:
 2. **Determine the operation type** (setup, configure, create handler, add validation, etc.)
 3. **Provide complete, working code** following Myth conventions:
    - Use `BuildApp()` for ASP.NET Core
-   - Use `IScopedService<T>` for handlers
+   - Inject repositories directly in handlers (scoped services work automatically)
+   - Use `IScopedService<T>` only for background services or special cases
    - Include validation, telemetry, and retry where appropriate
    - Follow Result pattern
    - Use specifications for queries

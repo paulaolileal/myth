@@ -41,7 +41,9 @@ internal sealed class Dispatcher(
 		try {
 			_logger.LogInformation( "Dispatching command {CommandType}", typeof( TCommand ).Name );
 
-			var handler = MythServiceProvider.GetRequired( ).GetService<ICommandHandler<TCommand>>( )
+			// Create a scope to resolve scoped dependencies (DbContext, repositories, etc.)
+			using var scope = MythServiceProvider.GetRequired( ).CreateScope( );
+			var handler = scope.ServiceProvider.GetService<ICommandHandler<TCommand>>( )
 				?? throw new HandlerNotFoundException( $"No handler registered for command {typeof( TCommand ).Name}" );
 
 			var result = await handler.HandleAsync( command, cancellationToken );
@@ -80,7 +82,9 @@ internal sealed class Dispatcher(
 		try {
 			_logger.LogInformation( "Dispatching command {CommandType}", typeof( TCommand ).Name );
 
-			var handler = MythServiceProvider.GetRequired( ).GetService<ICommandHandler<TCommand, TResponse>>( )
+			// Create a scope to resolve scoped dependencies (DbContext, repositories, etc.)
+			using var scope = MythServiceProvider.GetRequired( ).CreateScope( );
+			var handler = scope.ServiceProvider.GetService<ICommandHandler<TCommand, TResponse>>( )
 				?? throw new HandlerNotFoundException( $"No handler registered for command {typeof( TCommand ).Name}" );
 
 			var result = await handler.HandleAsync( command, cancellationToken );
@@ -142,7 +146,9 @@ internal sealed class Dispatcher(
 
 			_logger.LogInformation( "Dispatching query {QueryType}", typeof( TQuery ).Name );
 
-			var handler = MythServiceProvider.GetRequired( ).GetService<IQueryHandler<TQuery, TResponse>>( )
+			// Create a scope to resolve scoped dependencies (DbContext, repositories, etc.)
+			using var scope = MythServiceProvider.GetRequired( ).CreateScope( );
+			var handler = scope.ServiceProvider.GetService<IQueryHandler<TQuery, TResponse>>( )
 				?? throw new HandlerNotFoundException( $"No handler registered for query {typeof( TQuery ).Name}" );
 
 			var result = await handler.HandleAsync( query, cancellationToken );
