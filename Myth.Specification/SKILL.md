@@ -885,25 +885,49 @@ var count = await _userRepository.CountAsync(spec);
 
 ## Best Practices
 
-### 1. Create Reusable Specifications
+### 1. Create Reusable Specifications in Static Classes
+
+**IMPORTANT:** Always create specification extension methods in **static classes** named after your entity/model. This provides clear business meaning and improves code organization.
 
 **✅ DO:**
 ```csharp
+// Create static class for each entity/model
 public static class UserSpecifications {
     public static ISpec<User> IsActive(this ISpec<User> spec) =>
         spec.And(u => u.IsActive && !u.IsDeleted);
 
     public static ISpec<User> HasRole(this ISpec<User> spec, string role) =>
         spec.And(u => u.Role == role);
+
+    public static ISpec<User> CreatedAfter(this ISpec<User> spec, DateTime date) =>
+        spec.And(u => u.CreatedAt >= date);
 }
+
+// Usage is clear and expressive
+var activeAdmins = SpecBuilder<User>.Create()
+    .IsActive()
+    .HasRole("Admin")
+    .CreatedAfter(DateTime.UtcNow.AddDays(-30));
 ```
 
 **❌ DON'T:**
 ```csharp
-// Repeating logic everywhere
+// Repeating logic everywhere (violates DRY principle)
 var spec1 = SpecBuilder<User>.Create().And(u => u.IsActive && !u.IsDeleted);
 var spec2 = SpecBuilder<User>.Create().And(u => u.IsActive && !u.IsDeleted);
+
+// Or mixing specifications in non-static classes
+public class UserRepository {
+    public ISpec<User> IsActive() => ... // Wrong place!
+}
 ```
+
+**Benefits of Static Classes:**
+- **Business Clarity**: `UserSpecifications.IsActive()` clearly expresses business intent
+- **Discoverability**: IntelliSense shows all available specifications for the entity
+- **Organization**: All business rules for an entity are in one place
+- **Reusability**: Can be used across repositories, services, and controllers
+- **Testability**: Easy to unit test specifications in isolation
 
 ---
 

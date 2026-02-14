@@ -787,6 +787,81 @@ public class ApplicationDbContext : DbContext {
 }
 ```
 
+---
+
+### 1.5. Never Use DbSets Directly - Always Use Repositories
+
+**CRITICAL:** This is a fundamental principle of the Repository Pattern. **Never access DbSets directly** from DbContext. All database operations should go through repositories.
+
+**✅ DO:**
+```csharp
+// In DbContext - DbSets are internal implementation detail
+public class ApplicationDbContext : BaseContext {
+    // DbSets exist for EF Core's internal use only
+    internal DbSet<User> Users { get; set; }
+    internal DbSet<Product> Products { get; set; }
+
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options) { }
+}
+
+// In Service/Controller - Always use repositories
+public class UserService {
+    private readonly IUserRepository _userRepository;
+
+    public UserService(IUserRepository userRepository) {
+        _userRepository = userRepository;
+    }
+
+    public async Task<User> GetUserAsync(Guid id) {
+        // ✅ Use repository
+        return await _userRepository.GetByIdAsync(id);
+    }
+}
+```
+
+**❌ DON'T:**
+```csharp
+// NEVER do this - bypasses repository pattern
+public class UserService {
+    private readonly ApplicationDbContext _context;
+
+    public async Task<User> GetUserAsync(Guid id) {
+        // ❌ Direct DbSet access - AVOID AT ALL COSTS
+        return await _context.Users.FindAsync(id);
+    }
+
+    public async Task<List<User>> GetActiveUsersAsync() {
+        // ❌ Direct LINQ on DbSet - WRONG
+        return await _context.Users
+            .Where(u => u.IsActive)
+            .ToListAsync();
+    }
+}
+```
+
+**Why This Matters:**
+- **Separation of Concerns**: Data access logic belongs in repositories
+- **Testability**: Repositories can be mocked; DbContext cannot be easily mocked
+- **Consistency**: All database operations follow the same pattern
+- **Business Logic Encapsulation**: Complex queries and specifications live in repositories
+- **Change Management**: Database changes only affect repositories, not entire application
+- **Single Responsibility**: Services focus on business logic, repositories handle data access
+
+**Correct Architecture:**
+```
+Controller/Service → Repository Interface → Repository Implementation → DbContext → Database
+                          ↑
+                    (inject this)
+```
+
+**Incorrect Architecture:**
+```
+Controller/Service → DbContext → Database
+                       ↑
+                  (never inject this into services!)
+```
+
 ### 2. Use Auto-Registration
 
 **✅ DO:**

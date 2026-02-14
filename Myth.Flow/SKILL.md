@@ -67,17 +67,39 @@ var result = await Pipeline.Start(context)
     .ExecuteAsync();
 ```
 
-### 2. Context
+### 2. Pipeline Data (Context)
 
-The context is the data flowing through the pipeline. It can be transformed, validated, or enriched at each step.
+The pipeline processes data through a series of steps. The data can be **any type** - it doesn't need to be named "Context". Each step receives the current state and returns a modified state.
 
 ```csharp
+// You can use ANY type as pipeline data
+// Using a class named "...Context" is just a naming convention, not a requirement
+
+// Option 1: Use a dedicated data holder class
 public class CreateUserContext {
     public CreateUserRequest Request { get; set; }
     public User? CreatedUser { get; set; }
     public List<string> Errors { get; set; } = new();
 }
+
+// Option 2: Use your domain models directly
+var result = await Pipeline.Start(user)
+    .StepAsync(u => ValidateUserAsync(u))
+    .StepAsync(u => SaveUserAsync(u))
+    .ExecuteAsync();
+
+// Option 3: Use DTOs or requests
+var result = await Pipeline.Start(request)
+    .StepAsync(r => ProcessRequestAsync(r))
+    .ExecuteAsync();
+
+// Option 4: Use simple types
+var result = await Pipeline.Start(userId)
+    .StepAsync(id => GetUserAsync(id))
+    .ExecuteAsync();
 ```
+
+**Note:** The generic type parameter `TContext` in API signatures is just a type variable name - it works with any type, not just classes named "Context".
 
 ### 3. Result Pattern
 

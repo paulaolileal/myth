@@ -2,7 +2,26 @@
 
 ## Overview
 
-Myth.Flow.Actions is a comprehensive library that implements **CQRS** (Command Query Responsibility Segregation) and **Event-Driven Architecture** patterns with built-in support for message brokers, caching, circuit breaker, and dead letter queue. It provides a robust dispatcher system for handling commands, queries, and events with resilience patterns.
+**Myth.Flow.Actions** is an **extension library** for **Myth.Flow** that implements **CQRS** (Command Query Responsibility Segregation) and **Event-Driven Architecture** patterns with built-in support for message brokers, caching, circuit breaker, and dead letter queue.
+
+### 🔴 IMPORTANT: Requires Myth.Flow
+
+**Myth.Flow.Actions is NOT a standalone library.** It **extends and depends on Myth.Flow**, adding CQRS and event-driven capabilities on top of the pipeline infrastructure. You **must install and configure Myth.Flow** before using Flow.Actions.
+
+```bash
+# Required installation order
+dotnet add package Myth.Flow        # ← Install Flow first (REQUIRED)
+dotnet add package Myth.Flow.Actions # ← Then install Actions (extends Flow)
+```
+
+**Why Flow.Actions Requires Flow:**
+- Uses Myth.Flow's pipeline infrastructure for handler execution
+- Leverages Flow's retry policies and telemetry
+- Integrates with Flow's service provider management
+- Extends Flow's Result pattern for commands and queries
+- Shares Flow's configuration system
+
+---
 
 **Key Features:**
 - **CQRS Pattern**: Separate command and query handlers with typed responses
@@ -12,11 +31,11 @@ Myth.Flow.Actions is a comprehensive library that implements **CQRS** (Command Q
 - **Resilience Patterns**: Circuit breaker and dead letter queue for failed messages
 - **Auto-Discovery**: Automatic handler registration via assembly scanning
 - **Scoped Services**: Handlers registered as Scoped with automatic scope management
-- **Integration**: Seamless integration with Myth.Flow pipeline pattern
+- **Pipeline Integration**: Seamless integration with Myth.Flow pipelines
 
 **Dependencies:**
 - .NET 8.0+
-- Myth.Flow (pipeline integration)
+- **Myth.Flow** ← **REQUIRED** (base pipeline library)
 - Myth.Commons (base types and service provider)
 - RabbitMQ.Client (optional, for RabbitMQ broker)
 - Confluent.Kafka (optional, for Kafka broker)

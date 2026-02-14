@@ -79,7 +79,7 @@ Extends `BaseTests` with Entity Framework Core in-memory database support.
 public abstract class BaseDatabaseTests<TContext> : BaseTests, IAsyncLifetime
     where TContext : DbContext {
 
-    // Database Lifecycle
+    // Database Lifecycle (OPTIONAL - called automatically when needed)
     Task InitializeDatabaseAsync();
     Task CleanupDatabaseAsync();
     TContext GetContext();
@@ -88,6 +88,42 @@ public abstract class BaseDatabaseTests<TContext> : BaseTests, IAsyncLifetime
     // All service management, configuration, and Faker functionality
 }
 ```
+
+**Note:** `InitializeDatabaseAsync()` and `CleanupDatabaseAsync()` are **optional** - you can call them manually for explicit control, but they are not required in every test method.
+
+---
+
+### BaseMongoDbTests<TContext>
+
+Extends `BaseTests` with **MongoDB** in-memory database support using EphemeralMongo.
+
+```csharp
+public abstract class BaseMongoDbTests<TContext> : BaseTests
+    where TContext : DbContext {
+
+    protected string DatabaseName { get; }
+
+    // Database Lifecycle (AUTOMATIC - no manual calls needed)
+    TContext GetContext();
+    Task<TContext> GetContextAsync();
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    // Inherited from BaseTests:
+    // All service management, configuration, and Faker functionality
+}
+```
+
+**Key Differences from BaseDatabaseTests:**
+- Uses **real MongoDB** instance in memory (not EF In-Memory provider)
+- Database initialization is **automatic** when you call `GetContext()` or `GetContextAsync()`
+- No need to manually call `InitializeDatabaseAsync()` or `CleanupDatabaseAsync()`
+- Change tracker is automatically cleared for fresh data in each test
+- Cleanup happens automatically on `Dispose()/DisposeAsync()`
+
+**When to Use:**
+- Testing MongoDB-specific features (MongoDB.Driver)
+- Testing MongoDB Entity Framework Provider
+- Integration tests that require real MongoDB behavior
 
 ### TestFixture
 
@@ -106,6 +142,121 @@ public abstract class TestFixture : IDisposable {
     public virtual void Dispose();
 }
 ```
+
+### ModelMock<TModel>
+
+Base class for generating mock model entities for testing with Bogus.
+
+```csharp
+public abstract class ModelMock<TModel> where TModel : class {
+    protected readonly Faker _faker;
+
+    // Generate multiple entities
+    public abstract IEnumerable<TModel> Generate(
+        int amount,
+        IDictionary<string, object>? metadata = null);
+
+    // Generate single entity
+    public virtual TModel Generate(IDictionary<string, object>? metadata = null);
+}
+```
+
+**Usage:**
+```csharp
+public class UserMock : ModelMock<User> {
+    public UserMock(Faker faker) : base(faker) { }
+
+    public override IEnumerable<User> Generate(int amount, IDictionary<string, object>? metadata = null) {
+        var users = new List<User>();
+        for (int i = 0; i < amount; i++) {
+            users.Add(new User {
+                Id = _faker.Random.Guid(),
+                Name = _faker.Name.FullName(),
+                Email = _faker.Internet.Email(),
+                Age = _faker.Random.Int(18, 65)
+            });
+        }
+        return users;
+    }
+}
+
+// In test
+var userMock = new UserMock(_faker);
+var user = userMock.Generate();
+var users = userMock.Generate(10);
+```
+
+---
+
+### ModelMockAsync<TContext, TModel>
+
+Base class for generating and persisting mock model entities to database for testing.
+
+```csharp
+public abstract class ModelMockAsync<TContext, TModel>
+    where TContext : DbContext
+    where TModel : class {
+
+    protected readonly Faker _faker;
+    protected readonly TContext _context;
+    protected DbSet<TModel> _collection;
+
+    // Generate and persist multiple entities
+    public abstract Task<IEnumerable<TModel>> GenerateAsync(
+        int amount,
+        IDictionary<string, object>? metadata = null);
+
+    // Generate and persist single entity
+    public virtual Task<TModel> GenerateAsync(
+        IDictionary<string, object>? metadata = null);
+
+    // Save changes to database
+    protected virtual Task SaveChangesAsync(CancellationToken cancellationToken = default);
+}
+```
+
+**Usage:**
+```csharp
+public class UserMockAsync : ModelMockAsync<AppDbContext, User> {
+    public UserMockAsync(AppDbContext context, Faker faker)
+        : base(context, faker) { }
+
+    public override async Task<IEnumerable<User>> GenerateAsync(
+        int amount,
+        IDictionary<string, object>? metadata = null) {
+
+        var users = new List<User>();
+        for (int i = 0; i < amount; i++) {
+            var user = new User {
+                Id = _faker.Random.Guid(),
+                Name = _faker.Name.FullName(),
+                Email = _faker.Internet.Email(),
+                Age = _faker.Random.Int(18, 65),
+                IsActive = true
+            };
+            users.Add(user);
+            await _collection.AddAsync(user);
+        }
+
+        await SaveChangesAsync();
+        return users;
+    }
+}
+
+// In test
+var context = GetContext();
+var userMock = new UserMockAsync(context, _faker);
+var user = await userMock.GenerateAsync();
+var users = await userMock.GenerateAsync(10);
+```
+
+**Benefits:**
+- Automatic database persistence
+- Consistent test data generation
+- Reusable across multiple tests
+- Support for metadata-based customization
+
+---
 
 ### HttpClientMock
 
@@ -245,7 +396,7 @@ public class UserServiceTests : BaseTests {
 }
 ```
 
-### 2. Database Test
+### 2. Database Test (EF Core In-Memory)
 
 ```csharp
 public class UserRepositoryTests : BaseDatabaseTests<UserDbContext> {
@@ -258,9 +409,7 @@ public class UserRepositoryTests : BaseDatabaseTests<UserDbContext> {
 
     [Fact]
     public async Task CreateUser_ShouldPersistToDatabase() {
-        // Arrange
-        await InitializeDatabaseAsync();
-
+        // Arrange - initialization is optional, called automatically if needed
         var user = new UserEntity {
             Name = _faker.Name.FullName(),
             Email = _faker.Internet.Email(),
@@ -280,13 +429,11 @@ public class UserRepositoryTests : BaseDatabaseTests<UserDbContext> {
         dbUser.Should().NotBeNull();
         dbUser.Name.Should().Be(user.Name);
 
-        await CleanupDatabaseAsync();
+        // Cleanup is optional - automatically handled by xUnit disposal
     }
 
     [Fact]
     public async Task GetUsers_WithFilters_ShouldReturnFilteredResults() {
-        await InitializeDatabaseAsync();
-
         // Arrange - Seed data
         var users = new List<UserEntity>();
         for (int i = 0; i < 10; i++) {
@@ -307,8 +454,70 @@ public class UserRepositoryTests : BaseDatabaseTests<UserDbContext> {
         // Assert
         activeUsers.Should().HaveCount(5);
         activeUsers.Should().OnlyContain(u => u.IsActive);
+    }
+}
+```
 
-        await CleanupDatabaseAsync();
+---
+
+### 2.5. MongoDB Database Test
+
+```csharp
+public class OrderRepositoryMongoTests : BaseMongoDbTests<OrderDbContext> {
+    private readonly OrderRepository _repository;
+
+    public OrderRepositoryMongoTests() {
+        AddService<OrderRepository, OrderRepository>();
+        _repository = GetRequiredService<OrderRepository>();
+    }
+
+    [Fact]
+    public async Task CreateOrder_ShouldPersistToMongoDB() {
+        // Arrange - database auto-initializes on first GetContext() call
+        var order = new Order {
+            CustomerId = _faker.Random.Guid(),
+            Items = new List<OrderItem> {
+                new() {
+                    ProductId = _faker.Random.Guid(),
+                    Quantity = _faker.Random.Int(1, 10),
+                    Price = _faker.Random.Decimal(10, 1000)
+                }
+            },
+            Status = OrderStatus.Pending
+        };
+
+        // Act
+        var context = await GetContextAsync(); // Auto-initializes database
+        await context.Orders.AddAsync(order);
+        await SaveChangesAsync(); // Use provided save method
+
+        // Assert
+        var dbOrder = await context.Orders
+            .FirstOrDefaultAsync(o => o.Id == order.Id);
+
+        dbOrder.Should().NotBeNull();
+        dbOrder!.Items.Should().HaveCount(1);
+        dbOrder.Status.Should().Be(OrderStatus.Pending);
+
+        // No manual cleanup needed - automatic on disposal
+    }
+
+    [Fact]
+    public async Task GetOrders_WithSpecification_ShouldFilterCorrectly() {
+        // Arrange - Seed using ModelMockAsync
+        var orderMock = new OrderMockAsync(await GetContextAsync(), _faker);
+        var orders = await orderMock.GenerateAsync(15);
+
+        var spec = SpecBuilder<Order>.Create()
+            .And(o => o.Status == OrderStatus.Pending)
+            .Order(o => o.CreatedAt);
+
+        // Act
+        var pendingOrders = await _repository.FindAsync(spec);
+
+        // Assert
+        pendingOrders.Should().NotBeEmpty();
+        pendingOrders.Should().OnlyContain(o => o.Status == OrderStatus.Pending);
     }
 }
 ```
@@ -584,8 +793,10 @@ public async Task ProcessInvalidData_ShouldThrowSpecificException() {
 
 ### 9. Test Data Generation Patterns
 
+#### Pattern 1: Direct Faker Usage (Simple)
+
 ```csharp
-// Direct usage
+// Direct usage - good for one-off tests
 var user = new User {
     Id = _faker.Random.Guid(),
     Name = _faker.Name.FullName(),
@@ -597,26 +808,145 @@ var user = new User {
         ZipCode = _faker.Address.ZipCode()
     }
 };
+```
 
-// Helper methods
-public static class TestDataHelper {
-    public static User CreateValidUser(Faker faker) => new() {
-        Id = faker.Random.Guid(),
-        Name = faker.Name.FullName(),
-        Email = faker.Internet.Email(),
-        Age = faker.Random.Int(18, 65),
-        IsActive = true,
-        CreatedDate = DateTime.UtcNow
-    };
+---
 
-    public static List<User> CreateUserList(Faker faker, int count) {
-        var users = new List<User>();
-        for (int i = 0; i < count; i++) {
-            users.Add(CreateValidUser(faker));
-        }
-        return users;
+#### Pattern 2: ModelMock (Reusable, No Database)
+
+**Use When:** You need consistent test data generation without database persistence.
+
+```csharp
+// Define mock
+public class UserMock : ModelMock<User> {
+    public UserMock(Faker faker) : base(faker) { }
+
+    public override IEnumerable<User> Generate(
+        int amount,
+        IDictionary<string, object>? metadata = null) {
+
+        var isActive = metadata?.ContainsKey("IsActive") == true
+            ? (bool)metadata["IsActive"]
+            : true;
+
+        return Enumerable.Range(0, amount).Select(_ => new User {
+            Id = _faker.Random.Guid(),
+            Name = _faker.Name.FullName(),
+            Email = _faker.Internet.Email(),
+            Age = _faker.Random.Int(18, 65),
+            IsActive = isActive,
+            CreatedDate = DateTime.UtcNow
+        });
     }
 }
+
+// Usage in tests
+public class UserServiceTests : BaseTests {
+    private readonly UserMock _userMock;
+
+    public UserServiceTests() {
+        _userMock = new UserMock(_faker);
+    }
+
+    [Fact]
+    public void ProcessUsers_ShouldHandleBatch() {
+        // Generate 10 users
+        var users = _userMock.Generate(10).ToList();
+
+        users.Should().HaveCount(10);
+        users.Should().OnlyContain(u => u.IsActive);
+    }
+
+    [Fact]
+    public void ProcessInactiveUsers_ShouldFilter() {
+        // Generate with custom metadata
+        var metadata = new Dictionary<string, object> {
+            ["IsActive"] = false
+        };
+        var users = _userMock.Generate(5, metadata).ToList();
+
+        users.Should().HaveCount(5);
+        users.Should().OnlyContain(u => !u.IsActive);
+    }
+}
+```
+
+---
+
+#### Pattern 3: ModelMockAsync (Database-Backed)
+
+**Use When:** You need to generate AND persist test data to database automatically.
+
+```csharp
+// Define async mock
+public class OrderMockAsync : ModelMockAsync<AppDbContext, Order> {
+    public OrderMockAsync(AppDbContext context, Faker faker)
+        : base(context, faker) { }
+
+    public override async Task<IEnumerable<Order>> GenerateAsync(
+        int amount,
+        IDictionary<string, object>? metadata = null) {
+
+        var status = metadata?.ContainsKey("Status") == true
+            ? (OrderStatus)metadata["Status"]
+            : OrderStatus.Pending;
+
+        var orders = new List<Order>();
+        for (int i = 0; i < amount; i++) {
+            var order = new Order {
+                Id = _faker.Random.Guid(),
+                CustomerId = _faker.Random.Guid(),
+                Status = status,
+                CreatedAt = DateTime.UtcNow,
+                Items = new List<OrderItem> {
+                    new() {
+                        ProductId = _faker.Random.Guid(),
+                        Quantity = _faker.Random.Int(1, 10),
+                        Price = _faker.Random.Decimal(10, 1000)
+                    }
+                }
+            };
+
+            await _collection.AddAsync(order);
+            orders.Add(order);
+        }
+
+        await SaveChangesAsync(); // Persist to database
+        return orders;
+    }
+}
+
+// Usage in database tests
+public class OrderRepositoryTests : BaseDatabaseTests<AppDbContext> {
+    [Fact]
+    public async Task GetPendingOrders_ShouldReturnCorrectly() {
+        // Arrange - Generate and persist to database
+        var context = GetContext();
+        var orderMock = new OrderMockAsync(context, _faker);
+
+        // Generate 5 pending orders
+        var pendingOrders = await orderMock.GenerateAsync(5);
+
+        // Generate 3 confirmed orders
+        var metadata = new Dictionary<string, object> {
+            ["Status"] = OrderStatus.Confirmed
+        };
+        var confirmedOrders = await orderMock.GenerateAsync(3, metadata);
+
+        // Act
+        var repository = GetRequiredService<OrderRepository>();
+        var result = await repository.GetByStatusAsync(OrderStatus.Pending);
+
+        // Assert
+        result.Should().HaveCount(5);
+        result.Should().OnlyContain(o => o.Status == OrderStatus.Pending);
+    }
+}
+```
+
+---
+
+#### Pattern 4: Helper Methods (Legacy)
 
 // Builder pattern
 public class UserBuilder {
@@ -724,16 +1054,17 @@ public class PerformanceTests : BaseTests {
 
 **✅ DO:**
 - Inherit from `BaseTests` for unit tests
-- Inherit from `BaseDatabaseTests<T>` for database tests
+- Inherit from `BaseDatabaseTests<T>` for EF Core in-memory database tests
+- Inherit from `BaseMongoDbTests<T>` for MongoDB tests (automatic initialization)
 - Use constructor for test setup
 - Use `_faker` for realistic test data
-- Call `InitializeDatabaseAsync()` and `CleanupDatabaseAsync()` for database tests
+- *Optionally* call `InitializeDatabaseAsync()` and `CleanupDatabaseAsync()` for explicit control
 
 **❌ DON'T:**
 - Create HttpClient manually (use HttpClientMock)
 - Share state between tests
-- Skip database cleanup
 - Use hardcoded test data
+- Manually call initialization for `BaseMongoDbTests<T>` (it's automatic)
 
 ### 2. Service Management
 
@@ -750,17 +1081,22 @@ public class PerformanceTests : BaseTests {
 
 ### 3. Database Testing
 
-**✅ DO:**
-- Always call `InitializeDatabaseAsync()` at test start
-- Always call `CleanupDatabaseAsync()` at test end
-- Use try/finally for cleanup
+**✅ DO (BaseDatabaseTests<T>):**
+- *Optionally* call `InitializeDatabaseAsync()` and `CleanupDatabaseAsync()` for explicit control
 - Seed data in test methods, not constructors
 - Verify database state after operations
+- Use try/finally if you need explicit cleanup timing
+
+**✅ DO (BaseMongoDbTests<T>):**
+- Use `GetContext()` or `GetContextAsync()` to get database context (auto-initializes)
+- Use `SaveChangesAsync()` to persist changes
+- Let automatic cleanup handle database disposal (DisposeAsync)
+- Seed data using `ModelMockAsync<TContext, TModel>` for consistency
 
 **❌ DON'T:**
 - Share database state between tests
-- Skip initialization or cleanup
-- Use real databases in unit tests
+- Use real production databases in tests
+- Manually initialize database when using `BaseMongoDbTests<T>` (it's automatic)
 
 ### 4. Test Data Generation
 

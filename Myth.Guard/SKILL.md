@@ -29,9 +29,9 @@ Myth.Guard is a declarative, fluent, and context-aware validation library for .N
 - **100+ Validation Rules**: Comprehensive rules for all common types
 - **Async Service Access**: Full DI integration for database/API validation
 - **Fluent API**: Chainable, intuitive syntax
-- **Standalone Validation**: Validate single values outside entity context
-- **Multi-Validation**: Parallel validation of multiple values
-- **Automatic Middleware**: Structured error responses (RFC 9457 Problem Details)
+- **Standalone Validation (Sentry)**: Validate single values outside entity context using `Sentry.For()`
+- **Multi-Validation**: Parallel validation of multiple values using `Validate.All()`
+- **Automatic Middleware**: Structured error responses using RFC 9457 Problem Details format
 - **Custom Messages**: Static or dynamic error messages
 - **HTTP Status Codes**: Configurable per rule
 - **Conditional Rules**: `When()` and `Unless()` modifiers
@@ -555,11 +555,18 @@ public class ShippingAddressDto : IValidatable<ShippingAddressDto> {
 }
 ```
 
-### Example 4: Standalone Validation
+### Example 4: Standalone Validation with Sentry
+
+**Use Case:** Validate individual values outside of entity context (e.g., in services, API endpoints, utilities).
+
+**Sentry** provides standalone validation for single values with full access to service provider for async database/API checks.
 
 ```csharp
 public class UserService {
+    private readonly IServiceProvider _serviceProvider;
+
     public async Task<Result> ValidateEmailAsync(string email) {
+        // Use Sentry.For() for standalone validation
         var validation = Sentry.For(email, "Email")
             .NotEmpty()
             .Email()
@@ -568,9 +575,23 @@ public class UserService {
                 var service = sp.GetRequiredService<IUserRepository>();
                 return !await service.AnyAsync(u => u.Email == e, ct);
             })
-            .WithMessage("Email already exists");
+            .WithMessage("Email already exists")
+            .WithStatusCode(HttpStatusCode.Conflict);
 
         var result = await validation.ValidateAsync(_serviceProvider);
+
+        return result.IsValid
+            ? Result.Success()
+            : Result.Failure(result.Errors.First().Message);
+    }
+
+    public async Task<Result> ValidatePasswordStrengthAsync(string password) {
+        var result = await Sentry.For(password, "Password")
+            .NotEmpty()
+            .MinimumLength(8)
+            .Matches(new Regex(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])"))
+            .WithMessage("Password must contain uppercase, lowercase, number, and special character")
+            .ValidateAsync(_serviceProvider);
 
         return result.IsValid
             ? Result.Success()
@@ -604,7 +625,68 @@ public async Task<ValidationResult> ValidateRegistrationAsync(
 }
 ```
 
-### Example 6: Custom Validation Context
+### Example 6: RFC 9457 Problem Details Error Format
+
+**IMPORTANT:** Myth.Guard uses the **RFC 9457 Problem Details** standard for structured error responses, not custom error codes.
+
+When validation fails, the middleware automatically returns errors in RFC 9457 format:
+
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc9457",
+  "title": "One or more validation errors occurred",
+  "status": 400,
+  "errors": [
+    {
+      "field": "Email",
+      "message": "Email is required",
+      "statusCode": 400
+    },
+    {
+      "field": "Age",
+      "message": "Must be 18 or older",
+      "statusCode": 400
+    }
+  ]
+}
+```
+
+**Configuring Status Codes:**
+```csharp
+builder.For(Email, x => x
+    .Email()
+    .WithMessage("Invalid email format")
+    .WithStatusCode(HttpStatusCode.BadRequest)); // 400
+
+builder.For(Email, x => x
+    .RespectAsync(async (email, ct, sp) => {
+        var exists = await _repository.AnyAsync(u => u.Email == email, ct);
+        return !exists;
+    })
+    .WithMessage("Email already exists")
+    .WithStatusCode(HttpStatusCode.Conflict)); // 409
+
+builder.For(UserId, x => x
+    .NotNull()
+    .WithMessage("User ID is required")
+    .WithStatusCode(422)); // Unprocessable Entity
+```
+
+**Content-Type:**
+```
+Content-Type: application/problem+json
+```
+
+**Benefits of RFC 9457:**
+- ✅ Industry standard format
+- ✅ Machine-readable and parseable
+- ✅ Consistent across all APIs
+- ✅ Supports HTTP status codes per field
+- ✅ Compatible with API gateways and proxies
+
+---
+
+### Example 8: Custom Validation Context
 
 ```csharp
 public class ProductDto : IValidatable<ProductDto> {
