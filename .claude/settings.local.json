@@ -13,7 +13,20 @@
       "Bash(cat:*)",
       "Bash(xargs:*)",
       "Bash(dotnet run:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(findstr:*)",
+      "Bash(ls:*)",
+      "Bash(for dir in Myth.Flow Myth.Guard Myth.Morph Myth.Flow.Actions Myth.Repository.EntityFramework Myth.Rest Myth.Testing Myth.Tool)",
+      "Bash(do echo -n \"$dir: \")",
+      "Bash(if [ -f \"$dir/README.md\" ])",
+      "Bash(then echo \"README.md exists\")",
+      "Bash(else echo \"No README\")",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(for dir in Myth.Commons Myth.Specification Myth.DependencyInjection Myth.Repository Myth.Flow Myth.Guard Myth.Morph Myth.Flow.Actions Myth.Repository.EntityFramework Myth.Rest Myth.Testing Myth.Tool)",
+      "Bash(if [ -f \"$dir/README.pt-br.md\" ])",
+      "Bash(then echo \"EXISTS\")",
+      "Bash(else echo \"MISSING\")"
     ],
     "deny": [],
     "ask": []

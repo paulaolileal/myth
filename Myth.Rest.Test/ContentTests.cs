@@ -7,9 +7,10 @@ using Bogus;
 using FluentAssertions;
 using Myth.Constants;
 using Myth.Exceptions;
+using Myth.Interfaces;
+using Myth.Mocks;
 using Myth.Rest.Test.Base;
 using Myth.Rest.Test.Models;
-using Myth.Testing.Mocks;
 using Xunit;
 
 namespace Myth.Rest.Test;
@@ -17,12 +18,22 @@ namespace Myth.Rest.Test;
 public class ContentTests : BaseTests {
 	private readonly Faker<Post> _postFaker;
 
+	private readonly Faker<Error> _errorFaker;
+
+	private readonly IRestBuilder _restClient;
+
 	public ContentTests( ) {
 		_postFaker = new Faker<Post>( )
 			.RuleFor( prop => prop.Id, r => r.UniqueIndex )
 			.RuleFor( prop => prop.Title, r => r.Lorem.Lines( 1 ) )
 			.RuleFor( prop => prop.Body, r => r.Lorem.Text( ) )
 			.RuleFor( prop => prop.UserId, r => r.Random.Guid( ) );
+
+		_errorFaker = new Faker<Error>( )
+			.RuleFor( prop => prop.ErrorCode, r => r.UniqueIndex )
+			.RuleFor( prop => prop.Message, r => r.Lorem.Sentence( ) );
+
+		_restClient = new RestBuilder( );
 	}
 
 	[Fact]
@@ -829,7 +840,9 @@ public class ContentTests : BaseTests {
 
 		// Act
 		var response = await _restClient
-			.Configure( settings => settings.WithClient( client ) )
+			.Configure( settings => settings
+				.WithClient( client )
+				.WithTypeConverter<IPost, Post>( ))
 			.DoGet( "get-interface" )
 			.OnResult( resp => resp
 				.UseTypeForSuccess<IPost>( ) )
