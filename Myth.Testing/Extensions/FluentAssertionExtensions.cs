@@ -3,7 +3,7 @@ using FluentAssertions;
 using FluentAssertions.Primitives;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Myth.Testing.Extensions;
+namespace Myth.Extensions;
 
 public static class FluentAssertionExtensions {
 

@@ -40,6 +40,7 @@
     <File Path="Logo.jpg" />
     <File Path="README.md" />
     <File Path="README.pt-br.md" />
+    <File Path="SKILL.md" />
   </Folder>
   <Folder Name="/Specification/">
     <Project Path="Myth.Specification.Test/Myth.Specification.Test.csproj" />

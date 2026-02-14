@@ -4,10 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Myth.Mocks;
 using Myth.ServiceProvider;
-using Myth.Testing.Mocks;
 
-namespace Myth.Testing;
+namespace Myth;
 
 /// <summary>
 /// Base for unit tests

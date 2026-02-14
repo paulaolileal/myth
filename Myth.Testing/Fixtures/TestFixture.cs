@@ -1,7 +1,7 @@
 using Bogus;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Myth.Testing.Fixtures;
+namespace Myth.Fixtures;
 
 /// <summary>
 /// A shared test fixture for managing test resources across multiple test classes

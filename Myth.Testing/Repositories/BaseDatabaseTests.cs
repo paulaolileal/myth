@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Myth.Testing.Repositories;
+namespace Myth.Repositories;
 
 /// <summary>
 /// A base class to unit tests who needs database context

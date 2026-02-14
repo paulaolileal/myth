@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Myth.Extensions;
 
-namespace Myth.Testing.Extensions;
+namespace Myth.Extensions;
 
 public static class ActionResultExtensions {
 

@@ -1,7 +1,7 @@
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 
-namespace Myth.Testing.Mocks;
+namespace Myth.Mocks;
 
 internal class HostEnvironmentMock : IHostEnvironment {
 	public string ApplicationName { get; set; } = "ApplicationTest.Api";
