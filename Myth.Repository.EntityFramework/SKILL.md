@@ -41,8 +41,8 @@ dotnet add package Myth.Repository.EntityFramework
 
 ### Dependencies
 - .NET 10.0
-- Microsoft.EntityFrameworkCore (10.0.0+)
-- Microsoft.EntityFrameworkCore.Relational (10.0.0+)
+- Microsoft.EntityFrameworkCore (10.0.3+)
+- Microsoft.EntityFrameworkCore.Relational (10.0.3+)
 - Myth.Repository
 - Myth.Specification
 - Myth.DependencyInjection
