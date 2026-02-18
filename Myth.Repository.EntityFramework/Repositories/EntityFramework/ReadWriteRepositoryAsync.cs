@@ -7,7 +7,7 @@ using Myth.ValueObjects;
 
 namespace Myth.Repositories.EntityFramework;
 
-public abstract class ReadWriteRepositoryAsync<TEntity>( BaseContext context ) : IAsyncDisposable, IReadWriteRepositoryAsync<TEntity> where TEntity : class {
+public abstract class ReadWriteRepositoryAsync<TEntity>( BaseContext context ) : IDisposable, IAsyncDisposable, IReadWriteRepositoryAsync<TEntity> where TEntity : class {
 	protected readonly BaseContext _context = context;
 
 	private readonly IReadRepositoryAsync<TEntity> _readRepository = new ReadRepositoryAsync<TEntity>( context );
@@ -307,6 +307,14 @@ public abstract class ReadWriteRepositoryAsync<TEntity>( BaseContext context ) :
 	/// <returns>A queryable collection of entities that satisfy the predicate</returns>
 	public virtual IQueryable<TEntity> Where( Expression<Func<TEntity, bool>> predicate ) =>
 		_readRepository.Where( predicate );
+
+	/// <summary>
+	/// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources
+	/// </summary>
+	public void Dispose( ) {
+		_context?.Dispose( );
+		GC.SuppressFinalize( this );
+	}
 
 	/// <summary>
 	/// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources asynchronously

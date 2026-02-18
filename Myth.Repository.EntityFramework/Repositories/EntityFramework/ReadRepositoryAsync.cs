@@ -5,7 +5,7 @@ using Myth.Interfaces.Repositories.EntityFramework;
 namespace Myth.Repositories.EntityFramework;
 
 public partial class ReadRepositoryAsync<TEntity>( BaseContext context )
-	: IReadRepositoryAsync<TEntity> where TEntity : class {
+	: IReadRepositoryAsync<TEntity>, IDisposable, IAsyncDisposable where TEntity : class {
 	protected readonly BaseContext _context = context;
 
 	/// <summary>
@@ -44,6 +44,14 @@ public partial class ReadRepositoryAsync<TEntity>( BaseContext context )
 	/// </summary>
 	/// <returns>A value with the name</returns>
 	public virtual string? GetProviderName( ) => _context.Database.ProviderName;
+
+	/// <summary>
+	/// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources
+	/// </summary>
+	public void Dispose( ) {
+		_context?.Dispose( );
+		GC.SuppressFinalize( this );
+	}
 
 	/// <summary>
 	/// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources asynchronously
