@@ -53,7 +53,7 @@ internal sealed class Validator( IServiceProvider serviceProvider ) : IValidator
 				var ruleContext = new RuleContext<object>(
 					value: GetFieldValue( entity, fieldValidation.FieldName ),
 					fieldName: fieldValidation.FieldName,
-					serviceProvider: MythServiceProvider.GetOrFallback( _serviceProvider ),
+					serviceProvider: _serviceProvider ?? MythServiceProvider.Current ?? throw new InvalidOperationException( "No service provider available" ),
 					cancellationToken: cancellationToken,
 					entity: entity
 				);
