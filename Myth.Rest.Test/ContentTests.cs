@@ -842,7 +842,7 @@ public class ContentTests : BaseTests {
 		var response = await _restClient
 			.Configure( settings => settings
 				.WithClient( client )
-				.WithTypeConverter<IPost, Post>( ))
+				.WithTypeConverter<IPost, Post>( ) )
 			.DoGet( "get-interface" )
 			.OnResult( resp => resp
 				.UseTypeForSuccess<IPost>( ) )

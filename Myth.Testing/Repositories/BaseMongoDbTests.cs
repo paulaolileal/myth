@@ -4,7 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
 using MongoDB.EntityFrameworkCore.Extensions;
 
-namespace Myth.Repositories; 
+namespace Myth.Repositories;
+
 /// <summary>
 /// A base class for unit tests that need MongoDB context
 /// </summary>

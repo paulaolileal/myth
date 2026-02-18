@@ -9,13 +9,12 @@ namespace Myth.Testing.Test.Mocks;
 /// <summary>
 /// Async mock generator for User entities with database context
 /// </summary>
-public class UserMockAsync : ModelMockAsync<UserDbContext, User> {
-	/// <summary>
-	/// Initialize UserMockAsync with context and Faker instance
-	/// </summary>
-	/// <param name="context">Database context</param>
-	/// <param name="faker">Faker instance for data generation</param>
-	public UserMockAsync( UserDbContext context, Faker faker ) : base( context, faker ) { }
+/// <remarks>
+/// Initialize UserMockAsync with context and Faker instance
+/// </remarks>
+/// <param name="context">Database context</param>
+/// <param name="faker">Faker instance for data generation</param>
+public class UserMockAsync( UserDbContext context, Faker faker ) : ModelMockAsync<UserDbContext, User>( context, faker ) {
 
 	/// <summary>
 	/// Generate multiple User instances asynchronously
@@ -33,12 +32,12 @@ public class UserMockAsync : ModelMockAsync<UserDbContext, User> {
 
 		if ( metadata != null ) {
 			if ( metadata.ContainsKey( "Name" ) )
-				userFaker.RuleFor( u => u.Name, metadata["Name"].ToString( )! );
-			
+				userFaker.RuleFor( u => u.Name, metadata[ "Name" ].ToString( )! );
+
 			if ( metadata.ContainsKey( "Email" ) )
-				userFaker.RuleFor( u => u.Email, metadata["Email"].ToString( )! );
-			
-			if ( metadata.ContainsKey( "SaveToDatabase" ) && (bool)metadata["SaveToDatabase"] ) {
+				userFaker.RuleFor( u => u.Email, metadata[ "Email" ].ToString( )! );
+
+			if ( metadata.ContainsKey( "SaveToDatabase" ) && ( bool )metadata[ "SaveToDatabase" ] ) {
 				var users = userFaker.Generate( amount );
 				await _collection.AddRangeAsync( users );
 				await SaveChangesAsync( );

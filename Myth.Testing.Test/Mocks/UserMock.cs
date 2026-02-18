@@ -7,12 +7,11 @@ namespace Myth.Testing.Test.Mocks;
 /// <summary>
 /// Mock generator for User entities
 /// </summary>
-public class UserMock : ModelMock<User> {
-	/// <summary>
-	/// Initialize UserMock with Faker instance
-	/// </summary>
-	/// <param name="faker">Faker instance for data generation</param>
-	public UserMock( Faker faker ) : base( faker ) { }
+/// <remarks>
+/// Initialize UserMock with Faker instance
+/// </remarks>
+/// <param name="faker">Faker instance for data generation</param>
+public class UserMock( Faker faker ) : ModelMock<User>( faker ) {
 
 	/// <summary>
 	/// Generate multiple User instances
@@ -30,10 +29,10 @@ public class UserMock : ModelMock<User> {
 
 		if ( metadata != null ) {
 			if ( metadata.ContainsKey( "Name" ) )
-				userFaker.RuleFor( u => u.Name, metadata["Name"].ToString( )! );
-			
+				userFaker.RuleFor( u => u.Name, metadata[ "Name" ].ToString( )! );
+
 			if ( metadata.ContainsKey( "Email" ) )
-				userFaker.RuleFor( u => u.Email, metadata["Email"].ToString( )! );
+				userFaker.RuleFor( u => u.Email, metadata[ "Email" ].ToString( )! );
 		}
 
 		return userFaker.Generate( amount );

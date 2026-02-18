@@ -110,7 +110,7 @@ public class ModelMockAsyncTests : BaseDatabaseTests<UserDbContext> {
 		var context = GetContext( );
 		var savedUsers = await context.Users.ToListAsync( );
 		savedUsers.Should( ).HaveCount( 3 );
-		
+
 		foreach ( var user in users ) {
 			savedUsers.Should( ).Contain( u => u.Email == user.Email );
 		}

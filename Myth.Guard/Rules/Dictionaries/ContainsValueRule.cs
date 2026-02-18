@@ -6,13 +6,9 @@ namespace Myth.Rules.Dictionaries;
 /// <summary>
 /// Validation rule that checks if a dictionary contains a specific value
 /// </summary>
-public sealed class ContainsValueRule<TKey, TValue> : ValidationRuleBase<IDictionary<TKey, TValue>> {
+public sealed class ContainsValueRule<TKey, TValue>( TValue value ) : ValidationRuleBase<IDictionary<TKey, TValue>> {
 
-	private readonly TValue _value;
-
-	public ContainsValueRule( TValue value ) {
-		_value = value;
-	}
+	private readonly TValue _value = value;
 
 	protected override Task<bool> EvaluateAsync( RuleContext<IDictionary<TKey, TValue>> context ) {
 		if ( context.Value is null )

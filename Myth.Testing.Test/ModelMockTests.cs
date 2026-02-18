@@ -145,8 +145,8 @@ public class ModelMockTests {
 		var users = _userMock.Generate( 5 );
 
 		// Assert
-		users.Should( ).AllSatisfy( u => 
-			u.CreatedAt.Should( ).BeBefore( DateTime.UtcNow ) 
+		users.Should( ).AllSatisfy( u =>
+			u.CreatedAt.Should( ).BeBefore( DateTime.UtcNow )
 		);
 	}
 
