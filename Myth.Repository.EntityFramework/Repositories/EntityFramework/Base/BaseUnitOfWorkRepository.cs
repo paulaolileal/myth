@@ -7,7 +7,7 @@ using Myth.Interfaces.Repositories.EntityFramework;
 
 namespace Myth.Repositories.EntityFramework.Base;
 
-public abstract class BaseUnitOfWorkRepository( BaseContext context ) : IUnitOfWorkRepository, IAsyncDisposable {
+public abstract class BaseUnitOfWorkRepository( BaseContext context ) : IUnitOfWorkRepository, IDisposable, IAsyncDisposable {
 	protected readonly BaseContext _context = context;
 	private IDbContextTransaction? _transaction;
 
@@ -92,6 +92,15 @@ public abstract class BaseUnitOfWorkRepository( BaseContext context ) : IUnitOfW
 	public virtual Task<int> ExecuteSqlAsync( string query, IEnumerable<object>? parameters = null, CancellationToken cancellationToken = default ) {
 		parameters ??= [ ];
 		return _context.Database.ExecuteSqlRawAsync( query, parameters, cancellationToken );
+	}
+
+	/// <summary>
+	/// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources
+	/// </summary>
+	public void Dispose( ) {
+		_transaction?.Dispose( );
+		_context?.Dispose( );
+		GC.SuppressFinalize( this );
 	}
 
 	/// <summary>
