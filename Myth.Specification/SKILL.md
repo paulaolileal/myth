@@ -1016,6 +1016,63 @@ if (minPrice.HasValue)
 
 ---
 
+### 6. Format Specification Chains on Multiple Lines
+
+Break the `SpecBuilder` chain across multiple lines to improve readability. Each method call should be on its own line with consistent indentation.
+
+**✅ DO:**
+```csharp
+var spec = SpecBuilder<Idea>
+    .Create()
+    .HasId(command.IdeaId)
+    .IsActive()
+    .Order(i => i.CreatedAt);
+```
+
+**❌ DON'T:**
+```csharp
+var spec = SpecBuilder<Idea>.Create().HasId(command.IdeaId).IsActive().Order(i => i.CreatedAt);
+```
+
+**Benefits:**
+- **Readability**: Each filter is visible at a glance
+- **Diffs**: Git diffs are cleaner when adding/removing individual steps
+- **Debugging**: Easier to comment out a single step during debugging
+
+---
+
+### 7. Use Repository Methods Directly with Specifications
+
+When the repository exposes methods that accept `ISpec<T>` directly (e.g., `FirstOrDefaultAsync`, `ToListAsync`, `CountAsync`), prefer those over manually chaining `.Where(spec)` on a queryable, as mixing EF Core query chains with specifications breaks the abstraction and makes the intent less clear.
+
+**✅ DO:**
+```csharp
+var spec = SpecBuilder<Project>
+    .Create()
+    .HasId(command.ProjectId)
+    .IsActive();
+
+var project = await projectRepository.FirstOrDefaultAsync(spec, cancellationToken);
+```
+
+**❌ DON'T:**
+```csharp
+var spec = SpecBuilder<Project>
+    .Create()
+    .HasId(command.ProjectId)
+    .IsActive();
+
+// Bypasses the repository abstraction and leaks EF Core concerns
+var project = await projectRepository
+    .Where(spec)
+    .Include(p => p.Members)
+    .FirstOrDefaultAsync(cancellationToken);
+```
+
+> **Note:** If you need to apply `.Include()` or other EF Core-specific operations, keep those inside the repository implementation, not in the caller. The caller should only provide the specification.
+
+---
+
 ## Troubleshooting
 
 ### Issue 1: Expression Cannot Be Translated to SQL

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Myth.DependencyInjection
+
+#### 🐛 Fixed
+
+- **ReflectionTypeLoadException in TypeProvider**
+  - Fixed random `ReflectionTypeLoadException` when calling `services.AddRepositories()` or other auto-registration methods
+  - Added proper exception handling for `ReflectionTypeLoadException` in `GetTypesFromAssembly()` method
+  - When assembly type loading fails, only successfully loaded types are returned instead of throwing exception
+  - Added filtering to exclude known problematic system assemblies (Microsoft.Build, Microsoft.CodeAnalysis, etc.)
+  - Prevents loading types from assemblies with missing dependencies like `Microsoft.Build` version conflicts
+  - Impact: Resolves issue where `AddRepositories()` would fail with "Method 'ImportMetadata' does not have an implementation" error
+
 ### Myth.Guard
 
 #### ✨ Added
