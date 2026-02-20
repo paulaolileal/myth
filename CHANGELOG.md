@@ -19,6 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Prevents loading types from assemblies with missing dependencies like `Microsoft.Build` version conflicts
   - Impact: Resolves issue where `AddRepositories()` would fail with "Method 'ImportMetadata' does not have an implementation" error
 
+### Myth.Morph
+
+#### 🐛 Fixed
+
+- **ReflectionTypeLoadException in SchemaRegistry**
+  - Fixed verbose warning logs when registering morph profiles with problematic assemblies
+  - Added `GetTypesFromAssembly()` method with proper exception handling for `ReflectionTypeLoadException`
+  - Added `IsSystemAssembly()` filter to exclude known problematic system assemblies (Microsoft.Build, Microsoft.CodeAnalysis, etc.)
+  - When assembly type loading fails, only successfully loaded types are used for profile registration
+  - Reduced log level from `Warning` to `Debug` for partial type loading to minimize noise
+  - Impact: Eliminates verbose exception logs during `AddMorph()` initialization while maintaining functionality
+
 ### Myth.Guard
 
 #### ✨ Added
