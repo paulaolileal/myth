@@ -66,10 +66,12 @@ public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity
 	/// <param name="specification">Predicate based on specification</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>A value that represents the count</returns>
-	public virtual Task<int> CountAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) =>
-		_context
-			.Set<TEntity>( )
-			.CountAsync( specification.Predicate, cancellationToken );
+	public virtual Task<int> CountAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) {
+		var query = _context.Set<TEntity>( ).AsQueryable( );
+		query = specification.Included( query );
+		query = specification.Filtered( query );
+		return query.CountAsync( cancellationToken );
+	}
 
 	/// <summary>
 	/// Searches if any element is satisfied by specification
@@ -77,10 +79,12 @@ public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity
 	/// <param name="specification">Predicate based on specification</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>A value that represents the answer</returns>
-	public virtual Task<bool> AnyAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) =>
-		_context
-			.Set<TEntity>( )
-			.AnyAsync( specification.Predicate, cancellationToken );
+	public virtual Task<bool> AnyAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) {
+		var query = _context.Set<TEntity>( ).AsQueryable( );
+		query = specification.Included( query );
+		query = specification.Filtered( query );
+		return query.AnyAsync( cancellationToken );
+	}
 
 	/// <summary>
 	/// Get the first element of collection that is satisfied by specification
@@ -89,9 +93,9 @@ public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>An entity or null if not found</returns>
 	public virtual Task<TEntity?> FirstOrDefaultAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) =>
-		_context
-			.Set<TEntity>( )
-			.FirstOrDefaultAsync( specification.Predicate, cancellationToken );
+		specification
+			.Prepare( _context.Set<TEntity>( ).AsQueryable( ) )
+			.FirstOrDefaultAsync( cancellationToken );
 
 	/// <summary>
 	/// Get the last element of collection that is satisfied by specification
@@ -100,9 +104,9 @@ public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>An entity or null if not found</returns>
 	public virtual Task<TEntity?> LastOrDefaultAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) =>
-		_context
-			.Set<TEntity>( )
-			.LastOrDefaultAsync( specification.Predicate, cancellationToken );
+		specification
+			.Prepare( _context.Set<TEntity>( ).AsQueryable( ) )
+			.LastOrDefaultAsync( cancellationToken );
 
 	/// <summary>
 	/// Get the first element of collection that is satisfied by specification
@@ -112,9 +116,9 @@ public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity
 	/// <returns>An entity</returns>
 	/// <exception cref="InvalidOperationException">Thrown when no element is found</exception>
 	public virtual Task<TEntity> FirstAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) =>
-		_context
-			.Set<TEntity>( )
-			.FirstAsync( specification.Predicate, cancellationToken );
+		specification
+			.Prepare( _context.Set<TEntity>( ).AsQueryable( ) )
+			.FirstAsync( cancellationToken );
 
 	/// <summary>
 	/// Get the last element of collection that is satisfied by specification
@@ -124,9 +128,9 @@ public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity
 	/// <returns>An entity</returns>
 	/// <exception cref="InvalidOperationException">Thrown when no element is found</exception>
 	public virtual Task<TEntity> LastAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) =>
-		_context
-			.Set<TEntity>( )
-			.LastAsync( specification.Predicate, cancellationToken );
+		specification
+			.Prepare( _context.Set<TEntity>( ).AsQueryable( ) )
+			.LastAsync( cancellationToken );
 
 	/// <summary>
 	/// Searches if all elements are satisfied by specification

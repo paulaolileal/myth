@@ -913,6 +913,72 @@ try {
 await _unitOfWork.CommitAsync();
 ```
 
+### 6. Use Specifications with Include for Eager Loading
+
+**✅ DO:**
+```csharp
+// Define spec with includes
+var spec = SpecBuilder<Project>
+    .Create()
+    .HasId(projectId)
+    .IsActive()
+    .Include(q => q.Include(p => p.Members)
+                   .ThenInclude(m => m.User));
+
+// Repository automatically applies includes
+var project = await _projectRepository.FirstOrDefaultAsync(spec, ct);
+```
+
+**❌ DON'T:**
+```csharp
+// Bypasses repository abstraction and leaks EF Core concerns
+var project = await _projectRepository
+    .Where(spec)
+    .Include(p => p.Members)
+    .ThenInclude(m => m.User)
+    .FirstOrDefaultAsync(ct);
+```
+
+**Why?**
+- Keeps eager loading logic **inside the specification**, not in the caller
+- Repository methods like `FirstOrDefaultAsync`, `SearchAsync`, etc. automatically apply includes from the spec
+- Maintains clean separation: specifications define **what to load**, repositories define **how to access**
+- Better for testing: mocks don't need to handle EF Core's `Include` extensions
+
+**Complete Example:**
+```csharp
+// Specification extensions with includes
+public static class ProjectSpecifications {
+    public static ISpec<Project> WithMembers(this ISpec<Project> spec) =>
+        spec.Include(q => q.Include(p => p.Members));
+
+    public static ISpec<Project> WithFullDetails(this ISpec<Project> spec) =>
+        spec.Include(q => q.Include(p => p.Members)
+                           .ThenInclude(m => m.User)
+                           .Include(p => p.Tasks)
+                           .Include(p => p.Owner));
+}
+
+// Usage in service/handler
+public class GetProjectHandler : IQueryHandler<GetProjectQuery, ProjectDto> {
+    private readonly IProjectRepository _repository;
+
+    public async Task<QueryResult<ProjectDto>> HandleAsync(
+        GetProjectQuery query,
+        CancellationToken ct) {
+
+        var spec = SpecBuilder<Project>
+            .Create()
+            .HasId(query.ProjectId)
+            .IsActive()
+            .WithFullDetails();  // Include is part of the spec
+
+        var project = await _repository.FirstOrDefaultAsync(spec, ct);
+        return QueryResult<ProjectDto>.Success(project.ToDto());
+    }
+}
+```
+
 ---
 
 ## Summary

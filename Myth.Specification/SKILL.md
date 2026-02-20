@@ -108,6 +108,9 @@ public interface ISpec<T> {
 
     // Post-processing (Skip/Take/Distinct)
     Func<IQueryable<T>, IQueryable<T>> PostProcess { get; }
+
+    // Eager loading (Include/ThenInclude)
+    Func<IQueryable<T>, IQueryable<T>>? Includes { get; }
 }
 ```
 
@@ -213,6 +216,47 @@ var spec = SpecBuilder<User>.Create()
     .WithPagination(Pagination.All);  // No pagination
 ```
 
+#### Eager Loading Methods
+
+```csharp
+// Include navigation properties for eager loading (EF Core)
+ISpec<T> Include(Func<IQueryable<T>, IQueryable<T>> includeQuery);
+```
+
+**Examples:**
+
+```csharp
+// Single Include
+var spec = SpecBuilder<Project>
+    .Create()
+    .HasId(projectId)
+    .Include(q => q.Include(p => p.Members));
+
+// Multiple Includes
+var spec = SpecBuilder<Project>
+    .Create()
+    .Include(q => q.Include(p => p.Members)
+                   .Include(p => p.Tasks));
+
+// Nested ThenInclude
+var spec = SpecBuilder<Project>
+    .Create()
+    .Include(q => q.Include(p => p.Members)
+                   .ThenInclude(m => m.User)
+                   .ThenInclude(u => u.Profile));
+
+// Complex Include chains
+var spec = SpecBuilder<Order>
+    .Create()
+    .IsActive()
+    .Include(q => q.Include(o => o.Customer)
+                   .Include(o => o.Items)
+                       .ThenInclude(i => i.Product)
+                   .Include(o => o.ShippingAddress));
+```
+
+> **Note:** The `Include()` method uses EF Core's `Include` and `ThenInclude` extension methods. The includes are applied before filters in the query pipeline. This ensures that navigation properties are available for filtering and are loaded efficiently with the main query.
+
 #### Post-Processing Methods
 
 ```csharp
@@ -230,8 +274,11 @@ var spec = SpecBuilder<User>.Create()
 #### Execution Methods
 
 ```csharp
-// Apply all operations (Filter + Sort + Post-process)
+// Apply all operations (Include + Filter + Sort + Post-process)
 IQueryable<T> Prepare(IQueryable<T> query);
+
+// Apply only includes (eager loading)
+IQueryable<T> Included(IQueryable<T> query);
 
 // Apply only filter
 IQueryable<T> Filtered(IQueryable<T> query);
@@ -252,29 +299,34 @@ IQueryable<T> SatisfyingItemsFrom(IQueryable<T> query);
 **Examples:**
 
 ```csharp
-var spec = SpecBuilder<User>.Create()
-    .And(u => u.IsActive)
-    .Order(u => u.Name)
+var spec = SpecBuilder<Project>
+    .Create()
+    .And(p => p.IsActive)
+    .Include(q => q.Include(p => p.Members))
+    .Order(p => p.Name)
     .Skip(10)
     .Take(10);
 
-// Apply everything
-var users = spec.Prepare(_context.Users).ToList();
+// Apply everything (includes + filter + sort + pagination)
+var projects = spec.Prepare(_context.Projects).ToList();
+
+// Apply only includes
+var included = spec.Included(_context.Projects);
 
 // Apply only filter
-var filtered = spec.Filtered(_context.Users);
+var filtered = spec.Filtered(_context.Projects);
 
 // Apply only sort
-var sorted = spec.Sorted(_context.Users);
+var sorted = spec.Sorted(_context.Projects);
 
 // Apply only pagination
-var paginated = spec.Processed(_context.Users);
+var paginated = spec.Processed(_context.Projects);
 
-// Get single item
-var user = spec.SatisfyingItemFrom(_context.Users);
+// Get single item (applies full spec)
+var project = spec.SatisfyingItemFrom(_context.Projects);
 
 // Get query for further processing
-var query = spec.SatisfyingItemsFrom(_context.Users);
+var query = spec.SatisfyingItemsFrom(_context.Projects);
 var result = await query.ToListAsync();
 ```
 
@@ -764,6 +816,96 @@ public class ReportService {
     }
 }
 ```
+
+---
+
+### Example 8: Eager Loading with Include
+
+```csharp
+// Define spec extensions with includes
+public static class ProjectSpecifications {
+    public static ISpec<Project> HasId(this ISpec<Project> spec, Guid id) =>
+        spec.And(p => p.Id == id);
+
+    public static ISpec<Project> IsActive(this ISpec<Project> spec) =>
+        spec.And(p => !p.IsDeleted && p.Status == ProjectStatus.Active);
+
+    public static ISpec<Project> WithMembers(this ISpec<Project> spec) =>
+        spec.Include(q => q.Include(p => p.Members));
+
+    public static ISpec<Project> WithMembersAndRoles(this ISpec<Project> spec) =>
+        spec.Include(q => q.Include(p => p.Members)
+                           .ThenInclude(m => m.Role));
+
+    public static ISpec<Project> WithFullDetails(this ISpec<Project> spec) =>
+        spec.Include(q => q.Include(p => p.Members)
+                           .ThenInclude(m => m.User)
+                           .Include(p => p.Tasks)
+                           .ThenInclude(t => t.Assignee)
+                           .Include(p => p.Owner));
+}
+
+// Usage in repository
+public class ProjectRepository {
+    private readonly ApplicationDbContext _context;
+
+    // Simple query with eager loading
+    public async Task<Project?> GetByIdWithMembersAsync(Guid id, CancellationToken ct) {
+        var spec = SpecBuilder<Project>
+            .Create()
+            .HasId(id)
+            .IsActive()
+            .WithMembers();
+
+        return await _context.Projects
+            .Specify(spec)
+            .FirstOrDefaultAsync(ct);
+    }
+
+    // Complex query with multiple includes
+    public async Task<List<Project>> GetActiveProjectsWithDetailsAsync(
+        string? searchTerm,
+        Pagination pagination,
+        CancellationToken ct) {
+
+        var spec = SpecBuilder<Project>
+            .Create()
+            .IsActive()
+            .AndIf(!string.IsNullOrEmpty(searchTerm), p => p.Name.Contains(searchTerm!))
+            .WithFullDetails()
+            .Order(p => p.Name)
+            .WithPagination(pagination);
+
+        return await _context.Projects
+            .Specify(spec)
+            .ToListAsync(ct);
+    }
+
+    // Using repository methods with specs containing includes
+    public async Task<Project?> GetProjectDetailsAsync(Guid projectId, CancellationToken ct) {
+        var spec = SpecBuilder<Project>
+            .Create()
+            .HasId(projectId)
+            .Include(q => q.Include(p => p.Members)
+                           .ThenInclude(m => m.User)
+                           .ThenInclude(u => u.Profile)
+                           .Include(p => p.Tasks)
+                           .Include(p => p.Documents));
+
+        // Repository's FirstOrDefaultAsync automatically applies the full spec
+        // including includes, filters, and sorting
+        return await _repository.FirstOrDefaultAsync(spec, ct);
+    }
+}
+```
+
+**Key Points:**
+
+- `.Include()` is applied **before filters** in the query pipeline, ensuring navigation properties are eagerly loaded
+- Multiple includes can be chained together
+- `ThenInclude()` loads nested navigation properties
+- Includes work seamlessly with repository methods like `FirstOrDefaultAsync`, `SearchAsync`, etc.
+- Spec extensions can encapsulate common include patterns (e.g., `WithFullDetails()`)
 
 ---
 

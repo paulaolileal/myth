@@ -93,7 +93,7 @@ public static class TypeProvider {
 		var name = assembly.GetName( ).Name ?? string.Empty;
 
 		// Exclude known problematic assemblies
-		var excludedPrefixes = new[] {
+		var excludedPrefixes = new[ ] {
 			"Microsoft.Build",
 			"Microsoft.CodeAnalysis",
 			"Microsoft.VisualStudio",
