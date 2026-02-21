@@ -447,6 +447,80 @@ services.AddFlow( config => config
         .ScanAssemblies( typeof( Program ).Assembly )));
 ```
 
+#### Gerenciamento de Cache
+
+Myth.Flow.Actions fornece `ICacheManager` para invalidação e gerenciamento manual de cache:
+
+```csharp
+public class UpdateUserHandler : ICommandHandler<UpdateUserCommand, Guid> {
+    private readonly IUserRepository _repository;
+    private readonly ICacheManager _cacheManager;
+
+    public async Task<CommandResult<Guid>> HandleAsync(
+        UpdateUserCommand command,
+        CancellationToken ct) {
+
+        // Atualizar usuário
+        var user = await _repository.GetByIdAsync(command.Id, ct);
+        user.Name = command.Name;
+        await _repository.UpdateAsync(user, ct);
+
+        // Invalidar cache de query específica
+        await _cacheManager.InvalidateByTypeAsync(
+            new GetUserQuery { UserId = command.Id }, ct);
+
+        // Ou invalidar todas as queries de um tipo
+        await _cacheManager.InvalidateByTypeAsync<GetUserListQuery>(ct);
+
+        // Ou invalidar por padrão (útil para limpar caches relacionados)
+        await _cacheManager.InvalidateByPatternAsync("GetUser*", ct);
+
+        return CommandResult<Guid>.Success(command.Id);
+    }
+}
+```
+
+**Métodos do ICacheManager:**
+
+```csharp
+public interface ICacheManager {
+    // Obter/Definir valores de cache manualmente
+    Task<T?> GetAsync<T>(string key, CancellationToken ct = default);
+    Task SetAsync<T>(string key, T value, TimeSpan ttl, bool slidingExpiration = false, CancellationToken ct = default);
+
+    // Invalidar chave específica
+    Task InvalidateAsync(string key, CancellationToken ct = default);
+
+    // Invalidar por padrão (ex: "User:*")
+    Task InvalidateByPatternAsync(string pattern, CancellationToken ct = default);
+
+    // Invalidar por tipo de query
+    Task InvalidateByTypeAsync<TQuery>(TQuery? query = default, CancellationToken ct = default);
+
+    // Gerar chave de cache compatível com Dispatcher
+    string GenerateKey<TQuery>(TQuery query);
+}
+```
+
+**Padrões de Uso:**
+
+```csharp
+// 1. Invalidar query específica após comando
+await _cacheManager.InvalidateByTypeAsync(new GetUserQuery { Id = userId });
+
+// 2. Invalidar todas as queries de um tipo
+await _cacheManager.InvalidateByTypeAsync<GetUserListQuery>();
+
+// 3. Invalidar por padrão (Redis suporta wildcards)
+await _cacheManager.InvalidateByPatternAsync("User:*");
+
+// 4. Geração manual de chave de cache
+var key = _cacheManager.GenerateKey(new GetUserQuery { Id = 123 });
+await _cacheManager.InvalidateAsync(key);
+```
+
+**Nota:** A invalidação baseada em padrões (`InvalidateByPatternAsync`) tem suporte limitado no MemoryCache. Para cenários de produção que requerem correspondência de padrões, use o provedor de cache Redis.
+
 ## Interfaces Principais
 
 ### IDispatcher

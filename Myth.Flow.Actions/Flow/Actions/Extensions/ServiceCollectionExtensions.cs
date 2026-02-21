@@ -222,6 +222,13 @@ public static class ServiceCollectionExtensions {
 				}
 				break;
 		}
+
+		// Register public cache manager that wraps the internal cache provider
+		services.TryAddSingleton<ICacheManager>( sp => {
+			var cacheProvider = sp.GetRequiredService<ICacheProvider>( );
+			var logger = sp.GetRequiredService<ILogger<CacheManager>>( );
+			return new CacheManager( cacheProvider, logger );
+		} );
 	}
 
 	/// <summary>
