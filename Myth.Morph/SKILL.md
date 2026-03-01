@@ -1,3 +1,8 @@
+---
+name: myth-morph
+description: Use when you need to map/transform objects between types (e.g. DTO to entity). Implement IMorphableTo<T> or IMorphableFrom<T> and use Schema<T>.Bind()/BindAsync()/Ignore() for custom mappings. Call .To<T>() and .ToAsync<T>() extension methods to execute transformations. Supports DI, async, collections, and bidirectional mapping.
+---
+
 # SKILL.md - Myth.Morph
 
 **Version:** 1.0

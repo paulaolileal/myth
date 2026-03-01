@@ -1,3 +1,8 @@
+---
+name: myth-rest
+description: Use when you need to make external HTTP calls. Rest.Create() builds requests fluently with .DoGet()/.DoPost()/.DoPut()/.DoDelete(), auto JSON serialization, retry policies (fixed, exponential backoff, jitter), circuit breaker, Bearer/Basic/certificate auth, file upload/download, and IHttpClientFactory integration. Supports named configurations for multiple API clients.
+---
+
 # Myth.Rest - Fluent REST Client with Resilience Patterns
 
 ## Overview

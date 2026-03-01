@@ -1,3 +1,8 @@
+---
+name: myth-specification
+description: Use when you need to build reusable, composable database queries. SpecBuilder<T>.Create() chains .And()/.Or()/.Not()/.AndIf()/.OrIf() with Expression<Func<T,bool>>, plus .Order()/.OrderDescending(), .Skip()/.Take(), and .DistinctBy(). Translates to SQL via EF Core and also supports in-memory validation.
+---
+
 # SKILL.md - Myth.Specification
 
 **Version:** 1.0

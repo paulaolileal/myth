@@ -1,3 +1,8 @@
+---
+name: myth-testing
+description: Use when writing xUnit tests in the Myth ecosystem. BaseTests provides DI with AddService<T>()/ReplaceService<T>(), Faker (_faker) for test data, and configuration helpers. BaseDatabaseTests<TContext> adds EF Core In-Memory database with auto setup/cleanup. Includes HTTP mocking, FluentAssertions extensions for API responses, and Moq.
+---
+
 # Myth.Testing - Testing Utilities and Base Classes
 
 ## Overview

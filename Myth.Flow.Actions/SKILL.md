@@ -1,3 +1,8 @@
+---
+name: myth-flow-actions
+description: Use when you need CQRS and event-driven architecture. IDispatcher handles DispatchCommandAsync<T>(), DispatchQueryAsync<T,R>() with optional caching, and PublishEventAsync<T>(). IEventBus supports InMemory, RabbitMQ, and Kafka brokers. Handlers implement ICommandHandler<T>/IQueryHandler<T,R>/IEventHandler<T>, are registered as Scoped, and inject repositories directly. Requires Myth.Flow.
+---
+
 # Myth.Flow.Actions - CQRS and Event-Driven Architecture
 
 ## Overview

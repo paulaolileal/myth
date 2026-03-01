@@ -1,3 +1,8 @@
+---
+name: myth-repository-entityframework
+description: Use when you need EF Core repository implementations. Provides ReadRepositoryAsync<T>, WriteRepositoryAsync<T>, and ReadWriteRepositoryAsync<T> base classes, plus BaseContext (auto-discovers IEntityTypeConfiguration<T>), IUnitOfWorkRepository for transactions/savepoints, and AddRepositories() for automatic DI registration.
+---
+
 # SKILL.md - Myth.Repository.EntityFramework
 
 **Version:** 1.0

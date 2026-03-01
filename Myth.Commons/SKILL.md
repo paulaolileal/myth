@@ -1,3 +1,8 @@
+---
+name: myth-commons
+description: Use when you need base Myth utilities: JSON serialization/deserialization with CamelCase/snake_case config, string manipulation, Value Objects with structural equality, Typed Constants (type-safe enum alternative), Pagination models, Global Service Provider for cross-library DI, and IScopedService<T> for scope management in singleton/hosted services.
+---
+
 # SKILL.md - Myth.Commons
 
 **Version:** 1.0

@@ -1,3 +1,8 @@
+---
+name: myth-repository
+description: Use when defining repository contracts. Provides IReadRepositoryAsync<T>, IWriteRepositoryAsync<T>, and IReadWriteRepositoryAsync<T> interfaces with async-first, Specification-aware, and paginated operations. Interface-only library — concrete implementations are in Myth.Repository.EntityFramework.
+---
+
 # SKILL.md - Myth.Repository
 
 **Version:** 1.0

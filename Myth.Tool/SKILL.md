@@ -1,3 +1,8 @@
+---
+name: myth-tool
+description: Use when you need to scaffold code via CLI. Commands: myth setup <ProjectName> for Clean Architecture structure; myth create model/command/query/event/dto/repository/controller/test <aggregate> <name> to generate production-ready Myth-integrated code. Uses Scriban templates. Install globally with: dotnet tool install -g Myth.Tool.
+---
+
 # Myth.Tool - Code Generation CLI
 
 ## Overview

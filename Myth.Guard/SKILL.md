@@ -1,3 +1,8 @@
+---
+name: myth-guard
+description: Use when you need fluent, context-aware validation. Entities implement IValidatable<T> with ValidationBuilder<T> rules scoped to ValidationContextKey (Create, Update, Delete, etc.). Use Sentry.For() for standalone field validation, Validate.All() for parallel multi-value validation. IValidator.ValidateAsync() throws on failure; UseGuard() middleware returns RFC 9457 Problem Details responses.
+---
+
 # SKILL.md - Myth.Guard
 
 **Version:** 1.0

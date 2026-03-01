@@ -1,3 +1,8 @@
+---
+name: myth-flow
+description: Use when you need to orchestrate data processing pipelines. Pipeline.Start(ctx) chains .Step()/.StepAsync()/.StepResultAsync(), .Tap()/.TapAsync() for side effects, .When() for conditional branches, and .Transform() for context type changes. Built-in Result<T> pattern, retry with exponential backoff, OpenTelemetry tracing, and per-step DI resolution.
+---
+
 # SKILL.md - Myth.Flow
 
 **Version:** 1.0

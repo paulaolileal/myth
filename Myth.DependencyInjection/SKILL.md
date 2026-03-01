@@ -1,3 +1,8 @@
+---
+name: myth-dependency-injection
+description: Use when you need automatic service registration via assembly scanning. TypeProvider gives access to all application assemblies and types. AddServiceFromType<T>() auto-registers implementations by naming convention (IUserRepository → UserRepository). Supports Scoped, Transient, and Singleton lifetimes.
+---
+
 # SKILL.md - Myth.DependencyInjection
 
 **Version:** 1.0
