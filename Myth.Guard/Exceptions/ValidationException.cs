@@ -60,8 +60,16 @@ public sealed class ValidationException : Exception {
 	/// </code>
 	/// </example>
 	public ValidationException( ValidationResult result )
-		: base( "Validation failed" + ( result is not null && !result.IsValid ? $" {result.Errors.Count} error(s)" : string.Empty ) ) {
+		: base( BuildMessage( result ) ) {
 		ArgumentNullException.ThrowIfNull( result, nameof( ValidationResult ) );
 		ValidationResult = result;
+	}
+
+	private static string BuildMessage( ValidationResult result ) {
+		if ( result is null || result.IsValid )
+			return "Validation failed";
+
+		var errors = string.Join( "; ", result.Errors.Select( e => e.ToString() ) );
+		return $"Validation failed {result.Errors.Count} error(s): {errors}";
 	}
 }
