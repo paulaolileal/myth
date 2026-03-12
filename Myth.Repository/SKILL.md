@@ -680,19 +680,83 @@ public class ReportService {
 
 ## Best Practices
 
-### 1. Use Specific Repository Interfaces
+### 1. Always Create Specific Repository Interfaces — Never Inject Generic Interfaces Directly
 
-**✅ DO:**
+**CRITICAL:** Always define a dedicated interface per entity that extends the base repository interface. **Never inject `IReadWriteRepositoryAsync<T>`, `IReadRepositoryAsync<T>`, or `IWriteRepositoryAsync<T>` directly** anywhere in the codebase — services, handlers, controllers, etc.
+
+**✅ DO — Define specific interface and always use it:**
 ```csharp
+// Define specific interface per entity
 public interface IUserRepository : IReadWriteRepositoryAsync<User> {
     Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
 }
+
+// Implement it
+public class UserRepository : ReadWriteRepositoryAsync<User>, IUserRepository {
+    public UserRepository(ApplicationDbContext context) : base(context) { }
+
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default) {
+        return await FirstOrDefaultAsync(u => u.Email == email, ct);
+    }
+}
+
+// Inject and use the specific interface throughout the codebase
+public class UserService {
+    private readonly IUserRepository _userRepository; // ✅ specific interface
+
+    public UserService(IUserRepository userRepository) {
+        _userRepository = userRepository;
+    }
+}
+
+public class GetUserHandler : IQueryHandler<GetUserQuery, UserDto> {
+    private readonly IUserRepository _userRepository; // ✅ specific interface
+
+    public GetUserHandler(IUserRepository userRepository) {
+        _userRepository = userRepository;
+    }
+}
 ```
 
-**❌ DON'T:**
+**❌ DON'T — Inject generic interfaces directly:**
 ```csharp
-// Generic repository only
-public class GenericRepository<T> : IReadWriteRepositoryAsync<T> { }
+// NEVER inject the generic base interface directly
+public class UserService {
+    private readonly IReadWriteRepositoryAsync<User> _repository; // ❌ too generic
+
+    public UserService(IReadWriteRepositoryAsync<User> repository) { // ❌ wrong
+        _repository = repository;
+    }
+}
+
+public class GetUserHandler : IQueryHandler<GetUserQuery, UserDto> {
+    private readonly IReadRepositoryAsync<User> _repository; // ❌ too generic
+
+    public GetUserHandler(IReadRepositoryAsync<User> repository) { // ❌ wrong
+        _repository = repository;
+    }
+}
+
+// Also don't use a generic-only repository
+public class GenericRepository<T> : IReadWriteRepositoryAsync<T> { } // ❌ no entity-specific interface
+```
+
+**Why this matters:**
+- **Discoverability**: A dedicated `IUserRepository` makes it immediately clear what data access operations exist for that entity
+- **Extensibility**: You can easily add entity-specific methods without changing base interfaces
+- **Mockability**: Mocking `IUserRepository` in tests is trivial and strongly typed
+- **Separation of concerns**: Each repository encapsulates all data-access logic for its entity
+- **CQRS support**: You can still inject just `IReadRepositoryAsync<T>` side if needed, but via a narrower specific interface:
+
+```csharp
+// For strict CQRS separation, define read/write interfaces explicitly
+public interface IUserReadRepository : IReadRepositoryAsync<User> {
+    Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
+}
+
+public interface IUserWriteRepository : IWriteRepositoryAsync<User> { }
+
+public interface IUserRepository : IUserReadRepository, IUserWriteRepository { }
 ```
 
 ### 2. Leverage Specifications for Complex Queries

@@ -867,6 +867,71 @@ Controller/Service → DbContext → Database
                   (never inject this into services!)
 ```
 
+### 1.7. Always Create Specific Repository Interfaces — Never Inject Generic Interfaces Directly
+
+**CRITICAL:** Every entity must have its own dedicated repository interface that extends the base. **Never inject `IReadWriteRepositoryAsync<T>`, `IReadRepositoryAsync<T>`, or `IWriteRepositoryAsync<T>` directly** in services, handlers, or controllers. Always define and inject the entity-specific interface.
+
+**✅ DO:**
+```csharp
+// 1. Define specific interface
+public interface IProductRepository : IReadWriteRepositoryAsync<Product> {
+    Task<Product?> GetByNameAsync(string name, CancellationToken ct = default);
+    Task<IEnumerable<Product>> GetInStockAsync(CancellationToken ct = default);
+}
+
+// 2. Implement it inheriting from ReadWriteRepositoryAsync
+public class ProductRepository : ReadWriteRepositoryAsync<Product>, IProductRepository {
+    public ProductRepository(ApplicationDbContext context) : base(context) { }
+
+    public async Task<Product?> GetByNameAsync(string name, CancellationToken ct = default) =>
+        await FirstOrDefaultAsync(p => p.Name == name, ct);
+
+    public async Task<IEnumerable<Product>> GetInStockAsync(CancellationToken ct = default) =>
+        await SearchAsync(p => p.IsActive && p.Stock > 0, p => p.Name, ct);
+}
+
+// 3. Inject and use IProductRepository everywhere — never the generic base
+public class ProductService {
+    private readonly IProductRepository _productRepository; // ✅
+
+    public ProductService(IProductRepository productRepository) {
+        _productRepository = productRepository;
+    }
+}
+
+public class GetProductHandler : IQueryHandler<GetProductQuery, ProductDto> {
+    private readonly IProductRepository _productRepository; // ✅
+
+    public GetProductHandler(IProductRepository productRepository) {
+        _productRepository = productRepository;
+    }
+}
+```
+
+**❌ DON'T:**
+```csharp
+// NEVER inject the generic base interface directly anywhere
+public class ProductService {
+    private readonly IReadWriteRepositoryAsync<Product> _repository; // ❌
+
+    public ProductService(IReadWriteRepositoryAsync<Product> repository) { // ❌
+        _repository = repository;
+    }
+}
+
+public class GetProductHandler {
+    private readonly IReadRepositoryAsync<Product> _repository; // ❌
+
+    public GetProductHandler(IReadRepositoryAsync<Product> repository) { // ❌
+        _repository = repository;
+    }
+}
+```
+
+**Rule of thumb:** if you find `IReadWriteRepositoryAsync<SomeEntity>` or similar generic interfaces being injected anywhere outside of the repository implementation itself, that's a bug in the architecture — replace it with the entity-specific `ISomeEntityRepository`.
+
+---
+
 ### 2. Use Auto-Registration
 
 **✅ DO:**
