@@ -69,7 +69,7 @@ public sealed class ValidationException : Exception {
 		if ( result is null || result.IsValid )
 			return "Validation failed";
 
-		var errors = string.Join( "; ", result.Errors.Select( e => e.ToString() ) );
+		var errors = string.Join( "; ", result.Errors.Select( e => e.ToString( ) ) );
 		return $"Validation failed {result.Errors.Count} error(s): {errors}";
 	}
 }

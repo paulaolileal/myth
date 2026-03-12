@@ -72,6 +72,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### ✨ Added
 
+- **Native Nullable Struct Support (`NotDefault` for `T?`)**
+  - `NotDefault()` on `FluentRuleBuilder<T?>` (where `T : struct`) now validates the unwrapped value against the struct's default
+  - If the value is `null`, validation passes (use `NotNull()` to reject null values separately)
+  - If the value is present but equals the default (e.g., `Guid.Empty` for `Guid?`, `0` for `int?`), validation fails
+  - Eliminates the need to manually unwrap `.Value` before calling `NotDefault()`, which caused incorrect field name capture via `CallerArgumentExpression`
+  - Example: `builder.For(UserId, rules => rules.NotDefault().WithMessage("UserId is required"))`
+
 - **Manual Validation Failure Methods**
   - Added `Sentry.Fail()` methods for manually throwing validation exceptions
   - Overloads: `Fail(string message)`, `Fail(string field, string message)`, `Fail(ValidationError error)`, `Fail(IEnumerable<ValidationError> errors)`

@@ -1,4 +1,5 @@
 using Myth.Enums;
+using Myth.Guard.Rules.Nullables.Structs;
 using Myth.Interfaces;
 using Myth.Rules.Generics;
 
@@ -204,7 +205,14 @@ public sealed class FluentRuleBuilder<T>( FieldRuleBuilder<T> fieldBuilder ) {
 	}
 
 	public FluentRuleBuilder<T> NotDefault( ) {
-		var rule = new NotDefaultRule<T>( );
-		return AddRule( rule );
+		var underlyingType = Nullable.GetUnderlyingType( typeof( T ) );
+
+		if ( underlyingType != null ) {
+			var ruleType = typeof( NullableNotDefaultRule<> ).MakeGenericType( underlyingType );
+			var rule = ( ValidationRuleBase<T> )Activator.CreateInstance( ruleType )!;
+			return AddRule( rule );
+		}
+
+		return AddRule( new NotDefaultRule<T>( ) );
 	}
 }

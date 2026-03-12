@@ -510,7 +510,7 @@ builder.For( Email, x => x
 
 ### Nullable Type Support
 
-All numeric, DateTime, and boolean rules have nullable versions:
+All numeric, DateTime, and boolean rules have nullable versions. `NotDefault()` also works natively on nullable structs (`Guid?`, `int?`, etc.):
 
 ```csharp
 builder.For( OptionalAge, x => x
@@ -522,6 +522,11 @@ builder.For( OptionalDate, x => x
     .When( date => date.HasValue ) );
 
 builder.For( OptionalFlag, x => x.IsTrue() );
+
+// Nullable struct: null passes, Guid.Empty fails
+builder.For( UserId, x => x
+    .NotDefault()
+    .WithMessage( "UserId must not be empty" ) );
 ```
 
 ## Context-Aware Validation
