@@ -256,7 +256,8 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 	/// <returns>A new <see cref="IPipelineBuilder{TNewContext}"/> instance.</returns>
 	public IPipelineBuilder<TNewContext> Transform<TNewContext>(
 		Func<TContext, TNewContext> mapper ) {
-		var newSteps = new List<StepDescriptor<TNewContext>>( _steps.Count + 1 ) {
+		var capturedSteps = _steps.ToList( );
+		var newSteps = new List<StepDescriptor<TNewContext>>( capturedSteps.Count + 1 ) {
 			// Create a wrapper step that executes all previous steps then transforms
 			new(
 			StepType.Transform,
@@ -264,13 +265,27 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 				// Start with original input
 				var currentContext = _input;
 
-				// Execute all previous steps
-				foreach ( var step in _steps ) {
-					currentContext = await step.Handler( currentContext, ct );
+				// Execute all previous steps, identifying which one fails for better diagnostics
+				var innerStepIndex = 0;
+				foreach ( var step in capturedSteps ) {
+					try {
+						currentContext = await step.Handler( currentContext, ct );
+					} catch ( Exception ex ) {
+						throw new PipelineException(
+							$"Transform failed while re-executing inner step [{innerStepIndex}] '{step.Name ?? "Unknown"}': {ex.Message}",
+							ex );
+					}
+					innerStepIndex++;
 				}
 
 				// Transform the final result
-				return await Task.FromResult( mapper( currentContext ) );
+				try {
+					return await Task.FromResult( mapper( currentContext ) );
+				} catch ( Exception ex ) {
+					throw new PipelineException(
+						$"Transform failed during mapping phase ({typeof( TContext ).Name} -> {typeof( TNewContext ).Name}): {ex.Message}",
+						ex );
+				}
 			},
 			"Transform",
 			0,
@@ -297,7 +312,8 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 	/// <returns>A new <see cref="IPipelineBuilder{TNewContext}"/> instance.</returns>
 	public IPipelineBuilder<TNewContext> TransformAsync<TNewContext>(
 		Func<TContext, Task<TNewContext>> mapper ) {
-		var newSteps = new List<StepDescriptor<TNewContext>>( _steps.Count + 1 );
+		var capturedSteps = _steps.ToList( );
+		var newSteps = new List<StepDescriptor<TNewContext>>( capturedSteps.Count + 1 );
 
 		// Create a wrapper step that executes all previous steps then transforms
 		newSteps.Add( new StepDescriptor<TNewContext>(
@@ -306,13 +322,27 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 				// Start with original input
 				var currentContext = _input;
 
-				// Execute all previous steps
-				foreach ( var step in _steps ) {
-					currentContext = await step.Handler( currentContext, ct );
+				// Execute all previous steps, identifying which one fails for better diagnostics
+				var innerStepIndex = 0;
+				foreach ( var step in capturedSteps ) {
+					try {
+						currentContext = await step.Handler( currentContext, ct );
+					} catch ( Exception ex ) {
+						throw new PipelineException(
+							$"TransformAsync failed while re-executing inner step [{innerStepIndex}] '{step.Name ?? "Unknown"}': {ex.Message}",
+							ex );
+					}
+					innerStepIndex++;
 				}
 
 				// Transform the final result
-				return await mapper( currentContext ).ConfigureAwait( false );
+				try {
+					return await mapper( currentContext ).ConfigureAwait( false );
+				} catch ( Exception ex ) {
+					throw new PipelineException(
+						$"TransformAsync failed during mapping phase ({typeof( TContext ).Name} -> {typeof( TNewContext ).Name}): {ex.Message}",
+						ex );
+				}
 			},
 			"TransformAsync",
 			0,

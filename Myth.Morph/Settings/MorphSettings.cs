@@ -68,6 +68,19 @@ public class MorphSettings {
 	public bool ResolveToBaseType { get; set; } = false;
 
 	/// <summary>
+	/// Gets or sets how the mapping system handles null source property values during auto-mapping.
+	/// </summary>
+	/// <remarks>
+	/// <list type="bullet">
+	/// <item><see cref="NullPropertyBehavior.AssignDefault"/>: Assigns <c>default(T)</c> to non-nullable value-type properties (default).</item>
+	/// <item><see cref="NullPropertyBehavior.Skip"/>: Leaves the destination property with its initialized value.</item>
+	/// <item><see cref="NullPropertyBehavior.Throw"/>: Throws <see cref="Myth.Exceptions.MorphPropertyException"/> for non-nullable destinations.</item>
+	/// </list>
+	/// Default is <see cref="NullPropertyBehavior.AssignDefault"/> to preserve backward compatibility.
+	/// </remarks>
+	public NullPropertyBehavior NullSourcePropertyBehavior { get; set; } = NullPropertyBehavior.AssignDefault;
+
+	/// <summary>
 	/// Gets or sets the list of generic type mappings between interfaces and their concrete implementations.
 	/// </summary>
 	/// <remarks>
@@ -286,6 +299,16 @@ public class MorphSettings {
 	/// <returns>The current MorphSettings instance for method chaining.</returns>
 	public MorphSettings DisableInheritanceFallback( ) {
 		EnableInheritanceFallback = false;
+		return this;
+	}
+
+	/// <summary>
+	/// Configures how the mapping system handles null source property values during auto-mapping.
+	/// </summary>
+	/// <param name="behavior">The desired null-handling behavior.</param>
+	/// <returns>The current <see cref="MorphSettings"/> instance for method chaining.</returns>
+	public MorphSettings WithNullBehavior( NullPropertyBehavior behavior ) {
+		NullSourcePropertyBehavior = behavior;
 		return this;
 	}
 }

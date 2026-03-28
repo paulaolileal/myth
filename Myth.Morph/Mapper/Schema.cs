@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Myth.Exceptions;
 using Myth.Interfaces;
+using Myth.Settings;
 
 namespace Myth.Morph;
 
@@ -147,6 +148,102 @@ public class Schema<TDestination> {
 			var logger = GetLogger( sp );
 			logger?.LogTrace( "Applying async direct value binding for property {PropertyName}", member.Name );
 			var value = await resolver( );
+			SetValue( dest, member, value, logger );
+		} );
+
+		return this;
+	}
+
+	/// <summary>
+	/// Configures a binding that only assigns a value when the specified condition evaluates to <c>true</c>.
+	/// When the condition is <c>false</c>, the destination property retains its initialized value.
+	/// </summary>
+	/// <typeparam name="TMember">The type of the destination property.</typeparam>
+	/// <param name="destination">An expression specifying the destination property to bind.</param>
+	/// <param name="resolver">A function that resolves the value to assign when the condition is true.</param>
+	/// <param name="condition">A function evaluated at mapping time; the binding is skipped when it returns <c>false</c>.</param>
+	/// <returns>The current <see cref="Schema{TDestination}"/> instance for chaining.</returns>
+	/// <exception cref="BindException">Thrown if the <paramref name="destination"/> expression is not a valid member access expression.</exception>
+	public Schema<TDestination> BindWhen<TMember>(
+		Expression<Func<TDestination, TMember>> destination,
+		Func<IServiceProvider, TMember> resolver,
+		Func<IServiceProvider, bool> condition ) {
+		if ( destination.Body is not MemberExpression memberExp || memberExp.Member is not MemberInfo member )
+			throw new BindException( "Invalid expression for destination." );
+
+		_manuallyMappedDestProps.Add( member.Name );
+
+		_mappings.Add( ( dest, sp ) => {
+			var logger = GetLogger( sp );
+			if ( !condition( sp ) ) {
+				logger?.LogTrace( "Skipping conditional binding for property {PropertyName} (condition is false)", member.Name );
+				return;
+			}
+			logger?.LogTrace( "Applying conditional binding for property {PropertyName}", member.Name );
+			SetValue( dest, member, resolver( sp ), logger );
+		} );
+
+		return this;
+	}
+
+	/// <summary>
+	/// Configures a binding that falls back to a <paramref name="defaultValue"/> when the resolver returns <c>null</c>.
+	/// Use this to express an explicit fallback intent rather than hiding a null in a <c>??</c> expression.
+	/// </summary>
+	/// <typeparam name="TMember">The type of the destination property.</typeparam>
+	/// <param name="destination">An expression specifying the destination property to bind.</param>
+	/// <param name="resolver">A function that resolves the value; may return <c>null</c>.</param>
+	/// <param name="defaultValue">The value to assign when <paramref name="resolver"/> returns <c>null</c>.</param>
+	/// <returns>The current <see cref="Schema{TDestination}"/> instance for chaining.</returns>
+	/// <exception cref="BindException">Thrown if the <paramref name="destination"/> expression is not a valid member access expression.</exception>
+	public Schema<TDestination> BindOrDefault<TMember>(
+		Expression<Func<TDestination, TMember>> destination,
+		Func<IServiceProvider, TMember?> resolver,
+		TMember defaultValue ) {
+		if ( destination.Body is not MemberExpression memberExp || memberExp.Member is not MemberInfo member )
+			throw new BindException( "Invalid expression for destination." );
+
+		_manuallyMappedDestProps.Add( member.Name );
+
+		_mappings.Add( ( dest, sp ) => {
+			var logger = GetLogger( sp );
+			var value = resolver( sp );
+			if ( value is null ) {
+				logger?.LogTrace( "Resolver returned null for property {PropertyName}, using default value", member.Name );
+				SetValue( dest, member, defaultValue, logger );
+			} else {
+				SetValue( dest, member, value, logger );
+			}
+		} );
+
+		return this;
+	}
+
+	/// <summary>
+	/// Configures a binding that only assigns the value when the resolver returns a non-null result.
+	/// When the resolver returns <c>null</c>, the destination property retains its initialized value.
+	/// This is the most common null-safe binding pattern.
+	/// </summary>
+	/// <typeparam name="TMember">The type of the destination property.</typeparam>
+	/// <param name="destination">An expression specifying the destination property to bind.</param>
+	/// <param name="resolver">A function that resolves the value; the property is skipped when it returns <c>null</c>.</param>
+	/// <returns>The current <see cref="Schema{TDestination}"/> instance for chaining.</returns>
+	/// <exception cref="BindException">Thrown if the <paramref name="destination"/> expression is not a valid member access expression.</exception>
+	public Schema<TDestination> BindIfNotNull<TMember>(
+		Expression<Func<TDestination, TMember>> destination,
+		Func<IServiceProvider, TMember?> resolver ) {
+		if ( destination.Body is not MemberExpression memberExp || memberExp.Member is not MemberInfo member )
+			throw new BindException( "Invalid expression for destination." );
+
+		_manuallyMappedDestProps.Add( member.Name );
+
+		_mappings.Add( ( dest, sp ) => {
+			var logger = GetLogger( sp );
+			var value = resolver( sp );
+			if ( value is null ) {
+				logger?.LogTrace( "Skipping null value for property {PropertyName} (BindIfNotNull)", member.Name );
+				return;
+			}
 			SetValue( dest, member, value, logger );
 		} );
 
@@ -428,7 +525,8 @@ public class Schema<TDestination> {
 			var logger = GetLogger( sp );
 			var typeResolverLogger = logger != null ? sp.GetService<ILogger<TypeResolver>>( ) : null;
 			var typeResolver = new TypeResolver( typeResolverLogger );
-			_toExecutor = new ToMappingExecutor<TDestination>( logger, typeResolver );
+			var nullBehavior = sp.GetService<MorphSettings>( )?.NullSourcePropertyBehavior ?? NullPropertyBehavior.AssignDefault;
+			_toExecutor = new ToMappingExecutor<TDestination>( logger, typeResolver, nullBehavior );
 		}
 		return _toExecutor;
 	}
@@ -443,7 +541,8 @@ public class Schema<TDestination> {
 			var logger = GetLogger( sp );
 			var typeResolverLogger = logger != null ? sp.GetService<ILogger<TypeResolver>>( ) : null;
 			var typeResolver = new TypeResolver( typeResolverLogger );
-			_fromExecutor = new FromMappingExecutor<TDestination>( logger, typeResolver );
+			var nullBehavior = sp.GetService<MorphSettings>( )?.NullSourcePropertyBehavior ?? NullPropertyBehavior.AssignDefault;
+			_fromExecutor = new FromMappingExecutor<TDestination>( logger, typeResolver, nullBehavior );
 		}
 		return _fromExecutor;
 	}
@@ -512,10 +611,11 @@ public class Schema<TDestination> {
 		var logger2 = GetLogger( serviceProvider );
 		var typeResolverLogger = logger2 != null ? serviceProvider.GetService<ILogger<TypeResolver>>( ) : null;
 		var typeResolver = new TypeResolver( typeResolverLogger );
+		var nullBehavior = serviceProvider.GetService<MorphSettings>( )?.NullSourcePropertyBehavior ?? NullPropertyBehavior.AssignDefault;
 
 		// Use reflection to create and invoke the executor for the actual destination type
 		var executorType = typeof( FromMappingExecutor<> ).MakeGenericType( actualDestinationType );
-		var executor = Activator.CreateInstance( executorType, logger2, typeResolver )!;
+		var executor = Activator.CreateInstance( executorType, logger2, typeResolver, nullBehavior )!;
 
 		var applyMethod = executorType.GetMethod( nameof( FromMappingExecutor<object>.ApplyMapping ) );
 		if ( applyMethod != null ) {
@@ -565,10 +665,11 @@ public class Schema<TDestination> {
 		var logger2 = GetLogger( serviceProvider );
 		var typeResolverLogger = logger2 != null ? serviceProvider.GetService<ILogger<TypeResolver>>( ) : null;
 		var typeResolver = new TypeResolver( typeResolverLogger );
+		var nullBehavior = serviceProvider.GetService<MorphSettings>( )?.NullSourcePropertyBehavior ?? NullPropertyBehavior.AssignDefault;
 
 		// Use reflection to create and invoke the executor for the actual destination type
 		var executorType = typeof( FromMappingExecutor<> ).MakeGenericType( actualDestinationType );
-		var executor = Activator.CreateInstance( executorType, logger2, typeResolver )!;
+		var executor = Activator.CreateInstance( executorType, logger2, typeResolver, nullBehavior )!;
 
 		var applyMethod = executorType.GetMethod( nameof( FromMappingExecutor<object>.ApplyMapping ) );
 		if ( applyMethod != null ) {

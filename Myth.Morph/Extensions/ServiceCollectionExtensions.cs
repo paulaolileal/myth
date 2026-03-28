@@ -32,6 +32,8 @@ public static class ServiceCollectionExtensions {
 		if ( assemblies == null || assemblies.Count == 0 )
 			assemblies = AppDomain.CurrentDomain.GetAssemblies( ).ToList( );
 
+		services.AddSingleton( morphSettings );
+
 		services.AddSingleton( sp => {
 			var logger = sp.GetService<ILogger<SchemaRegistry>>( );
 			logger?.LogInformation( "Initializing SchemaRegistry with {AssemblyCount} assemblies", assemblies.Count );

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Myth.Settings;
 
 namespace Myth.Morph;
 
@@ -14,8 +15,9 @@ public class FromMappingExecutor<TDestination> : BaseMappingExecutor<TDestinatio
 	/// </summary>
 	/// <param name="logger">Optional logger for diagnostic information.</param>
 	/// <param name="typeResolver">The type resolver for handling inheritance and proxies.</param>
-	public FromMappingExecutor( ILogger? logger, TypeResolver typeResolver )
-		: base( logger, typeResolver ) {
+	/// <param name="nullBehavior">Behavior when a source property value is null during auto-mapping.</param>
+	public FromMappingExecutor( ILogger? logger, TypeResolver typeResolver, NullPropertyBehavior nullBehavior = NullPropertyBehavior.AssignDefault )
+		: base( logger, typeResolver, nullBehavior ) {
 		Logger?.LogDebug( "Initialized FromMappingExecutor for destination type {DestinationType}", typeof( TDestination ).Name );
 	}
 

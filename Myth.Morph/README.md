@@ -185,6 +185,9 @@ First-class DI support following .NET conventions. Service provider passed to tr
 - **Declarative Schema Configuration**: Define transformations using fluent API with compile-time safety
 - **Automatic Property Mapping**: Convention-based mapping for matching property names
 - **Manual Binding**: Four binding strategies for maximum flexibility
+- **Null-Safe Bindings**: `BindIfNotNull()`, `BindOrDefault()`, `BindWhen()` for explicit null handling
+- **Configurable Null Behavior**: Global `NullPropertyBehavior` setting (`AssignDefault`, `Skip`, `Throw`)
+- **Rich Mapping Exceptions**: `MorphPropertyException` with source type, destination type, and property name context
 - **Async Support**: First-class async/await support for I/O-bound transformations
 - **Dependency Injection**: Full service provider access in transformation logic
 - **Generic Collections**: Automatic mapping of collections with element transformation
@@ -328,6 +331,77 @@ public void MorphTo( Schema<Product> schema ) {
         return await reviewService.GetReviewsAsync(ProductId);
     });
 }
+```
+
+## Null-Safe Bindings
+
+Myth.Morph provides three methods for handling null values explicitly in manual bindings, making intent clear and preventing silent failures.
+
+### BindIfNotNull — Skip when null
+
+Assigns the value only when the resolver returns non-null. The destination property keeps its initialized value when null is returned:
+
+```csharp
+public void MorphTo( Schema<TokenResponse> schema ) {
+    // Property keeps its default value when GetRefreshToken() returns null
+    schema.BindIfNotNull(dest => dest.RefreshToken, sp =>
+        sp.GetRequiredService<ITokenService>().GetRefreshToken());
+}
+```
+
+### BindOrDefault — Fallback value
+
+Assigns a default value when the resolver returns null, making the fallback explicit instead of hiding it in a `??` expression:
+
+```csharp
+public void MorphTo( Schema<UserProfile> schema ) {
+    schema.BindOrDefault(dest => dest.DisplayName,
+        sp => sp.GetRequiredService<IUserService>().GetDisplayName(UserId),
+        defaultValue: "Anonymous");
+}
+```
+
+### BindWhen — Conditional binding
+
+Only executes the binding when a condition is true:
+
+```csharp
+public void MorphTo( Schema<OrderDto> schema ) {
+    schema.BindWhen(
+        dest => dest.AdminNotes,
+        sp => sp.GetRequiredService<IAdminService>().GetNotes(OrderId),
+        condition: sp => sp.GetRequiredService<ICurrentUser>().IsAdmin);
+}
+```
+
+## Null Behavior for Auto-Mapping
+
+Control globally how auto-mapping handles null source property values:
+
+```csharp
+// In Program.cs
+builder.Services.AddMorph(settings =>
+    settings.WithNullBehavior(NullPropertyBehavior.Skip));
+```
+
+| Behavior | Description |
+|----------|-------------|
+| `AssignDefault` | Sets `default(T)` for non-nullable value types (**default**) |
+| `Skip` | Leaves the destination property with its initialized value |
+| `Throw` | Throws `MorphPropertyException` for non-nullable destinations |
+
+The `Throw` option is useful during development to surface null mapping issues immediately:
+
+```csharp
+builder.Services.AddMorph(settings =>
+    settings.WithNullBehavior(NullPropertyBehavior.Throw));
+```
+
+When a null violation occurs, a `MorphPropertyException` is thrown with full context:
+
+```
+Myth.Exceptions.MorphPropertyException:
+  Source value is null for non-nullable property 'RefreshToken' (TokenContext -> TokenResponse).
 ```
 
 ## Automatic Property Mapping

@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Myth.Morph
+
+#### ✨ Added
+
+- **Null-Safe Binding Methods** (`Schema<T>`)
+  - `BindIfNotNull<TMember>(destination, resolver)` — assigns value only when resolver returns non-null; destination property retains its initialized value when null is returned
+  - `BindOrDefault<TMember>(destination, resolver, defaultValue)` — assigns `defaultValue` when resolver returns null, making fallback intent explicit
+  - `BindWhen<TMember>(destination, resolver, condition)` — conditionally applies a binding based on a predicate evaluated at mapping time
+
+- **Configurable Null Behavior** (`MorphSettings`)
+  - New `NullPropertyBehavior` enum: `AssignDefault` (default, backward-compatible), `Skip`, `Throw`
+  - New `NullSourcePropertyBehavior` property in `MorphSettings`
+  - New fluent method `WithNullBehavior(NullPropertyBehavior)` for configuration
+
+- **Rich Mapping Exception** (`MorphPropertyException`)
+  - New exception class with `SourceType`, `DestinationType`, `PropertyName` properties
+  - Static factory methods `Create(...)` and `NullSourceValue(...)` for standardized messages
+  - Thrown by auto-mapping when `NullPropertyBehavior.Throw` is configured
+
+#### 🔄 Changed
+
+- `BaseMappingExecutor` now accepts `NullPropertyBehavior nullBehavior` parameter (default: `AssignDefault`)
+- `HandleNullValue()` applies the configured behavior instead of always assigning `default(T)`
+- `MorphSettings` is now registered as a singleton in DI by `AddMorph()`, enabling runtime behavior resolution
+- `GetToExecutor` / `GetFromExecutor` in `Schema<T>` resolve `NullPropertyBehavior` from `IServiceProvider`
+
+### Myth.Flow
+
+#### 🐛 Fixed
+
+- **Transform/TransformAsync step error attribution** — when an inner step re-executed by `Transform` throws an exception, the error message now identifies the specific inner step (`"Transform failed while re-executing inner step [1] 'TapAsync': ..."`) instead of just reporting "Transform". The original exception is preserved as `InnerException`.
+
 ### Myth.Flow.Actions
 
 #### ✨ Added
