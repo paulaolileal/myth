@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.Logging;
 using Myth.Exceptions;
 using Myth.Morph;
@@ -58,6 +60,11 @@ public static class MorphExtensions {
 			var result = ( TDestination )method.Invoke( registry, [ source ] )!;
 			logger?.LogDebug( "Successfully converted {SourceType} to {DestinationType}", srcType.Name, destType.Name );
 			return result;
+		} catch ( TargetInvocationException ex ) when ( ex.InnerException is not null ) {
+			// Unwrap TargetInvocationException so callers receive the actual mapping exception
+			logger?.LogError( ex.InnerException, "Failed to convert {SourceType} to {DestinationType}", srcType.Name, destType.Name );
+			ExceptionDispatchInfo.Capture( ex.InnerException ).Throw( );
+			throw; // unreachable — satisfies compiler
 		} catch ( Exception ex ) {
 			logger?.LogError( ex, "Failed to convert {SourceType} to {DestinationType}", srcType.Name, destType.Name );
 			throw;
