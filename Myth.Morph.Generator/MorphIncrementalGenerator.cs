@@ -22,101 +22,102 @@ namespace Myth.Morph.Generator;
 [Generator]
 public sealed class MorphIncrementalGenerator : IIncrementalGenerator {
 
-    /// <inheritdoc/>
-    public void Initialize( IncrementalGeneratorInitializationContext context ) {
-        // ── Step 1: Cheap syntax filter ──────────────────────────────────────
-        // Only consider classes and records that declare a base type list.
-        // Structs are excluded — Morph targets reference types only.
-        var morphableCandidates = context.SyntaxProvider
-            .CreateSyntaxProvider(
-                predicate: IsTypeCandidateSyntax,
-                transform: TransformToModels )
-            .Where( static models => !models.IsDefaultOrEmpty )
-            .SelectMany( static ( models, _ ) => models );
+	/// <inheritdoc/>
+	public void Initialize( IncrementalGeneratorInitializationContext context ) {
+		// ── Step 1: Cheap syntax filter ──────────────────────────────────────
+		// Only consider classes and records that declare a base type list.
+		// Structs are excluded — Morph targets reference types only.
+		var morphableCandidates = context.SyntaxProvider
+			.CreateSyntaxProvider(
+				predicate: IsTypeCandidateSyntax,
+				transform: TransformToModels )
+			.Where( static models => !models.IsDefaultOrEmpty )
+			.SelectMany( static ( models, _ ) => models );
 
-        // ── Step 2: Collect all models across the compilation ────────────────
-        var allModels = morphableCandidates.Collect( );
+		// ── Step 2: Collect all models across the compilation ────────────────
+		var allModels = morphableCandidates.Collect( );
 
-        // ── Step 3: Generate source ──────────────────────────────────────────
-        context.RegisterSourceOutput( allModels, GenerateSource );
-    }
+		// ── Step 3: Generate source ──────────────────────────────────────────
+		context.RegisterSourceOutput( allModels, GenerateSource );
+	}
 
-    // ─── Pipeline stages ─────────────────────────────────────────────────────────
+	// ─── Pipeline stages ─────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Syntax predicate — cheap check that runs on every syntax node in the compilation.
-    /// Returns <c>true</c> only for class or record declarations that have a base list,
-    /// avoiding semantic analysis for the vast majority of types.
-    /// </summary>
-    private static bool IsTypeCandidateSyntax( SyntaxNode node, CancellationToken _ ) =>
-        node is ClassDeclarationSyntax { BaseList: not null } or
-        RecordDeclarationSyntax { BaseList: not null };
+	/// <summary>
+	/// Syntax predicate — cheap check that runs on every syntax node in the compilation.
+	/// Returns <c>true</c> only for class or record declarations that have a base list,
+	/// avoiding semantic analysis for the vast majority of types.
+	/// </summary>
+	private static bool IsTypeCandidateSyntax( SyntaxNode node, CancellationToken _ ) =>
+		node is ClassDeclarationSyntax { BaseList: not null } or
+		RecordDeclarationSyntax { BaseList: not null };
 
-    /// <summary>
-    /// Semantic transform — resolves the type symbol and extracts all <see cref="MorphableTypeModel"/>
-    /// instances for each <c>IMorphableTo</c> / <c>IMorphableFrom</c> interface the type implements.
-    /// Returns an empty array when the type does not implement either interface.
-    /// </summary>
-    private static ImmutableArray<MorphableTypeModel> TransformToModels(
-        GeneratorSyntaxContext context,
-        CancellationToken cancellationToken ) {
+	/// <summary>
+	/// Semantic transform — resolves the type symbol and extracts all <see cref="MorphableTypeModel"/>
+	/// instances for each <c>IMorphableTo</c> / <c>IMorphableFrom</c> interface the type implements.
+	/// Returns an empty array when the type does not implement either interface.
+	/// </summary>
+	private static ImmutableArray<MorphableTypeModel> TransformToModels(
+		GeneratorSyntaxContext context,
+		CancellationToken cancellationToken ) {
 
-        cancellationToken.ThrowIfCancellationRequested( );
+		cancellationToken.ThrowIfCancellationRequested( );
 
-        if ( context.SemanticModel.GetDeclaredSymbol( context.Node, cancellationToken )
-             is not INamedTypeSymbol typeSymbol )
-            return ImmutableArray<MorphableTypeModel>.Empty;
+		if ( context.SemanticModel.GetDeclaredSymbol( context.Node, cancellationToken )
+			 is not INamedTypeSymbol typeSymbol )
+			return ImmutableArray<MorphableTypeModel>.Empty;
 
-        return TypeSymbolHelper.GetMorphablePairs( typeSymbol, context.SemanticModel.Compilation );
-    }
+		return TypeSymbolHelper.GetMorphablePairs( typeSymbol, context.SemanticModel.Compilation );
+	}
 
-    // ─── Code generation ─────────────────────────────────────────────────────────
+	// ─── Code generation ─────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Generates the auto-mapper source files and the single bootstrap file.
-    /// Duplicate pairs (same source + destination) are deduplicated before generation —
-    /// this can happen when both <c>IMorphableTo</c> and <c>IMorphableFrom</c> describe the same pair.
-    /// </summary>
-    private static void GenerateSource(
-        SourceProductionContext context,
-        ImmutableArray<MorphableTypeModel> allModels ) {
+	/// <summary>
+	/// Generates the auto-mapper source files and the single bootstrap file.
+	/// Duplicate pairs (same source + destination) are deduplicated before generation —
+	/// this can happen when both <c>IMorphableTo</c> and <c>IMorphableFrom</c> describe the same pair.
+	/// </summary>
+	private static void GenerateSource(
+		SourceProductionContext context,
+		ImmutableArray<MorphableTypeModel> allModels ) {
 
-        if ( allModels.IsDefaultOrEmpty ) return;
+		if ( allModels.IsDefaultOrEmpty )
+			return;
 
-        var uniqueModels = DeduplicateModels( allModels );
+		var uniqueModels = DeduplicateModels( allModels );
 
-        // Generate one file per mapping pair
-        foreach ( var model in uniqueModels ) {
-            context.CancellationToken.ThrowIfCancellationRequested( );
+		// Generate one file per mapping pair
+		foreach ( var model in uniqueModels ) {
+			context.CancellationToken.ThrowIfCancellationRequested( );
 
-            var source = AutoMapperEmitter.Emit( model );
-            context.AddSource( $"{model.AutoMapperClassName}.g.cs", source );
-        }
+			var source = AutoMapperEmitter.Emit( model );
+			context.AddSource( $"{model.AutoMapperClassName}.g.cs", source );
+		}
 
-        // Generate a single bootstrap file covering all pairs
-        if ( uniqueModels.Length > 0 ) {
-            var bootstrapSource = BootstrapEmitter.Emit( uniqueModels );
-            context.AddSource( "MorphBootstrap.g.cs", bootstrapSource );
-        }
-    }
+		// Generate a single bootstrap file covering all pairs
+		if ( uniqueModels.Length > 0 ) {
+			var bootstrapSource = BootstrapEmitter.Emit( uniqueModels );
+			context.AddSource( "MorphBootstrap.g.cs", bootstrapSource );
+		}
+	}
 
-    /// <summary>
-    /// Deduplicates models by (SourceTypeFullName, DestinationTypeFullName) key.
-    /// The first occurrence wins — both directions of the same pair produce identical property lists,
-    /// so the choice is arbitrary.
-    /// </summary>
-    private static ImmutableArray<MorphableTypeModel> DeduplicateModels(
-        ImmutableArray<MorphableTypeModel> models ) {
+	/// <summary>
+	/// Deduplicates models by (SourceTypeFullName, DestinationTypeFullName) key.
+	/// The first occurrence wins — both directions of the same pair produce identical property lists,
+	/// so the choice is arbitrary.
+	/// </summary>
+	private static ImmutableArray<MorphableTypeModel> DeduplicateModels(
+		ImmutableArray<MorphableTypeModel> models ) {
 
-        var seen = new HashSet<(string, string)>( );
-        var builder = ImmutableArray.CreateBuilder<MorphableTypeModel>( models.Length );
+		var seen = new HashSet<(string, string)>( );
+		var builder = ImmutableArray.CreateBuilder<MorphableTypeModel>( models.Length );
 
-        foreach ( var model in models ) {
-            var key = (model.SourceTypeFullName, model.DestinationTypeFullName);
-            if ( seen.Add( key ) )
-                builder.Add( model );
-        }
+		foreach ( var model in models ) {
+			var key = (model.SourceTypeFullName, model.DestinationTypeFullName);
+			if ( seen.Add( key ) )
+				builder.Add( model );
+		}
 
-        return builder.ToImmutable( );
-    }
+		return builder.ToImmutable( );
+	}
 }

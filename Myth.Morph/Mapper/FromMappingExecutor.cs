@@ -60,5 +60,5 @@ public class FromMappingExecutor<TDestination> : BaseMappingExecutor<TDestinatio
 		IServiceProvider serviceProvider,
 		HashSet<string> manuallyMappedProps,
 		HashSet<string> ignoredProperties )
-		=> ApplyMapping( source, (TDestination)destination, serviceProvider, manuallyMappedProps, ignoredProperties );
+		=> ApplyMapping( source, ( TDestination )destination, serviceProvider, manuallyMappedProps, ignoredProperties );
 }

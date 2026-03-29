@@ -12,8 +12,8 @@ namespace Myth.Morph.Generator.Models;
 /// (e.g. <c>Nullable&lt;T&gt;</c> → <c>T</c> or nullable-annotated reference → non-nullable destination).
 /// </param>
 internal sealed record PropertyMappingModel(
-    string Name,
-    string SourcePropertyType,
-    string DestinationPropertyType,
-    bool RequiresNullCheck
+	string Name,
+	string SourcePropertyType,
+	string DestinationPropertyType,
+	bool RequiresNullCheck
 );

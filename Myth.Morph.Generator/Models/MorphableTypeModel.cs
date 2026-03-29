@@ -26,15 +26,15 @@ namespace Myth.Morph.Generator.Models;
 /// Complex nested types are excluded — they are handled by the reflection fallback.
 /// </param>
 internal sealed record MorphableTypeModel(
-    string SourceTypeFullName,
-    string SourceTypeSafeName,
-    string DestinationTypeFullName,
-    string DestinationTypeSafeName,
-    EquatableArray<PropertyMappingModel> Properties
+	string SourceTypeFullName,
+	string SourceTypeSafeName,
+	string DestinationTypeFullName,
+	string DestinationTypeSafeName,
+	EquatableArray<PropertyMappingModel> Properties
 ) {
-    /// <summary>
-    /// Unique identifier used as the generated class name and hint file name.
-    /// Combines both safe names to avoid collisions in the <c>Myth.Morph.Generated</c> namespace.
-    /// </summary>
-    public string AutoMapperClassName => $"{SourceTypeSafeName}_{DestinationTypeSafeName}_AutoMapper";
+	/// <summary>
+	/// Unique identifier used as the generated class name and hint file name.
+	/// Combines both safe names to avoid collisions in the <c>Myth.Morph.Generated</c> namespace.
+	/// </summary>
+	public string AutoMapperClassName => $"{SourceTypeSafeName}_{DestinationTypeSafeName}_AutoMapper";
 }

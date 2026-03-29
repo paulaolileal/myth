@@ -13,36 +13,29 @@ namespace Myth.Exceptions;
 /// and <see cref="Myth.Settings.NullPropertyBehavior.Throw"/> is configured.</item>
 /// </list>
 /// </remarks>
-public class MorphPropertyException : Exception {
+/// <remarks>
+/// Initializes a new instance of the <see cref="MorphPropertyException"/> class.
+/// </remarks>
+/// <param name="sourceType">The source type involved in the failed mapping.</param>
+/// <param name="destinationType">The destination type involved in the failed mapping.</param>
+/// <param name="propertyName">The name of the property that caused the failure.</param>
+/// <param name="message">A message describing the mapping error.</param>
+/// <param name="innerException">The original exception that caused this failure, if any.</param>
+public class MorphPropertyException(
+	Type sourceType,
+	Type destinationType,
+	string propertyName,
+	string message,
+	Exception? innerException = null ) : Exception( message, innerException ) {
 
 	/// <summary>Gets the source type involved in the failed mapping.</summary>
-	public Type SourceType { get; }
+	public Type SourceType { get; } = sourceType;
 
 	/// <summary>Gets the destination type involved in the failed mapping.</summary>
-	public Type DestinationType { get; }
+	public Type DestinationType { get; } = destinationType;
 
 	/// <summary>Gets the name of the property that caused the mapping failure.</summary>
-	public string PropertyName { get; }
-
-	/// <summary>
-	/// Initializes a new instance of the <see cref="MorphPropertyException"/> class.
-	/// </summary>
-	/// <param name="sourceType">The source type involved in the failed mapping.</param>
-	/// <param name="destinationType">The destination type involved in the failed mapping.</param>
-	/// <param name="propertyName">The name of the property that caused the failure.</param>
-	/// <param name="message">A message describing the mapping error.</param>
-	/// <param name="innerException">The original exception that caused this failure, if any.</param>
-	public MorphPropertyException(
-		Type sourceType,
-		Type destinationType,
-		string propertyName,
-		string message,
-		Exception? innerException = null )
-		: base( message, innerException ) {
-		SourceType = sourceType;
-		DestinationType = destinationType;
-		PropertyName = propertyName;
-	}
+	public string PropertyName { get; } = propertyName;
 
 	/// <summary>
 	/// Creates a <see cref="MorphPropertyException"/> with a standardized message from a mapping failure.

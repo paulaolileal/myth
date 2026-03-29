@@ -10,65 +10,65 @@ namespace Myth.Morph.Test.SourceGeneration;
 /// </summary>
 public sealed class GeneratedBootstrapRegistryTests : IDisposable {
 
-    public void Dispose( ) => GeneratedBootstrapRegistry.Clear( );
+	public void Dispose( ) => GeneratedBootstrapRegistry.Clear( );
 
-    // ─── HasBootstraps ───────────────────────────────────────────────────────────
+	// ─── HasBootstraps ───────────────────────────────────────────────────────────
 
-    [Fact]
-    public void HasBootstraps_ShouldBeFalse_WhenNoBootstrapRegistered( ) {
-        GeneratedBootstrapRegistry.HasBootstraps.Should( ).BeFalse( );
-    }
+	[Fact]
+	public void HasBootstraps_ShouldBeFalse_WhenNoBootstrapRegistered( ) {
+		GeneratedBootstrapRegistry.HasBootstraps.Should( ).BeFalse( );
+	}
 
-    [Fact]
-    public void HasBootstraps_ShouldBeTrue_AfterAtLeastOneRegistration( ) {
-        GeneratedBootstrapRegistry.Register( new FakeBootstrap( ) );
-        GeneratedBootstrapRegistry.HasBootstraps.Should( ).BeTrue( );
-    }
+	[Fact]
+	public void HasBootstraps_ShouldBeTrue_AfterAtLeastOneRegistration( ) {
+		GeneratedBootstrapRegistry.Register( new FakeBootstrap( ) );
+		GeneratedBootstrapRegistry.HasBootstraps.Should( ).BeTrue( );
+	}
 
-    // ─── Register / GetAll ───────────────────────────────────────────────────────
+	// ─── Register / GetAll ───────────────────────────────────────────────────────
 
-    [Fact]
-    public void GetAll_ShouldReturn_AllRegisteredBootstraps( ) {
-        var first = new FakeBootstrap( );
-        var second = new FakeBootstrap( );
+	[Fact]
+	public void GetAll_ShouldReturn_AllRegisteredBootstraps( ) {
+		var first = new FakeBootstrap( );
+		var second = new FakeBootstrap( );
 
-        GeneratedBootstrapRegistry.Register( first );
-        GeneratedBootstrapRegistry.Register( second );
+		GeneratedBootstrapRegistry.Register( first );
+		GeneratedBootstrapRegistry.Register( second );
 
-        var all = GeneratedBootstrapRegistry.GetAll( );
+		var all = GeneratedBootstrapRegistry.GetAll( );
 
-        all.Should( ).HaveCount( 2 );
-        all.Should( ).Contain( first );
-        all.Should( ).Contain( second );
-    }
+		all.Should( ).HaveCount( 2 );
+		all.Should( ).Contain( first );
+		all.Should( ).Contain( second );
+	}
 
-    [Fact]
-    public void Register_WithNullBootstrap_ShouldThrowArgumentNullException( ) {
-        var act = ( ) => GeneratedBootstrapRegistry.Register( null! );
-        act.Should( ).Throw<ArgumentNullException>( );
-    }
+	[Fact]
+	public void Register_WithNullBootstrap_ShouldThrowArgumentNullException( ) {
+		var act = ( ) => GeneratedBootstrapRegistry.Register( null! );
+		act.Should( ).Throw<ArgumentNullException>( );
+	}
 
-    [Fact]
-    public void HasBootstraps_ShouldBeFalse_AfterClear( ) {
-        GeneratedBootstrapRegistry.Register( new FakeBootstrap( ) );
-        GeneratedBootstrapRegistry.Clear( );
+	[Fact]
+	public void HasBootstraps_ShouldBeFalse_AfterClear( ) {
+		GeneratedBootstrapRegistry.Register( new FakeBootstrap( ) );
+		GeneratedBootstrapRegistry.Clear( );
 
-        GeneratedBootstrapRegistry.HasBootstraps.Should( ).BeFalse( );
-    }
+		GeneratedBootstrapRegistry.HasBootstraps.Should( ).BeFalse( );
+	}
 
-    [Fact]
-    public void GetAll_ShouldReturnReadOnlyCollection_ThatDoesNotReflectLaterChanges( ) {
-        GeneratedBootstrapRegistry.Register( new FakeBootstrap( ) );
-        var snapshot = GeneratedBootstrapRegistry.GetAll( );
+	[Fact]
+	public void GetAll_ShouldReturnReadOnlyCollection_ThatDoesNotReflectLaterChanges( ) {
+		GeneratedBootstrapRegistry.Register( new FakeBootstrap( ) );
+		var snapshot = GeneratedBootstrapRegistry.GetAll( );
 
-        GeneratedBootstrapRegistry.Register( new FakeBootstrap( ) );
+		GeneratedBootstrapRegistry.Register( new FakeBootstrap( ) );
 
-        snapshot.Should( ).HaveCount( 1, "GetAll returns a snapshot, not a live view" );
-    }
+		snapshot.Should( ).HaveCount( 1, "GetAll returns a snapshot, not a live view" );
+	}
 
-    // ─── Test helpers ────────────────────────────────────────────────────────────
+	// ─── Test helpers ────────────────────────────────────────────────────────────
 
-    private sealed class FakeBootstrap : IMorphRegistrationBootstrap {
-        public void Register( SchemaRegistry registry ) { }
-    }
+	private sealed class FakeBootstrap : IMorphRegistrationBootstrap {
+		public void Register( SchemaRegistry registry ) { }
+	}
 }
