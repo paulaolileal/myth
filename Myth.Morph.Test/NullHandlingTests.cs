@@ -174,6 +174,7 @@ public class BindWhenTests : BaseTestFixture {
 
 // ─── NullPropertyBehavior.Skip tests ─────────────────────────────────────────
 
+[Collection( "Sequential" )]
 public class NullBehaviorSkipTests : IDisposable {
 
 	public NullBehaviorSkipTests( ) {
@@ -215,6 +216,7 @@ public class NullBehaviorSkipTests : IDisposable {
 
 // ─── NullPropertyBehavior.Throw tests ────────────────────────────────────────
 
+[Collection( "Sequential" )]
 public class NullBehaviorThrowTests : IDisposable {
 
 	public NullBehaviorThrowTests( ) {
