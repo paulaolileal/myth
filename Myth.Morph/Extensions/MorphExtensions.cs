@@ -1,5 +1,3 @@
-using System.Reflection;
-using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.Logging;
 using Myth.Exceptions;
 using Myth.Morph;
@@ -52,19 +50,14 @@ public static class MorphExtensions {
 
 		logger?.LogTrace( "Retrieved SchemaRegistry from service provider" );
 
-		var method = typeof( SchemaRegistry )
-			.GetMethod( nameof( SchemaRegistry.Morph ) )!
-			.MakeGenericMethod( srcType, destType );
-
+		// MorphDelegateCache compiles a typed delegate once per (srcType, destType) pair,
+		// avoiding MakeGenericMethod + Invoke overhead on every call.
+		// Unlike MethodInfo.Invoke, Expression-compiled delegates propagate exceptions directly.
 		try {
-			var result = ( TDestination )method.Invoke( registry, [ source ] )!;
+			var morphDelegate = MorphDelegateCache.GetMorphDelegate( srcType, destType );
+			var result = ( TDestination )morphDelegate( registry, source );
 			logger?.LogDebug( "Successfully converted {SourceType} to {DestinationType}", srcType.Name, destType.Name );
 			return result;
-		} catch ( TargetInvocationException ex ) when ( ex.InnerException is not null ) {
-			// Unwrap TargetInvocationException so callers receive the actual mapping exception
-			logger?.LogError( ex.InnerException, "Failed to convert {SourceType} to {DestinationType}", srcType.Name, destType.Name );
-			ExceptionDispatchInfo.Capture( ex.InnerException ).Throw( );
-			throw; // unreachable — satisfies compiler
 		} catch ( Exception ex ) {
 			logger?.LogError( ex, "Failed to convert {SourceType} to {DestinationType}", srcType.Name, destType.Name );
 			throw;

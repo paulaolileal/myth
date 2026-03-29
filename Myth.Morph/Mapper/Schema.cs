@@ -290,36 +290,20 @@ public class Schema<TDestination> {
 	public Schema<TDestination> Bind<TValue>( Expression<Func<TValue>> destinationPropertyGetter, Expression<Func<TDestination, TValue>> sourceExpression ) {
 		var compiledSourceExpression = sourceExpression.Compile( );
 
-		// Extract the destination property name from the destinationPropertyGetter expression
-		string destinationPropertyName = null;
-		if ( destinationPropertyGetter.Body is MemberExpression memberExpr ) {
-			destinationPropertyName = memberExpr.Member.Name;
-		}
-
-		if ( destinationPropertyName == null ) {
+		if ( destinationPropertyGetter.Body is not MemberExpression memberExpr )
 			throw new BindException( "Invalid destination property expression. Use () => PropertyName syntax." );
-		}
 
-		// Mark this property as manually mapped to prevent auto-mapping from overriding
-		_manuallyMappedDestProps.Add( destinationPropertyName );
+		var destinationMember = memberExpr.Member;
+		_manuallyMappedDestProps.Add( destinationMember.Name );
 
 		_reverseMappings.Add( ( source, destination, sp ) => {
 			var logger = GetLogger( sp );
 			try {
-				// Calculate the value from the source using the expression
 				var calculatedValue = compiledSourceExpression( ( TDestination )source );
-
-				// Set the value on the destination object
-				var destType = destination.GetType( );
-				var property = destType.GetProperty( destinationPropertyName );
-				if ( property != null && property.CanWrite ) {
-					property.SetValue( destination, calculatedValue );
-					logger?.LogTrace( "Set property {PropertyName} to value {Value}", destinationPropertyName, calculatedValue );
-				} else {
-					logger?.LogWarning( "Property {PropertyName} not found or not writable on type {DestinationType}", destinationPropertyName, destType.Name );
-				}
+				CompiledSetterCache.GetSetter( destinationMember ).Invoke( destination, calculatedValue );
+				logger?.LogTrace( "Set property {PropertyName}", destinationMember.Name );
 			} catch ( Exception ex ) {
-				logger?.LogError( ex, "Error applying reverse binding for property {PropertyName}", destinationPropertyName );
+				logger?.LogError( ex, "Error applying reverse binding for property {PropertyName}", destinationMember.Name );
 				throw;
 			}
 		} );
@@ -337,36 +321,20 @@ public class Schema<TDestination> {
 	/// <param name="sourceExpression">A function that calculates a value from the source object with service provider access.</param>
 	/// <returns>The current <see cref="Schema{TDestination}"/> instance, allowing for method chaining.</returns>
 	public Schema<TDestination> Bind<TValue>( Expression<Func<TValue>> destinationPropertyGetter, Func<TDestination, IServiceProvider, TValue> sourceExpression ) {
-		// Extract the destination property name from the destinationPropertyGetter expression
-		string destinationPropertyName = null;
-		if ( destinationPropertyGetter.Body is MemberExpression memberExpr ) {
-			destinationPropertyName = memberExpr.Member.Name;
-		}
-
-		if ( destinationPropertyName == null ) {
+		if ( destinationPropertyGetter.Body is not MemberExpression memberExpr )
 			throw new BindException( "Invalid destination property expression. Use () => PropertyName syntax." );
-		}
 
-		// Mark this property as manually mapped to prevent auto-mapping from overriding
-		_manuallyMappedDestProps.Add( destinationPropertyName );
+		var destinationMember = memberExpr.Member;
+		_manuallyMappedDestProps.Add( destinationMember.Name );
 
 		_reverseMappings.Add( ( source, destination, sp ) => {
 			var logger = GetLogger( sp );
 			try {
-				// Calculate the value from the source using the expression with service provider
 				var calculatedValue = sourceExpression( ( TDestination )source, sp );
-
-				// Set the value on the destination object
-				var destType = destination.GetType( );
-				var property = destType.GetProperty( destinationPropertyName );
-				if ( property != null && property.CanWrite ) {
-					property.SetValue( destination, calculatedValue );
-					logger?.LogTrace( "Set property {PropertyName} to value {Value} using service provider", destinationPropertyName, calculatedValue );
-				} else {
-					logger?.LogWarning( "Property {PropertyName} not found or not writable on type {DestinationType}", destinationPropertyName, destType.Name );
-				}
+				CompiledSetterCache.GetSetter( destinationMember ).Invoke( destination, calculatedValue );
+				logger?.LogTrace( "Set property {PropertyName} using service provider", destinationMember.Name );
 			} catch ( Exception ex ) {
-				logger?.LogError( ex, "Error applying service provider binding for property {PropertyName}", destinationPropertyName );
+				logger?.LogError( ex, "Error applying service provider binding for property {PropertyName}", destinationMember.Name );
 				throw;
 			}
 		} );
@@ -384,36 +352,20 @@ public class Schema<TDestination> {
 	/// <param name="sourceExpressionAsync">An async function that calculates a value from the source object using MythServiceProvider for services.</param>
 	/// <returns>The current <see cref="Schema{TDestination}"/> instance, allowing for method chaining.</returns>
 	public Schema<TDestination> BindAsync<TValue>( Expression<Func<TValue>> destinationPropertyGetter, Func<TDestination, Task<TValue>> sourceExpressionAsync ) {
-		// Extract the destination property name from the destinationPropertyGetter expression
-		string destinationPropertyName = null;
-		if ( destinationPropertyGetter.Body is MemberExpression memberExpr ) {
-			destinationPropertyName = memberExpr.Member.Name;
-		}
-
-		if ( destinationPropertyName == null ) {
+		if ( destinationPropertyGetter.Body is not MemberExpression memberExpr )
 			throw new BindException( "Invalid destination property expression. Use () => PropertyName syntax." );
-		}
 
-		// Mark this property as manually mapped to prevent auto-mapping from overriding
-		_manuallyMappedDestProps.Add( destinationPropertyName );
+		var destinationMember = memberExpr.Member;
+		_manuallyMappedDestProps.Add( destinationMember.Name );
 
 		_asyncReverseMappings.Add( async ( source, destination, sp ) => {
 			var logger = GetLogger( sp );
 			try {
-				// Calculate the value from the source using the async expression (no service provider parameter)
 				var calculatedValue = await sourceExpressionAsync( ( TDestination )source );
-
-				// Set the value on the destination object
-				var destType = destination.GetType( );
-				var property = destType.GetProperty( destinationPropertyName );
-				if ( property != null && property.CanWrite ) {
-					property.SetValue( destination, calculatedValue );
-					logger?.LogTrace( "Set property {PropertyName} to async value {Value}", destinationPropertyName, calculatedValue );
-				} else {
-					logger?.LogWarning( "Property {PropertyName} not found or not writable on type {DestinationType}", destinationPropertyName, destType.Name );
-				}
+				CompiledSetterCache.GetSetter( destinationMember ).Invoke( destination, calculatedValue );
+				logger?.LogTrace( "Set property {PropertyName} to async value", destinationMember.Name );
 			} catch ( Exception ex ) {
-				logger?.LogError( ex, "Error applying async reverse binding for property {PropertyName}", destinationPropertyName );
+				logger?.LogError( ex, "Error applying async reverse binding for property {PropertyName}", destinationMember.Name );
 				throw;
 			}
 		} );
@@ -558,13 +510,13 @@ public class Schema<TDestination> {
 		try {
 			switch ( member ) {
 				case PropertyInfo p when p.CanWrite:
-					p.SetValue( target, value );
+					CompiledSetterCache.GetSetter( p ).Invoke( target, value );
 					logger?.LogTrace( "Successfully set property {PropertyName} to value of type {ValueType}",
 						p.Name, value?.GetType( ).Name ?? "null" );
 					break;
 
 				case FieldInfo f when !f.IsInitOnly && !f.IsLiteral:
-					f.SetValue( target, value );
+					CompiledSetterCache.GetSetter( f ).Invoke( target, value );
 					logger?.LogTrace( "Successfully set field {FieldName} to value of type {ValueType}",
 						f.Name, value?.GetType( ).Name ?? "null" );
 					break;
@@ -601,26 +553,18 @@ public class Schema<TDestination> {
 			}
 		}
 
-		// Apply auto-mapping using executor
-		// Note: For IMorphableFrom pattern, TDestination is actually the SOURCE type (User),
-		// and destination parameter is the actual DTO we're mapping TO
+		// Apply auto-mapping using executor.
+		// FromMappingExecutorFactory replaces MakeGenericType + Activator.CreateInstance.
 		logger?.LogTrace( "Starting automatic property mapping using FromMappingExecutor" );
 
-		// Create a FromMappingExecutor for the actual destination type
 		var actualDestinationType = destination.GetType( );
-		var logger2 = GetLogger( serviceProvider );
-		var typeResolverLogger = logger2 != null ? serviceProvider.GetService<ILogger<TypeResolver>>( ) : null;
+		var executorLogger = GetLogger( serviceProvider );
+		var typeResolverLogger = executorLogger != null ? serviceProvider.GetService<ILogger<TypeResolver>>( ) : null;
 		var typeResolver = new TypeResolver( typeResolverLogger );
 		var nullBehavior = serviceProvider.GetService<MorphSettings>( )?.NullSourcePropertyBehavior ?? NullPropertyBehavior.AssignDefault;
 
-		// Use reflection to create and invoke the executor for the actual destination type
-		var executorType = typeof( FromMappingExecutor<> ).MakeGenericType( actualDestinationType );
-		var executor = Activator.CreateInstance( executorType, logger2, typeResolver, nullBehavior )!;
-
-		var applyMethod = executorType.GetMethod( nameof( FromMappingExecutor<object>.ApplyMapping ) );
-		if ( applyMethod != null ) {
-			applyMethod.Invoke( executor, [ source, destination, serviceProvider, _manuallyMappedDestProps, _ignoredProperties ] );
-		}
+		var applier = FromMappingExecutorFactory.Create( actualDestinationType, executorLogger, typeResolver, nullBehavior );
+		applier.ApplyMapping( source, destination, serviceProvider, _manuallyMappedDestProps, _ignoredProperties );
 
 		logger?.LogDebug( "Completed reverse mapping with {MappingCount} mappings", _reverseMappings.Count );
 	}
@@ -657,24 +601,18 @@ public class Schema<TDestination> {
 			}
 		}
 
-		// Apply auto-mapping using executor
+		// Apply auto-mapping using executor.
+		// FromMappingExecutorFactory replaces MakeGenericType + Activator.CreateInstance.
 		logger?.LogTrace( "Starting automatic property mapping using FromMappingExecutor" );
 
-		// Create a FromMappingExecutor for the actual destination type
 		var actualDestinationType = destination.GetType( );
-		var logger2 = GetLogger( serviceProvider );
-		var typeResolverLogger = logger2 != null ? serviceProvider.GetService<ILogger<TypeResolver>>( ) : null;
+		var executorLogger = GetLogger( serviceProvider );
+		var typeResolverLogger = executorLogger != null ? serviceProvider.GetService<ILogger<TypeResolver>>( ) : null;
 		var typeResolver = new TypeResolver( typeResolverLogger );
 		var nullBehavior = serviceProvider.GetService<MorphSettings>( )?.NullSourcePropertyBehavior ?? NullPropertyBehavior.AssignDefault;
 
-		// Use reflection to create and invoke the executor for the actual destination type
-		var executorType = typeof( FromMappingExecutor<> ).MakeGenericType( actualDestinationType );
-		var executor = Activator.CreateInstance( executorType, logger2, typeResolver, nullBehavior )!;
-
-		var applyMethod = executorType.GetMethod( nameof( FromMappingExecutor<object>.ApplyMapping ) );
-		if ( applyMethod != null ) {
-			applyMethod.Invoke( executor, [ source, destination, serviceProvider, _manuallyMappedDestProps, _ignoredProperties ] );
-		}
+		var applier = FromMappingExecutorFactory.Create( actualDestinationType, executorLogger, typeResolver, nullBehavior );
+		applier.ApplyMapping( source, destination, serviceProvider, _manuallyMappedDestProps, _ignoredProperties );
 
 		logger?.LogDebug( "Completed async reverse mapping with {SyncMappingCount} sync and {AsyncMappingCount} async mappings", _reverseMappings.Count, _asyncReverseMappings.Count );
 	}

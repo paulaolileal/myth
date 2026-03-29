@@ -46,8 +46,16 @@ public static class ServiceCollectionExtensions {
 				registry.RegisterGenericMapping( iface, concrete );
 			}
 
-			// Register profiles based on IMorphableTo<TDestination> and IMorphableFrom<TSource> interfaces
-			RegisterInstanceBasedMorphProfiles( registry, assemblies, logger );
+			// Use generated bootstrap when available (populated by [ModuleInitializer] in generated code).
+			// Falls back to assembly scanning when Myth.Morph.Generator is not present.
+			if ( GeneratedBootstrapRegistry.HasBootstraps ) {
+				logger?.LogInformation( "Using generated bootstrap(s) — assembly scanning skipped" );
+				foreach ( var bootstrap in GeneratedBootstrapRegistry.GetAll( ) ) {
+					bootstrap.Register( registry );
+				}
+			} else {
+				RegisterInstanceBasedMorphProfiles( registry, assemblies, logger );
+			}
 
 			// Register automatic mapping for equal generic types
 			registry.RegisterGenericEqualTypesMapping( );
