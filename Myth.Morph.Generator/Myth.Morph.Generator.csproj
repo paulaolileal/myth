@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- Target netstandard2.0 — required for Roslyn source generators -->
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
+		<!-- Roslyn component flags -->
+		<IsRoslynComponent>true</IsRoslynComponent>
+		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+		<!-- Settings -->
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>Myth.Morph.Generator</RootNamespace>
+		<!-- Package -->
+		<PackageId>Myth.Morph.Generator</PackageId>
+		<Title>Myth Morph Source Generator</Title>
+		<Authors>Paula Leal</Authors>
+		<Company>Myth</Company>
+		<Description>Roslyn incremental source generator for Myth.Morph. Generates zero-reflection auto-mappers and bootstrap registration code for IMorphableTo/IMorphableFrom types, enabling AOT and NativeAOT compatibility.</Description>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageTags>dotnet;source-generator;roslyn;object-mapping;morphing;automapper;aot;myth</PackageTags>
+		<DevelopmentDependency>true</DevelopmentDependency>
+		<!-- Docs -->
+		<RepositoryUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Morph.Generator</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/paulaolileal/myth/tree/main/Myth.Morph.Generator</PackageProjectUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="README.md" Condition="Exists('README.md')">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+</Project>

@@ -21,6 +21,7 @@
     <Project Path="Myth.Guard/Myth.Guard.csproj" />
   </Folder>
   <Folder Name="/Morph/">
+    <Project Path="Myth.Morph.Generator/Myth.Morph.Generator.csproj" />
     <Project Path="Myth.Morph.Test/Myth.Morph.Test.csproj" />
     <Project Path="Myth.Morph/Myth.Morph.csproj" />
   </Folder>
