@@ -9,19 +9,34 @@ namespace Myth.Repositories.EntityFramework;
 public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity> where TEntity : class {
 
 	/// <summary>
-	/// Searches for all elements that are satisfied by specification
+	/// Searches for all elements that are satisfied by specification. Entities are tracked by the
+	/// EF Core change tracker — modifications persist on the next <c>SaveChangesAsync</c> call.
 	/// </summary>
 	/// <param name="specification">Predicate based on specification</param>
 	/// <param name="cancellationToken">Cancellation token</param>
-	/// <returns>An enumerable collection</returns>
-	public virtual async Task<IEnumerable<TEntity>> SearchAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) {
-		var result = await _context
+	/// <returns>A materialized, change-tracked read-only list</returns>
+	public virtual async Task<IReadOnlyList<TEntity>> SearchAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) {
+		return await _context
 			.Set<TEntity>( )
 			.AsQueryable( )
 			.Specify( specification )
 			.ToListAsync( cancellationToken );
+	}
 
-		return result.AsEnumerable( );
+	/// <summary>
+	/// Searches for all elements that are satisfied by specification without EF Core change tracking.
+	/// Use for read-only scenarios such as projections and reports.
+	/// </summary>
+	/// <param name="specification">Predicate based on specification</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>A materialized, non-tracked read-only list</returns>
+	public virtual async Task<IReadOnlyList<TEntity>> SearchAsNoTrackingAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default ) {
+		return await _context
+			.Set<TEntity>( )
+			.AsNoTracking( )
+			.AsQueryable( )
+			.Specify( specification )
+			.ToListAsync( cancellationToken );
 	}
 
 	/// <summary>

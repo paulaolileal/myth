@@ -10,13 +10,15 @@ namespace Myth.Repositories.EntityFramework;
 public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity> where TEntity : class {
 
 	/// <summary>
-	/// Searches for all elements that are satisfied by filter predicate with optional ordering
+	/// Searches for all elements that are satisfied by filter predicate with optional ordering.
+	/// Entities are tracked by the EF Core change tracker — modifications persist on the next
+	/// <c>SaveChangesAsync</c> call.
 	/// </summary>
 	/// <param name="filterPredicate">Predicate for filtering entities</param>
 	/// <param name="orderPredicate">Optional predicate for ordering entities</param>
 	/// <param name="cancellationToken">Cancellation token</param>
-	/// <returns>An enumerable collection of entities that satisfy the filter predicate</returns>
-	public virtual async Task<IEnumerable<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> filterPredicate, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default ) {
+	/// <returns>A materialized, change-tracked read-only list</returns>
+	public virtual async Task<IReadOnlyList<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> filterPredicate, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default ) {
 		var query = _context
 			.Set<TEntity>( )
 			.Where( filterPredicate )
@@ -25,9 +27,28 @@ public partial class ReadRepositoryAsync<TEntity> : IReadRepositoryAsync<TEntity
 		if ( orderPredicate is not null )
 			query = query.OrderBy( orderPredicate );
 
-		var result = await query.ToListAsync( cancellationToken );
+		return await query.ToListAsync( cancellationToken );
+	}
 
-		return result.AsEnumerable( );
+	/// <summary>
+	/// Searches for all elements that are satisfied by filter predicate without EF Core change tracking.
+	/// Use for read-only scenarios such as projections and reports.
+	/// </summary>
+	/// <param name="filterPredicate">Predicate for filtering entities</param>
+	/// <param name="orderPredicate">Optional predicate for ordering entities</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>A materialized, non-tracked read-only list</returns>
+	public virtual async Task<IReadOnlyList<TEntity>> SearchAsNoTrackingAsync( Expression<Func<TEntity, bool>> filterPredicate, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default ) {
+		var query = _context
+			.Set<TEntity>( )
+			.AsNoTracking( )
+			.Where( filterPredicate )
+			.AsQueryable( );
+
+		if ( orderPredicate is not null )
+			query = query.OrderBy( orderPredicate );
+
+		return await query.ToListAsync( cancellationToken );
 	}
 
 	/// <summary>

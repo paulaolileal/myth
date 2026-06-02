@@ -452,7 +452,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product> {
 // Repository Interface
 public interface IProductRepository : IReadWriteRepositoryAsync<Product> {
     Task<Product?> GetByNameAsync(string name, CancellationToken ct = default);
-    Task<IEnumerable<Product>> GetInStockAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<Product>> GetInStockAsync(CancellationToken ct = default);
     Task<IPaginated<Product>> SearchProductsAsync(
         string? search,
         decimal? minPrice,
@@ -469,7 +469,7 @@ public class ProductRepository : ReadWriteRepositoryAsync<Product>, IProductRepo
         return await FirstOrDefaultAsync(p => p.Name == name, ct);
     }
 
-    public async Task<IEnumerable<Product>> GetInStockAsync(CancellationToken ct = default) {
+    public async Task<IReadOnlyList<Product>> GetInStockAsync(CancellationToken ct = default) {
         return await SearchAsync(p => p.IsActive && p.Stock > 0, p => p.Name, ct);
     }
 
@@ -747,7 +747,7 @@ public abstract class SoftDeleteRepository<TEntity> : ReadWriteRepositoryAsync<T
         return UpdateAsync(entity, ct);
     }
 
-    public override Task<IEnumerable<TEntity>> SearchAsync(
+    public override Task<IReadOnlyList<TEntity>> SearchAsync(
         Expression<Func<TEntity, bool>> filterPredicate,
         Expression<Func<TEntity, bool>>? orderPredicate = null,
         CancellationToken ct = default) {
@@ -765,6 +765,56 @@ public abstract class SoftDeleteRepository<TEntity> : ReadWriteRepositoryAsync<T
     }
 }
 ```
+
+---
+
+## Change Tracking
+
+### SearchAsync vs SearchAsNoTrackingAsync
+
+`SearchAsync` returns a **change-tracked** `IReadOnlyList<TEntity>`. Entities returned are registered in the EF Core change tracker, so any property modifications will be automatically detected and persisted on the next `SaveChangesAsync` call — no need to call `UpdateAsync`.
+
+```csharp
+// ✅ CORRECT: modify entities from SearchAsync and save directly
+var orders = await _orderRepository.SearchAsync(spec, ct);
+foreach (var order in orders)
+    order.Status = OrderStatus.Shipped;
+
+await _unitOfWork.SaveChangesAsync(ct); // EF Core detects all changes
+```
+
+`SearchAsNoTrackingAsync` returns entities **without registering them** in the change tracker. Use it for read-only scenarios (reports, projections, API list endpoints) where you will NOT modify the returned entities. It avoids the memory and CPU overhead of change tracking.
+
+```csharp
+// ✅ CORRECT: read-only projection — use AsNoTracking
+var products = await _productRepository.SearchAsNoTrackingAsync(
+    p => p.IsActive && p.Price < 100, ct);
+
+return products.Select(p => new ProductDto(p.Id, p.Name, p.Price)).ToList();
+```
+
+| | `SearchAsync` | `SearchAsNoTrackingAsync` |
+|---|---|---|
+| Change tracking | ✅ Active | ❌ Disabled |
+| Modifiable without `UpdateAsync` | ✅ Yes | ❌ No |
+| Best for | Writes, soft-delete, in-place updates | Reports, projections, list endpoints |
+| Memory overhead | Higher (tracking graph) | Lower |
+
+### IReadOnlyList<T> and the .Count Pitfall
+
+`SearchAsync` returns `IReadOnlyList<TEntity>` (not `IEnumerable<TEntity>`). The result is fully materialized in memory. Use the `.Count` **property** — it is O(1):
+
+```csharp
+var results = await repo.SearchAsync(spec, ct);
+
+// ✅ CORRECT — IReadOnlyList.Count property, O(1)
+var total = results.Count;
+
+// ✅ Also correct but unnecessary — LINQ extension, O(n)
+var total = results.Count();
+```
+
+> **Note:** If your repository exposes a custom method returning `IEnumerable<T>`, the `.Count` property always returns `1` (the count of the `IEnumerable` wrapper object, not its elements). Prefer returning `IReadOnlyList<T>` in your own methods too.
 
 ---
 
@@ -876,7 +926,7 @@ Controller/Service → DbContext → Database
 // 1. Define specific interface
 public interface IProductRepository : IReadWriteRepositoryAsync<Product> {
     Task<Product?> GetByNameAsync(string name, CancellationToken ct = default);
-    Task<IEnumerable<Product>> GetInStockAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<Product>> GetInStockAsync(CancellationToken ct = default);
 }
 
 // 2. Implement it inheriting from ReadWriteRepositoryAsync
@@ -886,7 +936,7 @@ public class ProductRepository : ReadWriteRepositoryAsync<Product>, IProductRepo
     public async Task<Product?> GetByNameAsync(string name, CancellationToken ct = default) =>
         await FirstOrDefaultAsync(p => p.Name == name, ct);
 
-    public async Task<IEnumerable<Product>> GetInStockAsync(CancellationToken ct = default) =>
+    public async Task<IReadOnlyList<Product>> GetInStockAsync(CancellationToken ct = default) =>
         await SearchAsync(p => p.IsActive && p.Stock > 0, p => p.Name, ct);
 }
 

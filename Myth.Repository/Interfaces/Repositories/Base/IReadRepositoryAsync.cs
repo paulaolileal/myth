@@ -33,21 +33,58 @@ public interface IReadRepositoryAsync<TEntity> : IRepository, IAsyncDisposable {
 	IEnumerable<TEntity> AsEnumerable( );
 
 	/// <summary>
-	/// Searchs for all elements that is satisfyed by predicate
+	/// Searches for all elements that satisfy the specification. Returned entities are tracked by the
+	/// EF Core change tracker — modifications will be persisted on the next <c>SaveChangesAsync</c> call.
+	/// Use <see cref="SearchAsNoTrackingAsync(ISpec{TEntity},CancellationToken)"/> for read-only scenarios
+	/// to avoid unnecessary tracking overhead.
+	/// </summary>
+	/// <remarks>
+	/// The result is already fully materialized in memory. Use <c>.Count</c> (property of
+	/// <see cref="IReadOnlyList{T}"/>) rather than the LINQ <c>.Count()</c> extension method —
+	/// both work correctly, but the property is O(1).
+	/// </remarks>
+	/// <param name="specification">Predicate based on specification</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>A materialized, change-tracked read-only list</returns>
+	Task<IReadOnlyList<TEntity>> SearchAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
+
+	/// <summary>
+	/// Searches for all elements that satisfy the filter predicate. Returned entities are tracked by the
+	/// EF Core change tracker — modifications will be persisted on the next <c>SaveChangesAsync</c> call.
+	/// Use <see cref="SearchAsNoTrackingAsync(Expression{Func{TEntity,bool}},Expression{Func{TEntity,bool}},CancellationToken)"/>
+	/// for read-only scenarios to avoid unnecessary tracking overhead.
+	/// </summary>
+	/// <remarks>
+	/// The result is already fully materialized in memory. Use <c>.Count</c> (property of
+	/// <see cref="IReadOnlyList{T}"/>) rather than the LINQ <c>.Count()</c> extension method —
+	/// both work correctly, but the property is O(1).
+	/// </remarks>
+	/// <param name="filterPredicate">Predicate for filtering</param>
+	/// <param name="orderPredicate">Predicate for ordering</param>
+	/// <param name="cancellationToken">Cancellation token</param>
+	/// <returns>A materialized, change-tracked read-only list</returns>
+	Task<IReadOnlyList<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> filterPredicate, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default );
+
+	/// <summary>
+	/// Searches for all elements that satisfy the specification without registering them in the
+	/// EF Core change tracker. Ideal for read-only operations such as projections and reports where
+	/// no entity modification will occur.
 	/// </summary>
 	/// <param name="specification">Predicate based on specification</param>
 	/// <param name="cancellationToken">Cancellation token</param>
-	/// <returns>A enumerable collection</returns>
-	Task<IEnumerable<TEntity>> SearchAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
+	/// <returns>A materialized, non-tracked read-only list</returns>
+	Task<IReadOnlyList<TEntity>> SearchAsNoTrackingAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
 
 	/// <summary>
-	/// Searchs for all elements that is satisfyed by predicate
+	/// Searches for all elements that satisfy the filter predicate without registering them in the
+	/// EF Core change tracker. Ideal for read-only operations such as projections and reports where
+	/// no entity modification will occur.
 	/// </summary>
 	/// <param name="filterPredicate">Predicate for filtering</param>
 	/// <param name="orderPredicate">Predicate for ordering</param>
 	/// <param name="cancellationToken">Cancellation token</param>
-	/// <returns>A enumerable collection</returns>
-	Task<IEnumerable<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> filterPredicate, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default );
+	/// <returns>A materialized, non-tracked read-only list</returns>
+	Task<IReadOnlyList<TEntity>> SearchAsNoTrackingAsync( Expression<Func<TEntity, bool>> filterPredicate, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default );
 
 	/// <summary>
 	/// Searchs for all elements that is satisfyed by predicate and paginate
