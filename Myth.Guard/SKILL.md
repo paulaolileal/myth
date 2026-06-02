@@ -61,6 +61,67 @@ dotnet add package Myth.Guard
 
 ---
 
+## Namespace Reference
+
+All types from Myth.Guard live in the `Myth.Guard` assembly. The namespaces are:
+
+| Type | Namespace | Notes |
+|------|-----------|-------|
+| `IValidatable<T>` | `Myth.Interfaces` | |
+| `IValidator` | `Myth.Interfaces` | |
+| `ValidationBuilder<T>` | `Myth.Guard` | |
+| `FluentRuleBuilder<T>` | `Myth.Guard` | |
+| `FluentRuleBuilderExtensions` | `Myth.Guard` | All rule extension methods |
+| `ValidationContextKey` | `Myth.Guard` | |
+| `Sentry` | `Myth.Guard` | Standalone field validation |
+| `Validate` | `Myth.Guard` | Multi-value parallel validation |
+| `ValidationResult` | `Myth.Guard` | |
+| `ValidationError` | `Myth.Guard` | |
+| `ValidationException` | **`Myth.Exceptions`** | ⚠️ NOT `Myth.Guard.Exceptions` — add `using Myth.Exceptions;` |
+
+> **Common import mistake:** `ValidationException` is in `Myth.Exceptions`, even though it is part of the Myth.Guard assembly. Always add `using Myth.Exceptions;` when throwing or catching it.
+
+---
+
+## Common Validation Pitfalls
+
+### NotDefault() vs NotEmpty() for Guid and value types
+
+`NotEmpty()` is a **string rule** — it validates that a string is not null/empty/whitespace. When called on a `Guid`, it **compiles but does not validate `Guid.Empty`**, producing a silent runtime bug.
+
+Use `NotDefault()` for Guid, enum, int, and other value types where "empty" means the default value:
+
+```csharp
+// ❌ WRONG — compiles but Guid.Empty passes validation
+builder.For(x.OrganizationId, r => r.NotEmpty());
+
+// ✅ CORRECT — rejects Guid.Empty
+builder.For(x.OrganizationId, r => r.NotDefault());
+```
+
+| Type | Correct rule | Why |
+|------|-------------|-----|
+| `string` | `NotEmpty()` | Checks null/empty/whitespace |
+| `Guid` | `NotDefault()` | `Guid.Empty` is `default(Guid)` |
+| `int`, `long`, etc. | `NotDefault()` | `0` is `default(int)` |
+| `bool` | `IsTrue()` or `IsFalse()` | Context-dependent |
+| `DateTime` | `NotDefault()` | `DateTime.MinValue` is `default` |
+| Collection | `NotEmpty()` (collection rule) | Checks empty collection |
+
+### MaxLength / MinLength vs MaximumLength / MinimumLength
+
+The canonical method names are `MaximumLength(int)` and `MinimumLength(int)`. The shorter aliases `MaxLength(int)` and `MinLength(int)` also exist and are identical. Use whichever is more natural:
+
+```csharp
+// Both are equivalent:
+builder.For(x.Name, r => r.MaximumLength(100));
+builder.For(x.Name, r => r.MaxLength(100));      // alias
+```
+
+> **Don't use `.Must(v => v.Length <= 100)`** — it works but produces a generic error message without the max-length value. The built-in rule generates a structured message like _"Name must have at most 100 characters"_.
+
+---
+
 ## Core Concepts
 
 ### 1. IValidatable<T>
@@ -820,6 +881,68 @@ public class StatusDto : IValidatable<StatusDto> {
     }
 }
 ```
+
+---
+
+## Async Business Rule Validation
+
+`RespectAsync` provides full DI access inside validation rules, making it the right tool for database-backed business rules: entity existence, unique-constraint checks, plan limits, permissions.
+
+### Entity existence check
+
+```csharp
+public class CreateProjectCommand : IValidatable<CreateProjectCommand> {
+    public Guid WorkspaceId { get; set; }
+    public string Name { get; set; } = string.Empty;
+
+    public void Validate(ValidationBuilder<CreateProjectCommand> builder, ValidationContextKey? context = null) {
+        builder.For(WorkspaceId, r => r
+            .NotDefault()                                 // Guid.Empty is invalid
+            .RespectAsync(async (id, ct, sp) => {
+                var repo = sp.GetRequiredService<IWorkspaceRepository>();
+                return await repo.AnyAsync(w => w.Id == id, ct);
+            })
+            .WithMessage("Workspace not found")
+            .WithStatusCode(HttpStatusCode.NotFound));
+
+        builder.For(Name, r => r
+            .NotEmpty()
+            .MaxLength(100));
+    }
+}
+```
+
+### Unique constraint check (Create context only)
+
+```csharp
+builder.InContext(ValidationContextKey.Create, b => {
+    b.For(Email, r => r
+        .NotEmpty()
+        .Email()
+        .RespectAsync(async (email, ct, sp) => {
+            var repo = sp.GetRequiredService<IUserRepository>();
+            return !await repo.AnyAsync(u => u.Email == email, ct);
+        })
+        .WithMessage("Email is already registered")
+        .WithStatusCode(HttpStatusCode.Conflict));
+});
+```
+
+### Plan limit / credit check (cross-property with entity access)
+
+```csharp
+builder.For(Count, r => r
+    .GreaterThan(0)
+    .RespectAsync<CreateItemsCommand>(async (count, command, ct, sp) => {
+        var repo = sp.GetRequiredService<IUserRepository>();
+        var user = await repo.FirstOrDefaultAsync(u => u.Id == command.UserId, ct);
+        return user?.RemainingCredits >= count;
+    })
+    .WithMessage("Insufficient credits")
+    .WithStatusCode(HttpStatusCode.PaymentRequired));
+```
+
+> **Note:** The overload `RespectAsync<TEntity>(Func<TValue, TEntity, ct, sp, Task<bool>>)` gives access to the full command/entity being validated, not just the field value. Use it when the validation requires context from other fields.
 
 ---
 
