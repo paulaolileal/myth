@@ -71,6 +71,15 @@ public static class FluentRuleBuilderExtensions {
 	}
 
 	/// <summary>
+	/// Alias for <see cref="MinimumLength"/> — validates that the string length is at least the specified minimum.
+	/// </summary>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <param name="length">The minimum required length (inclusive).</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	public static FluentRuleBuilder<string> MinLength( this FluentRuleBuilder<string> builder, int length ) =>
+		builder.MinimumLength( length );
+
+	/// <summary>
 	/// Validates that the string length is less than or equal to the specified maximum length.
 	/// </summary>
 	/// <param name="builder">The fluent rule builder instance.</param>
@@ -85,6 +94,15 @@ public static class FluentRuleBuilderExtensions {
 	public static FluentRuleBuilder<string> MaximumLength( this FluentRuleBuilder<string> builder, int length ) {
 		return builder.AddRule( new MaximumLengthRule( length ) );
 	}
+
+	/// <summary>
+	/// Alias for <see cref="MaximumLength"/> — validates that the string length does not exceed the specified maximum.
+	/// </summary>
+	/// <param name="builder">The fluent rule builder instance.</param>
+	/// <param name="length">The maximum allowed length (inclusive).</param>
+	/// <returns>A <see cref="FluentRuleBuilder{T}"/> for method chaining.</returns>
+	public static FluentRuleBuilder<string> MaxLength( this FluentRuleBuilder<string> builder, int length ) =>
+		builder.MaximumLength( length );
 
 	/// <summary>
 	/// Validates that the string length is within the specified range (inclusive).
