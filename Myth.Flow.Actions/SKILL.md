@@ -128,6 +128,31 @@ dotnet add package Confluent.Kafka
 
 ---
 
+## Namespace Quick Reference
+
+All types from this library live inside the `Myth.Flow.Actions` assembly. The namespaces are:
+
+| Type | Namespace | Notes |
+|------|-----------|-------|
+| `ICommand` | `Myth.Interfaces` | Marker interface — `using Myth.Interfaces;` |
+| `ICommand<TResponse>` | `Myth.Interfaces` | |
+| `ICommandHandler<TCommand>` | `Myth.Interfaces` | |
+| `ICommandHandler<TCommand, TResponse>` | `Myth.Interfaces` | |
+| `IQuery<TResponse>` | `Myth.Interfaces` | |
+| `IQueryHandler<TQuery, TResponse>` | `Myth.Interfaces` | |
+| `IEvent` | `Myth.Interfaces` | |
+| `IEventHandler<TEvent>` | `Myth.Interfaces` | |
+| `IDispatcher` | `Myth.Interfaces` | |
+| `CommandResult` | `Myth.Models` | `using Myth.Models;` |
+| `CommandResult<TResponse>` | `Myth.Models` | |
+| `QueryResult<TData>` | `Myth.Models` | |
+| `CacheOptions` | `Myth.Models` | |
+| `ValidationException` | `Myth.Exceptions` | Lives in Myth.Guard assembly — `using Myth.Exceptions;` |
+
+> **Common pitfall:** `ICommand` and `CommandResult` are in **different namespaces** (`Myth.Interfaces` vs `Myth.Models`). Both are required at the top of handler files.
+
+---
+
 ## API Reference
 
 ### IDispatcher
@@ -210,23 +235,45 @@ public interface IEventHandler<in TEvent>
 ```csharp
 public readonly struct CommandResult {
     public bool IsSuccess { get; }
+    public bool IsFailure { get; }
     public string? ErrorMessage { get; }
     public Exception? Exception { get; }
     public Dictionary<string, object>? Metadata { get; }
+    public HttpStatusCode StatusCode { get; } // HTTP 200 on success, 400 on Failure()
 
+    // Factory methods
     public static CommandResult Success(Dictionary<string, object>? metadata = null);
     public static CommandResult Failure(string message, Exception? exception = null);
+    public static CommandResult Failure(string message, HttpStatusCode statusCode, Exception? exception = null);
+
+    // Semantic factories — preferred for domain failures with specific HTTP semantics
+    public static CommandResult NotFound(string message);
+    public static CommandResult Forbidden(string message = "Access denied");
+    public static CommandResult Unauthorized(string message = "Unauthorized");
+    public static CommandResult PaymentRequired(string message);
+    public static CommandResult Conflict(string message);
+    public static CommandResult UnprocessableEntity(string message);
 }
 
 public readonly struct CommandResult<TResponse> {
     public bool IsSuccess { get; }
+    public bool IsFailure { get; }
     public TResponse? Data { get; }
     public string? ErrorMessage { get; }
     public Exception? Exception { get; }
     public Dictionary<string, object>? Metadata { get; }
+    public HttpStatusCode StatusCode { get; }
 
+    // Same factory methods as non-generic CommandResult
     public static CommandResult<TResponse> Success(TResponse data, Dictionary<string, object>? metadata = null);
     public static CommandResult<TResponse> Failure(string message, Exception? exception = null);
+    public static CommandResult<TResponse> Failure(string message, HttpStatusCode statusCode, Exception? exception = null);
+    public static CommandResult<TResponse> NotFound(string message);
+    public static CommandResult<TResponse> Forbidden(string message = "Access denied");
+    public static CommandResult<TResponse> Unauthorized(string message = "Unauthorized");
+    public static CommandResult<TResponse> PaymentRequired(string message);
+    public static CommandResult<TResponse> Conflict(string message);
+    public static CommandResult<TResponse> UnprocessableEntity(string message);
 }
 ```
 
@@ -234,13 +281,61 @@ public readonly struct CommandResult<TResponse> {
 ```csharp
 public readonly struct QueryResult<TData> {
     public bool IsSuccess { get; }
+    public bool IsFailure { get; }
     public TData? Data { get; }
     public string? ErrorMessage { get; }
     public Exception? Exception { get; }
     public bool FromCache { get; } // Indicates if result came from cache
+    public HttpStatusCode StatusCode { get; } // HTTP 200 on success, 400 on Failure()
 
+    // Factory methods
     public static QueryResult<TData> Success(TData data, bool fromCache = false);
     public static QueryResult<TData> Failure(string message, Exception? exception = null);
+    public static QueryResult<TData> Failure(string message, HttpStatusCode statusCode, Exception? exception = null);
+
+    // Semantic factories — prefer these over Success(null!) for absent/restricted data
+    public static QueryResult<TData> NotFound(string message = "Not found");
+    public static QueryResult<TData> Forbidden(string message = "Access denied");
+    public static QueryResult<TData> Unauthorized(string message = "Unauthorized");
+}
+```
+
+**Using semantic factories in handlers:**
+```csharp
+// ✅ CORRECT — NotFound expresses absence explicitly; the type does not lie
+public async Task<QueryResult<ProjectDto>> HandleAsync(GetProjectQuery query, CancellationToken ct) {
+    var project = await _projectRepository.FirstOrDefaultAsync(p => p.Id == query.ProjectId, ct);
+
+    if (project is null)
+        return QueryResult<ProjectDto>.NotFound($"Project {query.ProjectId} not found");
+
+    if (project.OwnerId != query.RequestingUserId)
+        return QueryResult<ProjectDto>.Forbidden();
+
+    return QueryResult<ProjectDto>.Success(project.To<ProjectDto>());
+}
+
+// ✅ CORRECT — PaymentRequired instead of abusing ValidationException
+public async Task<CommandResult> HandleAsync(CreateWorkspaceCommand command, CancellationToken ct) {
+    var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == command.UserId, ct);
+
+    if (user!.RemainingCredits < command.RequiredCredits)
+        return CommandResult.PaymentRequired("Insufficient credits to create a workspace");
+
+    // ...
+    return CommandResult.Success();
+}
+```
+
+**Using StatusCode in controllers:**
+```csharp
+[HttpPost]
+public async Task<IActionResult> CreateWorkspace(CreateWorkspaceCommand command, CancellationToken ct) {
+    var result = await _dispatcher.DispatchCommandAsync(command, ct);
+
+    return result.IsSuccess
+        ? Ok()
+        : StatusCode((int)result.StatusCode, result.ErrorMessage);
 }
 ```
 
