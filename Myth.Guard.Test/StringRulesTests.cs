@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Myth.Guard;
 using Myth.Guard.Test.Models;
 using Myth.Validation;
 
@@ -311,5 +312,60 @@ public class AdvancedStringRulesTests {
 
 		// Assert
 		result.IsValid.Should( ).BeTrue( );
+	}
+
+	[Fact]
+	public async Task MaxLength_alias_should_reject_string_exceeding_limit( ) {
+		// MaxLength is an alias for MaximumLength — same behavior expected
+		var result = await Sentry.For( "toolongvalue", "Field" )
+			.MaxLength( 5 )
+			.ValidateAsync( _serviceProvider );
+
+		result.IsValid.Should( ).BeFalse( );
+		result.Errors.Should( ).Contain( e => e.Field == "Field" );
+	}
+
+	[Fact]
+	public async Task MaxLength_alias_should_accept_string_within_limit( ) {
+		var result = await Sentry.For( "ok", "Field" )
+			.MaxLength( 10 )
+			.ValidateAsync( _serviceProvider );
+
+		result.IsValid.Should( ).BeTrue( );
+	}
+
+	[Fact]
+	public async Task MinLength_alias_should_reject_string_below_minimum( ) {
+		var result = await Sentry.For( "ab", "Field" )
+			.MinLength( 5 )
+			.ValidateAsync( _serviceProvider );
+
+		result.IsValid.Should( ).BeFalse( );
+		result.Errors.Should( ).Contain( e => e.Field == "Field" );
+	}
+
+	[Fact]
+	public async Task MinLength_alias_should_accept_string_meeting_minimum( ) {
+		var result = await Sentry.For( "hello", "Field" )
+			.MinLength( 5 )
+			.ValidateAsync( _serviceProvider );
+
+		result.IsValid.Should( ).BeTrue( );
+	}
+
+	[Fact]
+	public async Task MaxLength_alias_should_produce_same_error_as_MaximumLength( ) {
+		// Both aliases must produce an error for the same field — error message format must be identical
+		var aliasResult = await Sentry.For( "tooLongValue", "Name" )
+			.MaxLength( 5 )
+			.ValidateAsync( _serviceProvider );
+
+		var canonicalResult = await Sentry.For( "tooLongValue", "Name" )
+			.MaximumLength( 5 )
+			.ValidateAsync( _serviceProvider );
+
+		aliasResult.IsValid.Should( ).BeFalse( );
+		canonicalResult.IsValid.Should( ).BeFalse( );
+		aliasResult.Errors[ 0 ].Message.Should( ).Be( canonicalResult.Errors[ 0 ].Message );
 	}
 }

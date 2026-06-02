@@ -161,4 +161,55 @@ public class ReadSpecificationsRepositoryTests( DatabaseMock databaseMock ) : IC
 		// Assert
 		result.Should( ).NotBeNull( );
 	}
+
+	[Fact]
+	public async Task SearchAsync_should_return_IReadOnlyList_with_correct_Count( ) {
+		// Arrange
+		await _mockManyAsync( 10 );
+		var spec = SpecBuilder<Person>
+			.Create( )
+			.And( x => x.PersonId > 0 );
+
+		// Act
+		var result = await _repository.SearchAsync( spec );
+
+		// Assert — .Count (property of IReadOnlyList) must equal actual element count
+		result.Should( ).NotBeNull( );
+		result.Count.Should( ).BeGreaterThan( 0 );
+		result.Count.Should( ).Be( result.Count( ) ); // property and LINQ extension must agree
+	}
+
+	[Fact]
+	public async Task SearchAsNoTrackingAsync_should_return_entities_not_tracked( ) {
+		// Arrange
+		await _mockManyAsync( 5 );
+		var spec = SpecBuilder<Person>
+			.Create( )
+			.And( x => x.PersonId > 0 );
+
+		// Act
+		var result = await _repository.SearchAsNoTrackingAsync( spec );
+
+		// Assert
+		result.Should( ).NotBeNull( );
+		result.Count.Should( ).BeGreaterThan( 0 );
+		result.Should( ).AllSatisfy( p => _context.Entry( p ).State.Should( ).Be( Microsoft.EntityFrameworkCore.EntityState.Detached ) );
+	}
+
+	[Fact]
+	public async Task SearchAsNoTrackingAsync_should_return_same_data_as_SearchAsync( ) {
+		// Arrange
+		await _mockManyAsync( 10 );
+		var spec = SpecBuilder<Person>
+			.Create( )
+			.And( x => x.PersonId > 0 );
+
+		// Act
+		var tracked = await _repository.SearchAsync( spec );
+		var noTracking = await _repository.SearchAsNoTrackingAsync( spec );
+
+		// Assert
+		noTracking.Count.Should( ).Be( tracked.Count );
+		noTracking.Select( p => p.PersonId ).Should( ).BeEquivalentTo( tracked.Select( p => p.PersonId ) );
+	}
 }

@@ -38,6 +38,12 @@ public static class StandaloneValidationExtensions {
 	}
 
 	/// <summary>
+	/// Alias for <see cref="MinimumLength"/> — validates that the string length is at least the specified minimum.
+	/// </summary>
+	public static IStandaloneValidationBuilder<string> MinLength( this IStandaloneValidationBuilder<string> builder, int length ) =>
+		builder.MinimumLength( length );
+
+	/// <summary>
 	/// Adds a validation rule that the string must have a maximum length
 	/// </summary>
 	/// <param name="builder">The validation builder</param>
@@ -46,6 +52,12 @@ public static class StandaloneValidationExtensions {
 	public static IStandaloneValidationBuilder<string> MaximumLength( this IStandaloneValidationBuilder<string> builder, int length ) {
 		return builder.AddRule( new MaximumLengthRule( length ) );
 	}
+
+	/// <summary>
+	/// Alias for <see cref="MaximumLength"/> — validates that the string length does not exceed the specified maximum.
+	/// </summary>
+	public static IStandaloneValidationBuilder<string> MaxLength( this IStandaloneValidationBuilder<string> builder, int length ) =>
+		builder.MaximumLength( length );
 
 	/// <summary>
 	/// Adds a validation rule that the string must be a valid email address
