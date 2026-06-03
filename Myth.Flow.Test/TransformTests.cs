@@ -146,4 +146,79 @@ public class TransformTests {
 		result.ErrorMessage.Should( ).Contain( "inner step [0]" );
 		result.ErrorMessage.Should( ).Contain( "Step" );
 	}
+
+	[Fact]
+	public async Task Transform_WithExceptionFilter_ShouldPropagateFilteredExceptionThroughTransform( ) {
+		// Arrange — register PipelineConfiguration with ArgumentException in the filter
+		var config = new PipelineConfiguration( );
+		config.ExceptionTypesToPropagate.Add( typeof( ArgumentException ) );
+
+		var services = new ServiceCollection( );
+		services.AddSingleton( config );
+		var provider = services.BuildServiceProvider( );
+		MythServiceProvider.Initialize( provider );
+
+		var dto = new TestDto { Value = 1 };
+
+		// Act — TapAsync throws ArgumentException (is in filter); Transform follows
+		var act = async ( ) => await Pipeline.Start( dto )
+			.TapAsync( _ => throw new ArgumentException( "filtered error" ) )
+			.Transform( d => new TestResult { Data = d.Message } )
+			.ExecuteAsync( );
+
+		// Assert — ArgumentException must propagate, not be wrapped in Result.Failure
+		await act.Should( ).ThrowAsync<ArgumentException>( )
+			.WithMessage( "filtered error" );
+	}
+
+	[Fact]
+	public async Task TransformAsync_WithExceptionFilter_ShouldPropagateFilteredExceptionThroughTransformAsync( ) {
+		// Arrange — register PipelineConfiguration with ArgumentException in the filter
+		var config = new PipelineConfiguration( );
+		config.ExceptionTypesToPropagate.Add( typeof( ArgumentException ) );
+
+		var services = new ServiceCollection( );
+		services.AddSingleton( config );
+		var provider = services.BuildServiceProvider( );
+		MythServiceProvider.Initialize( provider );
+
+		var dto = new TestDto { Value = 1 };
+
+		// Act — TapAsync throws ArgumentException (is in filter); TransformAsync follows
+		var act = async ( ) => await Pipeline.Start( dto )
+			.TapAsync( _ => throw new ArgumentException( "filtered async error" ) )
+			.TransformAsync<TestResult>( async _ => {
+				await Task.Delay( 0 );
+				return new TestResult( );
+			} )
+			.ExecuteAsync( );
+
+		// Assert — ArgumentException must propagate, not be wrapped in Result.Failure
+		await act.Should( ).ThrowAsync<ArgumentException>( )
+			.WithMessage( "filtered async error" );
+	}
+
+	[Fact]
+	public async Task Transform_NonFilteredExceptionInInnerStep_ShouldStillReturnResultFailure( ) {
+		// Arrange — filter only ArgumentException; InvalidOperationException is NOT filtered
+		var config = new PipelineConfiguration( );
+		config.ExceptionTypesToPropagate.Add( typeof( ArgumentException ) );
+
+		var services = new ServiceCollection( );
+		services.AddSingleton( config );
+		var provider = services.BuildServiceProvider( );
+		MythServiceProvider.Initialize( provider );
+
+		var dto = new TestDto { Value = 1 };
+
+		// Act — TapAsync throws InvalidOperationException (NOT in filter)
+		var result = await Pipeline.Start( dto )
+			.TapAsync( _ => throw new InvalidOperationException( "not filtered" ) )
+			.Transform( d => new TestResult { Data = d.Message } )
+			.ExecuteAsync( );
+
+		// Assert — non-filtered exception is wrapped and returned as Result.Failure (Result Pattern preserved)
+		result.IsFailure.Should( ).BeTrue( );
+		result.ErrorMessage.Should( ).Contain( "inner step [0]" );
+	}
 }

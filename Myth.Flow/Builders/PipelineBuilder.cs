@@ -257,6 +257,7 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 	public IPipelineBuilder<TNewContext> Transform<TNewContext>(
 		Func<TContext, TNewContext> mapper ) {
 		var capturedSteps = _steps.ToList( );
+		var capturedConfiguration = _configuration;
 		var newSteps = new List<StepDescriptor<TNewContext>>( capturedSteps.Count + 1 ) {
 			// Create a wrapper step that executes all previous steps then transforms
 			new(
@@ -270,6 +271,10 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 				foreach ( var step in capturedSteps ) {
 					try {
 						currentContext = await step.Handler( currentContext, ct );
+					} catch ( Exception ex ) when (
+						capturedConfiguration.ExceptionTypesToPropagate.Count > 0 &&
+						capturedConfiguration.ExceptionTypesToPropagate.Any( t => t.IsAssignableFrom( ex.GetType( ) ) ) ) {
+						throw;
 					} catch ( Exception ex ) {
 						throw new PipelineException(
 							$"Transform failed while re-executing inner step [{innerStepIndex}] '{step.Name ?? "Unknown"}': {ex.Message}",
@@ -281,6 +286,10 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 				// Transform the final result
 				try {
 					return await Task.FromResult( mapper( currentContext ) );
+				} catch ( Exception ex ) when (
+					capturedConfiguration.ExceptionTypesToPropagate.Count > 0 &&
+					capturedConfiguration.ExceptionTypesToPropagate.Any( t => t.IsAssignableFrom( ex.GetType( ) ) ) ) {
+					throw;
 				} catch ( Exception ex ) {
 					throw new PipelineException(
 						$"Transform failed during mapping phase ({typeof( TContext ).Name} -> {typeof( TNewContext ).Name}): {ex.Message}",
@@ -313,6 +322,7 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 	public IPipelineBuilder<TNewContext> TransformAsync<TNewContext>(
 		Func<TContext, Task<TNewContext>> mapper ) {
 		var capturedSteps = _steps.ToList( );
+		var capturedConfiguration = _configuration;
 		var newSteps = new List<StepDescriptor<TNewContext>>( capturedSteps.Count + 1 );
 
 		// Create a wrapper step that executes all previous steps then transforms
@@ -327,6 +337,10 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 				foreach ( var step in capturedSteps ) {
 					try {
 						currentContext = await step.Handler( currentContext, ct );
+					} catch ( Exception ex ) when (
+						capturedConfiguration.ExceptionTypesToPropagate.Count > 0 &&
+						capturedConfiguration.ExceptionTypesToPropagate.Any( t => t.IsAssignableFrom( ex.GetType( ) ) ) ) {
+						throw;
 					} catch ( Exception ex ) {
 						throw new PipelineException(
 							$"TransformAsync failed while re-executing inner step [{innerStepIndex}] '{step.Name ?? "Unknown"}': {ex.Message}",
@@ -338,6 +352,10 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 				// Transform the final result
 				try {
 					return await mapper( currentContext ).ConfigureAwait( false );
+				} catch ( Exception ex ) when (
+					capturedConfiguration.ExceptionTypesToPropagate.Count > 0 &&
+					capturedConfiguration.ExceptionTypesToPropagate.Any( t => t.IsAssignableFrom( ex.GetType( ) ) ) ) {
+					throw;
 				} catch ( Exception ex ) {
 					throw new PipelineException(
 						$"TransformAsync failed during mapping phase ({typeof( TContext ).Name} -> {typeof( TNewContext ).Name}): {ex.Message}",
