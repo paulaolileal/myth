@@ -213,6 +213,8 @@ public interface IUnitOfWorkRepository : IAsyncDisposable {
 }
 ```
 
+> **InMemory provider:** `BeginTransactionAsync`, `CommitAsync`, `RollbackAsync`, `CreateSavepointAsync`, and `RollbackToSavepointAsync` are all **no-ops** when the EF Core InMemory provider is used (e.g., in unit tests with `BaseDatabaseTests`). The call succeeds silently without starting or committing a real transaction. This means transactional rollback semantics cannot be tested with InMemory — use a real database provider (SQLite in-memory mode or SQL Server LocalDB) when testing transaction behavior.
+
 ---
 
 ### Implementation Classes

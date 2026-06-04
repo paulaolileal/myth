@@ -589,6 +589,27 @@ Myth.Morph inclui estes mapeamentos padrão:
 - `IReadOnlyCollection<>` → `ReadOnlyCollection<>`
 - `IReadOnlyList<>` → `List<>`
 - `IReadOnlySet<>` → `HashSet<>`
+- `IPaginated<>` → `Paginated<>`
+
+### Mapeamento de Resultados Paginados
+
+`IPaginated<TSource>` pode ser mapeado para `IPaginated<TDest>` com uma única chamada `.To<>()`. Todos os metadados de paginação (`PageNumber`, `PageSize`, `TotalItems`, `TotalPages`) são preservados automaticamente, e a coleção `Items` é mapeada elemento por elemento.
+
+```csharp
+// source: IPaginated<Product> vindo do repositório
+var paginatedDtos = source.To<IPaginated<ProductDto>>();
+
+// Todos os campos preservados:
+// paginatedDtos.PageNumber  == source.PageNumber
+// paginatedDtos.PageSize    == source.PageSize
+// paginatedDtos.TotalItems  == source.TotalItems
+// paginatedDtos.TotalPages  == source.TotalPages
+// paginatedDtos.Items       == source.Items mapeados via ProductDto.MorphFrom<Product>
+```
+
+> **Observação:** O mapeamento de elementos ainda precisa estar definido. `ProductDto` deve implementar `IMorphableFrom<Product>` (ou `Product` deve implementar `IMorphableTo<ProductDto>`) para o mapeamento por item funcionar.
+
+> **Como funciona internamente:** `Paginated<T>` usa construtor primário com `private set` em todas as propriedades. O Myth.Morph detecta isso automaticamente e usa mapeamento orientado a construtor — resolve cada parâmetro do construtor a partir da propriedade correspondente na origem, incluindo o mapeamento dos elementos de `Items`.
 
 ### Limpar Mapeamentos Padrão
 

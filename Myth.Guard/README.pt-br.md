@@ -440,6 +440,8 @@ await validator.ValidateAsync( user, ValidationContextKey.Update );
 await validator.ValidateAsync( user, ValidationContextKey.Delete );
 ```
 
+> **Regras globais sempre executam.** Regras definidas fora de qualquer bloco `InContext` são executadas em toda chamada de `ValidateAsync()`, independente do contexto passado. `InContext` é *aditivo*: acrescenta regras extras sobre as globais quando o contexto correspondente está ativo. Chamar `ValidateAsync(dto, ValidationContextKey.Create)` executa as regras globais primeiro, depois as regras específicas de Create.
+
 ### Contextos Pré-definidos
 
 ```csharp

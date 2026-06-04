@@ -777,6 +777,10 @@ var paginatedProducts = new Paginated<Product>(
 var paginatedDtos = paginatedProducts.To<IPaginated<ProductDto>>();
 ```
 
+> **How it works:** `Paginated<T>` uses a primary constructor with `private set` on all properties. Myth.Morph detects this automatically and uses constructor-driven mapping: it reads each source property by name, maps collection elements (`IEnumerable<Product>` → `IEnumerable<ProductDto>`), and constructs the destination by passing the mapped values directly to the constructor. No additional configuration is needed beyond having `IMorphableTo`/`IMorphableFrom` defined for the element types.
+
+> **Requirement:** The `IPaginated<>` → `Paginated<>` mapping must be registered (it is included in the default mappings). Verify your `AddMorph` call includes it or relies on the defaults.
+
 ---
 
 ### Example 6: Automatic Property Mapping

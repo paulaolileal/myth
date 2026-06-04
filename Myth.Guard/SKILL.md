@@ -169,6 +169,8 @@ public void Validate(ValidationBuilder<User> builder, ValidationContextKey? cont
 }
 ```
 
+> **Global rules always execute.** Rules defined outside any `InContext` block run for every call to `ValidateAsync()`, regardless of which `ValidationContextKey` is passed. `InContext` is *additive*: it layers extra rules on top of the globals when the matching context is active. Passing `ValidationContextKey.Create` does **not** suppress global rules — it runs global rules first, then the Create-specific rules. This means you only need to put truly operation-specific logic inside `InContext`; shared constraints (required fields, format rules) belong in global rules.
+
 ### 3. Predefined Contexts
 
 ```csharp

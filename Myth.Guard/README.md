@@ -85,7 +85,11 @@ public class CreateUserDto : IValidatable<CreateUserDto> {
         });
     }
 }
+```
 
+> **Global rules always execute.** Rules defined outside any `InContext` block run on every `ValidateAsync()` call, regardless of which context key is passed. `InContext` is *additive*: it appends extra rules on top of the globals when the matching context is active. Calling `ValidateAsync(dto, ValidationContextKey.Create)` runs the global rules first, then the Create-specific rules.
+
+```csharp
 // Controller - clean, one line
 [HttpPost("users")]
 public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto) {

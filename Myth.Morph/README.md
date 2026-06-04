@@ -611,6 +611,27 @@ Myth.Morph includes these default mappings:
 - `IReadOnlyCollection<>` → `ReadOnlyCollection<>`
 - `IReadOnlyList<>` → `List<>`
 - `IReadOnlySet<>` → `HashSet<>`
+- `IPaginated<>` → `Paginated<>`
+
+### Paginated Result Mapping
+
+`IPaginated<TSource>` can be mapped to `IPaginated<TDest>` with a single `.To<>()` call. All pagination metadata (`PageNumber`, `PageSize`, `TotalItems`, `TotalPages`) is preserved automatically, and the `Items` collection is mapped element by element using the registered element mapping.
+
+```csharp
+// source: IPaginated<Product> from repository
+var paginatedDtos = source.To<IPaginated<ProductDto>>();
+
+// All fields preserved:
+// paginatedDtos.PageNumber  == source.PageNumber
+// paginatedDtos.PageSize    == source.PageSize
+// paginatedDtos.TotalItems  == source.TotalItems
+// paginatedDtos.TotalPages  == source.TotalPages
+// paginatedDtos.Items       == source.Items mapped via ProductDto.MorphFrom<Product>
+```
+
+> **Note:** Element mapping must still be defined. `ProductDto` must implement `IMorphableFrom<Product>` (or `Product` must implement `IMorphableTo<ProductDto>`) for the item-level mapping to work.
+
+> **How it works internally:** `Paginated<T>` uses a primary constructor (`private set` on all properties). Myth.Morph detects this at runtime and uses constructor-driven mapping — it resolves each constructor parameter from the matching source property, including collection element mapping for `Items`.
 
 ### Clear Default Mappings
 
