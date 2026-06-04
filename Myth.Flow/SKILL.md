@@ -728,23 +728,35 @@ services.AddFlow(config => config
     .UseExceptionFilter<ArgumentException>()
     .UseExceptionFilter<InvalidOperationException>());
 
-// Usage
+// Filtered exception in a regular Step — propagates as the raw type
 try {
     var result = await Pipeline.Start(data)
         .StepAsync(async ctx => {
-            // These exceptions will be propagated (not caught by pipeline)
             if (ctx.Value < 0)
-                throw new ArgumentException("Value cannot be negative");
+                throw new ArgumentException("Value cannot be negative"); // propagated raw
 
             return ctx;
         })
         .ExecuteAsync();
 } catch (ArgumentException ex) {
-    // Exception propagated, not captured in Result
     _logger.LogError(ex, "Validation error");
 }
 
-// Unfiltered exceptions return Result.Failure
+// Filtered exception inside Transform/TransformAsync — always wrapped in PipelineException
+// Transform guarantees PipelineException as the single exception type at the boundary.
+// ShouldPropagateException walks the InnerException chain, so the PipelineException
+// still propagates when its inner exception is a filtered type.
+try {
+    var result = await Pipeline.Start(data)
+        .TapAsync(ctx => ThrowIfInvalid(ctx))           // throws ArgumentException
+        .Transform(ctx => new OutputContext(ctx))
+        .ExecuteAsync();
+} catch (PipelineException ex) when (ex.InnerException is ArgumentException argEx) {
+    // argEx.Message == "..." — original exception preserved as InnerException
+    _logger.LogError(argEx, "Validation error propagated through Transform");
+}
+
+// Unfiltered exceptions always return Result.Failure
 var result = await Pipeline.Start(data)
     .StepAsync(async ctx => {
         throw new IOException("File not found");  // Not filtered

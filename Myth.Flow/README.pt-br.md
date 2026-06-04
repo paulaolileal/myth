@@ -480,6 +480,25 @@ Transforme o contexto do pipeline para um tipo diferente:
 })
 ```
 
+### Comportamento de exceções dentro de Transform
+
+`Transform` e `TransformAsync` **sempre envolvem exceções em `PipelineException`**, independente da configuração de `ExceptionTypesToPropagate`. Isso mantém `PipelineException` como o único tipo de exceção em qualquer fronteira do pipeline e preserva o nome e índice da etapa na mensagem de erro.
+
+Exceções filtradas continuam propagando — `ShouldPropagateException` percorre a cadeia de `InnerException`, portanto um `PipelineException` cujo inner exception é de tipo filtrado é relançado em vez de ser capturado como `Result.Failure`.
+
+```csharp
+// ✅ Forma correta de capturar uma exceção filtrada após um passo Transform
+try {
+    var result = await Pipeline.Start(dto)
+        .TapAsync(ctx => ValidarOuLancar(ctx))       // lança ArgumentException
+        .Transform(ctx => new ResponseDto(ctx))
+        .ExecuteAsync();
+} catch (PipelineException ex) when (ex.InnerException is ArgumentException argEx) {
+    // ArgumentException original preservado em InnerException
+    _logger.LogError(argEx, "Validação falhou");
+}
+```
+
 ## Efeitos Colaterais (Tap)
 
 Execute ações sem modificar o contexto:
@@ -799,10 +818,25 @@ else
 
 ## Tipos de Exceção
 
-- `PipelineException`: Erros gerais de execução do pipeline
+- `PipelineException`: Erros gerais de execução do pipeline. É o **único tipo** que escapa de etapas `Transform`/`TransformAsync` — a exceção original sempre fica em `InnerException`.
 - `PipelineConfigurationException`: Erros de configuração (serviços faltando, configuração inválida)
 
 Exceções de configuração são fail-fast e sempre são relançadas para prevenir falhas silenciosas.
+
+**Filtragem de exceções e a cadeia de InnerException:**
+
+`UseExceptionFilter<T>()` configura tipos que devem propagar em vez de serem capturados como `Result.Failure`. O mecanismo de filtragem percorre toda a cadeia de `InnerException`, portanto um `PipelineException` cujo inner é do tipo filtrado também propaga corretamente. Isso garante que o comportamento de filtragem funcione mesmo após `Transform`/`TransformAsync`.
+
+```csharp
+builder.Services.AddFlow(config => config
+    .UseExceptionFilter<ArgumentException>());
+
+// Em etapas regulares (Step/StepAsync), a exceção filtrada propaga como tipo bruto:
+// catch (ArgumentException ex) { ... }
+
+// Em Transform/TransformAsync, a exceção filtrada propaga como PipelineException:
+// catch (PipelineException ex) when (ex.InnerException is ArgumentException argEx) { ... }
+```
 
 ## Callbacks de Sucesso e Erro
 

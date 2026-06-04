@@ -265,6 +265,71 @@ builder.For(x.OrganizationId, r => r.NotDefault());
 
 ---
 
+## 6. Myth.Flow — Transform/TransformAsync sempre envolvem exceções em PipelineException
+
+### What changed
+
+`Transform` and `TransformAsync` previously re-threw filtered exceptions (those in `ExceptionTypesToPropagate`) directly without wrapping, while wrapping all other exceptions in `PipelineException`. Now **all** exceptions thrown inside a Transform step — whether filtered or not — are wrapped in `PipelineException` before propagating.
+
+`ShouldPropagateException` was also updated to walk the full `InnerException` chain, so a `PipelineException` whose inner exception is a filtered type still propagates correctly.
+
+### Why this matters
+
+Consumer code that caught the raw filtered type after a `Transform` step was relying on an implementation accident, not a contract. The library contract is: any exception that escapes a pipeline step is a `PipelineException`. Breaking that contract made error handling unpredictable and silently hid the transform context (step name, index, type mapping) in the stack trace.
+
+### Instructions for the agent
+
+**Step 1 — Find catch blocks that catch raw exception types after Transform/TransformAsync**
+
+Search for `try`/`catch` blocks around pipelines that contain `.Transform(` or `.TransformAsync(`:
+
+```csharp
+// ❌ OLD — catching raw type that was accidentally propagated
+try {
+    var result = await Pipeline.Start(dto)
+        .TapAsync(ctx => ThrowIfInvalid(ctx))
+        .Transform(ctx => new ResponseDto(ctx))
+        .ExecuteAsync();
+} catch (ArgumentException ex) {
+    // This no longer works — Transform now wraps in PipelineException
+}
+```
+
+**Step 2 — Replace raw catch with PipelineException + inner exception check**
+
+```csharp
+// ✅ NEW — catch PipelineException and inspect InnerException
+try {
+    var result = await Pipeline.Start(dto)
+        .TapAsync(ctx => ThrowIfInvalid(ctx))
+        .Transform(ctx => new ResponseDto(ctx))
+        .ExecuteAsync();
+} catch (PipelineException ex) when (ex.InnerException is ArgumentException argEx) {
+    // Handle the original ArgumentException via argEx
+    _logger.LogError(argEx, "Validation error in transform");
+}
+```
+
+**Step 3 — Verify that filtered exception propagation tests assert PipelineException**
+
+In test files for pipelines that use `Transform`/`TransformAsync` with `ExceptionTypesToPropagate`:
+
+```csharp
+// ❌ OLD test assertion — raw type
+await act.Should().ThrowAsync<ArgumentException>().WithMessage("...");
+
+// ✅ NEW test assertion — PipelineException with inner exception
+var thrown = await act.Should().ThrowAsync<PipelineException>();
+thrown.Which.InnerException.Should().BeOfType<ArgumentException>();
+thrown.Which.InnerException!.Message.Should().Be("...");
+```
+
+**Files to search in the consumer project:**
+- Any `catch (SomeException)` block around code that calls `.ExecuteAsync()` on a pipeline that includes `.Transform(` or `.TransformAsync(`
+- Test files that assert `ThrowAsync<SomeDomainException>()` on pipelines with Transform steps
+
+---
+
 ## Namespace quick reference (for import errors)
 
 When writing or fixing handlers, these are the correct `using` statements:

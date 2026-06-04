@@ -552,6 +552,25 @@ public async Task<Result<OrderResponse>> ProcessOrderAsync(OrderContext context)
 })
 ```
 
+### Exception behavior inside Transform
+
+`Transform` and `TransformAsync` **always wrap exceptions in `PipelineException`**, regardless of `ExceptionTypesToPropagate` configuration. This keeps `PipelineException` as the single exception type at any pipeline boundary and preserves the step name and index in the error message.
+
+Filtered exceptions still propagate — `ShouldPropagateException` walks the `InnerException` chain, so a `PipelineException` whose inner exception is a filtered type is re-thrown instead of being caught as `Result.Failure`.
+
+```csharp
+// ✅ Correct way to catch a filtered exception after a Transform step
+try {
+    var result = await Pipeline.Start(dto)
+        .TapAsync(ctx => ThrowIfInvalid(ctx))       // throws ArgumentException
+        .Transform(ctx => new ResponseDto(ctx))
+        .ExecuteAsync();
+} catch (PipelineException ex) when (ex.InnerException is ArgumentException argEx) {
+    // original ArgumentException preserved in InnerException
+    _logger.LogError(argEx, "Validation failed");
+}
+```
+
 ## Side Effects (Tap)
 
 Execute actions without modifying the context. Perfect for logging, metrics, and event publishing:
@@ -1062,7 +1081,7 @@ builder.Services.AddFlow(config => config
     .UseExceptionFilter(typeof(UnauthorizedAccessException))    // Propagate using Type
 );
 
-// Example usage
+// Example usage — filtered exception in a regular Step propagates as the raw type
 public class ValidationService
 {
     public async Task<Result<UserContext>> ValidateAsync(UserContext context)
@@ -1071,14 +1090,14 @@ public class ValidationService
             .StepAsync(ctx =>
             {
                 if (string.IsNullOrEmpty(ctx.Email))
-                    throw new ArgumentException("Email is required"); // This will be propagated
+                    throw new ArgumentException("Email is required"); // propagated raw
 
                 if (ctx.Age < 0)
-                    throw new InvalidDataException("Invalid age");     // This will be handled
+                    throw new InvalidDataException("Invalid age");     // returned as Result.Failure
 
                 return Task.FromResult(ctx);
             })
-            .ExecuteAsync(); // ArgumentException will be thrown, InvalidDataException will return failure result
+            .ExecuteAsync();
     }
 }
 ```
@@ -1088,6 +1107,22 @@ public class ValidationService
 - Multiple exception types can be configured
 - Configuration applies to all pipelines in the application
 - `PipelineConfigurationException` and `OperationCanceledException` are always propagated regardless of configuration
+
+**Transform/TransformAsync exception contract:**
+
+Inside `Transform` and `TransformAsync`, **every exception is wrapped in `PipelineException`** — even filtered types. `ShouldPropagateException` walks the `InnerException` chain, so the `PipelineException` still propagates when its inner exception is a filtered type. Catch `PipelineException` and inspect `InnerException` to recover the original:
+
+```csharp
+// filtered exception propagates as PipelineException — inner exception is the original
+try {
+    await Pipeline.Start(dto)
+        .TapAsync(ctx => ThrowIfInvalid(ctx))       // throws ArgumentException (filtered)
+        .Transform(ctx => new ResponseDto(ctx))
+        .ExecuteAsync();
+} catch (PipelineException ex) when (ex.InnerException is ArgumentException argEx) {
+    _logger.LogError(argEx, "Filtered exception propagated through Transform");
+}
+```
 
 ## Success and Error Callbacks
 
