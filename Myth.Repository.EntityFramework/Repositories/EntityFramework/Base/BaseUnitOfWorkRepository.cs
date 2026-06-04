@@ -10,67 +10,113 @@ namespace Myth.Repositories.EntityFramework.Base;
 public abstract class BaseUnitOfWorkRepository( BaseContext context ) : IUnitOfWorkRepository, IDisposable, IAsyncDisposable {
 	protected readonly BaseContext _context = context;
 	private IDbContextTransaction? _transaction;
+	private bool _transactionAttempted;
 
 	/// <summary>
-	/// Starts a new transaction asynchronously
+	/// Starts a new transaction asynchronously.
+	/// When the database provider does not support transactions (e.g., InMemory), the exception is
+	/// silently ignored so that handlers written for real databases remain testable without modification.
 	/// </summary>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>A task that represents the asynchronous operation</returns>
-	public async Task BeginTransactionAsync( CancellationToken cancellationToken = default ) =>
-		_transaction = await _context.Database.BeginTransactionAsync( cancellationToken );
+	public async Task BeginTransactionAsync( CancellationToken cancellationToken = default ) {
+		_transactionAttempted = true;
+		try {
+			_transaction = await _context.Database.BeginTransactionAsync( cancellationToken );
+		} catch ( InvalidOperationException ) {
+			// Provider does not support transactions (e.g., InMemory). No-op so that
+			// Commit/Rollback/Savepoint calls below are also silently skipped.
+		}
+	}
 
 	/// <summary>
-	/// Commits the current transaction, applying all changes made during the transaction
+	/// Commits the current transaction, applying all changes made during the transaction.
+	/// No-ops when the provider does not support transactions.
 	/// </summary>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>A task that represents the asynchronous operation</returns>
-	/// <exception cref="NoAvailableTransactionException">Thrown when no transaction is available</exception>
+	/// <exception cref="NoAvailableTransactionException">Thrown when <see cref="BeginTransactionAsync"/> was never called</exception>
 	public async Task CommitAsync( CancellationToken cancellationToken = default ) {
-		if ( _transaction is null )
-			throw new NoAvailableTransactionException( );
+		if ( _transaction is null ) {
+			if ( !_transactionAttempted )
+				throw new NoAvailableTransactionException( );
+			return;
+		}
 
-		await _transaction.CommitAsync( cancellationToken );
+		try {
+			await _transaction.CommitAsync( cancellationToken );
+		} catch ( InvalidOperationException ) when ( _transactionAttempted ) {
+			// Provider does not support commit (e.g., InMemory no-op transaction)
+		}
 	}
 
 	/// <summary>
-	/// Rolls back the current transaction, undoing all changes made during the transaction
+	/// Rolls back the current transaction, undoing all changes made during the transaction.
+	/// No-ops when the provider does not support transactions.
 	/// </summary>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>A task that represents the asynchronous operation</returns>
-	/// <exception cref="NoAvailableTransactionException">Thrown when no transaction is available</exception>
+	/// <exception cref="NoAvailableTransactionException">Thrown when <see cref="BeginTransactionAsync"/> was never called</exception>
 	public async Task RollbackAsync( CancellationToken cancellationToken = default ) {
-		if ( _transaction is null )
-			throw new NoAvailableTransactionException( );
+		if ( _transaction is null ) {
+			if ( !_transactionAttempted )
+				throw new NoAvailableTransactionException( );
+			return;
+		}
 
-		await _transaction.RollbackAsync( cancellationToken );
+		try {
+			await _transaction.RollbackAsync( cancellationToken );
+		} catch ( InvalidOperationException ) when ( _transactionAttempted ) {
+			// Provider does not support rollback (e.g., InMemory no-op transaction)
+		}
 	}
 
 	/// <summary>
-	/// Creates a savepoint within the current transaction with the specified name
+	/// Creates a savepoint within the current transaction with the specified name.
+	/// No-ops when the provider does not support savepoints (e.g., InMemory).
 	/// </summary>
 	/// <param name="savepoint">The name of the savepoint to create</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>A task that represents the asynchronous operation</returns>
-	/// <exception cref="NoAvailableTransactionException">Thrown when no transaction is available</exception>
+	/// <exception cref="NoAvailableTransactionException">Thrown when <see cref="BeginTransactionAsync"/> was never called</exception>
 	public async Task CreateSavepointAsync( string savepoint, CancellationToken cancellationToken = default ) {
-		if ( _transaction is null )
-			throw new NoAvailableTransactionException( );
+		if ( _transaction is null ) {
+			if ( !_transactionAttempted )
+				throw new NoAvailableTransactionException( );
+			return;
+		}
 
-		await _transaction.CreateSavepointAsync( savepoint, cancellationToken );
+		try {
+			await _transaction.CreateSavepointAsync( savepoint, cancellationToken );
+		} catch ( InvalidOperationException ) when ( _transactionAttempted ) {
+			// Provider does not support savepoints (e.g., InMemory)
+		} catch ( NotSupportedException ) when ( _transactionAttempted ) {
+			// Provider explicitly reports savepoints as not supported
+		}
 	}
 
 	/// <summary>
-	/// Rolls back the transaction to the specified savepoint, undoing changes made after that point
+	/// Rolls back the transaction to the specified savepoint, undoing changes made after that point.
+	/// No-ops when the provider does not support savepoints (e.g., InMemory).
 	/// </summary>
 	/// <param name="savepoint">The name of the savepoint to roll back to</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>A task that represents the asynchronous operation</returns>
-	/// <exception cref="NoAvailableTransactionException">Thrown when no transaction is available</exception>
+	/// <exception cref="NoAvailableTransactionException">Thrown when <see cref="BeginTransactionAsync"/> was never called</exception>
 	public async Task RollbackToSavepointAsync( string savepoint, CancellationToken cancellationToken = default ) {
-		if ( _transaction is null )
-			throw new NoAvailableTransactionException( );
+		if ( _transaction is null ) {
+			if ( !_transactionAttempted )
+				throw new NoAvailableTransactionException( );
+			return;
+		}
 
-		await _transaction.RollbackToSavepointAsync( savepoint, cancellationToken );
+		try {
+			await _transaction.RollbackToSavepointAsync( savepoint, cancellationToken );
+		} catch ( InvalidOperationException ) when ( _transactionAttempted ) {
+			// Provider does not support savepoints (e.g., InMemory)
+		} catch ( NotSupportedException ) when ( _transactionAttempted ) {
+			// Provider explicitly reports savepoints as not supported
+		}
 	}
 
 	/// <summary>

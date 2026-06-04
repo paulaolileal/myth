@@ -4,6 +4,58 @@ Cada seção é uma entrada independente. Formato: título, biblioteca, data, co
 
 ---
 
+## SchemaRegistry.MapGenericTypes — Items é null ao mapear IPaginated<TSource> → IPaginated<TDest>
+
+**Library:** Myth.Morph
+**Discovered:** 2026-06-04
+**Context:** Chamada `result.To<IPaginated<GetWeatherStationResponse>>()` em query handler retorna `Paginated<GetWeatherStationResponse>` com `Items = null`. O `.Tap()` seguinte que chama `pipeline.CurrentRequest!.Items.Count()` lança `NullReferenceException` silenciada pelo pipeline.
+
+**Current behavior:**
+`SchemaRegistry.MapGenericTypes` cria a instância de destino via `CreateInstance(Paginated<GetWeatherStationResponse>)`. Como `Paginated<T>` não tem construtor sem parâmetros, `CreateInstance` usa o construtor primário `(int pageNumber, int pageSize, int totalItems, int totalPages, IEnumerable<T> items)` com valores padrão resolvidos via DI. O parâmetro `IEnumerable<GetWeatherStationResponse> items` não é resolvível via DI, então recebe `null` (retorno de `GetDefault(typeof(IEnumerable<>))`).
+
+Em seguida, `MapPropertiesGeneric` tenta copiar as propriedades de `Paginated<WeatherStation>` para `Paginated<GetWeatherStationResponse>`, mas todas as propriedades de `Paginated<T>` têm `private set` — portanto `CanWrite = false` para todas. Nenhuma propriedade é copiada. O objeto destino permanece com `Items = null`, `PageNumber = 0`, `TotalItems = 0`, etc.
+
+```csharp
+// SchemaRegistry.CreateInstance — parâmetros sem DI recebem GetDefault():
+private static object? GetDefault(Type type) =>
+    type.IsValueType ? Activator.CreateInstance(type) : null; // IEnumerable<T> → null
+
+// MapPropertiesGeneric — private set bloqueia escrita:
+var destProperties = destType
+    .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+    .Where(p => p.CanWrite)  // Paginated<T>: todos private set → nenhum passa
+    .ToArray();
+```
+
+**Problem / Gap:**
+1. `Paginated<T>` é um tipo de valor central do ecossistema e é completamente inutilizável com o mapper genérico — silenciosamente retorna um objeto vazio.
+2. Qualquer chamada `somePaginated.To<IPaginated<TDto>>()` produz resultado corrompido sem erros ou warnings.
+3. O `.Tap()` que chama `Items.Count()` recebe `NullReferenceException` silenciada pelo pipeline (o Myth Flow swallows exceções em `.Tap()`), tornando o diagnóstico ainda mais difícil.
+
+**Suggested improvement:**
+Duas abordagens, da mais simples à mais robusta:
+
+**Opção A (mínimo):** Fazer `Paginated<T>` implementar `IMorphableTo<Paginated<TDest>>` usando um tipo especial, ou adicionar um `IMorphableFrom` estático. Exemplo concreto: `SchemaRegistry` poderia detectar que o destino é `Paginated<T>` (genérico conhecido) e chamar o construtor com os valores corretos mapeados dos scalars + items mapeados.
+
+**Opção B (correto):** Adicionar suporte a tipos "construtor-driven" no `SchemaRegistry`. Quando `CreateInstance` falha para construir com defaults válidos (ex.: `IEnumerable<T>` → null), tentar identificar quais propriedades/parâmetros são "coleções de elementos" e mapear os elementos antes de construir. Pseudocódigo:
+
+```csharp
+// Detectar que items precisa de mapeamento de coleção:
+// 1. Identificar parâmetros cujo tipo é IEnumerable<TElement>
+// 2. Encontrar a propriedade source com o mesmo nome
+// 3. Mapear os elementos (WeatherStation → GetWeatherStationResponse)
+// 4. Construir Paginated<GetWeatherStationResponse>(srcPageNumber, srcPageSize, srcTotal, srcTotalPages, mappedItems)
+```
+
+**Opção C (paliativo no template):** Em vez de `result.To<IPaginated<GetWeatherStationResponse>>()`, construir o paginated manualmente no handler:
+
+```csharp
+var items = result.Items.To<WeatherStation, GetWeatherStationResponse>();
+var response = items.AsPaginated(result.TotalItems, result.PageSize, (result.PageNumber - 1) * result.PageSize);
+```
+
+---
+
 ## SearchAsync — comportamento de tracking não documentado
 
 **Library:** Myth.Repository.EntityFramework
