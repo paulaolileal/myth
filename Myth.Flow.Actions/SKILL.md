@@ -1156,6 +1156,10 @@ public class SendEmailHandler : IEventHandler<UserRegisteredEvent> {
 - Swallow exceptions silently
 - Return null for failures
 
+> **By design — predictable results, not exceptions:** The Dispatcher wraps all unhandled exceptions from handlers in `CommandResult.Failure()` / `QueryResult.Failure()`. The pipeline always produces a predictable outcome: either `IsSuccess` or `IsFailure` — never an unhandled crash. Use `result.Exception` to access the captured exception when `IsFailure` is true.
+>
+> For exceptions that must escape the pipeline entirely (infrastructure errors, `OperationCanceledException`), register them via `UseExceptionFilter<T>()` in the pipeline configuration. These bypass the catch-all and propagate to the caller, optionally wrapped in `PipelineException`.
+
 ### 5. Caching Strategy
 
 **✅ DO:**
@@ -1219,6 +1223,33 @@ public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
 - Dispatcher automatically creates a scope when executing handlers
 - Simply inject scoped services (repositories, DbContext) directly in handler constructors
 - No need to manually manage scopes with IServiceScopeFactory
+
+### Issue: Exception from handler not propagating to caller
+
+**Problem:** An exception thrown inside a handler or `.TapAsync()` step does not reach the test / caller — `ExecuteAsync()` returns `Result.Failure` instead of throwing.
+
+**Cause:** This is intentional. The Dispatcher captures all exceptions in `CommandResult/QueryResult.Failure()`. The pipeline is designed for predictable results, not for exception-based control flow.
+
+**Solution — assert on result state:**
+```csharp
+var result = await Pipeline
+    .Start(command)
+    .Process<CreateOrderCommand, Guid>()
+    .ExecuteAsync();
+
+result.IsFailure.Should().BeTrue();
+result.Exception.Should().BeOfType<ValidationException>();
+result.ErrorMessage.Should().NotBeEmpty();
+```
+
+**Solution — force propagation for specific types:**
+```csharp
+// In service configuration (Myth.Flow)
+services.AddFlow(config => config
+    .UseExceptionFilter<ValidationException>()
+    .UseExceptionFilter<UnauthorizedAccessException>());
+```
+Registered types bypass the catch-all. Inside a `Transform`/`Process`/`Query` step they surface as `PipelineException` with the original exception as `InnerException`; inside plain `.Step()` / `.TapAsync()` they propagate as the raw type.
 
 ### Issue: Cache Not Working
 

@@ -118,6 +118,7 @@ var total = results.Count();
 
 **Library:** Myth.Flow / Myth.Flow.Actions
 **Discovered:** 2026-06-02
+**Status:** ✅ RESOLVED 2026-06-04 — Documentado no SKILL.md (seção "Error Handling" e troubleshooting "Exception from handler not propagating") e nos READMEs (seção "Exception Handling in Tests"). O comportamento é intencional: o pipeline garante resultados previsíveis capturando exceções em `Result.Failure`. Para exceções que devem propagar, usar `UseExceptionFilter<T>()` do Myth.Flow.
 **Context:** Implementando testes e2e para `WeatherStationController` usando `BaseDatabaseTests`. Os testes que chamam `.Query<T,R>()` e `.Process<T,R>()` (com tipo de retorno `Guid`, por exemplo) não propagam `ValidationException` lançadas em `.TapAsync()` anterior ao step de execução.
 
 **Current behavior:**
@@ -395,6 +396,7 @@ response.ValidationResult.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
 **Library:** Myth.Guard
 **Discovered:** 2026-05-21
+**Status:** ✅ RESOLVED — `RespectAsync(async (value, ct, sp) => ...)` e `RespectAsync<TEntity>(async (value, entity, ct, sp) => ...)` já existem no `FluentRuleBuilder`. Documentados no SKILL.md (seção "Async Business Rule Validation") e README (seção "Async Validation with Service Provider") com exemplos de entity existence check, unique constraint, plan limits e credit check.
 **Context:** Implementando validação de existência de entidade, verificação de créditos e limites de plano dentro do método `Validate()` de commands.
 
 **Current behavior:**

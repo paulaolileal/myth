@@ -1142,6 +1142,27 @@ public class UserPipelineTests {
 }
 ```
 
+### Exception Handling in Tests
+
+The pipeline is designed for **predictable results**. All exceptions thrown inside handlers or `.TapAsync()` steps are captured in `CommandResult.Failure()` / `QueryResult.Failure()` — they do not propagate to the caller unless explicitly configured.
+
+**Assert on result state, not on thrown exceptions:**
+```csharp
+var result = await Pipeline
+    .Start( command )
+    .Process<CreateOrderCommand, Guid>( )
+    .ExecuteAsync( );
+
+// ✅ Correct — check result state
+result.IsFailure.Should( ).BeTrue( );
+result.Exception.Should( ).BeOfType<ValidationException>( );
+
+// ❌ Incorrect — exception won't reach here by default
+await act.Should( ).ThrowAsync<ValidationException>( );
+```
+
+To force specific exception types to propagate out of the pipeline, register them via `UseExceptionFilter<T>()` in the Myth.Flow configuration.
+
 ## Architecture
 
 ```
