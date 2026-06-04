@@ -5,6 +5,7 @@ using Moq;
 using Myth.Exceptions;
 using Myth.Flow.Test.Interfaces;
 using Myth.Flow.Test.Models;
+using Myth.Models;
 using Myth.ServiceProvider;
 using Xunit;
 
@@ -166,9 +167,10 @@ public class TransformTests {
 			.Transform( d => new TestResult { Data = d.Message } )
 			.ExecuteAsync( );
 
-		// Assert — ArgumentException must propagate, not be wrapped in Result.Failure
-		await act.Should( ).ThrowAsync<ArgumentException>( )
-			.WithMessage( "filtered error" );
+		// Assert — must propagate as PipelineException (library standard); inner exception preserves the original
+		var thrown = await act.Should( ).ThrowAsync<PipelineException>( );
+		thrown.Which.InnerException.Should( ).BeOfType<ArgumentException>( );
+		thrown.Which.InnerException!.Message.Should( ).Be( "filtered error" );
 	}
 
 	[Fact]
@@ -193,9 +195,10 @@ public class TransformTests {
 			} )
 			.ExecuteAsync( );
 
-		// Assert — ArgumentException must propagate, not be wrapped in Result.Failure
-		await act.Should( ).ThrowAsync<ArgumentException>( )
-			.WithMessage( "filtered async error" );
+		// Assert — must propagate as PipelineException (library standard); inner exception preserves the original
+		var thrown = await act.Should( ).ThrowAsync<PipelineException>( );
+		thrown.Which.InnerException.Should( ).BeOfType<ArgumentException>( );
+		thrown.Which.InnerException!.Message.Should( ).Be( "filtered async error" );
 	}
 
 	[Fact]
