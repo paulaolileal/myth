@@ -330,6 +330,69 @@ thrown.Which.InnerException!.Message.Should().Be("...");
 
 ---
 
+## 7. Myth.Morph — IPaginated<TSource> → IPaginated<TDest> now works correctly
+
+### What changed
+
+`SchemaRegistry.MapGenericTypes` now uses **constructor-driven mapping** when the concrete destination type has no writable properties (all `private set`). `Paginated<T>` is the primary case: before this fix, calling `.To<IPaginated<TDest>>()` on a `Paginated<TSource>` silently produced an object with `Items = null` and all scalar fields set to `0`.
+
+### Why this matters
+
+Consumer code may have worked around the bug by mapping items manually and reconstructing the paginated wrapper with `AsPaginated()`. Those workarounds are now unnecessary and should be replaced with the direct `.To<IPaginated<TDest>>()` call, which is simpler and preserves all pagination metadata automatically.
+
+### Instructions for the agent
+
+**Step 1 — Find the manual workaround pattern in query handlers**
+
+Search for usages of `.To<` (or `.ToAsync<`) combined with `.AsPaginated(` in the same method. This is the signature of the workaround:
+
+```csharp
+// ❌ OLD WORKAROUND — maps items manually then reconstructs paginated wrapper
+var items = result.Items.To<SourceEntity, DestDto>();
+var response = items.AsPaginated(result.TotalItems, result.PageSize, (result.PageNumber - 1) * result.PageSize);
+return QueryResult<IPaginated<DestDto>>.Success(response);
+```
+
+Replace with a single `.To<IPaginated<DestDto>>()` call on the paginated source:
+
+```csharp
+// ✅ NEW — direct mapping preserves all pagination fields automatically
+var response = result.To<IPaginated<DestDto>>();
+return QueryResult<IPaginated<DestDto>>.Success(response);
+```
+
+**Step 2 — Replace async workarounds**
+
+If items were mapped asynchronously:
+
+```csharp
+// ❌ OLD — async workaround
+var items = await result.Items.ToAsync<SourceEntity, DestDto>(serviceProvider);
+var response = items.AsPaginated(result.TotalItems, result.PageSize, ...);
+
+// ✅ NEW
+var response = await result.ToAsync<IPaginated<DestDto>>();
+```
+
+**Step 3 — Ensure the generic morph is registered**
+
+The mapping only works when `IPaginated<>` → `Paginated<>` is registered in the Morph configuration. Verify the consumer project's `Program.cs` or DI setup contains:
+
+```csharp
+services.AddMorph(config => {
+    config.AddGenericMorph(typeof(IPaginated<>), typeof(Paginated<>));
+    // ... other registrations
+});
+```
+
+If it's missing, add it. The element mapping (`SourceEntity` → `DestDto`) still requires that either `SourceEntity` implements `IMorphableTo<DestDto>` or `DestDto` implements `IMorphableFrom<SourceEntity>`.
+
+**Files to search in the consumer project:**
+- All `*QueryHandler.cs` / `*Handler.cs` files — look for `.AsPaginated(` following a `.To<` call
+- Any file that reconstructs a paginated result from a separately-mapped items collection
+
+---
+
 ## Namespace quick reference (for import errors)
 
 When writing or fixing handlers, these are the correct `using` statements:
