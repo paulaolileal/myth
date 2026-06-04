@@ -318,11 +318,22 @@ In test files for pipelines that use `Transform`/`TransformAsync` with `Exceptio
 // ❌ OLD test assertion — raw type
 await act.Should().ThrowAsync<ArgumentException>().WithMessage("...");
 
-// ✅ NEW test assertion — PipelineException with inner exception
+// ✅ NEW test assertion — use GetBaseException() to traverse the full InnerException chain
 var thrown = await act.Should().ThrowAsync<PipelineException>();
-thrown.Which.InnerException.Should().BeOfType<ArgumentException>();
-thrown.Which.InnerException!.Message.Should().Be("...");
+var inner = thrown.Which.GetBaseException().Should().BeOfType<ArgumentException>().Which;
+inner.Message.Should().Be("...");
 ```
+
+> **Why `GetBaseException()` instead of `.InnerException`?**
+> Each pipeline step that uses `Transform` internally (`.Process<T,R>()`, `.Query<T,R>()`, `.Publish()`, and explicit `.Transform()`) wraps exceptions in its own `PipelineException`. A pipeline with multiple such steps produces a chain:
+> ```
+> PipelineException (.Publish())
+>   → PipelineException (.Transform())
+>     → PipelineException (.Process<T,R>())
+>       → ValidationException (original)
+> ```
+> `.InnerException` only unwraps one level and returns another `PipelineException`, not the root cause.
+> `GetBaseException()` traverses the entire chain and always returns the original exception, regardless of nesting depth.
 
 **Files to search in the consumer project:**
 - Any `catch (SomeException)` block around code that calls `.ExecuteAsync()` on a pipeline that includes `.Transform(` or `.TransformAsync(`

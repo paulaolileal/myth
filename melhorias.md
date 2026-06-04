@@ -268,6 +268,7 @@ return Ok(result.Value);
 
 **Library:** Myth.Interfaces / Myth.Flow.Actions
 **Discovered:** 2026-05-15
+**Status:** ✅ RESOLVED — `ICommand`, `IQuery`, `ICommandHandler`, `IQueryHandler`, `IDispatcher` consolidados em `Myth.Interfaces`. Documentado na seção "Namespace quick reference" do `AGENT_MIGRATION_GUIDE.md`. Confirmado pelo `myth-template`: `ICommand<Guid>` importado via `using Myth.Interfaces;` sem erros.
 **Context:** Criando novos handlers CQRS e recebendo erros de compilação por namespace errado.
 
 **Current behavior:**
@@ -295,6 +296,7 @@ Os tipos centrais do CQRS estão espalhados em namespaces diferentes sem lógica
 
 **Library:** Myth.Guard / Myth.Exceptions
 **Discovered:** 2026-05-20
+**Status:** ✅ RESOLVED — Documentado na seção "Namespace quick reference" do `AGENT_MIGRATION_GUIDE.md` com aviso explícito: `using Myth.Exceptions; // ValidationException ← NOT Myth.Guard.Exceptions`. Todos os exemplos do guide usam o namespace correto.
 **Context:** Lançando ValidationException em handler para retornar 402, import errado gerou erro de compilação confuso.
 
 **Current behavior:**
@@ -339,6 +341,53 @@ RuleFor(x => x.Name).Must(v => v?.Length <= 100).WithMessage("Max 100 chars");
 1. Adicionar `MaxLength(int max)` no `FluentRuleBuilder` com mensagem de erro padrão.
 2. Documentar `NotDefault()` no skill `myth-guard` com exemplo explícito para `Guid` e outros value types.
 3. Adicionar seção "Common Validation Pitfalls" no skill com `NotDefault` vs `NotEmpty`.
+
+---
+
+## AGENT_MIGRATION_GUIDE — Seção 6: exemplo de teste insuficiente para pipelines com múltiplos Transforms
+
+**Library:** Myth.Flow / AGENT_MIGRATION_GUIDE.md
+**Discovered:** 2026-06-04
+**Status:** ✅ RESOLVED 2026-06-04 — Seção 6 do `AGENT_MIGRATION_GUIDE.md` atualizada para usar `GetBaseException()` em vez de `.InnerException`, com nota explicativa sobre aninhamento proporcional de `PipelineException` por step.
+**Context:** Aplicando a migração descrita na seção 6 do `AGENT_MIGRATION_GUIDE.md` ao projeto `myth-template`. Os testes de `PostAsync` (que usa `.Process<T,R>()` + `.Transform()` + `.Publish()`) continuavam falhando mesmo após aplicar o padrão de `InnerException` descrito no guide.
+
+**Current behavior (guide):**
+O guide instrui usar:
+```csharp
+// ✅ NEW test assertion — PipelineException with inner exception
+var thrown = await act.Should().ThrowAsync<PipelineException>();
+thrown.Which.InnerException.Should().BeOfType<ArgumentException>();
+```
+
+Isso funciona quando há **um único** Transform no pipeline. Mas quando existem múltiplos steps que usam Transform internamente (ex: `.Process<T,R>()` + `.Transform(result => ...)` + `.Publish()`), a exceção é envolvida várias vezes:
+
+```
+PipelineException (from .Publish())
+  → PipelineException (from .Transform())
+    → PipelineException (from .Process<T,R>())
+      → ValidationException (original)
+```
+
+Nesse caso, `.Which.InnerException` é outro `PipelineException`, não a `ValidationException`.
+
+**Problem / Gap:**
+O exemplo do guide assume aninhamento único, mas na prática pipelines com múltiplos steps de Transform produzem aninhamento profundo. O padrão recomendado com `.InnerException` não funciona de forma genérica.
+
+**Discovered fix:**
+Usar `GetBaseException()` que percorre toda a cadeia de InnerException até encontrar a exceção raiz — funciona independentemente da profundidade:
+
+```csharp
+// ✅ Robust — works for any nesting depth
+var thrown = await act.Should().ThrowAsync<PipelineException>();
+var response = thrown.Which.GetBaseException().Should().BeOfType<ValidationException>().Which;
+response.Message.Should().NotBeEmpty();
+response.ValidationResult.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+```
+
+**Suggested improvement:**
+1. Atualizar a seção 6 do `AGENT_MIGRATION_GUIDE.md` para usar `GetBaseException()` em vez de `.InnerException` diretamente.
+2. Adicionar nota explicando que múltiplos Transform steps causam aninhamento proporcional de PipelineExceptions.
+3. Mencionar que `.Process<T,R>()`, `.Query<T,R>()`, `.Transform()`, e `.Publish()` TODOS usam Transform internamente — não apenas o `.Transform()` explícito.
 
 ---
 
