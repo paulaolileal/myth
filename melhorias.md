@@ -8,6 +8,7 @@ Cada seção é uma entrada independente. Formato: título, biblioteca, data, co
 
 **Library:** Myth.Morph
 **Discovered:** 2026-06-04
+**Status:** ✅ RESOLVED 2026-06-04 — `MapGenericTypes` agora detecta tipos sem propriedades graváveis (ex.: `Paginated<T>` com `private set`) e usa mapeamento orientado a construtor via `CreateInstanceFromSource`.
 **Context:** Chamada `result.To<IPaginated<GetWeatherStationResponse>>()` em query handler retorna `Paginated<GetWeatherStationResponse>` com `Items = null`. O `.Tap()` seguinte que chama `pipeline.CurrentRequest!.Items.Count()` lança `NullReferenceException` silenciada pelo pipeline.
 
 **Current behavior:**
@@ -60,6 +61,7 @@ var response = items.AsPaginated(result.TotalItems, result.PageSize, (result.Pag
 
 **Library:** Myth.Repository.EntityFramework
 **Discovered:** 2026-05-28
+**Status:** ✅ RESOLVED — XMLDoc adicionado em `SearchAsync` documentando change tracking; `SearchAsNoTrackingAsync` implementado.
 **Context:** Investigando um bug de soft-delete em cadeia que precisava modificar entidades retornadas por `SearchAsync` e salvar com `SaveChangesAsync`.
 
 **Current behavior:**
@@ -89,6 +91,7 @@ Não é óbvio pelo nome ou documentação que as entidades retornadas são rast
 
 **Library:** Myth.Repository.EntityFramework
 **Discovered:** 2026-05-21
+**Status:** ✅ RESOLVED — `SearchAsync` e `SearchAsNoTrackingAsync` retornam `IReadOnlyList<TEntity>` (já materializado via `ToListAsync`); XMLDoc documenta que `.Count()` (com parênteses) deve ser usado.
 **Context:** Contando resultados de `SearchAsync` para verificar limites de plano.
 
 **Current behavior:**
@@ -156,6 +159,7 @@ PipelineExtensions.Start(command)
 
 **Library:** Myth.Repository.EntityFramework
 **Discovered:** 2026-06-02
+**Status:** ✅ RESOLVED — `BeginTransactionAsync` captura `InvalidOperationException` de providers sem suporte a transações (InMemory). Commit/Rollback/Savepoint também são no-op nesse cenário.
 **Context:** Testando o endpoint `PostWithForecastsAsync` que usa `IUnitOfWorkRepository.BeginTransactionAsync()` / `CommitAsync()` / `CreateSavepointAsync()`. O handler falha silenciosamente no ambiente de testes com InMemory EF, e `.Process<T,Guid>()` captura a exceção retornando `Guid.Empty`.
 
 **Current behavior:**
@@ -177,6 +181,7 @@ PipelineExtensions.Start(command)
 
 **Library:** Myth.Guard
 **Discovered:** 2026-06-02
+**Status:** ✅ RESOLVED — `ValidationBuilder.GetRules()` já inclui `_globalRules` primeiro e depois adiciona as regras do contexto especificado. Regras globais sempre executam independente do contexto.
 **Context:** Testando `PostAsync` do `WeatherStationController` que chama `validator.ValidateAsync(command, ValidationContextKey.Create)`. Em testes, regras globais (fora de `InContext`) não executam quando um context key é passado.
 
 **Current behavior:**
@@ -205,6 +210,7 @@ Isso significa que para `CreateWeatherStationCommand { Name = "", Location = "..
 
 **Library:** Myth.Flow.Actions
 **Discovered:** 2026-05-20
+**Status:** ✅ RESOLVED — `CommandResult.Failure(string, HttpStatusCode, ...)` existe. Métodos semânticos também implementados: `NotFound`, `Forbidden`, `Unauthorized`, `PaymentRequired`, `Conflict`, `UnprocessableEntity`.
 **Context:** Implementando handler que precisava retornar 402 Payment Required para usuário sem créditos.
 
 **Current behavior:**
@@ -232,6 +238,7 @@ throw new ValidationException(new ValidationResult([
 
 **Library:** Myth.Flow.Actions
 **Discovered:** 2026-05-20
+**Status:** ✅ RESOLVED — `QueryResult<T>.NotFound()`, `Forbidden()`, `Unauthorized()`, `Failure(string, HttpStatusCode)` implementados.
 **Context:** Implementando queries onde a entidade pode não existir (ex: buscar projeto por ID que o usuário não tem acesso).
 
 **Current behavior:**
@@ -307,6 +314,7 @@ Desenvolvedores que trabalham com validação via `myth-guard` assumem que `Vali
 
 **Library:** Myth.Guard
 **Discovered:** 2026-05-21
+**Status:** ✅ RESOLVED — `MaxLength(int)` existe como alias de `MaximumLength(int)` em `FluentRuleBuilderExtensions`. `NotDefault()` implementado no `FluentRuleBuilder` base com suporte a nullable.
 **Context:** Validando campos string com tamanho máximo e campos Guid obrigatórios em commands.
 
 **Current behavior:**
