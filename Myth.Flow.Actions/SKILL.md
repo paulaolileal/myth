@@ -147,6 +147,7 @@ All types from this library live inside the `Myth.Flow.Actions` assembly. The na
 | `CommandResult<TResponse>` | `Myth.Models` | |
 | `QueryResult<TData>` | `Myth.Models` | |
 | `CacheOptions` | `Myth.Models` | |
+| `ICacheManager` | `Myth.Interfaces` | Inject in handlers to invalidate/manage cache manually |
 | `ValidationException` | `Myth.Exceptions` | Lives in Myth.Guard assembly — `using Myth.Exceptions;` |
 
 > **Common pitfall:** `ICommand` and `CommandResult` are in **different namespaces** (`Myth.Interfaces` vs `Myth.Models`). Both are required at the top of handler files.
@@ -440,6 +441,80 @@ public interface ICacheProvider {
     Task RemoveByPatternAsync(
         string pattern,
         CancellationToken cancellationToken = default);
+}
+```
+
+### ICacheManager
+
+The **public-facing cache management interface** for handlers and application code. Inject it directly to manually get, set, and invalidate cache entries from command or query handlers.
+
+> **ICacheManager vs ICacheProvider**: `ICacheProvider` is an internal infrastructure abstraction used by the Dispatcher. `ICacheManager` is the developer-facing API — use it in your handlers.
+
+```csharp
+public interface ICacheManager {
+    // Get a cached value by key
+    Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default);
+
+    // Set a value with TTL (and optional sliding expiration)
+    Task SetAsync<T>(string key, T value, TimeSpan ttl, bool slidingExpiration = false, CancellationToken cancellationToken = default);
+
+    // Invalidate a specific cache key
+    Task InvalidateAsync(string key, CancellationToken cancellationToken = default);
+
+    // Invalidate all keys matching a pattern (e.g., "User:*")
+    // Note: MemoryCache has limited pattern support — use Redis for production pattern matching
+    Task InvalidateByPatternAsync(string pattern, CancellationToken cancellationToken = default);
+
+    // Invalidate cache for a specific query type
+    // If query instance is provided → invalidates only that query's entry
+    // If query is null → invalidates ALL entries of that query type via pattern
+    Task InvalidateByTypeAsync<TQuery>(TQuery? query = default, CancellationToken cancellationToken = default);
+
+    // Generate the same cache key the Dispatcher would use for a query
+    // Use this to manually build consistent keys for GetAsync/InvalidateAsync
+    string GenerateKey<TQuery>(TQuery query);
+}
+```
+
+**When to use ICacheManager:**
+
+| Scenario | Method |
+|----------|--------|
+| Invalidate one specific query after a command | `InvalidateByTypeAsync(new GetUserQuery { Id = id })` |
+| Invalidate all cached results for a query type | `InvalidateByTypeAsync<GetUserListQuery>()` |
+| Invalidate a group of related keys | `InvalidateByPatternAsync("User:*")` |
+| Read/write cache bypassing the Dispatcher | `GetAsync` / `SetAsync` |
+| Build a key consistent with Dispatcher's algorithm | `GenerateKey(query)` |
+
+**Example — command handler invalidating cache after update:**
+
+```csharp
+public class UpdateUserHandler : ICommandHandler<UpdateUserCommand> {
+    private readonly IUserRepository _repository;
+    private readonly ICacheManager _cacheManager;
+
+    public UpdateUserHandler(IUserRepository repository, ICacheManager cacheManager) {
+        _repository = repository;
+        _cacheManager = cacheManager;
+    }
+
+    public async Task<CommandResult> HandleAsync(
+        UpdateUserCommand command,
+        CancellationToken cancellationToken) {
+
+        var user = await _repository.GetByIdAsync(command.Id, cancellationToken);
+        user.Name = command.Name;
+        await _repository.UpdateAsync(user, cancellationToken);
+
+        // Invalidate the specific user query
+        await _cacheManager.InvalidateByTypeAsync(
+            new GetUserQuery { UserId = command.Id }, cancellationToken);
+
+        // Also invalidate list queries (no instance needed)
+        await _cacheManager.InvalidateByTypeAsync<GetUserListQuery>(cancellationToken);
+
+        return CommandResult.Success();
+    }
 }
 ```
 
@@ -1165,7 +1240,8 @@ public class SendEmailHandler : IEventHandler<UserRegisteredEvent> {
 **✅ DO:**
 - Cache queries only (not commands)
 - Use appropriate TTL based on data volatility
-- Invalidate cache on related commands
+- Inject `ICacheManager` in command handlers to invalidate related query caches after writes
+- Use `InvalidateByTypeAsync(queryInstance)` for specific entry invalidation and `InvalidateByTypeAsync<TQuery>()` for bulk invalidation
 - Use sliding expiration for frequently accessed data
 
 **❌ DON'T:**
