@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.1] — 2026-06-05
+
+### Myth.Flow.Actions
+
+#### 🐛 Fixed
+
+- **HttpStatusCode propagation through pipeline** — `Result<T>` returned by `Pipeline.Start().ExecuteAsync()` now always carries `StatusCode`. Previously, semantic factories (`CommandResult.NotFound()`, `QueryResult.Forbidden()`, `CommandResult.PaymentRequired()`, etc.) only propagated their `HttpStatusCode` when dispatched via `IDispatcher`; calls through `PipelineExtensions` (.Process<T,R>(), .Query<T,R>()) silently lost the status code, leaving `StatusCode` as `null`. The fix ensures the dispatcher step forwards the handler's `StatusCode` to the outer `Result<T>` in all code paths.
+
+#### ✨ Added
+
+- **`CommandResult.Created()` and `CommandResult.NoContent()` success factories** — express the created (201) and no-content (204) semantics from command handlers without returning a body; controllers can read `result.StatusCode` directly.
+- **`QueryResult<T>.NoContent()` factory** — represents an intentionally empty result (204 No Content) for queries where absence is a valid, expected outcome (not an error).
+- **`QueryResult<T>.PaymentRequired()` and `QueryResult<T>.Conflict()` failure factories** — extend the semantic failure vocabulary for query handlers.
+
+---
+
 ## [Unreleased]
 
 ### Myth.Morph
