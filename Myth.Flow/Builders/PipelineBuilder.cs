@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Myth.Exceptions;
@@ -171,7 +172,8 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 				if ( result.IsFailure ) {
 					throw new PipelineException(
 						result.ErrorMessage ?? "Step failed",
-						result.Exception );
+						result.Exception,
+						result.StatusCode );
 				}
 
 				return await Task.FromResult( result.Value! );
@@ -203,7 +205,8 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 				if ( result.IsFailure ) {
 					throw new PipelineException(
 						result.ErrorMessage ?? "Step failed",
-						result.Exception );
+						result.Exception,
+						result.StatusCode );
 				}
 
 				return result.Value!;
@@ -235,7 +238,8 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 				if ( result.IsFailure ) {
 					throw new PipelineException(
 						result.ErrorMessage ?? "Step failed",
-						result.Exception );
+						result.Exception,
+						result.StatusCode );
 				}
 
 				return result.Value!;
@@ -423,7 +427,8 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 					if ( result.IsFailure ) {
 						throw new PipelineException(
 							result.ErrorMessage ?? "Conditional step failed",
-							result.Exception );
+							result.Exception,
+							result.StatusCode );
 					}
 
 					return result.Value!;
@@ -554,7 +559,7 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 				}
 			}
 
-			return Result<TContext>.Failure( ex.Message, ex );
+			return Result<TContext>.Failure( ex.Message, ex, ( ex as PipelineException )?.StatusCode );
 		} finally {
 			activity?.Dispose( );
 		}

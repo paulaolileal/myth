@@ -52,7 +52,8 @@ public static class PipelineExtensions {
 			if ( result.IsFailure )
 				throw new PipelineException(
 					result.ErrorMessage ?? "Command processing failed",
-					result.Exception );
+					result.Exception,
+					result.StatusCode );
 
 			state.LastResult = result;
 			return state;
@@ -82,7 +83,8 @@ public static class PipelineExtensions {
 				if ( result.IsFailure )
 					throw new PipelineException(
 						result.ErrorMessage ?? "Command processing failed",
-						result.Exception );
+						result.Exception,
+						result.StatusCode );
 
 				state.LastResult = result;
 				return state;
@@ -140,7 +142,8 @@ public static class PipelineExtensions {
 				if ( result.IsFailure )
 					throw new PipelineException(
 						result.ErrorMessage ?? "Query execution failed",
-						result.Exception );
+						result.Exception,
+						result.StatusCode );
 
 				state.LastResult = result;
 				return state;

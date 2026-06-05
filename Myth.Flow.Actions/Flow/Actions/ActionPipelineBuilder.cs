@@ -164,7 +164,7 @@ internal class ActionPipelineBuilder<TCurrent>( IPipelineBuilder<ActionPipelineS
 		var result = await _innerPipeline.ExecuteAsync( cancellationToken );
 
 		if ( result.IsFailure ) {
-			return Result<TCurrent>.Failure( result.ErrorMessage!, result.Exception );
+			return Result<TCurrent>.Failure( result.ErrorMessage!, result.Exception, result.StatusCode );
 		}
 
 		var finalRequest = result.Value!.CurrentRequest;
