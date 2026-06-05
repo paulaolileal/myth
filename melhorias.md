@@ -412,3 +412,63 @@ Todo projeto que usa Myth.Guard para validação síncrona vai precisar reinvent
 1. Adicionar suporte a regras assíncronas no `ValidationBuilder<T>`: `.RuleForAsync(x => x.WorkspaceId, async id => await repo.ExistsAsync(id))`.
 2. Criar interface `IAsyncValidationRule<TCommand>` que handlers de validação possam implementar e registrar no DI, separando validação de negócio da definição do command.
 3. Documentar o padrão `EntityValidationService` + `RulesExtensions` como arquitetura recomendada enquanto o suporte nativo não existe.
+
+---
+
+## WriteRepositoryAsync.UpdateAsync — DbUpdateConcurrencyException no EF InMemory ao atualizar entidade em estado Added
+
+**Library:** Myth.Repository.EntityFramework
+**Discovered:** 2026-06-05
+**Status:** ✅ FIXED 2026-06-05 (v4.4.2) — `UpdateAsync` e `UpdateRangeAsync` agora verificam se o estado atual é `Added` antes de mudar para `Modified`. Se já for `Added`, o estado é mantido (as modificações já estão rastreadas pelo change tracker).
+
+**Context:** Implementando testes e2e para `RegisterCommandHandler` (MindCircle). O handler chama `AddAsync(project)` e depois `UpdateAsync(project)` para atribuir o workspace ao projeto — tudo dentro do mesmo scope de DbContext, antes do `SaveChangesAsync`.
+
+**Current behavior (before fix):**
+```csharp
+// WriteRepositoryAsync.UpdateAsync
+public virtual Task UpdateAsync(T entity, CancellationToken cancellationToken = default) =>
+    AttachAsync(entity, cancellationToken)
+        .ContinueWith((_) => _context.Entry(entity).State = EntityState.Modified, cancellationToken);
+```
+
+Quando `AddAsync(entity)` é chamado antes de `SaveChangesAsync`, o entity fica com `EntityState.Added`. Em seguida, `UpdateAsync(entity)` muda para `EntityState.Modified`. No `SaveChangesAsync` com EF InMemory, o provider tenta fazer UPDATE em uma entidade que ainda não existe no store (nunca foi inserida), lançando:
+
+```
+Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException:
+Attempted to update or delete an entity that does not exist in the store.
+```
+
+O Dispatcher captura essa exceção e retorna `CommandResult.Failure()` com `Value = null`. O controller acessa `result.Value!.Prop` e lança `NullReferenceException`.
+
+**Problem / Gap:**
+1. O padrão Add → Update → SaveChanges é comum em handlers que criam entidades relacionadas e precisam atualizar referências (ex: `project.SetWorkspace(workspaceId)` após criar a workspace). Com PostgreSQL isso funciona porque as operações são agrupadas em uma transação real.
+2. Com EF InMemory (usado em testes), não há transação. O provider processa cada operação como atômica: Modified → UPDATE imediato no store em memória, mas a entidade ainda não foi inserida.
+3. O erro é capturado silenciosamente pelo Dispatcher, tornando o diagnóstico muito difícil — apenas aparece como `NullReferenceException` no controller, sem a causa raiz.
+
+**Fix applied:**
+```csharp
+// UpdateAsync — não sobrescreve Added com Modified
+public virtual Task UpdateAsync(T entity, CancellationToken cancellationToken = default) =>
+    AttachAsync(entity, cancellationToken)
+        .ContinueWith((_) => {
+            var entry = _context.Entry(entity);
+            if (entry.State != EntityState.Added)
+                entry.State = EntityState.Modified;
+        }, cancellationToken);
+
+// UpdateRangeAsync — mesma correção para cada entidade
+public virtual Task UpdateRangeAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default) =>
+    AttachRangeAsync(entities, cancellationToken)
+        .ContinueWith(task => {
+            foreach (var entity in entities) {
+                var entry = _context.Entry(entity);
+                if (entry.State != EntityState.Added)
+                    entry.State = EntityState.Modified;
+            }
+        }, cancellationToken);
+```
+
+**Reasoning:** Se a entidade já está em `Added`, o change tracker já captura todas as modificações em memória. Mudar para `Modified` é desnecessário e destrutivo com InMemory. O fix é seguro em PostgreSQL também — entidades `Added` serão inseridas corretamente no `SaveChangesAsync`, com todas as propriedades modificadas aplicadas.
+
+**Suggested improvement:**
+Já corrigido em v4.4.2. Considerar adicionar um teste unitário ao `Myth.Repository.Test` que cobre o cenário Add → UpdateAsync → SaveChangesAsync com InMemory para evitar regressão.

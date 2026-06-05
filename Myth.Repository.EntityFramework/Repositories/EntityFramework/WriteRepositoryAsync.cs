@@ -64,7 +64,11 @@ public class WriteRepositoryAsync<T>( BaseContext context ) : IWriteRepositoryAs
 	/// <returns>A task that represents the asynchronous update operation</returns>
 	public virtual Task UpdateAsync( T entity, CancellationToken cancellationToken = default ) =>
 		AttachAsync( entity, cancellationToken )
-			.ContinueWith( ( _ ) => _context.Entry( entity ).State = EntityState.Modified, cancellationToken );
+			.ContinueWith( ( _ ) => {
+				var entry = _context.Entry( entity );
+				if ( entry.State != EntityState.Added )
+					entry.State = EntityState.Modified;
+			}, cancellationToken );
 
 	/// <summary>
 	/// Asynchronously updates a collection of existing entities in the repository
@@ -75,8 +79,11 @@ public class WriteRepositoryAsync<T>( BaseContext context ) : IWriteRepositoryAs
 	public virtual Task UpdateRangeAsync( IEnumerable<T> entities, CancellationToken cancellationToken = default ) =>
 		AttachRangeAsync( entities, cancellationToken )
 			.ContinueWith( task => {
-				foreach ( var entity in entities )
-					_context.Entry( entity ).State = EntityState.Modified;
+				foreach ( var entity in entities ) {
+					var entry = _context.Entry( entity );
+					if ( entry.State != EntityState.Added )
+						entry.State = EntityState.Modified;
+				}
 			}, cancellationToken );
 
 	/// <summary>
