@@ -1,11 +1,12 @@
 using System.Net;
+using Myth.Interfaces;
 
 namespace Myth.Models;
 
 /// <summary>
 /// Represents command execution result
 /// </summary>
-public readonly struct CommandResult {
+public readonly struct CommandResult : IResultStatusCode {
 
 	/// <summary>
 	/// Indicates whether the command execution was successful
@@ -43,31 +44,27 @@ public readonly struct CommandResult {
 	}
 
 	/// <summary>
-	/// Creates a successful command result
+	/// Creates a successful command result with HTTP 200 OK
 	/// </summary>
-	/// <param name="metadata">Optional metadata to include with the result</param>
-	/// <returns>A successful CommandResult with HTTP 200 OK</returns>
 	public static CommandResult Success( Dictionary<string, object>? metadata = null ) =>
 		new( true, null, null, metadata, HttpStatusCode.OK );
 
 	/// <summary>
+	/// Creates a successful command result with HTTP 204 No Content,
+	/// for commands that complete successfully but produce no response body.
+	/// </summary>
+	public static CommandResult NoContent( Dictionary<string, object>? metadata = null ) =>
+		new( true, null, null, metadata, HttpStatusCode.NoContent );
+
+	/// <summary>
 	/// Creates a failed command result with HTTP 400 Bad Request
 	/// </summary>
-	/// <param name="errorMessage">The error message describing the failure</param>
-	/// <param name="exception">The exception that caused the failure</param>
-	/// <param name="metadata">Optional metadata to include with the result</param>
-	/// <returns>A failed CommandResult with HTTP 400 Bad Request</returns>
 	public static CommandResult Failure( string errorMessage, Exception? exception = null, Dictionary<string, object>? metadata = null ) =>
 		new( false, errorMessage, exception, metadata, HttpStatusCode.BadRequest );
 
 	/// <summary>
 	/// Creates a failed command result with an explicit HTTP status code
 	/// </summary>
-	/// <param name="errorMessage">The error message describing the failure</param>
-	/// <param name="statusCode">The HTTP status code to associate with this failure</param>
-	/// <param name="exception">The exception that caused the failure</param>
-	/// <param name="metadata">Optional metadata to include with the result</param>
-	/// <returns>A failed CommandResult with the specified HTTP status code</returns>
 	public static CommandResult Failure( string errorMessage, HttpStatusCode statusCode, Exception? exception = null, Dictionary<string, object>? metadata = null ) =>
 		new( false, errorMessage, exception, metadata, statusCode );
 
@@ -117,7 +114,7 @@ public readonly struct CommandResult {
 /// Represents command execution result with typed response
 /// </summary>
 /// <typeparam name="TResponse">Response type</typeparam>
-public readonly struct CommandResult<TResponse> {
+public readonly struct CommandResult<TResponse> : IResultStatusCode {
 
 	/// <summary>
 	/// Indicates whether the command execution was successful
@@ -161,32 +158,27 @@ public readonly struct CommandResult<TResponse> {
 	}
 
 	/// <summary>
-	/// Creates a successful command result with data
+	/// Creates a successful command result with data and HTTP 200 OK
 	/// </summary>
-	/// <param name="data">The response data from the command</param>
-	/// <param name="metadata">Optional metadata to include with the result</param>
-	/// <returns>A successful CommandResult with data and HTTP 200 OK</returns>
 	public static CommandResult<TResponse> Success( TResponse data, Dictionary<string, object>? metadata = null ) =>
 		new( true, data, null, null, metadata, HttpStatusCode.OK );
 
 	/// <summary>
+	/// Creates a successful command result with HTTP 204 No Content,
+	/// for commands that complete successfully but produce no response body.
+	/// </summary>
+	public static CommandResult<TResponse> NoContent( Dictionary<string, object>? metadata = null ) =>
+		new( true, default, null, null, metadata, HttpStatusCode.NoContent );
+
+	/// <summary>
 	/// Creates a failed command result with HTTP 400 Bad Request
 	/// </summary>
-	/// <param name="errorMessage">The error message describing the failure</param>
-	/// <param name="exception">The exception that caused the failure</param>
-	/// <param name="metadata">Optional metadata to include with the result</param>
-	/// <returns>A failed CommandResult with HTTP 400 Bad Request</returns>
 	public static CommandResult<TResponse> Failure( string errorMessage, Exception? exception = null, Dictionary<string, object>? metadata = null ) =>
 		new( false, default, errorMessage, exception, metadata, HttpStatusCode.BadRequest );
 
 	/// <summary>
 	/// Creates a failed command result with an explicit HTTP status code
 	/// </summary>
-	/// <param name="errorMessage">The error message describing the failure</param>
-	/// <param name="statusCode">The HTTP status code to associate with this failure</param>
-	/// <param name="exception">The exception that caused the failure</param>
-	/// <param name="metadata">Optional metadata to include with the result</param>
-	/// <returns>A failed CommandResult with the specified HTTP status code</returns>
 	public static CommandResult<TResponse> Failure( string errorMessage, HttpStatusCode statusCode, Exception? exception = null, Dictionary<string, object>? metadata = null ) =>
 		new( false, default, errorMessage, exception, metadata, statusCode );
 

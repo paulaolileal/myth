@@ -56,14 +56,36 @@ public class PipelineStatusCodePropagationTests : BaseTestFixture {
 	}
 
 	[Fact]
-	public async Task Process_WhenCommandSucceeds_ShouldHaveNullStatusCode( ) {
+	public async Task Process_WhenCommandSucceeds_ShouldHaveOkStatusCode( ) {
 		var result = await Pipeline
 			.Start( new TestCommand { Value = "ok" } )
 			.Process<TestCommand, string>( )
 			.ExecuteAsync( );
 
 		result.IsSuccess.Should( ).BeTrue( );
-		result.StatusCode.Should( ).BeNull( );
+		result.StatusCode.Should( ).Be( HttpStatusCode.OK );
+	}
+
+	[Fact]
+	public async Task Process_WhenCommandReturnsNoContent_ShouldHaveNoContentStatusCode( ) {
+		var result = await Pipeline
+			.Start( new FailingCommand { FailureMode = "no-content" } )
+			.Process<FailingCommand, string>( )
+			.ExecuteAsync( );
+
+		result.IsSuccess.Should( ).BeTrue( );
+		result.StatusCode.Should( ).Be( HttpStatusCode.NoContent );
+	}
+
+	[Fact]
+	public async Task Query_WhenQueryReturnsNoContent_ShouldHaveNoContentStatusCode( ) {
+		var result = await PipelineExtensions
+			.Start( new FailingQuery { FailureMode = "no-content" } )
+			.Query<FailingQuery, string>( )
+			.ExecuteAsync( );
+
+		result.IsSuccess.Should( ).BeTrue( );
+		result.StatusCode.Should( ).Be( HttpStatusCode.NoContent );
 	}
 
 	[Fact]
@@ -97,6 +119,23 @@ public class PipelineStatusCodePropagationTests : BaseTestFixture {
 
 		dispatcherResult.IsFailure.Should( ).BeTrue( );
 		pipelineResult.IsFailure.Should( ).BeTrue( );
+		pipelineResult.StatusCode.Should( ).Be( dispatcherResult.StatusCode );
+	}
+
+	[Fact]
+	public async Task Process_SuccessStatusCodeViaPipeline_ShouldMatchDispatcherDirect( ) {
+		var dispatcher = ServiceProvider.GetRequiredService<IDispatcher>( );
+
+		var dispatcherResult = await dispatcher.DispatchCommandAsync<TestCommand, string>(
+			new TestCommand { Value = "ok" } );
+
+		var pipelineResult = await Pipeline
+			.Start( new TestCommand { Value = "ok" } )
+			.Process<TestCommand, string>( )
+			.ExecuteAsync( );
+
+		dispatcherResult.IsSuccess.Should( ).BeTrue( );
+		pipelineResult.IsSuccess.Should( ).BeTrue( );
 		pipelineResult.StatusCode.Should( ).Be( dispatcherResult.StatusCode );
 	}
 }

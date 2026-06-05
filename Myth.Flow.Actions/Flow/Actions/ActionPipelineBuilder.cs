@@ -1,3 +1,4 @@
+using System.Net;
 using Myth.Flow.Actions.Interfaces;
 using Myth.Interfaces;
 using Myth.Models;
@@ -167,11 +168,18 @@ internal class ActionPipelineBuilder<TCurrent>( IPipelineBuilder<ActionPipelineS
 			return Result<TCurrent>.Failure( result.ErrorMessage!, result.Exception, result.StatusCode );
 		}
 
-		var finalRequest = result.Value!.CurrentRequest;
-		if ( finalRequest == null ) {
+		var state = result.Value!;
+		var lastResult = state.LastResult as IResultStatusCode;
+		var statusCode = lastResult?.StatusCode ?? HttpStatusCode.OK;
+
+		if ( state.CurrentRequest == null ) {
+			// NoContent is a legitimate success with no data — the handler returned 204 explicitly.
+			if ( lastResult is { IsSuccess: true } )
+				return Result<TCurrent>.Success( default!, statusCode );
+
 			return Result<TCurrent>.Failure( "Pipeline completed without a current request" );
 		}
 
-		return Result<TCurrent>.Success( finalRequest );
+		return Result<TCurrent>.Success( state.CurrentRequest, statusCode );
 	}
 }

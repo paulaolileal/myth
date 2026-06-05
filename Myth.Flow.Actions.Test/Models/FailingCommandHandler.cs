@@ -15,6 +15,7 @@ public class FailingCommandHandler : ICommandHandler<FailingCommand, string> {
 			"payment-required"     => CommandResult<string>.PaymentRequired( "Insufficient credits" ),
 			"conflict"             => CommandResult<string>.Conflict( "Duplicate entry" ),
 			"unprocessable-entity" => CommandResult<string>.UnprocessableEntity( "Invalid data" ),
+			"no-content"           => CommandResult<string>.NoContent( ),
 			_                      => CommandResult<string>.Failure( "Generic failure" )
 		};
 

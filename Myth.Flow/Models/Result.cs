@@ -45,12 +45,13 @@ public readonly struct Result<T> {
 	}
 
 	/// <summary>
-	/// Creates a successful <see cref="Result{T}"/> with the specified value.
+	/// Creates a successful <see cref="Result{T}"/> with the specified value and optional HTTP status code.
 	/// </summary>
 	/// <param name="value">The value returned by the operation.</param>
+	/// <param name="statusCode">The HTTP status code to associate with this result, or <c>null</c> for non-HTTP contexts.</param>
 	/// <returns>A successful <see cref="Result{T}"/>.</returns>
-	public static Result<T> Success( T value ) =>
-		new( true, value, null, null );
+	public static Result<T> Success( T value, HttpStatusCode? statusCode = null ) =>
+		new( true, value, null, null, statusCode );
 
 	/// <summary>
 	/// Creates a failed <see cref="Result{T}"/> with the specified error message, optional exception, and optional HTTP status code.

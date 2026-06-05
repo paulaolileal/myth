@@ -12,6 +12,7 @@ public class FailingQueryHandler : IQueryHandler<FailingQuery, string> {
 			"forbidden"    => QueryResult<string>.Forbidden( ),
 			"not-found"    => QueryResult<string>.NotFound( "Resource not found" ),
 			"unauthorized" => QueryResult<string>.Unauthorized( ),
+			"no-content"   => QueryResult<string>.NoContent( ),
 			_              => QueryResult<string>.Failure( "Generic failure" )
 		};
 
