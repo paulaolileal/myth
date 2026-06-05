@@ -139,6 +139,30 @@ return result.IsSuccess
     : StatusCode((int)result.StatusCode, result.ErrorMessage);
 ```
 
+**Step 3 — StatusCode also propagates through the pipeline (Pipeline.Start)**
+
+`result.StatusCode` is preserved whether the command is dispatched directly via `IDispatcher` or via the pipeline API. Both paths are equivalent:
+
+```csharp
+// Via IDispatcher — StatusCode preserved ✅
+var result = await dispatcher.DispatchCommandAsync<CreateOrderCommand, Guid>(command);
+// result.StatusCode == HttpStatusCode.Forbidden if handler returned CommandResult.Forbidden()
+
+// Via Pipeline — StatusCode also preserved ✅ (fixed in Myth.Flow 1.x)
+var result = await Pipeline
+    .Start(command)
+    .Process<CreateOrderCommand, Guid>()
+    .ExecuteAsync();
+// result.StatusCode == HttpStatusCode.Forbidden — same value
+
+// Controller usage is identical for both paths
+return result.IsSuccess
+    ? Ok(result.Value)
+    : StatusCode((int)result.StatusCode!, result.ErrorMessage);
+```
+
+> **Note:** `result.StatusCode` is `HttpStatusCode?` (nullable) on `Result<T>`. It is `null` on success and set on failure. Cast with `(int)result.StatusCode!` only after checking `result.IsFailure`.
+
 **Files to search in the consumer project:**
 - All `*Handler.cs` / `*CommandHandler.cs` files
 - All `*Controller.cs` files that dispatch commands
@@ -190,6 +214,20 @@ var result = await _dispatcher.DispatchQueryAsync<GetProjectQuery, ProjectDto>(q
 return result.IsSuccess
     ? Ok(result.Data)
     : StatusCode((int)result.StatusCode, result.ErrorMessage);
+```
+
+The same applies when dispatching via the pipeline — `result.StatusCode` is preserved:
+
+```csharp
+// Via Pipeline — StatusCode also preserved ✅
+var result = await PipelineExtensions
+    .Start(query)
+    .Query<GetProjectQuery, ProjectDto>()
+    .ExecuteAsync();
+
+return result.IsSuccess
+    ? Ok(result.Value)
+    : StatusCode((int)result.StatusCode!, result.ErrorMessage);
 ```
 
 **Files to search in the consumer project:**
