@@ -1,6 +1,6 @@
 using Bogus;
 using FluentAssertions;
-using Myth.Testing.Repositories;
+using Myth.Repositories;
 using Myth.Testing.Test.Models;
 using Myth.Testing.Test.Repositories;
 

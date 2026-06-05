@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -28,6 +28,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>dotnet;cli;tool;code-generation;architecture;cqrs;ddd;clean-architecture;myth</PackageTags>
     <PackageReleaseNotes>Initial release of Myth code generation tool with support for models, commands, and queries generation</PackageReleaseNotes>
+    <UserSecretsId>ffd07a03-67c5-442b-9ca0-b08de6c0ef9c</UserSecretsId>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -40,7 +41,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Scriban" Version="6.0.0" />
+    <PackageReference Include="Scriban" Version="7.2.3" />
   </ItemGroup>
 
   <ItemGroup>

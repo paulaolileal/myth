@@ -2,7 +2,7 @@ using System.Net;
 using System.Text;
 using FluentAssertions;
 using Myth.Extensions;
-using Myth.Testing.Mocks;
+using Myth.Mocks;
 
 namespace Myth.Testing.Test;
 

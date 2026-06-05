@@ -310,6 +310,47 @@ var queryResult = await dispatcher.DispatchQueryAsync(
 await dispatcher.PublishEventAsync(new OrderCreatedEvent { ... });
 ```
 
+**Dependency Injection in Handlers (IMPORTANT):**
+
+Handlers are **registered as Scoped** and the Dispatcher **automatically creates a scope** before resolving them.
+This means you can **inject repositories and scoped services directly** in handler constructors:
+
+```csharp
+// ✅ Inject repositories directly - simple and clean
+public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
+    private readonly IOrderRepository _orderRepository;
+    private readonly IProductRepository _productRepository;
+    private readonly ILogger<CreateOrderHandler> _logger;
+
+    public CreateOrderHandler(
+        IOrderRepository orderRepository,
+        IProductRepository productRepository,
+        ILogger<CreateOrderHandler> logger) {
+        _orderRepository = orderRepository;
+        _productRepository = productRepository;
+        _logger = logger;
+    }
+
+    public async Task<CommandResult<Guid>> HandleAsync(
+        CreateOrderCommand command,
+        CancellationToken cancellationToken) {
+        // Use repositories directly - scope is managed by Dispatcher
+        var products = await _productRepository.GetByIdsAsync(command.ProductIds, cancellationToken);
+        var order = new Order { /* ... */ };
+        await _orderRepository.AddAsync(order, cancellationToken);
+        return CommandResult<Guid>.Success(order.Id);
+    }
+}
+
+// ❌ No longer needed - avoid manual scope creation
+// Don't inject IServiceScopeFactory and create scopes manually in handlers
+```
+
+**When to use IScopedService<T>:**
+- Background services (hosted services that are singleton)
+- Singleton services that need scoped dependencies
+- Special cases requiring multiple scopes in one operation
+
 ### Creating Specifications
 ```csharp
 public static class PersonSpecifications {

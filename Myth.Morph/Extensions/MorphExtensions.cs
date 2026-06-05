@@ -50,12 +50,12 @@ public static class MorphExtensions {
 
 		logger?.LogTrace( "Retrieved SchemaRegistry from service provider" );
 
-		var method = typeof( SchemaRegistry )
-			.GetMethod( nameof( SchemaRegistry.Morph ) )!
-			.MakeGenericMethod( srcType, destType );
-
+		// MorphDelegateCache compiles a typed delegate once per (srcType, destType) pair,
+		// avoiding MakeGenericMethod + Invoke overhead on every call.
+		// Unlike MethodInfo.Invoke, Expression-compiled delegates propagate exceptions directly.
 		try {
-			var result = ( TDestination )method.Invoke( registry, [ source ] )!;
+			var morphDelegate = MorphDelegateCache.GetMorphDelegate( srcType, destType );
+			var result = ( TDestination )morphDelegate( registry, source );
 			logger?.LogDebug( "Successfully converted {SourceType} to {DestinationType}", srcType.Name, destType.Name );
 			return result;
 		} catch ( Exception ex ) {

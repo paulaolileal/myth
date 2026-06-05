@@ -68,6 +68,9 @@ Mapeamento definido onde pertence—com o type. **Bindings explícitos**: compil
 - **Configuração de Esquema Declarativa**: Defina transformações usando API fluente com segurança em tempo de compilação
 - **Mapeamento Automático de Propriedades**: Mapeamento baseado em convenção para nomes de propriedades correspondentes
 - **Binding Manual**: Quatro estratégias de binding para máxima flexibilidade
+- **Bindings Null-Safe**: `BindIfNotNull()`, `BindOrDefault()`, `BindWhen()` para tratamento explícito de nulos
+- **Comportamento de Nulos Configurável**: Setting global `NullPropertyBehavior` (`AssignDefault`, `Skip`, `Throw`)
+- **Exceções de Mapeamento Ricas**: `MorphPropertyException` com contexto de tipo de origem, destino e nome da propriedade
 - **Suporte Assíncrono**: Suporte de primeira classe para async/await em transformações I/O-bound
 - **Injeção de Dependência**: Acesso completo ao service provider na lógica de transformação
 - **Coleções Genéricas**: Mapeamento automático de coleções com transformação de elementos
@@ -342,6 +345,77 @@ public class ProductDto : IMorphableFrom<Product> {
 }
 ```
 
+## Bindings Null-Safe
+
+Myth.Morph fornece três métodos para tratar valores nulos de forma explícita em bindings manuais, tornando a intenção clara e evitando falhas silenciosas.
+
+### BindIfNotNull — Pular quando nulo
+
+Atribui o valor somente quando o resolver retornar não-nulo. A propriedade de destino mantém seu valor inicializado quando null é retornado:
+
+```csharp
+public void MorphTo( Schema<TokenResponse> schema ) {
+    // A propriedade mantém seu valor padrão quando GetRefreshToken() retorna null
+    schema.BindIfNotNull(dest => dest.RefreshToken, sp =>
+        sp.GetRequiredService<ITokenService>().GetRefreshToken());
+}
+```
+
+### BindOrDefault — Valor de fallback
+
+Atribui um valor padrão quando o resolver retorna null, tornando o fallback explícito em vez de escondê-lo em uma expressão `??`:
+
+```csharp
+public void MorphTo( Schema<UserProfile> schema ) {
+    schema.BindOrDefault(dest => dest.DisplayName,
+        sp => sp.GetRequiredService<IUserService>().GetDisplayName(UserId),
+        defaultValue: "Anônimo");
+}
+```
+
+### BindWhen — Binding condicional
+
+Executa o binding somente quando uma condição for verdadeira:
+
+```csharp
+public void MorphTo( Schema<OrderDto> schema ) {
+    schema.BindWhen(
+        dest => dest.AdminNotes,
+        sp => sp.GetRequiredService<IAdminService>().GetNotes(OrderId),
+        condition: sp => sp.GetRequiredService<ICurrentUser>().IsAdmin);
+}
+```
+
+## Comportamento de Nulos no Mapeamento Automático
+
+Controle globalmente como o mapeamento automático trata valores nulos de propriedades fonte:
+
+```csharp
+// Em Program.cs
+builder.Services.AddMorph(settings =>
+    settings.WithNullBehavior(NullPropertyBehavior.Skip));
+```
+
+| Comportamento | Descrição |
+|---------------|-----------|
+| `AssignDefault` | Define `default(T)` para tipos de valor não-anuláveis (**padrão**) |
+| `Skip` | Mantém o valor inicializado da propriedade de destino |
+| `Throw` | Lança `MorphPropertyException` para destinos não-anuláveis |
+
+O comportamento `Throw` é útil durante o desenvolvimento para evidenciar problemas de mapeamento nulo imediatamente:
+
+```csharp
+builder.Services.AddMorph(settings =>
+    settings.WithNullBehavior(NullPropertyBehavior.Throw));
+```
+
+Quando uma violação de nulo ocorre, uma `MorphPropertyException` é lançada com contexto completo:
+
+```
+Myth.Exceptions.MorphPropertyException:
+  Source value is null for non-nullable property 'RefreshToken' (TokenContext -> TokenResponse).
+```
+
 ## Mapeamento Automático de Propriedades
 
 Propriedades com nomes correspondentes e tipos compatíveis são mapeadas automaticamente em ambos os padrões:
@@ -515,6 +589,27 @@ Myth.Morph inclui estes mapeamentos padrão:
 - `IReadOnlyCollection<>` → `ReadOnlyCollection<>`
 - `IReadOnlyList<>` → `List<>`
 - `IReadOnlySet<>` → `HashSet<>`
+- `IPaginated<>` → `Paginated<>`
+
+### Mapeamento de Resultados Paginados
+
+`IPaginated<TSource>` pode ser mapeado para `IPaginated<TDest>` com uma única chamada `.To<>()`. Todos os metadados de paginação (`PageNumber`, `PageSize`, `TotalItems`, `TotalPages`) são preservados automaticamente, e a coleção `Items` é mapeada elemento por elemento.
+
+```csharp
+// source: IPaginated<Product> vindo do repositório
+var paginatedDtos = source.To<IPaginated<ProductDto>>();
+
+// Todos os campos preservados:
+// paginatedDtos.PageNumber  == source.PageNumber
+// paginatedDtos.PageSize    == source.PageSize
+// paginatedDtos.TotalItems  == source.TotalItems
+// paginatedDtos.TotalPages  == source.TotalPages
+// paginatedDtos.Items       == source.Items mapeados via ProductDto.MorphFrom<Product>
+```
+
+> **Observação:** O mapeamento de elementos ainda precisa estar definido. `ProductDto` deve implementar `IMorphableFrom<Product>` (ou `Product` deve implementar `IMorphableTo<ProductDto>`) para o mapeamento por item funcionar.
+
+> **Como funciona internamente:** `Paginated<T>` usa construtor primário com `private set` em todas as propriedades. O Myth.Morph detecta isso automaticamente e usa mapeamento orientado a construtor — resolve cada parâmetro do construtor a partir da propriedade correspondente na origem, incluindo o mapeamento dos elementos de `Items`.
 
 ### Limpar Mapeamentos Padrão
 

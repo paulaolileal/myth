@@ -85,7 +85,11 @@ public class CreateUserDto : IValidatable<CreateUserDto> {
         });
     }
 }
+```
 
+> **Global rules always execute.** Rules defined outside any `InContext` block run on every `ValidateAsync()` call, regardless of which context key is passed. `InContext` is *additive*: it appends extra rules on top of the globals when the matching context is active. Calling `ValidateAsync(dto, ValidationContextKey.Create)` runs the global rules first, then the Create-specific rules.
+
+```csharp
 // Controller - clean, one line
 [HttpPost("users")]
 public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto) {
@@ -510,7 +514,7 @@ builder.For( Email, x => x
 
 ### Nullable Type Support
 
-All numeric, DateTime, and boolean rules have nullable versions:
+All numeric, DateTime, and boolean rules have nullable versions. `NotDefault()` also works natively on nullable structs (`Guid?`, `int?`, etc.):
 
 ```csharp
 builder.For( OptionalAge, x => x
@@ -522,6 +526,11 @@ builder.For( OptionalDate, x => x
     .When( date => date.HasValue ) );
 
 builder.For( OptionalFlag, x => x.IsTrue() );
+
+// Nullable struct: null passes, Guid.Empty fails
+builder.For( UserId, x => x
+    .NotDefault()
+    .WithMessage( "UserId must not be empty" ) );
 ```
 
 ## Context-Aware Validation

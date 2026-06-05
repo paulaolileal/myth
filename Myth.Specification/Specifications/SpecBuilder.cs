@@ -11,6 +11,7 @@ public abstract class SpecBuilder<T> : ISpec<T> {
 	public abstract Func<IQueryable<T>, IQueryable<T>> PostProcess { get; }
 	public abstract Expression<Func<T, bool>> Predicate { get; }
 	public abstract Func<IQueryable<T>, IOrderedQueryable<T>> Sort { get; }
+	public virtual Func<IQueryable<T>, IQueryable<T>>? Includes => null;
 	public Func<T, bool> Query => Predicate.Compile( );
 
 	protected SpecBuilder( ) {
@@ -113,10 +114,13 @@ public abstract class SpecBuilder<T> : ISpec<T> {
 	public ISpec<T> DistinctBy<TProperty>( Expression<Func<T, TProperty>> property ) =>
 	   new DistinctSpec<T, TProperty>( this, property );
 
+	public ISpec<T> Include( Func<IQueryable<T>, IQueryable<T>> includeQuery ) =>
+		new IncludeSpec<T>( this, includeQuery );
+
 	public IQueryable<T> Prepare( IQueryable<T> query ) {
 		ArgumentNullException.ThrowIfNull( query );
 
-		return Processed( Sorted( Filtered( query ) ) );
+		return Processed( Sorted( Filtered( Included( query ) ) ) );
 	}
 
 	public IQueryable<T> Processed( IQueryable<T> query ) {
@@ -136,6 +140,17 @@ public abstract class SpecBuilder<T> : ISpec<T> {
 				query = Sort( query );
 			} catch ( Exception ex ) {
 				throw new SpecificationException( "Error on apply sort specification!", ex );
+			}
+
+		return query;
+	}
+
+	public IQueryable<T> Included( IQueryable<T> query ) {
+		if ( Includes != null )
+			try {
+				query = Includes( query );
+			} catch ( Exception ex ) {
+				throw new SpecificationException( "Error on apply include specification!", ex );
 			}
 
 		return query;

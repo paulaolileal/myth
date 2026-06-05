@@ -222,6 +222,13 @@ public static class ServiceCollectionExtensions {
 				}
 				break;
 		}
+
+		// Register public cache manager that wraps the internal cache provider
+		services.TryAddSingleton<ICacheManager>( sp => {
+			var cacheProvider = sp.GetRequiredService<ICacheProvider>( );
+			var logger = sp.GetRequiredService<ILogger<CacheManager>>( );
+			return new CacheManager( cacheProvider, logger );
+		} );
 	}
 
 	/// <summary>
@@ -247,8 +254,10 @@ public static class ServiceCollectionExtensions {
 		var scanner = new AssemblyScanner( );
 		var handlerTypes = scanner.ScanForHandlers( configuration.AssembliesToScan.ToArray( ) );
 
+		// Register handlers as Scoped to allow direct injection of scoped dependencies (DbContext, repositories, etc.)
+		// The Dispatcher creates a scope before resolving handlers, ensuring proper lifetime management
 		foreach ( var (interfaceType, implementationType) in handlerTypes )
-			services.AddTransient( interfaceType, implementationType );
+			services.AddScoped( interfaceType, implementationType );
 
 		var eventHandlers = scanner
 			.ScanForEventHandlers( configuration.AssembliesToScan.ToArray( ) )
@@ -257,9 +266,10 @@ public static class ServiceCollectionExtensions {
 		foreach ( var (eventType, handlerType) in eventHandlers ) {
 			var eventHandlerInterface = typeof( IEventHandler<> ).MakeGenericType( eventType );
 
-			// Register both the interface and the concrete type
-			services.AddTransient( eventHandlerInterface, handlerType );
-			services.AddTransient( handlerType );
+			// Register both the interface and the concrete type as Scoped
+			// Event handlers are invoked within a scope by the message broker
+			services.AddScoped( eventHandlerInterface, handlerType );
+			services.AddScoped( handlerType );
 		}
 
 		services.AddSingleton<IEventHandlerRegistry>( sp => {

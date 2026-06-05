@@ -174,9 +174,11 @@ Task<IEnumerable<TEntity>> ToListAsync( CancellationToken cancellationToken = de
 IQueryable<TEntity> AsQueryable( );
 IEnumerable<TEntity> AsEnumerable( );
 
-// Consultas filtradas
+// Consultas filtradas — retorna entidades rastreadas (mudanças salvas via SaveChangesAsync)
 IQueryable<TEntity> Where( Expression<Func<TEntity, bool>> predicate );
-Task<IEnumerable<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, bool>>? orderBy = null, CancellationToken cancellationToken = default );
+Task<IReadOnlyList<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, bool>>? orderBy = null, CancellationToken cancellationToken = default );
+// Variante sem rastreamento — use para projeções e relatórios (sem overhead do change tracker)
+Task<IReadOnlyList<TEntity>> SearchAsNoTrackingAsync( Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, bool>>? orderBy = null, CancellationToken cancellationToken = default );
 
 // Paginação
 Task<IPaginated<TEntity>> SearchPaginatedAsync( Expression<Func<TEntity, bool>> predicate, int take = 0, int skip = 0, Expression<Func<TEntity, bool>>? orderBy = null, CancellationToken cancellationToken = default );
@@ -202,7 +204,8 @@ string? GetProviderName( );
 Todos os métodos têm sobrecargas baseadas em specifications:
 
 ```csharp
-Task<IEnumerable<TEntity>> SearchAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
+Task<IReadOnlyList<TEntity>> SearchAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
+Task<IReadOnlyList<TEntity>> SearchAsNoTrackingAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
 Task<IPaginated<TEntity>> SearchPaginatedAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );
 IQueryable<TEntity> Where( ISpec<TEntity> specification );
 Task<int> CountAsync( ISpec<TEntity> specification, CancellationToken cancellationToken = default );

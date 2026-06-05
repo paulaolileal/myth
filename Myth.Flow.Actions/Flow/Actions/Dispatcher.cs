@@ -1,7 +1,4 @@
 using System.Diagnostics;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Myth.Interfaces;
@@ -41,7 +38,9 @@ internal sealed class Dispatcher(
 		try {
 			_logger.LogInformation( "Dispatching command {CommandType}", typeof( TCommand ).Name );
 
-			var handler = MythServiceProvider.GetRequired( ).GetService<ICommandHandler<TCommand>>( )
+			// Create a scope to resolve scoped dependencies (DbContext, repositories, etc.)
+			using var scope = MythServiceProvider.GetRequired( ).CreateScope( );
+			var handler = scope.ServiceProvider.GetService<ICommandHandler<TCommand>>( )
 				?? throw new HandlerNotFoundException( $"No handler registered for command {typeof( TCommand ).Name}" );
 
 			var result = await handler.HandleAsync( command, cancellationToken );
@@ -80,7 +79,9 @@ internal sealed class Dispatcher(
 		try {
 			_logger.LogInformation( "Dispatching command {CommandType}", typeof( TCommand ).Name );
 
-			var handler = MythServiceProvider.GetRequired( ).GetService<ICommandHandler<TCommand, TResponse>>( )
+			// Create a scope to resolve scoped dependencies (DbContext, repositories, etc.)
+			using var scope = MythServiceProvider.GetRequired( ).CreateScope( );
+			var handler = scope.ServiceProvider.GetService<ICommandHandler<TCommand, TResponse>>( )
 				?? throw new HandlerNotFoundException( $"No handler registered for command {typeof( TCommand ).Name}" );
 
 			var result = await handler.HandleAsync( command, cancellationToken );
@@ -142,7 +143,9 @@ internal sealed class Dispatcher(
 
 			_logger.LogInformation( "Dispatching query {QueryType}", typeof( TQuery ).Name );
 
-			var handler = MythServiceProvider.GetRequired( ).GetService<IQueryHandler<TQuery, TResponse>>( )
+			// Create a scope to resolve scoped dependencies (DbContext, repositories, etc.)
+			using var scope = MythServiceProvider.GetRequired( ).CreateScope( );
+			var handler = scope.ServiceProvider.GetService<IQueryHandler<TQuery, TResponse>>( )
 				?? throw new HandlerNotFoundException( $"No handler registered for query {typeof( TQuery ).Name}" );
 
 			var result = await handler.HandleAsync( query, cancellationToken );
@@ -203,38 +206,7 @@ internal sealed class Dispatcher(
 	/// <param name="query">The query instance</param>
 	/// <returns>A cache key string in the format "TypeName:Hash" where Hash is derived from JSON serialization</returns>
 	private static string GenerateCacheKey<TQuery>( TQuery query ) {
-		var typeName = typeof( TQuery ).Name;
-
-		try {
-			// Serialização determinística para garantir consistência
-			var jsonOptions = new JsonSerializerOptions {
-				WriteIndented = false,
-				PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-				IgnoreNullValues = true,
-				IncludeFields = false
-			};
-
-			var serialized = JsonSerializer.Serialize( query, jsonOptions );
-			var hash = ComputeStableHash( serialized );
-
-			return $"{typeName}:{hash}";
-		} catch {
-			// Fallback para GetHashCode() em caso de erro na serialização
-			var hashCode = query?.GetHashCode( ) ?? 0;
-			return $"{typeName}:{hashCode}";
-		}
-	}
-
-	/// <summary>
-	/// Computes a stable hash from a string using SHA256
-	/// </summary>
-	/// <param name="input">The input string to hash</param>
-	/// <returns>A 16-character hexadecimal hash string</returns>
-	private static string ComputeStableHash( string input ) {
-		using var sha256 = SHA256.Create( );
-		var bytes = Encoding.UTF8.GetBytes( input );
-		var hashBytes = sha256.ComputeHash( bytes );
-		return Convert.ToHexString( hashBytes )[ ..16 ]; // Primeiros 16 caracteres para performance
+		return CacheKeyGenerator.Generate( query );
 	}
 
 	/// <summary>

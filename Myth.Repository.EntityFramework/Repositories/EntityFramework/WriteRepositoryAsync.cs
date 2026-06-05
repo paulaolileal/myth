@@ -4,7 +4,7 @@ using Myth.Interfaces.Repositories.EntityFramework;
 
 namespace Myth.Repositories.EntityFramework;
 
-public class WriteRepositoryAsync<T>( BaseContext context ) : IWriteRepositoryAsync<T> where T : class {
+public class WriteRepositoryAsync<T>( BaseContext context ) : IWriteRepositoryAsync<T>, IDisposable, IAsyncDisposable where T : class {
 	private readonly BaseContext _context = context;
 
 	/// <summary>
@@ -106,6 +106,14 @@ public class WriteRepositoryAsync<T>( BaseContext context ) : IWriteRepositoryAs
 				.Set<T>( )
 				.AttachRange( entitiesToAttach );
 		}, cancellationToken );
+
+	/// <summary>
+	/// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources
+	/// </summary>
+	public void Dispose( ) {
+		_context?.Dispose( );
+		GC.SuppressFinalize( this );
+	}
 
 	/// <summary>
 	/// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources asynchronously

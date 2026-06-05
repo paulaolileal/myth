@@ -94,7 +94,7 @@ public sealed class InMemoryBroker : IMessageBroker, IAsyncDisposable {
 	public async Task StopAsync( CancellationToken cancellationToken = default ) {
 		_logger.LogInformation( "Stopping in-memory message broker" );
 
-		_channel.Writer.Complete( );
+		_channel.Writer.TryComplete( );
 		_cts?.Cancel( );
 
 		if ( _processingTask != null ) {

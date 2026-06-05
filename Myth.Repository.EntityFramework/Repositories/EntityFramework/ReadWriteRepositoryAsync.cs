@@ -7,7 +7,7 @@ using Myth.ValueObjects;
 
 namespace Myth.Repositories.EntityFramework;
 
-public abstract class ReadWriteRepositoryAsync<TEntity>( BaseContext context ) : IAsyncDisposable, IReadWriteRepositoryAsync<TEntity> where TEntity : class {
+public abstract class ReadWriteRepositoryAsync<TEntity>( BaseContext context ) : IDisposable, IAsyncDisposable, IReadWriteRepositoryAsync<TEntity> where TEntity : class {
 	protected readonly BaseContext _context = context;
 
 	private readonly IReadRepositoryAsync<TEntity> _readRepository = new ReadRepositoryAsync<TEntity>( context );
@@ -217,23 +217,46 @@ public abstract class ReadWriteRepositoryAsync<TEntity>( BaseContext context ) :
 		_writeRepository.RemoveRangeAsync( entities, cancellationToken );
 
 	/// <summary>
-	/// Asynchronously searches for entities that satisfy the given specification
+	/// Asynchronously searches for entities that satisfy the given specification. Entities are tracked
+	/// by the EF Core change tracker — modifications persist on the next <c>SaveChangesAsync</c> call.
 	/// </summary>
 	/// <param name="spec">The specification to search by</param>
 	/// <param name="cancellationToken">A token to monitor for cancellation requests</param>
-	/// <returns>A task that represents the asynchronous operation. The task result is a collection of entities that satisfy the specification</returns>
-	public virtual Task<IEnumerable<TEntity>> SearchAsync( ISpec<TEntity> spec, CancellationToken cancellationToken = default ) =>
+	/// <returns>A materialized, change-tracked read-only list</returns>
+	public virtual Task<IReadOnlyList<TEntity>> SearchAsync( ISpec<TEntity> spec, CancellationToken cancellationToken = default ) =>
 		_readRepository.SearchAsync( spec, cancellationToken );
 
 	/// <summary>
-	/// Asynchronously searches for entities that satisfy the given filter predicate and order predicate
+	/// Asynchronously searches for entities that satisfy the given filter predicate. Entities are tracked
+	/// by the EF Core change tracker — modifications persist on the next <c>SaveChangesAsync</c> call.
 	/// </summary>
 	/// <param name="filterPredicate">The predicate to filter by</param>
 	/// <param name="orderPredicate">The predicate to order by (optional)</param>
 	/// <param name="cancellationToken">A token to monitor for cancellation requests</param>
-	/// <returns>A task that represents the asynchronous operation. The task result is a collection of entities that satisfy the filter predicate</returns>
-	public virtual Task<IEnumerable<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> filterPredicate, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default ) =>
+	/// <returns>A materialized, change-tracked read-only list</returns>
+	public virtual Task<IReadOnlyList<TEntity>> SearchAsync( Expression<Func<TEntity, bool>> filterPredicate, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default ) =>
 		_readRepository.SearchAsync( filterPredicate, orderPredicate, cancellationToken );
+
+	/// <summary>
+	/// Asynchronously searches for entities that satisfy the given specification without EF Core change tracking.
+	/// Use for read-only scenarios such as projections and reports.
+	/// </summary>
+	/// <param name="spec">The specification to search by</param>
+	/// <param name="cancellationToken">A token to monitor for cancellation requests</param>
+	/// <returns>A materialized, non-tracked read-only list</returns>
+	public virtual Task<IReadOnlyList<TEntity>> SearchAsNoTrackingAsync( ISpec<TEntity> spec, CancellationToken cancellationToken = default ) =>
+		_readRepository.SearchAsNoTrackingAsync( spec, cancellationToken );
+
+	/// <summary>
+	/// Asynchronously searches for entities that satisfy the given filter predicate without EF Core change tracking.
+	/// Use for read-only scenarios such as projections and reports.
+	/// </summary>
+	/// <param name="filterPredicate">The predicate to filter by</param>
+	/// <param name="orderPredicate">The predicate to order by (optional)</param>
+	/// <param name="cancellationToken">A token to monitor for cancellation requests</param>
+	/// <returns>A materialized, non-tracked read-only list</returns>
+	public virtual Task<IReadOnlyList<TEntity>> SearchAsNoTrackingAsync( Expression<Func<TEntity, bool>> filterPredicate, Expression<Func<TEntity, bool>>? orderPredicate = null, CancellationToken cancellationToken = default ) =>
+		_readRepository.SearchAsNoTrackingAsync( filterPredicate, orderPredicate, cancellationToken );
 
 	/// <summary>
 	/// Asynchronously searches for entities that satisfy the given specification with pagination
@@ -307,6 +330,14 @@ public abstract class ReadWriteRepositoryAsync<TEntity>( BaseContext context ) :
 	/// <returns>A queryable collection of entities that satisfy the predicate</returns>
 	public virtual IQueryable<TEntity> Where( Expression<Func<TEntity, bool>> predicate ) =>
 		_readRepository.Where( predicate );
+
+	/// <summary>
+	/// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources
+	/// </summary>
+	public void Dispose( ) {
+		_context?.Dispose( );
+		GC.SuppressFinalize( this );
+	}
 
 	/// <summary>
 	/// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources asynchronously

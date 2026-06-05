@@ -1,7 +1,9 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Myth.Exceptions;
 using Myth.Extensions;
+using Myth.Settings;
 
 namespace Myth.Morph;
 
@@ -13,15 +15,18 @@ namespace Myth.Morph;
 public abstract class BaseMappingExecutor<TDestination> {
 	protected readonly ILogger? Logger;
 	protected readonly TypeResolver TypeResolver;
+	protected readonly NullPropertyBehavior NullBehavior;
 
 	/// <summary>
 	/// Initializes a new instance of the BaseMappingExecutor class.
 	/// </summary>
 	/// <param name="logger">Optional logger for diagnostic information.</param>
 	/// <param name="typeResolver">The type resolver for handling inheritance and proxies.</param>
-	protected BaseMappingExecutor( ILogger? logger, TypeResolver typeResolver ) {
+	/// <param name="nullBehavior">Behavior when a source property value is null during auto-mapping.</param>
+	protected BaseMappingExecutor( ILogger? logger, TypeResolver typeResolver, NullPropertyBehavior nullBehavior = NullPropertyBehavior.AssignDefault ) {
 		Logger = logger;
 		TypeResolver = typeResolver ?? throw new ArgumentNullException( nameof( typeResolver ) );
+		NullBehavior = nullBehavior;
 		Logger?.LogTrace( "Initialized {ExecutorType} for destination type {DestinationType}",
 			GetType( ).Name, typeof( TDestination ).Name );
 	}
@@ -47,6 +52,7 @@ public abstract class BaseMappingExecutor<TDestination> {
 
 		Logger?.LogDebug( "Starting automatic property mapping from {SourceType} to {DestinationType}",
 			sourceType.Name, destinationType.Name );
+
 		Logger?.LogTrace( "Manually mapped properties: {ManualCount}, Ignored properties: {IgnoredCount}",
 			manuallyMappedProps.Count, ignoredProperties.Count );
 
@@ -109,7 +115,7 @@ public abstract class BaseMappingExecutor<TDestination> {
 			}
 
 			if ( srcValue == null ) {
-				HandleNullValue( destination, destMember, destMemberType );
+				HandleNullValue( destination, destMember, destMemberType, sourceType );
 				continue;
 			}
 
@@ -160,15 +166,11 @@ public abstract class BaseMappingExecutor<TDestination> {
 
 		try {
 			using var scope = serviceProvider.CreateScope( );
-			Logger?.LogTrace( "Attempting mapping using MorphExtensions.To for {SourceType} -> {DestType}",
-				srcType.Name, destType.Name );
+			Logger?.LogTrace( "Attempting nested mapping for {SourceType} -> {DestType}", srcType.Name, destType.Name );
 
-			var method = typeof( MorphExtensions )
-				.GetMethod( nameof( MorphExtensions.To ), [ typeof( object ), typeof( IServiceProvider ) ] )?
-				.MakeGenericMethod( destType );
-
-			var result = method?.Invoke( null, [ srcValue, scope.ServiceProvider ] );
-			Logger?.LogDebug( "Successfully mapped {SourceType} to {DestType} using MorphExtensions", srcType.Name, destType.Name );
+			var nestedMapper = MorphDelegateCache.GetNestedMapper( destType );
+			var result = nestedMapper( srcValue, scope.ServiceProvider );
+			Logger?.LogDebug( "Successfully mapped {SourceType} to {DestType} using nested mapper", srcType.Name, destType.Name );
 			return result;
 		} catch ( Exception ex ) {
 			Logger?.LogDebug( ex, "Failed to map {SourceType} to {DestType} using MorphExtensions", srcType.Name, destType.Name );
@@ -236,17 +238,32 @@ public abstract class BaseMappingExecutor<TDestination> {
 	}
 
 	/// <summary>
-	/// Handles null source values by setting appropriate default values on the destination.
+	/// Handles null source values according to the configured <see cref="NullBehavior"/>.
 	/// </summary>
 	/// <param name="destination">The destination object.</param>
 	/// <param name="destMember">The destination member to set.</param>
 	/// <param name="destMemberType">The type of the destination member.</param>
-	protected void HandleNullValue( TDestination destination, MemberInfo destMember, Type destMemberType ) {
-		if ( destMemberType.IsValueType && Nullable.GetUnderlyingType( destMemberType ) == null ) {
-			Logger?.LogTrace( "Setting default value for non-nullable value type property: {PropertyName}", destMember.Name );
-			SetValue( destination, destMember, Activator.CreateInstance( destMemberType ) );
-		} else {
-			Logger?.LogTrace( "Source value is null for property {PropertyName}, skipping", destMember.Name );
+	/// <param name="sourceType">The source type, used for contextual error messages.</param>
+	protected void HandleNullValue( TDestination destination, MemberInfo destMember, Type destMemberType, Type sourceType ) {
+		var isNonNullableValueType = destMemberType.IsValueType && Nullable.GetUnderlyingType( destMemberType ) == null;
+
+		switch ( NullBehavior ) {
+			case NullPropertyBehavior.Throw when isNonNullableValueType:
+				throw MorphPropertyException.NullSourceValue( sourceType, typeof( TDestination ), destMember.Name );
+
+			case NullPropertyBehavior.Skip:
+				Logger?.LogTrace( "Source value is null for property {PropertyName}, skipping assignment (Skip behavior)", destMember.Name );
+				return;
+
+			case NullPropertyBehavior.AssignDefault:
+			default:
+				if ( isNonNullableValueType ) {
+					Logger?.LogTrace( "Setting default value for non-nullable value type property: {PropertyName}", destMember.Name );
+					SetValue( destination, destMember, Activator.CreateInstance( destMemberType ) );
+				} else {
+					Logger?.LogTrace( "Source value is null for property {PropertyName}, skipping", destMember.Name );
+				}
+				break;
 		}
 	}
 
@@ -263,12 +280,12 @@ public abstract class BaseMappingExecutor<TDestination> {
 
 			switch ( member ) {
 				case PropertyInfo p when p.CanWrite:
-					p.SetValue( target, value );
+					CompiledSetterCache.GetSetter( p ).Invoke( target, value );
 					Logger?.LogTrace( "Successfully set property {PropertyName}", p.Name );
 					break;
 
 				case FieldInfo f when !f.IsInitOnly && !f.IsLiteral:
-					f.SetValue( target, value );
+					CompiledSetterCache.GetSetter( f ).Invoke( target, value );
 					Logger?.LogTrace( "Successfully set field {FieldName}", f.Name );
 					break;
 

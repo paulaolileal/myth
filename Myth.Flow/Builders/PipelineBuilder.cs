@@ -256,7 +256,8 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 	/// <returns>A new <see cref="IPipelineBuilder{TNewContext}"/> instance.</returns>
 	public IPipelineBuilder<TNewContext> Transform<TNewContext>(
 		Func<TContext, TNewContext> mapper ) {
-		var newSteps = new List<StepDescriptor<TNewContext>>( _steps.Count + 1 ) {
+		var capturedSteps = _steps.ToList( );
+		var newSteps = new List<StepDescriptor<TNewContext>>( capturedSteps.Count + 1 ) {
 			// Create a wrapper step that executes all previous steps then transforms
 			new(
 			StepType.Transform,
@@ -264,13 +265,27 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 				// Start with original input
 				var currentContext = _input;
 
-				// Execute all previous steps
-				foreach ( var step in _steps ) {
-					currentContext = await step.Handler( currentContext, ct );
+				// Execute all previous steps, identifying which one fails for better diagnostics
+				var innerStepIndex = 0;
+				foreach ( var step in capturedSteps ) {
+					try {
+						currentContext = await step.Handler( currentContext, ct );
+					} catch ( Exception ex ) {
+						throw new PipelineException(
+							$"Transform failed while re-executing inner step [{innerStepIndex}] '{step.Name ?? "Unknown"}': {ex.Message}",
+							ex );
+					}
+					innerStepIndex++;
 				}
 
 				// Transform the final result
-				return await Task.FromResult( mapper( currentContext ) );
+				try {
+					return await Task.FromResult( mapper( currentContext ) );
+				} catch ( Exception ex ) {
+					throw new PipelineException(
+						$"Transform failed during mapping phase ({typeof( TContext ).Name} -> {typeof( TNewContext ).Name}): {ex.Message}",
+						ex );
+				}
 			},
 			"Transform",
 			0,
@@ -297,7 +312,8 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 	/// <returns>A new <see cref="IPipelineBuilder{TNewContext}"/> instance.</returns>
 	public IPipelineBuilder<TNewContext> TransformAsync<TNewContext>(
 		Func<TContext, Task<TNewContext>> mapper ) {
-		var newSteps = new List<StepDescriptor<TNewContext>>( _steps.Count + 1 );
+		var capturedSteps = _steps.ToList( );
+		var newSteps = new List<StepDescriptor<TNewContext>>( capturedSteps.Count + 1 );
 
 		// Create a wrapper step that executes all previous steps then transforms
 		newSteps.Add( new StepDescriptor<TNewContext>(
@@ -306,13 +322,27 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 				// Start with original input
 				var currentContext = _input;
 
-				// Execute all previous steps
-				foreach ( var step in _steps ) {
-					currentContext = await step.Handler( currentContext, ct );
+				// Execute all previous steps, identifying which one fails for better diagnostics
+				var innerStepIndex = 0;
+				foreach ( var step in capturedSteps ) {
+					try {
+						currentContext = await step.Handler( currentContext, ct );
+					} catch ( Exception ex ) {
+						throw new PipelineException(
+							$"TransformAsync failed while re-executing inner step [{innerStepIndex}] '{step.Name ?? "Unknown"}': {ex.Message}",
+							ex );
+					}
+					innerStepIndex++;
 				}
 
 				// Transform the final result
-				return await mapper( currentContext ).ConfigureAwait( false );
+				try {
+					return await mapper( currentContext ).ConfigureAwait( false );
+				} catch ( Exception ex ) {
+					throw new PipelineException(
+						$"TransformAsync failed during mapping phase ({typeof( TContext ).Name} -> {typeof( TNewContext ).Name}): {ex.Message}",
+						ex );
+				}
 			},
 			"TransformAsync",
 			0,
@@ -442,6 +472,8 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 		CancellationToken cancellationToken = default ) {
 		Activity? activity = null;
 		var logger = _serviceProvider?.GetService<ILogger<PipelineBuilder<TContext>>>( );
+		var stepIndex = 0;
+		StepDescriptor<TContext>? currentStep = null;
 
 		try {
 			// Resolve ActivitySource first
@@ -463,10 +495,11 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 				_steps.Count );
 
 			var context = _input;
-			var stepIndex = 0;
 
 			foreach ( var step in _steps ) {
 				cancellationToken.ThrowIfCancellationRequested( );
+
+				currentStep = step;
 
 				using var stepActivity = activity?.Source?.StartActivity(
 					$"Step_{stepIndex}_{step.Name ?? "Unknown"}" );
@@ -475,7 +508,8 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 					step,
 					context,
 					cancellationToken,
-					logger );
+					logger,
+					stepIndex );
 
 				stepIndex++;
 			}
@@ -498,13 +532,17 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 			// Re-throw exceptions that should be propagated without handling
 			activity?.SetStatus( ActivityStatusCode.Error, ex.Message );
 
-			logger?.LogError( ex, "Pipeline execution failed with propagated exception" );
+			logger?.LogError( ex,
+				"Pipeline execution failed at step [{StepIndex}] '{StepName}' with propagated exception",
+				stepIndex, currentStep?.Name ?? "Unknown" );
 
 			throw;
 		} catch ( Exception ex ) {
 			activity?.SetStatus( ActivityStatusCode.Error, ex.Message );
 
-			logger?.LogError( ex, "Pipeline execution failed" );
+			logger?.LogError( ex,
+				"Pipeline execution failed at step [{StepIndex}] '{StepName}'",
+				stepIndex, currentStep?.Name ?? "Unknown" );
 
 			foreach ( var handler in _errorHandlers ) {
 				try {
@@ -538,12 +576,14 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 	/// <param name="context">Current pipeline context.</param>
 	/// <param name="cancellationToken">Cancellation token.</param>
 	/// <param name="logger">Optional logger for diagnostics.</param>
+	/// <param name="stepIndex">Index of the step in the pipeline for diagnostic purposes.</param>
 	/// <returns>The resulting context after step execution.</returns>
 	private async Task<TContext> ExecuteStepWithRetryAsync(
 		StepDescriptor<TContext> step,
 		TContext context,
 		CancellationToken cancellationToken,
-		ILogger? logger ) {
+		ILogger? logger,
+		int stepIndex = 0 ) {
 		var attempts = 0;
 		var maxAttempts = step.RetryAttempts + 1;
 
@@ -563,7 +603,8 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 
 				logger?.LogWarning(
 					ex,
-					"Step {StepName} failed (attempt {Attempt}/{MaxAttempts}). Retrying...",
+					"Step [{StepIndex}] '{StepName}' failed (attempt {Attempt}/{MaxAttempts}). Retrying...",
+					stepIndex,
 					step.Name,
 					attempts,
 					maxAttempts );
@@ -590,10 +631,14 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 			return false;
 		}
 
-		var exceptionType = exception.GetType( );
+		var current = (Exception?)exception;
+		while ( current != null ) {
+			if ( _configuration.ExceptionTypesToPropagate.Any( t => t.IsAssignableFrom( current.GetType( ) ) ) ) {
+				return true;
+			}
+			current = current.InnerException;
+		}
 
-		// Check if the exception type or any of its base types should be propagated
-		return _configuration.ExceptionTypesToPropagate.Any( configuredType =>
-			configuredType.IsAssignableFrom( exceptionType ) );
+		return false;
 	}
 }

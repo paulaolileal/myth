@@ -212,13 +212,68 @@ public class SchemaRegistry {
 		Type concreteDestinationType ) {
 		_logger?.LogDebug( "Performing generic type mapping from {SourceType} to {ConcreteDestType}", actualSourceType.Name, concreteDestinationType.Name );
 
-		// Create an instance of the concrete type
-		var dest = CreateInstance( concreteDestinationType );
+		// When the concrete destination has no writable properties (e.g. Paginated<T> with private setters),
+		// fall back to constructor-driven mapping so values are passed directly to the ctor.
+		var hasWritableProps = concreteDestinationType
+			.GetProperties( BindingFlags.Public | BindingFlags.Instance )
+			.Any( p => p.CanWrite );
 
-		// Map properties using reflection
-		MapPropertiesGeneric( source, dest, actualSourceType, concreteDestinationType );
+		object dest;
+		if ( !hasWritableProps ) {
+			_logger?.LogDebug( "Destination {DestType} has no writable properties — using constructor-driven mapping", concreteDestinationType.Name );
+			dest = CreateInstanceFromSource( source!, actualSourceType, concreteDestinationType );
+		} else {
+			dest = CreateInstance( concreteDestinationType );
+			MapPropertiesGeneric( source, dest, actualSourceType, concreteDestinationType );
+		}
 
 		return ( TDestination )dest;
+	}
+
+	/// <summary>
+	/// Creates an instance of <paramref name="destType"/> by matching its constructor parameters to
+	/// readable properties on <paramref name="source"/> by name (case-insensitive).
+	/// Collection parameters are element-mapped via <see cref="MapPropertyValue"/>.
+	/// </summary>
+	private object CreateInstanceFromSource( object source, Type sourceType, Type destType ) {
+		var constructor = destType
+			.GetConstructors( )
+			.OrderByDescending( c => c.GetParameters( ).Length )
+			.FirstOrDefault( );
+
+		if ( constructor is null ) {
+			var errorMessage = $"Type {destType} has no accessible constructor.";
+			_logger?.LogError( errorMessage );
+			throw new BindException( errorMessage );
+		}
+
+		var srcProperties = sourceType
+			.GetProperties( BindingFlags.Public | BindingFlags.Instance )
+			.Where( p => p.CanRead )
+			.ToDictionary( p => p.Name.ToLowerInvariant( ) );
+
+		var parameters = constructor.GetParameters( );
+		_logger?.LogTrace( "Constructor-driven mapping for {DestType}: {ParameterCount} parameters", destType.Name, parameters.Length );
+
+		var serviceProvider = MythServiceProvider.GetOrFallback( _sp );
+
+		var args = parameters.Select( p => {
+			var paramName = p.Name!.ToLowerInvariant( );
+
+			if ( srcProperties.TryGetValue( paramName, out var srcProp ) ) {
+				var srcValue = srcProp.GetValue( source );
+				if ( srcValue is null ) return GetDefault( p.ParameterType );
+				_logger?.LogTrace( "Mapping constructor parameter {ParameterName} from source property {PropertyName}", p.Name, srcProp.Name );
+				return MapPropertyValue( srcValue, srcProp.PropertyType, p.ParameterType );
+			}
+
+			var serviceValue = serviceProvider?.GetService( p.ParameterType );
+			if ( serviceValue is not null ) return serviceValue;
+
+			return p.HasDefaultValue ? p.DefaultValue : GetDefault( p.ParameterType );
+		} ).ToArray( );
+
+		return constructor.Invoke( args );
 	}
 
 	/// <summary>

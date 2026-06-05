@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace Myth.Testing.Mocks;
+namespace Myth.Mocks.Settings;
 
 /// <summary>
 /// Fluent builder for configuring mock HTTP endpoints

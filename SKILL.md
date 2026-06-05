@@ -13,1413 +13,503 @@ args:
     required: false
 ---
 
-# Myth Ecosystem Skill Documentation
+# Myth Ecosystem - Integration Guide
 
-This skill provides complete guidance for using the **Myth** ecosystem - a comprehensive collection of .NET libraries designed for enterprise applications following SOLID principles, Clean Code, and Domain-Driven Design.
+**Version:** 1.0
+**Target Framework:** .NET 8.0 / .NET 10.0
+**License:** Apache 2.0
+
+> 📚 **For detailed API documentation**, refer to individual library SKILL.md files in each project folder.
+
+---
 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Architecture & Integration](#architecture--integration)
-3. [Library-Specific Guides](#library-specific-guides)
-4. [Common Workflows](#common-workflows)
-5. [Best Practices](#best-practices)
-6. [Examples by Scenario](#examples-by-scenario)
+2. [The 12 Libraries](#the-12-libraries)
+3. [Quick Start](#quick-start)
+4. [Integration Patterns](#integration-patterns)
+5. [Complete Workflows](#complete-workflows)
+6. [Best Practices](#best-practices)
 
 ---
 
 ## Overview
 
-### What is Myth?
+**Myth** is a comprehensive ecosystem of 12 .NET libraries designed to work together seamlessly, providing enterprise-grade capabilities for building scalable, maintainable applications following SOLID principles, Clean Architecture, and Domain-Driven Design.
 
-Myth is a modular collection of .NET libraries that work together to provide:
+### Core Philosophy
 
-- **Myth.Commons**: Base utilities, ValueObjects, global ServiceProvider management, JSON extensions
-- **Myth.DependencyInjection**: Auto-discovery and convention-based service registration
-- **Myth.Flow**: Pipeline pattern with Result, retry policies, telemetry
-- **Myth.Flow.Actions**: CQRS, event-driven architecture, message brokers (Kafka, RabbitMQ)
-- **Myth.Guard**: Fluent validation with 100+ rules, context-aware, async service integration
-- **Myth.Morph**: Object transformation and mapping with schema-based bindings
-- **Myth.Specification**: Query specification pattern for encapsulating business rules
-- **Myth.Repository**: Generic repository interfaces with read/write separation
-- **Myth.Repository.EntityFramework**: EF Core implementation with Unit of Work
-- **Myth.Rest**: Fluent REST client with circuit breaker and retry
-- **Myth.Testing**: Testing utilities, mocks, base test classes
-- **Myth.Tool**: CLI tool for code generation with CQRS, DDD, and Clean Architecture patterns
+- **Modular**: Use only what you need
+- **Composable**: Libraries integrate naturally
+- **Type-Safe**: Full compile-time checking
+- **Async-First**: Built for modern .NET async/await
+- **DI-Native**: Deep integration with Microsoft.Extensions.DependencyInjection
+- **Production-Ready**: Battle-tested patterns and resilience
 
-### Key Architectural Concepts
+### Key Architectural Concept: Global Service Provider
 
-#### MythServiceProvider (Global Service Provider)
-
-All Myth libraries use a centralized, thread-safe service provider for dependency resolution:
+All Myth libraries share a centralized `MythServiceProvider` for seamless dependency resolution across libraries:
 
 ```csharp
 // ASP.NET Core - use BuildApp() instead of Build()
-var app = builder.BuildApp(); // Initializes MythServiceProvider.Current
+var app = builder.BuildApp(); // ✅ Initializes global provider
 
 // Console Apps - use BuildWithGlobalProvider()
-var serviceProvider = services.BuildWithGlobalProvider();
+var serviceProvider = services.BuildWithGlobalProvider(); // ✅
 
-// Accessing global provider
-var provider = MythServiceProvider.Current;
-var service = MythServiceProvider.GetRequired();
-```
-
-#### IScopedService<T>
-
-Allows transient services (like handlers) to use scoped services safely:
-
-```csharp
-public class CreateOrderHandler : ICommandHandler<CreateOrderCommand> {
-    private readonly IScopedService<IOrderRepository> _repository;
-
-    public async Task<CommandResult> HandleAsync(CreateOrderCommand command, CancellationToken ct) {
-        return await _repository.ExecuteAsync(async repo => {
-            var order = await repo.CreateAsync(command, ct);
-            return CommandResult.Success();
-        });
-    }
-}
+// Now all libraries can resolve dependencies from each other
 ```
 
 ---
 
-## Architecture & Integration
+## The 12 Libraries
 
-### Setup for ASP.NET Core Applications
+### Core Foundation
+
+| Library | Purpose | Documentation |
+|---------|---------|---------------|
+| **Myth.Commons** | Base types, ValueObjects, JSON extensions, global ServiceProvider | [SKILL.md](Myth.Commons/SKILL.md) |
+| **Myth.DependencyInjection** | Auto-discovery, convention-based service registration | [SKILL.md](Myth.DependencyInjection/SKILL.md) |
+
+### Data & Persistence
+
+| Library | Purpose | Documentation |
+|---------|---------|---------------|
+| **Myth.Repository** | Generic repository interfaces with read/write separation | [SKILL.md](Myth.Repository/SKILL.md) |
+| **Myth.Repository.EntityFramework** | EF Core implementation with Unit of Work, auto-configuration | [SKILL.md](Myth.Repository.EntityFramework/SKILL.md) |
+| **Myth.Specification** | Query specification pattern for encapsulating business rules | [SKILL.md](Myth.Specification/SKILL.md) |
+
+### Validation & Transformation
+
+| Library | Purpose | Documentation |
+|---------|---------|---------------|
+| **Myth.Guard** | Fluent validation with 100+ rules, context-aware, RFC 9457 errors | [SKILL.md](Myth.Guard/SKILL.md) |
+| **Myth.Morph** | Object transformation and mapping with schema-based bindings | [SKILL.md](Myth.Morph/SKILL.md) |
+
+### Workflows & Architecture Patterns
+
+| Library | Purpose | Documentation |
+|---------|---------|---------------|
+| **Myth.Flow** | Pipeline pattern with Result, retry policies, telemetry | [SKILL.md](Myth.Flow/SKILL.md) |
+| **Myth.Flow.Actions** | CQRS, event-driven architecture, message brokers (extends Flow) | [SKILL.md](Myth.Flow.Actions/SKILL.md) |
+
+### HTTP & External Services
+
+| Library | Purpose | Documentation |
+|---------|---------|---------------|
+| **Myth.Rest** | Fluent REST client with circuit breaker and retry policies | [SKILL.md](Myth.Rest/SKILL.md) |
+
+### Testing & Code Generation
+
+| Library | Purpose | Documentation |
+|---------|---------|---------------|
+| **Myth.Testing** | Testing utilities, mocks, base test classes (xUnit, Bogus, Moq) | [SKILL.md](Myth.Testing/SKILL.md) |
+| **Myth.Tool** | CLI tool for scaffolding CQRS, DDD, and Clean Architecture patterns | [SKILL.md](Myth.Tool/SKILL.md) |
+
+---
+
+## Quick Start
+
+### ASP.NET Core Application (Full Stack)
 
 ```csharp
 using Myth.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Add core libraries
+// 1. Configure Myth libraries
 builder.Services.AddFlow(config => config
     .UseTelemetry()
     .UseRetry(maxAttempts: 3, backoffMs: 1000)
     .UseActions(actions => actions
-        .UseInMemory() // or .UseKafka() / .UseRabbitMQ()
-        .UseCaching()
+        .UseRabbitMQ(opts => { /* configure */ })
+        .UseCaching(cache => cache.UseRedis("localhost:6379"))
         .ScanAssemblies(typeof(Program).Assembly)
-        .EnableAutoSubscription()));
+        .AutoSubscribeEventHandlers()));
 
 builder.Services.AddGuard();
 builder.Services.AddMorph();
 
-// 2. Register repositories and services
-builder.Services.AddDbContext<AppDbContext>();
-builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-builder.Services.AddScoped<IUnitOfWorkRepository, UnitOfWorkRepository>();
+// 2. Configure database
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
-// 3. Build with global service provider (CRITICAL!)
-var app = builder.BuildApp(); // NOT builder.Build()
+// 3. Register repositories
+builder.Services.AddRepositories(); // Auto-registers all repositories
+builder.Services.AddUnitOfWorkForContext<AppDbContext>();
 
-// 4. Add middleware
-app.UseGuard(); // Validation exception handling
+// 4. CRITICAL: Build with global provider
+var app = builder.BuildApp(); // ✅ NOT builder.Build()
+
+// 5. Add middleware
+app.UseGuard(); // Validation exception handling with RFC 9457 format
+
 app.MapControllers();
-
 app.Run();
 ```
 
-### Setup for Console Applications
+### Console Application (Minimal)
 
 ```csharp
+using Myth.Extensions;
+
 var services = new ServiceCollection();
 
-services.AddFlow(config => config.UseTelemetry().UseRetry(3, 100));
+services.AddFlow();
 services.AddGuard();
-services.AddMorph();
+services.AddLogging();
 
 // Register your services
-services.AddScoped<IDataService, DataService>();
+services.AddScoped<IDataProcessor, DataProcessor>();
 
-// Build with global provider
+// CRITICAL: Build with global provider
 var serviceProvider = services.BuildWithGlobalProvider();
 
 // Use services
-var dataService = serviceProvider.GetRequiredService<IDataService>();
-await dataService.ProcessDataAsync();
+var processor = serviceProvider.GetRequiredService<IDataProcessor>();
+await processor.ProcessAsync();
 ```
 
 ---
 
-## Library-Specific Guides
+## Integration Patterns
 
-### 1. Myth.Commons
+### Pattern 1: CQRS with Validation Pipeline
 
-#### Global Service Provider Management
-
-```csharp
-// Initialize (done automatically by BuildApp/BuildWithGlobalProvider)
-MythServiceProvider.Initialize(serviceProvider);
-
-// Check if initialized
-if (MythServiceProvider.IsInitialized) {
-    var current = MythServiceProvider.Current;
-}
-
-// Get required (throws if not initialized)
-var provider = MythServiceProvider.GetRequired();
-
-// Get with fallback
-var provider = MythServiceProvider.GetOrFallback(fallbackProvider);
-
-// Reset (for testing)
-MythServiceProvider.Reset();
-```
-
-#### JSON Extensions
+Combine **Flow.Actions** (CQRS) + **Flow** (Pipeline) + **Guard** (Validation):
 
 ```csharp
-// Global configuration
-JsonExtensions.Configure(settings => {
-    settings.CaseStrategy = CaseStrategy.SnakeCase;
-    settings.IgnoreNullValues = true;
-    settings.MinifyResult = true;
-});
+// Command
+public record CreateOrderCommand(Guid CustomerId, List<Guid> ProductIds) : ICommand<Guid>;
 
-// Serialize to JSON
-var json = user.ToJson();
-var minifiedJson = user.ToJson(s => s.MinifyResult = true);
-
-// Deserialize from JSON
-var user = json.FromJson<User>();
-var safeUser = json.SafeFromJson<User>(); // Returns null if fails
-
-// Validate JSON
-if (content.IsValidJson()) {
-    var data = content.FromJson<Data>();
-}
-
-// Deserialize or throw with HTTP context
-var user = json.FromJsonOrThrow<User>(HttpStatusCode.BadRequest);
-```
-
-#### ValueObjects
-
-```csharp
-// Define ValueObject
-public class Address : ValueObject {
-    public string Street { get; }
-    public string City { get; }
-    public string Country { get; }
-
-    public Address(string street, string city, string country) {
-        Street = street;
-        City = city;
-        Country = country;
-    }
-
-    protected override IEnumerable<object> GetAtomicValues() {
-        yield return Street;
-        yield return City;
-        yield return Country;
-    }
-}
-
-// Usage
-var addr1 = new Address("123 Main St", "New York", "USA");
-var addr2 = new Address("123 Main St", "New York", "USA");
-Console.WriteLine(addr1.Equals(addr2)); // True (value equality)
-```
-
-#### Constants (Type-Safe Enums)
-
-```csharp
-// Define constant
-public class OrderStatus : Constant<OrderStatus, string> {
-    public static readonly OrderStatus Pending = CreateWithCallerName("P");
-    public static readonly OrderStatus Active = CreateWithCallerName("A");
-    public static readonly OrderStatus Completed = CreateWithCallerName("C");
-    public static readonly OrderStatus Cancelled = CreateWithCallerName("X");
-
-    private OrderStatus(string name, string value) : base(name, value) { }
-}
-
-// Usage
-var status = OrderStatus.FromValue("A"); // Returns Active
-var all = OrderStatus.GetAll(); // All instances
-var allValues = OrderStatus.Values.All; // ["P", "A", "C", "X"]
-string options = OrderStatus.GetOptions(); // "P: Pending | A: Active | ..."
-
-// Try get
-if (OrderStatus.TryFromValue("A", out var result)) {
-    Console.WriteLine(result.Name); // "Active"
-}
-```
-
-### 2. Myth.Flow - Pipeline Pattern
-
-#### Basic Pipeline
-
-```csharp
-public class OrderService {
-    public async Task<Result<OrderDto>> ProcessOrder(CreateOrderRequest request) {
-        return await Pipeline.Start(request)
-            .WithTelemetry("ProcessOrder")
-            .WithRetry(maxAttempts: 3, backoffMs: 100)
-            .StepResultAsync<ValidationService>((svc, ctx) => svc.ValidateAsync(ctx))
-            .StepResultAsync<OrderCreationService>((svc, ctx) => svc.CreateAsync(ctx))
-            .TapAsync<EventService>((svc, ctx) => svc.PublishOrderCreatedAsync(ctx))
-            .Transform<OrderDto>(ctx => new OrderDto {
-                OrderId = ctx.OrderId,
-                Total = ctx.Total
-            })
-            .ExecuteAsync();
-    }
-}
-```
-
-#### Step Types
-
-```csharp
-// Synchronous step
-.Step(ctx => {
-    ctx.ProcessedData = ProcessData(ctx.RawData);
-    return ctx;
-})
-
-// Async step
-.StepAsync(async ctx => {
-    ctx.Data = await LoadDataAsync(ctx.Id);
-    return ctx;
-})
-
-// Step with Result pattern
-.StepResultAsync(async ctx => {
-    if (ctx.IsValid) {
-        return Result<Context>.Success(ctx);
-    }
-    return Result<Context>.Failure("Invalid context");
-})
-
-// Side effects (tap)
-.Tap(ctx => Console.WriteLine($"Processing: {ctx.Id}"))
-.TapAsync(async ctx => await LogAsync(ctx))
-
-// Conditional execution
-.When(
-    ctx => ctx.Amount > 1000,
-    pipeline => pipeline
-        .StepAsync(ctx => FraudCheckAsync(ctx))
-        .StepAsync(ctx => ApprovalAsync(ctx)))
-
-// Transform to different type
-.Transform<OutputDto>(ctx => new OutputDto {
-    Id = ctx.Id,
-    Name = ctx.Name
-})
-```
-
-#### Configuration
-
-```csharp
-// Global configuration
-builder.Services.AddFlow(config => config
-    .UseTelemetry()
-    .UseRetry(maxAttempts: 3, backoffMs: 100)
-    .PropagateExceptions(typeof(ValidationException)));
-
-// Per-pipeline configuration
-Pipeline.Start(context, config => {
-    config.EnableTelemetry = true;
-    config.DefaultRetryAttempts = 5;
-    config.DefaultBackoffMs = 200;
-})
-```
-
-### 3. Myth.Flow.Actions - CQRS & Event-Driven
-
-#### Commands
-
-```csharp
-// Define command
-public record CreateOrderCommand(CreateOrderDto Data) : ICommand<Guid>;
-
-// Command handler
+// Handler with validation pipeline
 public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
-    private readonly IScopedService<IOrderRepository> _repository;
+    private readonly IOrderRepository _repository;
     private readonly IValidator _validator;
-    private readonly IDispatcher _dispatcher;
 
     public async Task<CommandResult<Guid>> HandleAsync(
         CreateOrderCommand command,
         CancellationToken ct) {
 
-        // Validate
-        await _validator.ValidateAsync(command.Data, ValidationContextKey.Create, ct);
-
-        // Process with pipeline
-        var result = await Pipeline.Start(command.Data)
-            .StepResultAsync(async dto => {
-                var order = dto.To<Order>();
-                await _repository.ExecuteAsync(repo => repo.AddAsync(order, ct));
-                return Result<Order>.Success(order);
+        // Use Flow pipeline with Guard validation
+        var result = await Pipeline.Start(command)
+            .WithTelemetry("CreateOrder")
+            .StepResultAsync(async cmd => {
+                // Validate with Guard
+                await _validator.ValidateAsync(cmd, ValidationContextKey.Create, ct);
+                return Result<CreateOrderCommand>.Success(cmd);
             })
-            .TapAsync(async order => {
-                await _dispatcher.PublishEventAsync(
-                    new OrderCreatedEvent(order.Id), ct);
+            .StepAsync(async cmd => {
+                // Create order
+                var order = await _repository.CreateAsync(cmd, ct);
+                return order.Id;
             })
             .ExecuteAsync(ct);
 
-        if (result.IsFailure) {
-            return CommandResult<Guid>.Failure(result.ErrorMessage);
-        }
-
-        return CommandResult<Guid>.Success(result.Value.Id);
+        return result.IsSuccess
+            ? CommandResult<Guid>.Success(result.Value)
+            : CommandResult<Guid>.Failure(result.ErrorMessage!);
     }
-}
-
-// Usage in controller
-[HttpPost]
-public async Task<IActionResult> Create(CreateOrderDto dto) {
-    var command = new CreateOrderCommand(dto);
-    var result = await _dispatcher.DispatchCommandAsync<CreateOrderCommand, Guid>(command);
-
-    return result.IsSuccess
-        ? CreatedAtAction(nameof(Get), new { id = result.Data }, result.Data)
-        : BadRequest(result.ErrorMessage);
 }
 ```
 
-#### Queries with Caching
+### Pattern 2: Query with Specification and Caching
+
+Combine **Specification** + **Repository** + **Flow.Actions** (caching):
 
 ```csharp
-// Define query
-public record GetOrderQuery(Guid OrderId) : IQuery<OrderDto>;
+// Query
+public record SearchProductsQuery(string? Name, decimal? MinPrice) : IQuery<List<ProductDto>>;
 
-// Query handler
-public class GetOrderHandler : IQueryHandler<GetOrderQuery, OrderDto> {
-    private readonly IScopedService<IOrderRepository> _repository;
+// Handler
+public class SearchProductsHandler : IQueryHandler<SearchProductsQuery, List<ProductDto>> {
+    private readonly IProductRepository _repository;
 
-    public async Task<QueryResult<OrderDto>> HandleAsync(
-        GetOrderQuery query,
+    public async Task<QueryResult<List<ProductDto>>> HandleAsync(
+        SearchProductsQuery query,
         CancellationToken ct) {
 
-        var spec = SpecBuilder<Order>.Create()
-            .And(o => o.Id == query.OrderId);
+        // Build specification (static class for business clarity)
+        var spec = SpecBuilder<Product>.Create()
+            .IsActive()
+            .AndIf(!string.IsNullOrEmpty(query.Name), p => p.Name.Contains(query.Name!))
+            .AndIf(query.MinPrice.HasValue, p => p.Price >= query.MinPrice!.Value)
+            .Order(p => p.Name);
 
-        var order = await _repository.ExecuteAsync(repo =>
-            repo.FirstOrDefaultAsync(spec, ct));
+        // Execute via repository
+        var products = await _repository.SearchAsync(spec, ct);
 
-        if (order == null) {
-            return QueryResult<OrderDto>.Failure("Order not found");
-        }
+        // Transform with Morph
+        var dtos = products.Select(p => p.To<ProductDto>()).ToList();
 
-        var dto = order.To<OrderDto>();
-        return QueryResult<OrderDto>.Success(dto);
+        return QueryResult<List<ProductDto>>.Success(dtos);
     }
 }
 
-// Usage with cache
-[HttpGet("{id}")]
-public async Task<IActionResult> Get(Guid id) {
-    var query = new GetOrderQuery(id);
-
+// In controller - use with caching
+[HttpGet]
+public async Task<IActionResult> Search([FromQuery] SearchProductsQuery query) {
     var cacheOptions = new CacheOptions {
         Enabled = true,
-        Ttl = TimeSpan.FromMinutes(5),
-        CacheKey = $"order:{id}"
+        CacheKey = $"products:search:{query.Name}:{query.MinPrice}",
+        Ttl = TimeSpan.FromMinutes(5)
     };
 
-    var result = await _dispatcher.DispatchQueryAsync<GetOrderQuery, OrderDto>(
+    var result = await _dispatcher.DispatchQueryAsync<SearchProductsQuery, List<ProductDto>>(
         query, cacheOptions);
 
-    return result.IsSuccess ? Ok(result.Data) : NotFound();
+    return Ok(result.Data);
 }
 ```
 
-#### Events
+### Pattern 3: Event-Driven Workflow
+
+Combine **Flow.Actions** (events) + **Flow** (pipeline) + **Rest** (external APIs):
 
 ```csharp
-// Define event
-public record OrderCreatedEvent(Guid OrderId, decimal Total, string CustomerEmail) : IEvent;
+// Event
+public record OrderCreatedEvent : IEvent {
+    public string EventId { get; init; }
+    public DateTimeOffset OccurredAt { get; init; }
+    public Guid OrderId { get; init; }
+    public Guid CustomerId { get; init; }
+}
 
-// Event handler
-public class OrderCreatedHandler : IEventHandler<OrderCreatedEvent> {
-    private readonly IScopedService<IEmailService> _emailService;
-    private readonly IScopedService<IInventoryService> _inventoryService;
+// Event Handler - Send email
+public class SendOrderConfirmationHandler : IEventHandler<OrderCreatedEvent> {
+    private readonly IRestClient _emailClient;
 
     public async Task HandleAsync(OrderCreatedEvent @event, CancellationToken ct) {
         await Pipeline.Start(@event)
-            .TapAsync(async evt => {
-                await _emailService.ExecuteAsync(svc =>
-                    svc.SendOrderConfirmationAsync(evt.CustomerEmail, evt.OrderId, ct));
+            .WithTelemetry("SendOrderConfirmation")
+            .WithRetry(maxAttempts: 3, backoffMs: 1000)
+            .StepAsync(async evt => {
+                // Call external email API
+                var response = await _emailClient
+                    .Post("https://api.email.com/send")
+                    .WithJsonBody(new {
+                        to = evt.CustomerEmail,
+                        template = "order-confirmation",
+                        data = new { OrderId = evt.OrderId }
+                    })
+                    .ExecuteAsync<EmailResponse>(ct);
+
+                return evt;
             })
-            .TapAsync(async evt => {
-                await _inventoryService.ExecuteAsync(svc =>
-                    svc.UpdateStockAsync(evt.OrderId, ct));
+            .TapAsync(evt => {
+                // Log success
+                _logger.LogInformation("Email sent for order {OrderId}", evt.OrderId);
             })
             .ExecuteAsync(ct);
     }
 }
 
-// Publish event
-await _dispatcher.PublishEventAsync(new OrderCreatedEvent(orderId, total, email));
-```
+// Event Handler - Update analytics
+public class UpdateOrderAnalyticsHandler : IEventHandler<OrderCreatedEvent> {
+    private readonly IAnalyticsRepository _repository;
 
-#### Configuration
-
-```csharp
-builder.Services.AddFlow(config => config
-    .UseTelemetry()
-    .UseRetry(3, 1000)
-    .UseActions(actions => actions
-        // Message Broker
-        .UseInMemory(opts => {
-            opts.UseCircuitBreaker = true;
-            opts.UseRetryPolicy = true;
-            opts.UseDeadLetterQueue = true;
-        })
-        // or
-        .UseKafka(kafka => {
-            kafka.BootstrapServers = "localhost:9092";
-            kafka.GroupId = "my-app";
-            kafka.Topic = "events";
-        })
-        // or
-        .UseRabbitMQ(rabbit => {
-            rabbit.HostName = "localhost";
-            rabbit.UserName = "guest";
-            rabbit.Password = "guest";
-            rabbit.ExchangeName = "my-exchange";
-        })
-
-        // Caching
-        .UseCaching(cache => {
-            cache.ProviderType = CacheProviderType.Memory;
-            cache.DefaultTtl = TimeSpan.FromMinutes(5);
-        })
-
-        // Handler scanning
-        .ScanAssemblies(typeof(Program).Assembly)
-        .EnableAutoSubscription()));
-```
-
-### 4. Myth.Guard - Validation
-
-#### Basic Validation
-
-```csharp
-public class CreateUserDto : IValidatable<CreateUserDto> {
-    public string Name { get; set; }
-    public string Email { get; set; }
-    public int Age { get; set; }
-    public List<string> Tags { get; set; }
-
-    public void Validate(ValidationBuilder<CreateUserDto> builder,
-        ValidationContextKey? context = null) {
-
-        // String rules
-        builder.For(Name, x => x
-            .NotEmpty()
-            .MinimumLength(2)
-            .MaximumLength(100)
-            .OnlyLetters());
-
-        // Email validation
-        builder.For(Email, x => x
-            .NotEmpty()
-            .Email());
-
-        // Numeric rules
-        builder.For(Age, x => x
-            .GreaterThan(0)
-            .LessThan(150));
-
-        // Collection rules
-        builder.For(Tags, x => x
-            .NotEmpty()
-            .CountBetween(1, 10)
-            .All(tag => !string.IsNullOrWhiteSpace(tag))
-            .Distinct());
-    }
-}
-```
-
-#### Context-Aware Validation
-
-```csharp
-public void Validate(ValidationBuilder<CreateUserDto> builder,
-    ValidationContextKey? context = null) {
-
-    // Global rules (always applied)
-    builder.For(Email, x => x.NotEmpty().Email());
-    builder.For(Age, x => x.GreaterThan(0).LessThan(150));
-
-    // Create-specific rules
-    builder.InContext(ValidationContextKey.Create, b => {
-        b.For(Email, x => x
-            .RespectAsync(async (email, ct, sp) => {
-                var userService = sp.GetRequiredService<IUserService>();
-                return await userService.IsEmailAvailableAsync(email, ct);
-            })
-            .WithMessage("Email already exists")
-            .WithStatusCode(HttpStatusCode.Conflict));
-
-        b.For(Password, x => x
-            .NotEmpty()
-            .MinimumLength(8)
-            .Matches(new Regex(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$")));
-    });
-
-    // Update-specific rules
-    builder.InContext(ValidationContextKey.Update, b => {
-        b.For(Age, x => x.GreaterOrEquals(18));
-    });
-}
-```
-
-#### Async Validation with Services
-
-```csharp
-builder.For(ProductId, x => x
-    .GreaterThan(0)
-    .RespectAsync(async (productId, ct, sp) => {
-        var productService = sp.GetRequiredService<IProductService>();
-        return await productService.ExistsAsync(productId, ct);
-    })
-    .WithMessage("Product does not exist")
-    .WithStatusCode(HttpStatusCode.NotFound));
-```
-
-#### Cross-Property Validation
-
-```csharp
-// Access entire entity in validation
-builder.For(Amount, x => x
-    .GreaterThan(0)
-    .Respect<OrderDto>((amount, order) => {
-        return order.CustomerType switch {
-            "Premium" => amount <= 50000m,
-            "Gold" => amount <= 25000m,
-            "Silver" => amount <= 10000m,
-            _ => amount <= 5000m
+    public async Task HandleAsync(OrderCreatedEvent @event, CancellationToken ct) {
+        var analytics = new OrderAnalytics {
+            OrderId = @event.OrderId,
+            CustomerId = @event.CustomerId,
+            CreatedAt = @event.OccurredAt
         };
-    })
-    .WithMessage("Amount exceeds limit for customer type"));
 
-// Async with entity access
-builder.For(Email, x => x
-    .RespectAsync<LoginDto>(async (email, login, ct, sp) => {
-        var userService = sp.GetRequiredService<IUserService>();
-        return await userService.ValidateCredentialsAsync(login.Email, login.Password, ct);
-    })
-    .WithMessage("Invalid email and password combination"));
-```
-
-#### Usage in Controllers
-
-```csharp
-[HttpPost]
-public async Task<IActionResult> Create(CreateUserDto dto) {
-    // Validate and throw on failure
-    await _validator.ValidateAsync(dto, ValidationContextKey.Create);
-
-    // Or validate without throwing
-    var result = await _validator.ValidateAndReturnAsync(dto, ValidationContextKey.Create);
-    if (!result.IsValid) {
-        return BadRequest(new { errors = result.Errors });
-    }
-
-    // Process...
-    return Ok();
-}
-```
-
-#### All Available Rules
-
-**String Rules:**
-- `NotEmpty()`, `MinimumLength(int)`, `MaximumLength(int)`, `LengthBetween(int, int)`
-- `Email()`, `Url()`
-- `OnlyLetters()`, `OnlyNumbers()`, `Alphanumeric()`
-- `StartsWith(string)`, `EndsWith(string)`, `Contains(string)`
-- `Matches(Regex)`, `BeOneOf(params string[])`
-- `AvailableCharacters(params char[])`, `ForbiddenCharacters(params char[])`
-- `NoSymbols(char[]?)`
-
-**Numeric Rules (int, long, decimal, double, float):**
-- `GreaterThan(T)`, `GreaterOrEquals(T)`, `LessThan(T)`, `LessOrEquals(T)`
-- `Between(T, T)`, `Positive()`, `Negative()`, `Zero()`, `NotZero()`
-
-**Collection Rules:**
-- `NotEmpty()`, `CountBetween(int, int)`, `CountGreaterThan(int)`, `CountLessThan(int)`
-- `All(Func<T, bool>)`, `Any(Func<T, bool>)`, `None(Func<T, bool>)`
-- `Distinct()`, `DistinctBy<TKey>(Func<T, TKey>)`
-
-**DateTime/DateOnly Rules:**
-- `Past()`, `Future()`, `Today()`
-- `After(DateTime)`, `Before(DateTime)`, `Between(DateTime, DateTime)`
-- `AfterOrEquals(DateTime)`, `BeforeOrEquals(DateTime)`
-
-**Boolean & Enum Rules:**
-- `IsTrue()`, `IsFalse()`
-- `BeInEnum<TEnum>()`, `BeNotInEnum<TEnum>()`
-
-**Generic Rules (all types):**
-- `NotNull()`, `BeNull()`, `EqualsTo(T)`, `NotEqualsTo(T)`
-- `BeDefault()`, `NotDefault()`
-- `Respect(Func<T, bool>)`, `RespectAsync(Func<T, CT, SP, Task<bool>>)`
-- `Respect<TEntity>(Func<T, TEntity, bool>)`, `RespectAsync<TEntity>(Func<T, TEntity, CT, SP, Task<bool>>)`
-
-**Rule Modifiers:**
-- `.WithMessage(string)` - Custom error message
-- `.WithMessage(Func<T, string>)` - Dynamic error message using field value
-- `.WithStatusCode(int | HttpStatusCode)` - Custom HTTP status
-- `.WithOptions(IReadOnlyList<string>)` - Valid options list for error response
-- `.WithOptions(OptionsType)` - Auto-generate options from Constant<T,V> types
-- `.When(Func<bool>)` - Conditional execution
-- `.Unless(Func<bool>)` - Inverse conditional
-- `.SetStopOnFailure(bool)` - Stop on first failure
-
-#### Error Response Format (RFC 9457 Problem Details)
-
-When using `app.UseGuard()` middleware, validation exceptions are automatically formatted following [RFC 9457 Problem Details for HTTP APIs](https://www.rfc-editor.org/rfc/rfc9457.html):
-
-```json
-{
-    "type": "https://github.com/paulaolileal/myth/blob/main/docs/errors/validation.md",
-    "title": "One or more validation errors occurred",
-    "status": 400,
-    "instance": "/api/users",
-    "traceId": "00-abc123...",
-    "errors": {
-        "email": ["Email already exists"],
-        "password": ["Password must be at least 8 characters"]
+        await _repository.AddAsync(analytics, ct);
     }
 }
 ```
 
-**Key Features:**
-- Content-Type: `application/problem+json`
-- `status`: HTTP status code (highest from all validation errors)
-- `errors`: Grouped by field name with all error messages
-- `traceId`: Correlation ID for debugging
-- No custom error codes per field (use `status` and `message` instead)
+---
 
-**ValidationError Structure:**
-```csharp
-public sealed class ValidationError {
-    public string Field { get; init; }
-    public string Message { get; init; }
-    public HttpStatusCode StatusCode { get; init; }
-    public IReadOnlyList<string>? Options { get; init; }
-}
-```
+## Complete Workflows
 
-### 5. Myth.Morph - Object Transformation
+### Workflow 1: CRUD API with Full Stack
 
-#### IMorphableTo (Source → Destination)
+**Stack:** Repository + Specification + Guard + Flow + Flow.Actions + Morph
 
 ```csharp
-// DTO to Entity transformation
-public class UserDto : IMorphableTo<User> {
+// 1. Entity with validation
+public class Product : IValidatable<Product> {
+    public Guid Id { get; set; }
     public string Name { get; set; }
-    public string Email { get; set; }
-    public DateTime JoinDate { get; set; }
+    public decimal Price { get; set; }
 
-    public void MorphTo(Schema<User> schema) {
-        // Auto-mapping (same names)
-        // Email is automatically mapped
-
-        // Custom mapping
-        schema.Bind(u => u.FirstName, () => Name.Split(' ')[0]);
-        schema.Bind(u => u.LastName, () => Name.Split(' ').Last());
-        schema.Bind(u => u.CreatedAt, () => JoinDate);
-
-        // With service provider
-        schema.Bind(u => u.Profile, sp => {
-            var service = sp.GetRequiredService<IProfileService>();
-            return service.GetDefaultProfile();
-        });
-
-        // Async binding
-        schema.BindAsync(u => u.Avatar, async sp => {
-            var service = sp.GetRequiredService<IAvatarService>();
-            return await service.GetDefaultAvatarAsync();
-        });
-
-        // Ignore properties
-        schema.Ignore(u => u.Id);
-        schema.Ignore(u => u.InternalField);
+    public void Validate(ValidationBuilder<Product> builder, ValidationContextKey? context = null) {
+        builder.For(Name, x => x.NotEmpty().MaximumLength(200));
+        builder.For(Price, x => x.GreaterThan(0));
     }
 }
 
-// Usage
-var userDto = new UserDto { Name = "John Doe", Email = "john@example.com" };
-var user = userDto.To<User>(serviceProvider);
-```
-
-#### IMorphableFrom (Destination ← Source)
-
-```csharp
-// Entity to DTO transformation
-public class OrderDto : IMorphableFrom<Order> {
-    public Guid Id { get; set; }
-    public string Customer { get; set; }
-    public decimal Total { get; set; }
-    public string CreatedDate { get; set; }
-    public int ItemCount { get; set; }
-
-    public void MorphFrom(Schema<Order> schema) {
-        // Reverse mapping (Order → OrderDto)
-        schema.Bind(() => Id, order => order.Id);
-        schema.Bind(() => Customer, order => order.CustomerName);
-        schema.Bind(() => Total, order => order.TotalAmount);
-        schema.Bind(() => CreatedDate, order => order.CreatedAt.ToString("yyyy-MM-dd"));
-        schema.Bind(() => ItemCount, order => order.Items.Count);
-
-        // Async reverse mapping
-        schema.BindAsync(() => Customer, async (order, sp) => {
-            var customerService = sp.GetRequiredService<ICustomerService>();
-            var customer = await customerService.GetByIdAsync(order.CustomerId);
-            return customer?.Name ?? "Unknown";
-        });
-    }
-}
-
-// Usage
-var order = await _repository.GetByIdAsync(orderId);
-var orderDto = order.To<OrderDto>(serviceProvider);
-```
-
-#### Collections
-
-```csharp
-// Transform list
-var users = await _repository.GetAllAsync();
-var userDtos = users.To<User, UserDto>(serviceProvider);
-
-// Async transformation
-var productDtos = await products.ToAsync<Product, ProductDto>(serviceProvider);
-```
-
-#### Check Mapping Availability
-
-```csharp
-if (source.CanBindTo<Destination>(serviceProvider)) {
-    var result = source.To<Destination>(serviceProvider);
-}
-```
-
-### 6. Myth.Specification - Query Specifications
-
-#### Basic Specifications
-
-```csharp
-// Define reusable specifications as extension methods
+// 2. Specification (static class for business clarity)
 public static class ProductSpecifications {
-    public static ISpec<Product> IsActive(this ISpec<Product> spec) {
-        return spec.And(p => p.IsActive);
-    }
+    public static ISpec<Product> IsActive(this ISpec<Product> spec) =>
+        spec.And(p => !p.IsDeleted);
 
-    public static ISpec<Product> InCategory(this ISpec<Product> spec, string category) {
-        return spec.And(p => p.Category == category);
-    }
-
-    public static ISpec<Product> PriceRange(this ISpec<Product> spec, decimal min, decimal max) {
-        return spec.And(p => p.Price >= min && p.Price <= max);
-    }
-
-    public static ISpec<Product> SearchByName(this ISpec<Product> spec, string searchTerm) {
-        return spec.AndIf(
-            !string.IsNullOrEmpty(searchTerm),
-            p => p.Name.Contains(searchTerm));
-    }
-
-    public static ISpec<Product> OrderByPrice(this ISpec<Product> spec, bool descending = false) {
-        return descending
-            ? spec.OrderDescending(p => p.Price)
-            : spec.Order(p => p.Price);
-    }
-}
-```
-
-#### Usage in Repository
-
-```csharp
-public async Task<List<Product>> SearchProducts(ProductSearchDto search) {
-    var spec = SpecBuilder<Product>.Create()
-        .IsActive()
-        .InCategory(search.Category)
-        .PriceRange(search.MinPrice, search.MaxPrice)
-        .SearchByName(search.SearchTerm)
-        .OrderByPrice(search.SortDescending)
-        .Skip((search.Page - 1) * search.PageSize)
-        .Take(search.PageSize);
-
-    return await _context.Products
-        .Specify(spec)
-        .ToListAsync();
-}
-```
-
-#### Logical Composition
-
-```csharp
-var spec = SpecBuilder<Order>.Create()
-    .And(o => o.CustomerId == customerId)
-    .Or(o => o.Status == OrderStatus.Pending)
-    .AndIf(fromDate.HasValue, o => o.CreatedAt >= fromDate.Value)
-    .OrIf(toDate.HasValue, o => o.CreatedAt <= toDate.Value)
-    .Not(); // Negate entire spec
-```
-
-#### Pagination & Ordering
-
-```csharp
-var spec = SpecBuilder<Product>.Create()
-    .IsActive()
-    .Order(p => p.Name) // Ascending
-    .OrderDescending(p => p.Price) // Descending
-    .Skip(20) // Offset
-    .Take(10) // Limit
-    .WithPagination(new Pagination { PageNumber = 2, PageSize = 10 });
-```
-
-#### Advanced Features
-
-```csharp
-// Distinct
-var spec = SpecBuilder<Product>.Create()
-    .DistinctBy(p => p.Brand);
-
-// Get single item
-var product = spec.SatisfyingItemFrom(query);
-
-// Get all matching items
-var products = spec.SatisfyingItemsFrom(query);
-
-// In-memory validation
-if (spec.IsSatisfiedBy(entity)) {
-    // Entity matches specification
+    public static ISpec<Product> NameContains(this ISpec<Product> spec, string search) =>
+        spec.And(p => p.Name.Contains(search));
 }
 
-// Prepare full query (filter + sort + post-process)
-var preparedQuery = spec.Prepare(query);
+// 3. Repository
+public interface IProductRepository : IReadWriteRepositoryAsync<Product> {
+    Task<IPaginated<Product>> SearchAsync(ISpec<Product> spec, Pagination pagination, CancellationToken ct);
+}
 
-// Apply only filters
-var filteredQuery = spec.Filtered(query);
-
-// Apply only sorting
-var sortedQuery = spec.Sorted(query);
-```
-
-### 7. Myth.Repository - Data Access
-
-#### Basic Repository
-
-```csharp
-// Interface
-public interface IProductRepository : IReadWriteRepositoryAsync<Product> { }
-
-// Implementation
 public class ProductRepository : ReadWriteRepositoryAsync<Product>, IProductRepository {
     public ProductRepository(AppDbContext context) : base(context) { }
+
+    public async Task<IPaginated<Product>> SearchAsync(
+        ISpec<Product> spec,
+        Pagination pagination,
+        CancellationToken ct) {
+        return await SearchPaginatedAsync(spec.WithPagination(pagination), ct);
+    }
 }
 
-// Registration
-services.AddScoped<IProductRepository, ProductRepository>();
+// 4. CQRS Commands/Queries
+public record CreateProductCommand(string Name, decimal Price) : ICommand<Guid>;
+public record GetProductQuery(Guid Id) : IQuery<ProductDto>;
+public record SearchProductsQuery(string? Search, Pagination Pagination) : IQuery<IPaginated<ProductDto>>;
 
-// Usage
-public class ProductService {
+// 5. Command Handler
+public class CreateProductHandler : ICommandHandler<CreateProductCommand, Guid> {
     private readonly IProductRepository _repository;
-
-    public async Task<Product> CreateAsync(CreateProductDto dto) {
-        var product = new Product { Name = dto.Name, Price = dto.Price };
-        await _repository.AddAsync(product);
-        return product;
-    }
-
-    public async Task<IEnumerable<Product>> GetAllAsync() {
-        return await _repository.GetAllAsync();
-    }
-}
-```
-
-#### Repository with Specifications
-
-```csharp
-public async Task<IPaginated<Order>> SearchOrdersAsync(
-    OrderSearchDto search,
-    CancellationToken ct = default) {
-
-    var spec = SpecBuilder<Order>.Create()
-        .And(o => o.CustomerId == search.CustomerId)
-        .And(o => search.Statuses.Contains(o.Status))
-        .And(o => o.CreatedAt >= search.FromDate)
-        .OrderDescending(o => o.CreatedAt)
-        .WithPagination(new Pagination {
-            PageNumber = search.Page,
-            PageSize = search.PageSize
-        });
-
-    return await _repository.GetPaginatedAsync(spec, ct);
-}
-```
-
-#### Unit of Work
-
-```csharp
-public class OrderService {
-    private readonly IOrderRepository _orderRepository;
-    private readonly IOrderItemRepository _itemRepository;
-    private readonly IUnitOfWorkRepository _unitOfWork;
-
-    public async Task<Order> CreateOrderAsync(CreateOrderDto dto) {
-        try {
-            await _unitOfWork.BeginTransactionAsync();
-
-            var order = new Order {
-                CustomerId = dto.CustomerId,
-                CreatedAt = DateTime.UtcNow
-            };
-            await _orderRepository.AddAsync(order);
-
-            foreach (var itemDto in dto.Items) {
-                var item = new OrderItem {
-                    OrderId = order.Id,
-                    ProductId = itemDto.ProductId,
-                    Quantity = itemDto.Quantity
-                };
-                await _itemRepository.AddAsync(item);
-            }
-
-            await _unitOfWork.SaveChangesAsync();
-            await _unitOfWork.CommitTransactionAsync();
-
-            return order;
-        } catch {
-            await _unitOfWork.RollbackTransactionAsync();
-            throw;
-        }
-    }
-}
-```
-
-#### Read/Write Separation (CQRS)
-
-```csharp
-// Read repository for queries
-public interface IProductReadRepository : IReadRepositoryAsync<Product> { }
-
-public class ProductReadRepository : ReadRepositoryAsync<Product>, IProductReadRepository {
-    public ProductReadRepository(AppDbContext context) : base(context) { }
-}
-
-// Write repository for commands
-public interface IProductWriteRepository : IWriteRepositoryAsync<Product> { }
-
-public class ProductWriteRepository : WriteRepositoryAsync<Product>, IProductWriteRepository {
-    public ProductWriteRepository(AppDbContext context) : base(context) { }
-}
-```
-
-### 8. Myth.Repository.EntityFramework - EF Core Implementation
-
-Provides Entity Framework Core implementation of repository interfaces with Unit of Work pattern.
-
-#### Basic Setup
-
-```csharp
-using Myth.Contexts;
-using Myth.Repository.EntityFramework.Repositories;
-
-// Define DbContext
-public class AppDbContext : BaseContext {
-    public DbSet<Product> Products { get; set; }
-    public DbSet<Order> Orders { get; set; }
-
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder) {
-        base.OnModelCreating(modelBuilder);
-        // Configure entities
-    }
-}
-
-// Implement Repository
-public class ProductRepository : ReadWriteRepositoryAsync<Product>, IProductRepository {
-    public ProductRepository(AppDbContext context) : base(context) { }
-}
-
-// Register
-services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString));
-services.AddScoped<IProductRepository, ProductRepository>();
-services.AddScoped<IUnitOfWorkRepository, UnitOfWorkRepository<AppDbContext>>();
-```
-
-#### Unit of Work Pattern
-
-```csharp
-public class OrderService {
-    private readonly IUnitOfWorkRepository _unitOfWork;
-
-    public async Task ProcessOrderAsync(Order order, CancellationToken ct) {
-        await _unitOfWork.BeginTransactionAsync(ct);
-        try {
-            await _unitOfWork.AddAsync(order, ct);
-            await _unitOfWork.SaveChangesAsync(ct);
-            await _unitOfWork.CommitTransactionAsync(ct);
-        } catch {
-            await _unitOfWork.RollbackTransactionAsync(ct);
-            throw;
-        }
-    }
-}
-```
-
----
-
-### 9. Myth.Rest - HTTP Client
-
-Fluent REST client with retry policies, circuit breaker, and certificate support.
-
-#### Basic Usage
-
-```csharp
-using Myth.Rest;
-
-// Register
-services.AddRest();
-
-// Inject factory
-public class ExternalApiService {
-    private readonly IRestFactory _restFactory;
-
-    public async Task<UserDto> GetUserAsync(int id) {
-        var result = await _restFactory
-            .Create("https://api.example.com")
-            .Get($"/users/{id}")
-            .WithRetry(maxAttempts: 3, backoffMs: 1000)
-            .WithCircuitBreaker(failureThreshold: 5, breakDurationMs: 30000)
-            .WithTimeout(TimeSpan.FromSeconds(10))
-            .ExecuteAsync<UserDto>();
-
-        return result.Data;
-    }
-}
-```
-
-#### POST Request with JSON
-
-```csharp
-var createUserDto = new CreateUserDto { Name = "John", Email = "john@example.com" };
-
-var result = await _restFactory
-    .Create("https://api.example.com")
-    .Post("/users")
-    .WithJsonBody(createUserDto)
-    .WithHeader("Authorization", $"Bearer {token}")
-    .WithRetry(3, 500)
-    .ExecuteAsync<UserDto>();
-```
-
----
-
-### 10. Myth.Testing - Testing Utilities
-
-Provides base classes, mocks, and utilities for comprehensive testing.
-
-#### Base Test Class
-
-```csharp
-using Myth.Testing.Repositories;
-using Myth.Testing.Extensions;
-
-public class ProductServiceTests : BaseDatabaseTests<AppDbContext> {
-    private readonly ProductService _service;
-
-    public ProductServiceTests() : base() {
-        AddServices(services => {
-            services.AddScoped<IProductRepository, ProductRepository>();
-            services.AddScoped<ProductService>();
-            services.AddGuard();
-            services.AddMorph();
-        });
-
-        _service = CreateInstance<ProductService>();
-    }
-
-    [Fact]
-    public async Task CreateProduct_ShouldSucceed_WhenValid() {
-        // Arrange
-        var dto = new CreateProductDto { Name = "Test", Price = 10.00m };
-
-        // Act
-        var result = await _service.CreateProductAsync(dto);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Name.Should().Be("Test");
-    }
-}
-```
-
-#### HTTP Client Mock
-
-```csharp
-using Myth.Testing.Mocks;
-
-var httpClientMock = new HttpClientMock()
-    .SetupGet("/users/1")
-    .ReturnsJson(new UserDto { Id = 1, Name = "John" })
-    .WithStatusCode(HttpStatusCode.OK);
-
-var httpClient = httpClientMock.CreateClient();
-```
-
----
-
-### 11. Myth.Tool - Code Generation CLI
-
-CLI tool for generating Myth architecture code with CQRS, DDD, and Clean Architecture patterns.
-
-#### Installation
-
-```bash
-dotnet tool install -g Myth.Tool
-```
-
-#### Project Setup
-
-```bash
-# Setup new project with clean structure
-myth setup MyProject --clean
-
-# Setup project keeping examples
-myth setup MyProject
-```
-
-#### Generate Domain Model
-
-```bash
-myth create model User \
-  -p Id:Guid \
-  -p Name:string:required \
-  -p Email:string:required \
-  --validate
-```
-
-#### Generate CQRS Command
-
-```bash
-myth create command User CreateUser \
-  -p Name:string:required \
-  -p Email:string:required \
-  --return Guid \
-  --validate \
-  --events UserCreated
-```
-
-#### Generate Query
-
-```bash
-myth create query User GetUser \
-  -p Id:Guid:required \
-  --return GetUserResponse
-```
-
-#### Generate Repository
-
-```bash
-myth create repository User --type readwrite
-```
-
-#### Generate Controller
-
-```bash
-myth create controller User
-```
-
-#### Generate Tests
-
-```bash
-myth create test UserController
-```
-
----
-
-## Common Workflows
-
-### Workflow 1: Complete CQRS with Validation, Pipeline, and Repository
-
-```csharp
-// 1. Define DTOs with validation
-public class CreateOrderDto : IValidatable<CreateOrderDto> {
-    public Guid CustomerId { get; set; }
-    public List<CreateOrderItemDto> Items { get; set; }
-
-    public void Validate(ValidationBuilder<CreateOrderDto> builder,
-        ValidationContextKey? context = null) {
-
-        builder.For(CustomerId, x => x.NotDefault());
-        builder.For(Items, x => x
-            .NotEmpty()
-            .CountBetween(1, 100)
-            .All(item => item.Quantity > 0));
-
-        builder.InContext(ValidationContextKey.Create, b => {
-            b.For(CustomerId, x => x
-                .RespectAsync(async (id, ct, sp) => {
-                    var customerService = sp.GetRequiredService<ICustomerService>();
-                    return await customerService.ExistsAsync(id, ct);
-                })
-                .WithMessage("Customer not found")
-                .WithStatusCode(HttpStatusCode.NotFound));
-        });
-    }
-}
-
-public class OrderDto : IMorphableFrom<Order> {
-    public Guid Id { get; set; }
-    public string Customer { get; set; }
-    public decimal Total { get; set; }
-    public int ItemCount { get; set; }
-
-    public void MorphFrom(Schema<Order> schema) {
-        schema.Bind(() => Id, o => o.Id);
-        schema.Bind(() => Customer, o => o.CustomerName);
-        schema.Bind(() => Total, o => o.TotalAmount);
-        schema.Bind(() => ItemCount, o => o.Items.Count);
-    }
-}
-
-// 2. Define Command
-public record CreateOrderCommand(CreateOrderDto Data) : ICommand<Guid>;
-
-// 3. Define Event
-public record OrderCreatedEvent(Guid OrderId, decimal Total) : IEvent;
-
-// 4. Command Handler with full pipeline
-public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
-    private readonly IScopedService<IOrderRepository> _repository;
-    private readonly IScopedService<IUnitOfWorkRepository> _unitOfWork;
     private readonly IValidator _validator;
     private readonly IDispatcher _dispatcher;
 
     public async Task<CommandResult<Guid>> HandleAsync(
-        CreateOrderCommand command,
+        CreateProductCommand command,
         CancellationToken ct) {
 
-        var result = await Pipeline.Start(command.Data)
-            .WithTelemetry("CreateOrder")
-            .WithRetry(maxAttempts: 3, backoffMs: 100)
+        var product = new Product {
+            Id = Guid.NewGuid(),
+            Name = command.Name,
+            Price = command.Price
+        };
 
-            // Validate
-            .StepResultAsync(async dto => {
-                var validationResult = await _validator.ValidateAndReturnAsync(
-                    dto, ValidationContextKey.Create, ct);
+        // Validate
+        await _validator.ValidateAsync(product, ValidationContextKey.Create, ct);
 
-                if (!validationResult.IsValid) {
-                    return Result<CreateOrderDto>.Failure(
-                        validationResult.Errors.First().Message);
-                }
+        // Persist
+        await _repository.AddAsync(product, ct);
 
-                return Result<CreateOrderDto>.Success(dto);
-            })
+        // Publish event
+        await _dispatcher.PublishEventAsync(new ProductCreatedEvent {
+            EventId = Guid.NewGuid().ToString(),
+            OccurredAt = DateTimeOffset.UtcNow,
+            ProductId = product.Id
+        }, ct);
 
-            // Create order
-            .StepResultAsync(async dto => {
-                var order = new Order {
-                    CustomerId = dto.CustomerId,
-                    Items = dto.Items.Select(i => new OrderItem {
-                        ProductId = i.ProductId,
-                        Quantity = i.Quantity,
-                        Price = i.Price
-                    }).ToList(),
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                order.TotalAmount = order.Items.Sum(i => i.Price * i.Quantity);
-
-                await _repository.ExecuteAsync(repo => repo.AddAsync(order, ct));
-                await _unitOfWork.ExecuteAsync(uow => uow.SaveChangesAsync(ct));
-
-                return Result<Order>.Success(order);
-            })
-
-            // Publish event
-            .TapAsync(async order => {
-                await _dispatcher.PublishEventAsync(
-                    new OrderCreatedEvent(order.Id, order.TotalAmount), ct);
-            })
-
-            .ExecuteAsync(ct);
-
-        if (result.IsFailure) {
-            return CommandResult<Guid>.Failure(result.ErrorMessage);
-        }
-
-        return CommandResult<Guid>.Success(result.Value.Id);
+        return CommandResult<Guid>.Success(product.Id);
     }
 }
 
-// 5. Query Handler with Specification
-public record GetOrderQuery(Guid OrderId) : IQuery<OrderDto>;
+// 6. Query Handler with caching
+public class SearchProductsHandler : IQueryHandler<SearchProductsQuery, IPaginated<ProductDto>> {
+    private readonly IProductRepository _repository;
 
-public class GetOrderHandler : IQueryHandler<GetOrderQuery, OrderDto> {
-    private readonly IScopedService<IOrderRepository> _repository;
-
-    public async Task<QueryResult<OrderDto>> HandleAsync(
-        GetOrderQuery query,
+    public async Task<QueryResult<IPaginated<ProductDto>>> HandleAsync(
+        SearchProductsQuery query,
         CancellationToken ct) {
 
-        var spec = SpecBuilder<Order>.Create()
-            .And(o => o.Id == query.OrderId);
+        var spec = SpecBuilder<Product>.Create()
+            .IsActive()
+            .AndIf(!string.IsNullOrEmpty(query.Search), s => s.NameContains(query.Search!));
 
-        var order = await _repository.ExecuteAsync(repo =>
-            repo.FirstOrDefaultAsync(spec, ct));
+        var products = await _repository.SearchAsync(spec, query.Pagination, ct);
 
-        if (order == null) {
-            return QueryResult<OrderDto>.Failure("Order not found");
-        }
+        var dtos = new Paginated<ProductDto>(
+            products.PageNumber,
+            products.PageSize,
+            products.TotalItems,
+            products.TotalPages,
+            products.Items.Select(p => p.To<ProductDto>()).ToList()
+        );
 
-        var dto = order.To<OrderDto>();
-        return QueryResult<OrderDto>.Success(dto);
-    }
-}
-
-// 6. Event Handler
-public class OrderCreatedHandler : IEventHandler<OrderCreatedEvent> {
-    private readonly IScopedService<IEmailService> _emailService;
-
-    public async Task HandleAsync(OrderCreatedEvent @event, CancellationToken ct) {
-        await _emailService.ExecuteAsync(svc =>
-            svc.SendOrderConfirmationAsync(@event.OrderId, ct));
+        return QueryResult<IPaginated<ProductDto>>.Success(dtos);
     }
 }
 
 // 7. Controller
 [ApiController]
 [Route("api/[controller]")]
-public class OrdersController : ControllerBase {
+public class ProductsController : ControllerBase {
     private readonly IDispatcher _dispatcher;
 
-    [HttpPost]
-    public async Task<IActionResult> Create(CreateOrderDto dto) {
-        var command = new CreateOrderCommand(dto);
-        var result = await _dispatcher.DispatchCommandAsync<CreateOrderCommand, Guid>(command);
+    public ProductsController(IDispatcher dispatcher) {
+        _dispatcher = dispatcher;
+    }
 
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateProductCommand command) {
+        var result = await _dispatcher.DispatchCommandAsync<CreateProductCommand, Guid>(command);
         return result.IsSuccess
             ? CreatedAtAction(nameof(Get), new { id = result.Data }, result.Data)
             : BadRequest(result.ErrorMessage);
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> Get(Guid id) {
-        var query = new GetOrderQuery(id);
-
+    [HttpGet]
+    public async Task<IActionResult> Search([FromQuery] SearchProductsQuery query) {
         var cacheOptions = new CacheOptions {
             Enabled = true,
+            CacheKey = $"products:search:{query.Search}:{query.Pagination.PageNumber}",
             Ttl = TimeSpan.FromMinutes(5)
         };
 
-        var result = await _dispatcher.DispatchQueryAsync<GetOrderQuery, OrderDto>(
+        var result = await _dispatcher.DispatchQueryAsync<SearchProductsQuery, IPaginated<ProductDto>>(
             query, cacheOptions);
 
-        return result.IsSuccess ? Ok(result.Data) : NotFound();
+        return Ok(result.Data);
+    }
+}
+```
+
+### Workflow 2: External API Integration with Resilience
+
+**Stack:** Rest + Flow + Guard
+
+```csharp
+// 1. Configure REST client
+builder.Services.AddRestClient<IPaymentGateway, PaymentGatewayClient>(client => client
+    .WithBaseUrl("https://api.payment.com")
+    .WithTimeout(TimeSpan.FromSeconds(30))
+    .WithRetry(maxAttempts: 3, backoffMs: 1000)
+    .WithCircuitBreaker(failureThreshold: 5, openDuration: TimeSpan.FromSeconds(30))
+    .WithHeader("Authorization", "Bearer {token}"));
+
+// 2. Payment Gateway Client
+public interface IPaymentGateway {
+    Task<PaymentResult> ProcessPaymentAsync(PaymentRequest request, CancellationToken ct);
+}
+
+public class PaymentGatewayClient : IPaymentGateway {
+    private readonly IRestClient _client;
+
+    public async Task<PaymentResult> ProcessPaymentAsync(
+        PaymentRequest request,
+        CancellationToken ct) {
+
+        return await Pipeline.Start(request)
+            .WithTelemetry("ProcessPayment")
+            .StepResultAsync(async req => {
+                // Validate request
+                await _validator.ValidateAsync(req, ValidationContextKey.Create, ct);
+                return Result<PaymentRequest>.Success(req);
+            })
+            .StepAsync(async req => {
+                // Call payment API (with automatic retry and circuit breaker)
+                var response = await _client
+                    .Post("/payments")
+                    .WithJsonBody(req)
+                    .ExecuteAsync<PaymentResponse>(ct);
+
+                return new PaymentResult {
+                    Success = response.Status == "approved",
+                    TransactionId = response.TransactionId
+                };
+            })
+            .ExecuteAsync(ct);
     }
 }
 ```
@@ -1428,378 +518,155 @@ public class OrdersController : ControllerBase {
 
 ## Best Practices
 
-### 1. Always Use BuildApp() or BuildWithGlobalProvider()
+### 1. Always Use BuildApp() / BuildWithGlobalProvider()
 
+**✅ DO:**
 ```csharp
-// ✅ CORRECT - ASP.NET Core
-var app = builder.BuildApp();
-
-// ❌ INCORRECT
-var app = builder.Build();
-
-// ✅ CORRECT - Console App
-var serviceProvider = services.BuildWithGlobalProvider();
-
-// ❌ INCORRECT
-var serviceProvider = services.BuildServiceProvider();
+var app = builder.BuildApp(); // ASP.NET Core
+var serviceProvider = services.BuildWithGlobalProvider(); // Console
 ```
 
-### 2. Use IScopedService<T> for Transient Handlers
-
+**❌ DON'T:**
 ```csharp
-// ✅ CORRECT - Handlers are transient but need scoped repos
-public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
-    private readonly IScopedService<IOrderRepository> _repository;
+var app = builder.Build(); // ❌ Won't initialize global provider
+var serviceProvider = services.BuildServiceProvider(); // ❌
+```
 
-    public async Task<CommandResult<Guid>> HandleAsync(...) {
-        return await _repository.ExecuteAsync(async repo => {
-            var order = await repo.CreateAsync(...);
-            return CommandResult<Guid>.Success(order.Id);
-        });
+### 2. Use Static Classes for Specifications
+
+**✅ DO:**
+```csharp
+public static class UserSpecifications {
+    public static ISpec<User> IsActive(this ISpec<User> spec) => ...
+}
+```
+
+### 3. Never Access DbSets Directly
+
+**✅ DO:**
+```csharp
+public class UserService {
+    private readonly IUserRepository _repository; // ✅
+}
+```
+
+**❌ DON'T:**
+```csharp
+public class UserService {
+    private readonly AppDbContext _context; // ❌ Use repositories
+}
+```
+
+### 4. Inject Repositories Directly in Handlers
+
+**✅ DO:**
+```csharp
+public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
+    private readonly IOrderRepository _repository; // ✅ Simple and clean
+
+    public CreateOrderHandler(IOrderRepository repository) {
+        _repository = repository;
     }
 }
+```
 
-// ❌ INCORRECT - Injecting scoped service directly into transient handler
+**❌ DON'T:**
+```csharp
 public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
-    private readonly IOrderRepository _repository; // ❌ Will cause issues!
+    private readonly IServiceScopeFactory _scopeFactory; // ❌ Unnecessary
+
+    public async Task<CommandResult<Guid>> HandleAsync(...) {
+        using var scope = _scopeFactory.CreateScope(); // ❌ Dispatcher creates scope
+        var repository = scope.ServiceProvider.GetRequiredService<IOrderRepository>();
+    }
 }
 ```
 
-### 3. Always Validate Before Processing
+### 5. Use Context-Aware Validation
 
 ```csharp
-// ✅ CORRECT
-public async Task<CommandResult> HandleAsync(CreateOrderCommand command, CancellationToken ct) {
-    await _validator.ValidateAsync(command.Data, ValidationContextKey.Create, ct);
-    // Process...
-}
-
-// ❌ INCORRECT - No validation
-public async Task<CommandResult> HandleAsync(CreateOrderCommand command, CancellationToken ct) {
-    // Directly process without validation
-}
-```
-
-### 4. Use Telemetry and Retry for Production
-
-```csharp
-// ✅ CORRECT
-return await Pipeline.Start(context)
-    .WithTelemetry("OperationName")
-    .WithRetry(maxAttempts: 3, backoffMs: 100)
-    .StepAsync(...)
-    .ExecuteAsync();
-
-// ❌ INCORRECT - No observability or resilience
-return await Pipeline.Start(context)
-    .StepAsync(...)
-    .ExecuteAsync();
-```
-
-### 5. Use Specifications for Queries
-
-```csharp
-// ✅ CORRECT - Reusable, testable, encapsulated
-var spec = SpecBuilder<Order>.Create()
-    .ForCustomer(customerId)
-    .WithStatus(OrderStatus.Pending)
-    .Recent(TimeSpan.FromDays(30))
-    .OrderDescending(o => o.CreatedAt);
-
-var orders = await _repository.FindAsync(spec);
-
-// ❌ INCORRECT - Query logic in repository
-var orders = await _context.Orders
-    .Where(o => o.CustomerId == customerId)
-    .Where(o => o.Status == OrderStatus.Pending)
-    .Where(o => o.CreatedAt >= DateTime.UtcNow.AddDays(-30))
-    .OrderByDescending(o => o.CreatedAt)
-    .ToListAsync();
-```
-
-### 6. Use Context-Aware Validation
-
-```csharp
-// ✅ CORRECT - Different rules per operation
-public void Validate(ValidationBuilder<UserDto> builder, ValidationContextKey? context = null) {
+public void Validate(ValidationBuilder<Product> builder, ValidationContextKey? context = null) {
     // Global rules
-    builder.For(Email, x => x.NotEmpty().Email());
+    builder.For(Name, x => x.NotEmpty());
 
     // Create-specific
     builder.InContext(ValidationContextKey.Create, b => {
-        b.For(Password, x => x.NotEmpty().MinimumLength(8));
+        b.For(SKU, x => x.RespectAsync(async (sku, ct, sp) => {
+            var repo = sp.GetRequiredService<IProductRepository>();
+            return !await repo.AnyAsync(p => p.SKU == sku, ct);
+        }));
     });
-
-    // Update-specific
-    builder.InContext(ValidationContextKey.Update, b => {
-        b.For(Age, x => x.GreaterOrEquals(18));
-    });
-}
-
-// ❌ INCORRECT - Same rules for all operations
-public void Validate(ValidationBuilder<UserDto> builder, ValidationContextKey? context = null) {
-    builder.For(Email, x => x.NotEmpty().Email());
-    builder.For(Password, x => x.NotEmpty().MinimumLength(8)); // Always required!
 }
 ```
 
-### 7. Use Result Pattern Consistently
+### 6. Use Flow.Actions for CQRS (Not Flow Alone)
+
+- **Myth.Flow**: Base pipeline library for general workflows
+- **Myth.Flow.Actions**: Extension for CQRS/Events (requires Flow)
 
 ```csharp
-// ✅ CORRECT
-.StepResultAsync(async ctx => {
-    if (ctx.IsValid) {
-        return Result<Context>.Success(ctx);
-    }
-    return Result<Context>.Failure("Invalid context");
-})
+// ✅ For CQRS - use Flow.Actions
+await _dispatcher.DispatchCommandAsync(command);
 
-// ❌ INCORRECT - Throwing exceptions for flow control
-.StepAsync(async ctx => {
-    if (!ctx.IsValid) {
-        throw new InvalidOperationException("Invalid context");
-    }
-    return ctx;
-})
+// ✅ For general pipelines - use Flow
+await Pipeline.Start(data).StepAsync(...).ExecuteAsync();
 ```
 
 ---
 
-## Examples by Scenario
+## Library Dependencies
 
-### E-Commerce Order Processing
+```mermaid
+graph TD
+    Commons[Myth.Commons]
+    DI[Myth.DependencyInjection]
+    Flow[Myth.Flow]
+    Actions[Myth.Flow.Actions]
+    Guard[Myth.Guard]
+    Morph[Myth.Morph]
+    Spec[Myth.Specification]
+    Repo[Myth.Repository]
+    RepoEF[Myth.Repository.EntityFramework]
+    Rest[Myth.Rest]
+    Testing[Myth.Testing]
 
-```csharp
-// Complete e-commerce order flow
-public class OrderProcessingWorkflow {
-    public async Task<Result<OrderConfirmationDto>> ProcessOrderAsync(
-        CreateOrderRequest request) {
-
-        return await Pipeline.Start(request)
-            .WithTelemetry("ProcessOrder")
-            .WithRetry(maxAttempts: 3, backoffMs: 100)
-
-            // 1. Validate order
-            .StepResultAsync<IValidator>((validator, req) =>
-                validator.ValidateAndReturnAsync(req, ValidationContextKey.Create))
-
-            // 2. Check inventory
-            .StepResultAsync<InventoryService>((svc, req) =>
-                svc.CheckAvailabilityAsync(req.Items))
-
-            // 3. Calculate pricing
-            .StepResultAsync<PricingService>((svc, req) =>
-                svc.CalculateTotalAsync(req.Items, req.CouponCode))
-
-            // 4. Process payment
-            .StepResultAsync<PaymentService>((svc, ctx) =>
-                svc.ProcessPaymentAsync(ctx.Total, ctx.PaymentMethod))
-
-            // 5. Reserve inventory
-            .StepResultAsync<InventoryService>((svc, ctx) =>
-                svc.ReserveItemsAsync(ctx.Items))
-
-            // 6. Create order
-            .StepResultAsync<OrderService>((svc, ctx) =>
-                svc.CreateOrderAsync(ctx))
-
-            // 7. Publish events
-            .TapAsync<IDispatcher>((dispatcher, ctx) =>
-                dispatcher.PublishEventAsync(new OrderCreatedEvent(ctx.OrderId)))
-
-            // 8. Send notifications
-            .TapAsync<EmailService>((svc, ctx) =>
-                svc.SendOrderConfirmationAsync(ctx.CustomerEmail, ctx.OrderId))
-
-            .TapAsync<SmsService>((svc, ctx) =>
-                svc.SendOrderSmsAsync(ctx.CustomerPhone, ctx.OrderId))
-
-            // 9. Transform to response
-            .Transform<OrderConfirmationDto>(ctx => new OrderConfirmationDto {
-                OrderId = ctx.OrderId,
-                Total = ctx.Total,
-                EstimatedDelivery = DateTime.UtcNow.AddDays(5)
-            })
-
-            .ExecuteAsync();
-    }
-}
+    Actions --> Flow
+    Actions --> Commons
+    Flow --> Commons
+    Guard --> Commons
+    Morph --> Commons
+    Spec --> Commons
+    Repo --> Commons
+    RepoEF --> Repo
+    RepoEF --> Spec
+    Rest --> Commons
+    Testing --> Commons
 ```
-
-### User Registration with Email Verification
-
-```csharp
-// Complete user registration workflow
-public class UserRegistrationWorkflow {
-    public async Task<Result<UserDto>> RegisterUserAsync(
-        RegisterUserRequest request) {
-
-        return await Pipeline.Start(request)
-            .WithTelemetry("RegisterUser")
-
-            // 1. Validate
-            .StepResultAsync<IValidator>((validator, req) =>
-                validator.ValidateAndReturnAsync(req, ValidationContextKey.Create))
-
-            // 2. Hash password
-            .StepAsync<PasswordHasher>((hasher, req) => {
-                req.PasswordHash = hasher.Hash(req.Password);
-                return Task.FromResult(req);
-            })
-
-            // 3. Create user
-            .StepResultAsync<UserService>((svc, req) =>
-                svc.CreateUserAsync(req))
-
-            // 4. Generate verification token
-            .StepAsync<TokenService>((svc, ctx) => {
-                ctx.VerificationToken = svc.GenerateEmailVerificationToken(ctx.UserId);
-                return Task.FromResult(ctx);
-            })
-
-            // 5. Send verification email
-            .TapAsync<EmailService>((svc, ctx) =>
-                svc.SendVerificationEmailAsync(ctx.Email, ctx.VerificationToken))
-
-            // 6. Publish event
-            .TapAsync<IDispatcher>((dispatcher, ctx) =>
-                dispatcher.PublishEventAsync(new UserRegisteredEvent(ctx.UserId)))
-
-            // 7. Transform to DTO
-            .Transform<UserDto>(ctx => ctx.User.To<UserDto>())
-
-            .ExecuteAsync();
-    }
-}
-```
-
-### Complex Search with Filters, Sorting, and Pagination
-
-```csharp
-public class ProductSearchService {
-    private readonly IProductRepository _repository;
-
-    public async Task<IPaginated<ProductDto>> SearchAsync(ProductSearchRequest request) {
-        // Build specification
-        var spec = SpecBuilder<Product>.Create();
-
-        // Apply filters conditionally
-        if (!string.IsNullOrEmpty(request.Category)) {
-            spec = spec.InCategory(request.Category);
-        }
-
-        if (request.MinPrice.HasValue || request.MaxPrice.HasValue) {
-            spec = spec.PriceRange(
-                request.MinPrice ?? 0,
-                request.MaxPrice ?? decimal.MaxValue);
-        }
-
-        if (!string.IsNullOrEmpty(request.SearchTerm)) {
-            spec = spec.SearchByName(request.SearchTerm);
-        }
-
-        if (request.InStock) {
-            spec = spec.And(p => p.StockQuantity > 0);
-        }
-
-        if (request.Tags?.Any() == true) {
-            spec = spec.And(p => p.Tags.Any(t => request.Tags.Contains(t)));
-        }
-
-        // Apply sorting
-        spec = request.SortBy switch {
-            "price_asc" => spec.Order(p => p.Price),
-            "price_desc" => spec.OrderDescending(p => p.Price),
-            "name" => spec.Order(p => p.Name),
-            "newest" => spec.OrderDescending(p => p.CreatedAt),
-            _ => spec.Order(p => p.Relevance)
-        };
-
-        // Apply pagination
-        spec = spec.WithPagination(new Pagination {
-            PageNumber = request.Page,
-            PageSize = request.PageSize
-        });
-
-        // Execute query
-        var paginatedProducts = await _repository.GetPaginatedAsync(spec);
-
-        // Transform to DTOs
-        var productDtos = paginatedProducts.Items.To<Product, ProductDto>();
-
-        return new PaginatedResult<ProductDto> {
-            Items = productDtos,
-            CurrentPage = paginatedProducts.CurrentPage,
-            TotalPages = paginatedProducts.TotalPages,
-            PageSize = paginatedProducts.PageSize,
-            TotalCount = paginatedProducts.TotalCount
-        };
-    }
-}
-```
-
----
-
-## How to Use This Skill
-
-### Prompting Examples for AI Assistants
-
-**Setup a new project:**
-```
-"Use the myth skill to setup a new ASP.NET Core application with CQRS, validation, and pipelines"
-```
-
-**Add validation to DTO:**
-```
-"Use the myth skill with library=Guard to add validation rules for a CreateUserDto with email, age, and password fields"
-```
-
-**Create a command handler:**
-```
-"Use the myth skill with library=Flow.Actions and operation=command to create a CreateOrderCommand handler with validation, repository, and event publishing"
-```
-
-**Setup specifications:**
-```
-"Use the myth skill with library=Specification to create reusable query specifications for Product entity with filters for category, price range, and active status"
-```
-
-**Add object transformation:**
-```
-"Use the myth skill with library=Morph to create bidirectional mapping between Order entity and OrderDto"
-```
-
-**Configure complete CQRS:**
-```
-"Use the myth skill to configure a complete CQRS setup with Flow.Actions, Guard validation, Repository pattern, and Specifications for an e-commerce order system"
-```
-
-### Response Template
-
-When asked to use the Myth skill, an AI assistant should:
-
-1. **Identify the specific library/libraries needed** from the request
-2. **Determine the operation type** (setup, configure, create handler, add validation, etc.)
-3. **Provide complete, working code** following Myth conventions:
-   - Use `BuildApp()` for ASP.NET Core
-   - Use `IScopedService<T>` for handlers
-   - Include validation, telemetry, and retry where appropriate
-   - Follow Result pattern
-   - Use specifications for queries
-   - Apply SOLID principles
-4. **Explain the code** with comments and context
-5. **Suggest related patterns** or next steps
 
 ---
 
 ## Additional Resources
 
-- **SOLID Principles**: All code should follow Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, and Dependency Inversion
-- **Clean Code**: Use meaningful names, small functions, clear abstractions
-- **DDD**: Use ValueObjects, Entities, Aggregates, and Specifications
-- **CQRS**: Separate read and write operations for scalability
-- **Event-Driven**: Use events for cross-cutting concerns and integration
+- **Individual Library Documentation**: Each library has a detailed SKILL.md in its project folder
+- **Repository**: https://gitlab.com/dotnet-myth/myth
+- **License**: Apache 2.0
+- **Target Frameworks**: .NET 8.0, .NET 10.0
 
 ---
 
-**End of Myth Skill Documentation**
+## Quick Reference
+
+| Need | Use | Documentation |
+|------|-----|---------------|
+| Validation | Myth.Guard | [SKILL.md](Myth.Guard/SKILL.md) |
+| CQRS/Events | Myth.Flow.Actions | [SKILL.md](Myth.Flow.Actions/SKILL.md) |
+| Pipelines | Myth.Flow | [SKILL.md](Myth.Flow/SKILL.md) |
+| Database | Myth.Repository.EntityFramework | [SKILL.md](Myth.Repository.EntityFramework/SKILL.md) |
+| Queries | Myth.Specification | [SKILL.md](Myth.Specification/SKILL.md) |
+| Mapping | Myth.Morph | [SKILL.md](Myth.Morph/SKILL.md) |
+| HTTP Calls | Myth.Rest | [SKILL.md](Myth.Rest/SKILL.md) |
+| Testing | Myth.Testing | [SKILL.md](Myth.Testing/SKILL.md) |
+
+---
+
+*This documentation provides ecosystem integration guidance. For detailed API reference, consult individual library SKILL.md files.*

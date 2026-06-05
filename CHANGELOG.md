@@ -7,9 +7,109 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Myth.Morph
+
+#### ✨ Added
+
+- **Null-Safe Binding Methods** (`Schema<T>`)
+  - `BindIfNotNull<TMember>(destination, resolver)` — assigns value only when resolver returns non-null; destination property retains its initialized value when null is returned
+  - `BindOrDefault<TMember>(destination, resolver, defaultValue)` — assigns `defaultValue` when resolver returns null, making fallback intent explicit
+  - `BindWhen<TMember>(destination, resolver, condition)` — conditionally applies a binding based on a predicate evaluated at mapping time
+
+- **Configurable Null Behavior** (`MorphSettings`)
+  - New `NullPropertyBehavior` enum: `AssignDefault` (default, backward-compatible), `Skip`, `Throw`
+  - New `NullSourcePropertyBehavior` property in `MorphSettings`
+  - New fluent method `WithNullBehavior(NullPropertyBehavior)` for configuration
+
+- **Rich Mapping Exception** (`MorphPropertyException`)
+  - New exception class with `SourceType`, `DestinationType`, `PropertyName` properties
+  - Static factory methods `Create(...)` and `NullSourceValue(...)` for standardized messages
+  - Thrown by auto-mapping when `NullPropertyBehavior.Throw` is configured
+
+#### 🔄 Changed
+
+- `BaseMappingExecutor` now accepts `NullPropertyBehavior nullBehavior` parameter (default: `AssignDefault`)
+- `HandleNullValue()` applies the configured behavior instead of always assigning `default(T)`
+- `MorphSettings` is now registered as a singleton in DI by `AddMorph()`, enabling runtime behavior resolution
+- `GetToExecutor` / `GetFromExecutor` in `Schema<T>` resolve `NullPropertyBehavior` from `IServiceProvider`
+
+### Myth.Flow
+
+#### 🐛 Fixed
+
+- **Transform/TransformAsync step error attribution** — when an inner step re-executed by `Transform` throws an exception, the error message now identifies the specific inner step (`"Transform failed while re-executing inner step [1] 'TapAsync': ..."`) instead of just reporting "Transform". The original exception is preserved as `InnerException`.
+
+### Myth.Flow.Actions
+
+#### ✨ Added
+
+- **ICacheManager Interface**
+  - Added public `ICacheManager` interface for manual cache management and invalidation
+  - Provides controlled access to cache operations without exposing internal `ICacheProvider`
+  - Methods:
+    - `GetAsync<T>(string key)` - retrieves cached value by key
+    - `SetAsync<T>(string key, T value, TimeSpan ttl)` - sets cache value with TTL
+    - `InvalidateAsync(string key)` - invalidates specific cache entry
+    - `InvalidateByPatternAsync(string pattern)` - invalidates cache entries matching pattern (e.g., "User:*")
+    - `InvalidateByTypeAsync<TQuery>(TQuery? query)` - invalidates cache for query type (specific instance or all)
+    - `GenerateKey<TQuery>(TQuery query)` - generates cache key compatible with Dispatcher
+  - Automatically registered in DI when caching is enabled
+  - Use case: Invalidate cached queries after commands that modify data
+  - Example: `await cacheManager.InvalidateByTypeAsync(new GetUserQuery { Id = userId })`
+
+- **CacheKeyGenerator Utility**
+  - Extracted cache key generation logic from Dispatcher into reusable `CacheKeyGenerator` class
+  - Ensures consistent cache key generation between Dispatcher and CacheManager
+  - Uses deterministic JSON serialization with SHA256 hashing
+  - Format: `{TypeName}:{Hash}` (e.g., "GetUserQuery:A1B2C3D4E5F6G7H8")
+
+#### 🔄 Changed
+
+- **Dispatcher Cache Key Generation**
+  - Refactored `GenerateCacheKey()` method to use shared `CacheKeyGenerator.Generate()`
+  - Removed duplicate SHA256 hashing logic from Dispatcher
+  - Fixed obsolete `JsonSerializerOptions.IgnoreNullValues` usage, replaced with `DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull`
+
+#### 📝 Documentation
+
+- Added comprehensive cache management section to README.md and README.pt-br.md
+- Documented all `ICacheManager` methods with usage examples
+- Added note about limited pattern support in MemoryCache vs Redis
+
+### Myth.DependencyInjection
+
+#### 🐛 Fixed
+
+- **ReflectionTypeLoadException in TypeProvider**
+  - Fixed random `ReflectionTypeLoadException` when calling `services.AddRepositories()` or other auto-registration methods
+  - Added proper exception handling for `ReflectionTypeLoadException` in `GetTypesFromAssembly()` method
+  - When assembly type loading fails, only successfully loaded types are returned instead of throwing exception
+  - Added filtering to exclude known problematic system assemblies (Microsoft.Build, Microsoft.CodeAnalysis, etc.)
+  - Prevents loading types from assemblies with missing dependencies like `Microsoft.Build` version conflicts
+  - Impact: Resolves issue where `AddRepositories()` would fail with "Method 'ImportMetadata' does not have an implementation" error
+
+### Myth.Morph
+
+#### 🐛 Fixed
+
+- **ReflectionTypeLoadException in SchemaRegistry**
+  - Fixed verbose warning logs when registering morph profiles with problematic assemblies
+  - Added `GetTypesFromAssembly()` method with proper exception handling for `ReflectionTypeLoadException`
+  - Added `IsSystemAssembly()` filter to exclude known problematic system assemblies (Microsoft.Build, Microsoft.CodeAnalysis, etc.)
+  - When assembly type loading fails, only successfully loaded types are used for profile registration
+  - Reduced log level from `Warning` to `Debug` for partial type loading to minimize noise
+  - Impact: Eliminates verbose exception logs during `AddMorph()` initialization while maintaining functionality
+
 ### Myth.Guard
 
 #### ✨ Added
+
+- **Native Nullable Struct Support (`NotDefault` for `T?`)**
+  - `NotDefault()` on `FluentRuleBuilder<T?>` (where `T : struct`) now validates the unwrapped value against the struct's default
+  - If the value is `null`, validation passes (use `NotNull()` to reject null values separately)
+  - If the value is present but equals the default (e.g., `Guid.Empty` for `Guid?`, `0` for `int?`), validation fails
+  - Eliminates the need to manually unwrap `.Value` before calling `NotDefault()`, which caused incorrect field name capture via `CallerArgumentExpression`
+  - Example: `builder.For(UserId, rules => rules.NotDefault().WithMessage("UserId is required"))`
 
 - **Manual Validation Failure Methods**
   - Added `Sentry.Fail()` methods for manually throwing validation exceptions

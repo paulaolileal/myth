@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 
-namespace Myth.Testing.Mocks;
+namespace Myth.Mocks;
 
 internal class LoggingMock {
 	private static readonly Mock<ILogger> _logger = new( );

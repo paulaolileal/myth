@@ -43,6 +43,11 @@ public interface ISpec<T> {
 	Func<IQueryable<T>, IQueryable<T>> PostProcess { get; }
 
 	/// <summary>
+	/// Include (eager loading) function aggregation
+	/// </summary>
+	Func<IQueryable<T>, IQueryable<T>>? Includes { get; }
+
+	/// <summary>
 	/// Runs all function aggregation
 	/// </summary>
 	/// <param name="query">The collection</param>
@@ -69,6 +74,13 @@ public interface ISpec<T> {
 	/// <param name="query">The collection</param>
 	/// <returns>A queryable collection</returns>
 	IQueryable<T> Processed( IQueryable<T> query );
+
+	/// <summary>
+	/// Add an include (eager loading) function aggregation
+	/// </summary>
+	/// <param name="query">The collection</param>
+	/// <returns>A queryable collection</returns>
+	IQueryable<T> Included( IQueryable<T> query );
 
 	/// <summary>
 	/// Get a element that is satisfyed by specifications from a list
@@ -200,4 +212,11 @@ public interface ISpec<T> {
 	/// <param name="property">Property to distinct</param>
 	/// <returns>This object</returns>
 	ISpec<T> DistinctBy<TProperty>( Expression<Func<T, TProperty>> property );
+
+	/// <summary>
+	/// Add an include (eager loading) specification for navigation properties
+	/// </summary>
+	/// <param name="includeQuery">Function that applies Include/ThenInclude on the queryable</param>
+	/// <returns>This object</returns>
+	ISpec<T> Include( Func<IQueryable<T>, IQueryable<T>> includeQuery );
 }

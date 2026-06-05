@@ -5,8 +5,9 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Myth.Extensions;
+using Myth.Mocks.Settings;
 
-namespace Myth.Testing.Mocks;
+namespace Myth.Mocks;
 
 /// <summary>
 /// Mock HTTP client factory for testing HTTP-based services

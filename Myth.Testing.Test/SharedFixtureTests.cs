@@ -1,5 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-using Myth.Testing.Fixtures;
+using Myth.Fixtures;
 using Myth.Testing.Test.Services;
 
 namespace Myth.Testing.Test;

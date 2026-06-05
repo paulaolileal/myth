@@ -32,6 +32,8 @@ public static class ServiceCollectionExtensions {
 		if ( assemblies == null || assemblies.Count == 0 )
 			assemblies = AppDomain.CurrentDomain.GetAssemblies( ).ToList( );
 
+		services.AddSingleton( morphSettings );
+
 		services.AddSingleton( sp => {
 			var logger = sp.GetService<ILogger<SchemaRegistry>>( );
 			logger?.LogInformation( "Initializing SchemaRegistry with {AssemblyCount} assemblies", assemblies.Count );
@@ -44,7 +46,6 @@ public static class ServiceCollectionExtensions {
 				registry.RegisterGenericMapping( iface, concrete );
 			}
 
-			// Register profiles based on IMorphableTo<TDestination> and IMorphableFrom<TSource> interfaces
 			RegisterInstanceBasedMorphProfiles( registry, assemblies, logger );
 
 			// Register automatic mapping for equal generic types
@@ -73,22 +74,18 @@ public static class ServiceCollectionExtensions {
 	private static void RegisterInstanceBasedMorphProfiles( SchemaRegistry registry, List<Assembly> assemblies, ILogger? logger ) {
 		logger?.LogDebug( "Starting instance-based profile registration across {AssemblyCount} assemblies", assemblies.Count );
 
-		var allTypes = assemblies
-			.SelectMany( assembly => {
-				try {
-					var types = assembly.GetTypes( );
-					logger?.LogTrace( "Successfully loaded {TypeCount} types from assembly {AssemblyName}", types.Length, assembly.GetName( ).Name );
-					return types;
-				} catch ( ReflectionTypeLoadException ex ) {
-					var loadedTypes = ex.Types.Where( t => t != null ).ToArray( )!;
-					logger?.LogWarning( ex, "Partial type loading from assembly {AssemblyName}. Loaded {LoadedCount} out of {TotalCount} types",
-						assembly.GetName( ).Name, loadedTypes.Length, ex.Types.Length );
-					return loadedTypes;
-				} catch ( Exception ex ) {
-					logger?.LogError( ex, "Failed to load types from assembly {AssemblyName}", assembly.GetName( ).Name );
-					return [ ];
-				}
-			} )
+		// Filter out known problematic system assemblies before processing
+		var filteredAssemblies = assemblies
+			.Where( assembly => !IsSystemAssembly( assembly ) )
+			.ToList( );
+
+		if ( filteredAssemblies.Count < assemblies.Count ) {
+			logger?.LogDebug( "Filtered out {FilteredCount} system assemblies, processing {RemainingCount} assemblies",
+				assemblies.Count - filteredAssemblies.Count, filteredAssemblies.Count );
+		}
+
+		var allTypes = filteredAssemblies
+			.SelectMany( assembly => GetTypesFromAssembly( assembly, logger ) )
 			.Where( x =>
 				x != null &&
 				!x.IsAbstract &&
@@ -111,6 +108,52 @@ public static class ServiceCollectionExtensions {
 		}
 
 		logger?.LogInformation( "Instance-based profile registration completed. Success: {SuccessCount}, Errors: {ErrorCount}", successCount, errorCount );
+	}
+
+	/// <summary>
+	/// Safely loads types from an assembly, handling ReflectionTypeLoadException
+	/// </summary>
+	/// <param name="assembly">The assembly to load types from</param>
+	/// <param name="logger">The logger instance for recording loading activities</param>
+	/// <returns>Collection of successfully loaded types</returns>
+	private static IEnumerable<Type> GetTypesFromAssembly( Assembly assembly, ILogger? logger ) {
+		try {
+			var types = assembly.GetTypes( );
+			logger?.LogTrace( "Successfully loaded {TypeCount} types from assembly {AssemblyName}", types.Length, assembly.GetName( ).Name );
+			return types;
+		} catch ( ReflectionTypeLoadException ex ) {
+			// Return only the types that were successfully loaded
+			var loadedTypes = ex.Types.Where( t => t != null ).Cast<Type>( ).ToArray( );
+			logger?.LogDebug( "Partial type loading from assembly {AssemblyName}. Loaded {LoadedCount} out of {TotalCount} types",
+				assembly.GetName( ).Name, loadedTypes.Length, ex.Types.Length );
+			return loadedTypes;
+		} catch ( Exception ex ) {
+			logger?.LogWarning( ex, "Failed to load types from assembly {AssemblyName}", assembly.GetName( ).Name );
+			return [ ];
+		}
+	}
+
+	/// <summary>
+	/// Determines if an assembly is a system/framework assembly that should be excluded
+	/// </summary>
+	/// <param name="assembly">The assembly to check</param>
+	/// <returns>True if the assembly is a system assembly, false otherwise</returns>
+	private static bool IsSystemAssembly( Assembly assembly ) {
+		var name = assembly.GetName( ).Name ?? string.Empty;
+
+		// Exclude known problematic assemblies
+		var excludedPrefixes = new[ ] {
+			"Microsoft.Build",
+			"Microsoft.CodeAnalysis",
+			"Microsoft.VisualStudio",
+			"NuGet.",
+			"Newtonsoft.Json.Schema",
+			"System.",
+			"mscorlib",
+			"netstandard"
+		};
+
+		return excludedPrefixes.Any( prefix => name.StartsWith( prefix, StringComparison.OrdinalIgnoreCase ) );
 	}
 
 	/// <summary>

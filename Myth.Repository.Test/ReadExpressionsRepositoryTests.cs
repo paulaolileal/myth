@@ -143,4 +143,46 @@ public class ReadExpressionsRepositoryTests( DatabaseMock databaseMock ) : IClas
 		// Assert
 		result.Should( ).NotBeNull( );
 	}
+
+	[Fact]
+	public async Task SearchAsync_should_return_IReadOnlyList_with_correct_Count( ) {
+		// Arrange
+		await _mockManyAsync( 10 );
+
+		// Act
+		var result = await _repository.SearchAsync( x => x.PersonId > 0 );
+
+		// Assert — .Count (IReadOnlyList property) must reflect actual elements, not the wrapper object
+		result.Should( ).NotBeNull( );
+		result.Count.Should( ).BeGreaterThan( 0 );
+		result.Count.Should( ).Be( result.Count( ) );
+	}
+
+	[Fact]
+	public async Task SearchAsNoTrackingAsync_should_return_entities_not_tracked( ) {
+		// Arrange
+		await _mockManyAsync( 5 );
+
+		// Act
+		var result = await _repository.SearchAsNoTrackingAsync( x => x.PersonId > 0 );
+
+		// Assert
+		result.Should( ).NotBeNull( );
+		result.Count.Should( ).BeGreaterThan( 0 );
+		result.Should( ).AllSatisfy( p => _context.Entry( p ).State.Should( ).Be( Microsoft.EntityFrameworkCore.EntityState.Detached ) );
+	}
+
+	[Fact]
+	public async Task SearchAsNoTrackingAsync_with_ordering_should_return_entities_not_tracked( ) {
+		// Arrange — orderPredicate is Expression<Func<TEntity, bool>>, so use a bool expression
+		await _mockManyAsync( 5 );
+
+		// Act
+		var result = await _repository.SearchAsNoTrackingAsync( x => x.PersonId > 0, x => x.Name != null );
+
+		// Assert
+		result.Should( ).NotBeNull( );
+		result.Count.Should( ).BeGreaterThan( 0 );
+		result.Should( ).AllSatisfy( p => _context.Entry( p ).State.Should( ).Be( Microsoft.EntityFrameworkCore.EntityState.Detached ) );
+	}
 }

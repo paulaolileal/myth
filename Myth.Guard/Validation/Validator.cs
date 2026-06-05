@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Myth.Builder;
 using Myth.Exceptions;
 using Myth.Guard;
@@ -41,6 +42,9 @@ internal sealed class Validator( IServiceProvider serviceProvider ) : IValidator
 		var rules = builder.GetRules( context );
 		var result = new ValidationResult( );
 
+		// Create a scope to resolve scoped dependencies (DbContext, repositories, etc.)
+		using var scope = MythServiceProvider.GetOrFallback( _serviceProvider ).CreateScope( );
+
 		foreach ( var fieldValidation in rules ) {
 			var shouldStop = false;
 
@@ -53,7 +57,7 @@ internal sealed class Validator( IServiceProvider serviceProvider ) : IValidator
 				var ruleContext = new RuleContext<object>(
 					value: GetFieldValue( entity, fieldValidation.FieldName ),
 					fieldName: fieldValidation.FieldName,
-					serviceProvider: MythServiceProvider.GetOrFallback( _serviceProvider ),
+					serviceProvider: scope.ServiceProvider,
 					cancellationToken: cancellationToken,
 					entity: entity
 				);

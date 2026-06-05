@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Myth.Testing.Repositories;
+namespace Myth.Repositories;
 
 /// <summary>
 /// A base class to unit tests who needs database context
@@ -38,8 +38,7 @@ public abstract class BaseDatabaseTests<TContext> : BaseTests where TContext : D
 		_services
 			.AddDbContext<TContext>( options => options
 				.UseInMemoryDatabase( databaseName: $"TestDB_{Guid.NewGuid( )}" )
-				.ConfigureWarnings( conf => conf.Ignore( InMemoryEventId.TransactionIgnoredWarning ) )
-				.UseLazyLoadingProxies( ),
+				.ConfigureWarnings( conf => conf.Ignore( InMemoryEventId.TransactionIgnoredWarning ) ),
 					contextLifetime: ServiceLifetime.Scoped,
 					optionsLifetime: ServiceLifetime.Singleton );
 

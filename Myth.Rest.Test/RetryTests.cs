@@ -2,17 +2,28 @@ using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Bogus;
 using FluentAssertions;
+using Myth.Interfaces;
+using Myth.Mocks;
 using Myth.Rest.Test.Base;
 using Myth.Rest.Test.Models;
-using Myth.Testing.Mocks;
 using Xunit;
 
 namespace Myth.Rest.Test;
 
 public class RetryTests : BaseTests, IDisposable {
 
+	private readonly Faker<Error> _errorFaker;
+
+	private readonly IRestBuilder _restClient;
+
 	public RetryTests( ) {
+		_errorFaker = new Faker<Error>( )
+			.RuleFor( prop => prop.ErrorCode, r => r.UniqueIndex )
+			.RuleFor( prop => prop.Message, r => r.Lorem.Sentence( ) );
+
+		_restClient = new RestBuilder( );
 	}
 
 	public void Dispose( ) {

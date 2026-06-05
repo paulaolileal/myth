@@ -361,7 +361,7 @@ builder.For( Email, x => x
 
 ### Suporte a Tipos Nullable
 
-Todas as regras numéricas, DateTime e booleanas têm versões nullable:
+Todas as regras numéricas, DateTime e booleanas têm versões nullable. `NotDefault()` também funciona nativamente em nullable structs (`Guid?`, `int?`, etc.):
 
 ```csharp
 builder.For( OptionalAge, x => x
@@ -373,6 +373,11 @@ builder.For( OptionalDate, x => x
     .When( date => date.HasValue ) );
 
 builder.For( OptionalFlag, x => x.IsTrue() );
+
+// Nullable struct: null passa, Guid.Empty falha
+builder.For( UserId, x => x
+    .NotDefault()
+    .WithMessage( "UserId não pode ser vazio" ) );
 ```
 
 ## Validação Consciente de Contexto
@@ -434,6 +439,8 @@ await validator.ValidateAsync( user, ValidationContextKey.Create );
 await validator.ValidateAsync( user, ValidationContextKey.Update );
 await validator.ValidateAsync( user, ValidationContextKey.Delete );
 ```
+
+> **Regras globais sempre executam.** Regras definidas fora de qualquer bloco `InContext` são executadas em toda chamada de `ValidateAsync()`, independente do contexto passado. `InContext` é *aditivo*: acrescenta regras extras sobre as globais quando o contexto correspondente está ativo. Chamar `ValidateAsync(dto, ValidationContextKey.Create)` executa as regras globais primeiro, depois as regras específicas de Create.
 
 ### Contextos Pré-definidos
 

@@ -276,6 +276,99 @@ var app = builder.BuildApp( );
 app.Run( );
 ```
 
+## 💉 Dependency Injection in Handlers
+
+**IMPORTANT**: Starting with the current version, **handlers are registered as Scoped** and the Dispatcher **automatically creates a scope** before resolving them. This means you can:
+
+✅ **Inject repositories directly** (that use DbContext)
+✅ **Inject Scoped services** without `IServiceScopeFactory`
+✅ **Simplify your handlers** - no need to create scopes manually
+
+### How It Works
+
+The Dispatcher manages the lifecycle automatically:
+
+```csharp
+// The Dispatcher does this internally for each command/query:
+using var scope = MythServiceProvider.GetRequired().CreateScope();
+var handler = scope.ServiceProvider.GetService<ICommandHandler<TCommand>>();
+var result = await handler.HandleAsync(command, cancellationToken);
+// Scope is automatically disposed, releasing DbContext and other resources
+```
+
+### Practical Example
+
+```csharp
+// ✅ DO THIS - Direct injection (simple and clean)
+public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
+    private readonly IOrderRepository _orderRepository;
+    private readonly IProductRepository _productRepository;
+    private readonly ILogger<CreateOrderHandler> _logger;
+
+    public CreateOrderHandler(
+        IOrderRepository orderRepository,
+        IProductRepository productRepository,
+        ILogger<CreateOrderHandler> logger) {
+        _orderRepository = orderRepository;
+        _productRepository = productRepository;
+        _logger = logger;
+    }
+
+    public async Task<CommandResult<Guid>> HandleAsync(
+        CreateOrderCommand command,
+        CancellationToken cancellationToken) {
+
+        // Use repositories directly - the scope has already been created by the Dispatcher
+        var products = await _productRepository.GetByIdsAsync(
+            command.ProductIds,
+            cancellationToken);
+
+        var order = new Order { /* ... */ };
+        await _orderRepository.AddAsync(order, cancellationToken);
+
+        _logger.LogInformation("Order {OrderId} created", order.Id);
+        return CommandResult<Guid>.Success(order.Id);
+    }
+}
+
+// ❌ DON'T DO THIS - No longer necessary to use IServiceScopeFactory
+public class CreateOrderHandler : ICommandHandler<CreateOrderCommand, Guid> {
+    private readonly IServiceScopeFactory _scopeFactory; // ❌ Unnecessary!
+
+    public async Task<CommandResult<Guid>> HandleAsync(...) {
+        // ❌ Manual scope creation is no longer needed!
+        using var scope = _scopeFactory.CreateScope();
+        var orderRepository = scope.ServiceProvider.GetRequiredService<IOrderRepository>();
+        // ...
+    }
+}
+```
+
+### When to Still Use IScopedService<T>?
+
+The `IScopedService<T>` pattern is still available and useful in specific cases:
+
+- **Background Services** (hosted services that are singleton)
+- **Singleton Services** that need to access Scoped services
+- **Special cases** where you need multiple scopes within the same operation
+
+```csharp
+// For background services or singletons that need scoped services
+public class OrderProcessingBackgroundService : BackgroundService {
+    private readonly IScopedService<IOrderRepository> _orderRepository;
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
+        while (!stoppingToken.IsCancellationRequested) {
+            await _orderRepository.ExecuteAsync(async repo => {
+                var pendingOrders = await repo.GetPendingOrdersAsync();
+                // Process orders...
+            });
+            await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+        }
+    }
+}
+```
+
 ### 2. Define Commands, Queries, and Events
 
 #### Command
@@ -522,6 +615,80 @@ services.AddFlow( config => config
         })
         .ScanAssemblies( typeof( Program ).Assembly )));
 ```
+
+#### Cache Management
+
+Myth.Flow.Actions provides `ICacheManager` for manual cache invalidation and management:
+
+```csharp
+public class UpdateUserHandler : ICommandHandler<UpdateUserCommand, Guid> {
+    private readonly IUserRepository _repository;
+    private readonly ICacheManager _cacheManager;
+
+    public async Task<CommandResult<Guid>> HandleAsync(
+        UpdateUserCommand command,
+        CancellationToken ct) {
+
+        // Update user
+        var user = await _repository.GetByIdAsync(command.Id, ct);
+        user.Name = command.Name;
+        await _repository.UpdateAsync(user, ct);
+
+        // Invalidate specific query cache
+        await _cacheManager.InvalidateByTypeAsync(
+            new GetUserQuery { UserId = command.Id }, ct);
+
+        // Or invalidate all queries of a type
+        await _cacheManager.InvalidateByTypeAsync<GetUserListQuery>(ct);
+
+        // Or invalidate by pattern (useful for clearing related caches)
+        await _cacheManager.InvalidateByPatternAsync("GetUser*", ct);
+
+        return CommandResult<Guid>.Success(command.Id);
+    }
+}
+```
+
+**ICacheManager Methods:**
+
+```csharp
+public interface ICacheManager {
+    // Get/Set cache values manually
+    Task<T?> GetAsync<T>(string key, CancellationToken ct = default);
+    Task SetAsync<T>(string key, T value, TimeSpan ttl, bool slidingExpiration = false, CancellationToken ct = default);
+
+    // Invalidate specific key
+    Task InvalidateAsync(string key, CancellationToken ct = default);
+
+    // Invalidate by pattern (e.g., "User:*")
+    Task InvalidateByPatternAsync(string pattern, CancellationToken ct = default);
+
+    // Invalidate by query type
+    Task InvalidateByTypeAsync<TQuery>(TQuery? query = default, CancellationToken ct = default);
+
+    // Generate cache key compatible with Dispatcher
+    string GenerateKey<TQuery>(TQuery query);
+}
+```
+
+**Usage Patterns:**
+
+```csharp
+// 1. Invalidate specific query after command
+await _cacheManager.InvalidateByTypeAsync(new GetUserQuery { Id = userId });
+
+// 2. Invalidate all queries of a type
+await _cacheManager.InvalidateByTypeAsync<GetUserListQuery>();
+
+// 3. Invalidate by pattern (Redis supports wildcards)
+await _cacheManager.InvalidateByPatternAsync("User:*");
+
+// 4. Manual cache key generation
+var key = _cacheManager.GenerateKey(new GetUserQuery { Id = 123 });
+await _cacheManager.InvalidateAsync(key);
+```
+
+**Note:** Pattern-based invalidation (`InvalidateByPatternAsync`) has limited support in MemoryCache. For production scenarios requiring pattern matching, use Redis cache provider.
 
 ## Core Interfaces
 
@@ -974,6 +1141,27 @@ public class UserPipelineTests {
     }
 }
 ```
+
+### Exception Handling in Tests
+
+The pipeline is designed for **predictable results**. All exceptions thrown inside handlers or `.TapAsync()` steps are captured in `CommandResult.Failure()` / `QueryResult.Failure()` — they do not propagate to the caller unless explicitly configured.
+
+**Assert on result state, not on thrown exceptions:**
+```csharp
+var result = await Pipeline
+    .Start( command )
+    .Process<CreateOrderCommand, Guid>( )
+    .ExecuteAsync( );
+
+// ✅ Correct — check result state
+result.IsFailure.Should( ).BeTrue( );
+result.Exception.Should( ).BeOfType<ValidationException>( );
+
+// ❌ Incorrect — exception won't reach here by default
+await act.Should( ).ThrowAsync<ValidationException>( );
+```
+
+To force specific exception types to propagate out of the pipeline, register them via `UseExceptionFilter<T>()` in the Myth.Flow configuration.
 
 ## Architecture
 

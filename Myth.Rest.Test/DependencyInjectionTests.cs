@@ -8,8 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Myth.Constants;
 using Myth.DependencyInjection;
 using Myth.Interfaces;
+using Myth.Mocks;
 using Myth.Rest.Test.Base;
-using Myth.Testing.Mocks;
 using Xunit;
 
 namespace Myth.Rest.Test;
