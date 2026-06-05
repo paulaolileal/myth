@@ -636,7 +636,7 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 			return false;
 		}
 
-		var current = (Exception?)exception;
+		var current = ( Exception? )exception;
 		while ( current != null ) {
 			if ( _configuration.ExceptionTypesToPropagate.Any( t => t.IsAssignableFrom( current.GetType( ) ) ) ) {
 				return true;

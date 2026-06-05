@@ -26,7 +26,10 @@
       "Bash(for dir in Myth.Commons Myth.Specification Myth.DependencyInjection Myth.Repository Myth.Flow Myth.Guard Myth.Morph Myth.Flow.Actions Myth.Repository.EntityFramework Myth.Rest Myth.Testing Myth.Tool)",
       "Bash(if [ -f \"$dir/README.pt-br.md\" ])",
       "Bash(then echo \"EXISTS\")",
-      "Bash(else echo \"MISSING\")"
+      "Bash(else echo \"MISSING\")",
+      "Bash(rtk git *)",
+      "Bash(git commit *)",
+      "Bash(git add *)"
     ],
     "deny": [],
     "ask": []

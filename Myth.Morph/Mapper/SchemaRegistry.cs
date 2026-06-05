@@ -262,13 +262,15 @@ public class SchemaRegistry {
 
 			if ( srcProperties.TryGetValue( paramName, out var srcProp ) ) {
 				var srcValue = srcProp.GetValue( source );
-				if ( srcValue is null ) return GetDefault( p.ParameterType );
+				if ( srcValue is null )
+					return GetDefault( p.ParameterType );
 				_logger?.LogTrace( "Mapping constructor parameter {ParameterName} from source property {PropertyName}", p.Name, srcProp.Name );
 				return MapPropertyValue( srcValue, srcProp.PropertyType, p.ParameterType );
 			}
 
 			var serviceValue = serviceProvider?.GetService( p.ParameterType );
-			if ( serviceValue is not null ) return serviceValue;
+			if ( serviceValue is not null )
+				return serviceValue;
 
 			return p.HasDefaultValue ? p.DefaultValue : GetDefault( p.ParameterType );
 		} ).ToArray( );

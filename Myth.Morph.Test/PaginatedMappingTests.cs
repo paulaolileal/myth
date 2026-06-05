@@ -65,7 +65,7 @@ public class PaginatedMappingTests : BaseTestFixture {
 
 	[Fact]
 	public void To_PaginatedDto_WithEmptyItems_Should_ReturnEmptyCollection( ) {
-		var source = new Paginated<User>( pageNumber: 1, pageSize: 10, totalItems: 0, totalPages: 0, items: [] );
+		var source = new Paginated<User>( pageNumber: 1, pageSize: 10, totalItems: 0, totalPages: 0, items: [ ] );
 
 		var result = source.To<IPaginated<SimpleUserDto>>( );
 
