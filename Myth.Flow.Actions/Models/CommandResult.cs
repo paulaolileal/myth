@@ -50,6 +50,13 @@ public readonly struct CommandResult : IResultStatusCode {
 		new( true, null, null, metadata, HttpStatusCode.OK );
 
 	/// <summary>
+	/// Creates a successful command result with HTTP 201 Created,
+	/// for commands that create a new resource.
+	/// </summary>
+	public static CommandResult Created( Dictionary<string, object>? metadata = null ) =>
+		new( true, null, null, metadata, HttpStatusCode.Created );
+
+	/// <summary>
 	/// Creates a successful command result with HTTP 204 No Content,
 	/// for commands that complete successfully but produce no response body.
 	/// </summary>
@@ -162,6 +169,13 @@ public readonly struct CommandResult<TResponse> : IResultStatusCode {
 	/// </summary>
 	public static CommandResult<TResponse> Success( TResponse data, Dictionary<string, object>? metadata = null ) =>
 		new( true, data, null, null, metadata, HttpStatusCode.OK );
+
+	/// <summary>
+	/// Creates a successful command result with data and HTTP 201 Created,
+	/// for commands that create a new resource.
+	/// </summary>
+	public static CommandResult<TResponse> Created( TResponse data, Dictionary<string, object>? metadata = null ) =>
+		new( true, data, null, null, metadata, HttpStatusCode.Created );
 
 	/// <summary>
 	/// Creates a successful command result with HTTP 204 No Content,

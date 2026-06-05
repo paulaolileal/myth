@@ -791,6 +791,8 @@ public interface IEventHandler<TEvent>
 
 ## Result Types
 
+`StatusCode` is always set on every result — never null. Use it directly in controllers without null checks.
+
 ### CommandResult
 
 ```csharp
@@ -800,9 +802,21 @@ public readonly struct CommandResult {
     public string? ErrorMessage { get; }
     public Exception? Exception { get; }
     public Dictionary<string, object>? Metadata { get; }
+    public HttpStatusCode StatusCode { get; } // always set
 
-    public static CommandResult Success( Dictionary<string, object>? metadata = null );
-    public static CommandResult Failure( string errorMessage, Exception? exception = null, Dictionary<string, object>? metadata = null );
+    // Success factories
+    public static CommandResult Success( ... );   // 200
+    public static CommandResult Created( ... );   // 201
+    public static CommandResult NoContent( ... ); // 204
+
+    // Failure factories
+    public static CommandResult Failure( string errorMessage, ... );             // 400
+    public static CommandResult NotFound( string errorMessage, ... );            // 404
+    public static CommandResult Forbidden( string errorMessage = "...", ... );   // 403
+    public static CommandResult Unauthorized( string errorMessage = "...", ... );// 401
+    public static CommandResult PaymentRequired( string errorMessage, ... );     // 402
+    public static CommandResult Conflict( string errorMessage, ... );            // 409
+    public static CommandResult UnprocessableEntity( string errorMessage, ... ); // 422
 }
 
 public readonly struct CommandResult<TResponse> {
@@ -812,9 +826,14 @@ public readonly struct CommandResult<TResponse> {
     public string? ErrorMessage { get; }
     public Exception? Exception { get; }
     public Dictionary<string, object>? Metadata { get; }
+    public HttpStatusCode StatusCode { get; } // always set
 
-    public static CommandResult<TResponse> Success( TResponse data, Dictionary<string, object>? metadata = null );
-    public static CommandResult<TResponse> Failure( string errorMessage, Exception? exception = null, Dictionary<string, object>? metadata = null );
+    // Success factories
+    public static CommandResult<TResponse> Success( TResponse data, ... ); // 200
+    public static CommandResult<TResponse> Created( TResponse data, ... ); // 201
+    public static CommandResult<TResponse> NoContent( ... );               // 204
+
+    // Same failure factories as non-generic CommandResult
 }
 ```
 
@@ -829,10 +848,40 @@ public readonly struct QueryResult<TData> {
     public Exception? Exception { get; }
     public bool FromCache { get; }
     public Dictionary<string, object>? Metadata { get; }
+    public HttpStatusCode StatusCode { get; } // always set
 
-    public static QueryResult<TData> Success( TData data, bool fromCache = false, Dictionary<string, object>? metadata = null );
-    public static QueryResult<TData> Failure( string errorMessage, Exception? exception = null, Dictionary<string, object>? metadata = null );
+    // Success factories
+    public static QueryResult<TData> Success( TData data, bool fromCache = false, ... ); // 200
+    public static QueryResult<TData> NoContent( ... );                                    // 204
+
+    // Failure factories
+    public static QueryResult<TData> Failure( string errorMessage, ... );              // 400
+    public static QueryResult<TData> NotFound( string errorMessage = "Not found", ... ); // 404
+    public static QueryResult<TData> Forbidden( string errorMessage = "...", ... );    // 403
+    public static QueryResult<TData> Unauthorized( string errorMessage = "...", ... ); // 401
+    public static QueryResult<TData> PaymentRequired( string errorMessage, ... );      // 402
+    public static QueryResult<TData> Conflict( string errorMessage, ... );             // 409
 }
+```
+
+**Choosing the right factory:**
+
+| Situation | Factory |
+|-----------|---------|
+| Query returned data | `QueryResult<T>.Success(data)` |
+| Query intentionally empty (e.g. empty inbox) | `QueryResult<T>.NoContent()` |
+| Resource does not exist | `QueryResult<T>.NotFound(msg)` / `CommandResult.NotFound(msg)` |
+| Command created a new resource | `CommandResult.Created()` / `CommandResult<T>.Created(id)` |
+| Command completed, no body needed | `CommandResult.NoContent()` |
+
+**Controller pattern — StatusCode is always available:**
+
+```csharp
+var result = await _dispatcher.DispatchCommandAsync<CreateWorkspaceCommand, Guid>(command, ct);
+
+return result.IsSuccess
+    ? StatusCode((int)result.StatusCode, result.Data)          // 200 or 201
+    : StatusCode((int)result.StatusCode, result.ErrorMessage); // 4xx
 ```
 
 ## Pipeline Extensions

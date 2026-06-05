@@ -622,6 +622,8 @@ public interface IEventHandler<TEvent>
 
 ## Tipos de Result
 
+`StatusCode` é sempre definido em todos os resultados — nunca nulo. Use diretamente nos controllers sem verificação de nulo.
+
 ### CommandResult
 
 ```csharp
@@ -631,9 +633,21 @@ public readonly struct CommandResult {
     public string? ErrorMessage { get; }
     public Exception? Exception { get; }
     public Dictionary<string, object>? Metadata { get; }
+    public HttpStatusCode StatusCode { get; } // sempre definido
 
-    public static CommandResult Success( Dictionary<string, object>? metadata = null );
-    public static CommandResult Failure( string errorMessage, Exception? exception = null, Dictionary<string, object>? metadata = null );
+    // Factories de sucesso
+    public static CommandResult Success( ... );   // 200
+    public static CommandResult Created( ... );   // 201
+    public static CommandResult NoContent( ... ); // 204
+
+    // Factories de falha
+    public static CommandResult Failure( string errorMessage, ... );              // 400
+    public static CommandResult NotFound( string errorMessage, ... );             // 404
+    public static CommandResult Forbidden( string errorMessage = "...", ... );    // 403
+    public static CommandResult Unauthorized( string errorMessage = "...", ... ); // 401
+    public static CommandResult PaymentRequired( string errorMessage, ... );      // 402
+    public static CommandResult Conflict( string errorMessage, ... );             // 409
+    public static CommandResult UnprocessableEntity( string errorMessage, ... );  // 422
 }
 
 public readonly struct CommandResult<TResponse> {
@@ -643,9 +657,14 @@ public readonly struct CommandResult<TResponse> {
     public string? ErrorMessage { get; }
     public Exception? Exception { get; }
     public Dictionary<string, object>? Metadata { get; }
+    public HttpStatusCode StatusCode { get; } // sempre definido
 
-    public static CommandResult<TResponse> Success( TResponse data, Dictionary<string, object>? metadata = null );
-    public static CommandResult<TResponse> Failure( string errorMessage, Exception? exception = null, Dictionary<string, object>? metadata = null );
+    // Factories de sucesso
+    public static CommandResult<TResponse> Success( TResponse data, ... ); // 200
+    public static CommandResult<TResponse> Created( TResponse data, ... ); // 201
+    public static CommandResult<TResponse> NoContent( ... );               // 204
+
+    // Mesmas factories de falha da versão não-genérica
 }
 ```
 
@@ -660,10 +679,40 @@ public readonly struct QueryResult<TData> {
     public Exception? Exception { get; }
     public bool FromCache { get; }
     public Dictionary<string, object>? Metadata { get; }
+    public HttpStatusCode StatusCode { get; } // sempre definido
 
-    public static QueryResult<TData> Success( TData data, bool fromCache = false, Dictionary<string, object>? metadata = null );
-    public static QueryResult<TData> Failure( string errorMessage, Exception? exception = null, Dictionary<string, object>? metadata = null );
+    // Factories de sucesso
+    public static QueryResult<TData> Success( TData data, bool fromCache = false, ... ); // 200
+    public static QueryResult<TData> NoContent( ... );                                    // 204
+
+    // Factories de falha
+    public static QueryResult<TData> Failure( string errorMessage, ... );               // 400
+    public static QueryResult<TData> NotFound( string errorMessage = "Not found", ... ); // 404
+    public static QueryResult<TData> Forbidden( string errorMessage = "...", ... );     // 403
+    public static QueryResult<TData> Unauthorized( string errorMessage = "...", ... );  // 401
+    public static QueryResult<TData> PaymentRequired( string errorMessage, ... );       // 402
+    public static QueryResult<TData> Conflict( string errorMessage, ... );              // 409
 }
+```
+
+**Escolhendo a factory correta:**
+
+| Situação | Factory |
+|----------|---------|
+| Query retornou dados | `QueryResult<T>.Success(data)` |
+| Query intencionalmente vazia (ex: caixa de entrada vazia) | `QueryResult<T>.NoContent()` |
+| Recurso não existe | `QueryResult<T>.NotFound(msg)` / `CommandResult.NotFound(msg)` |
+| Comando criou um novo recurso | `CommandResult.Created()` / `CommandResult<T>.Created(id)` |
+| Comando completou sem body de resposta | `CommandResult.NoContent()` |
+
+**Padrão nos controllers — StatusCode sempre disponível:**
+
+```csharp
+var result = await _dispatcher.DispatchCommandAsync<CreateWorkspaceCommand, Guid>(command, ct);
+
+return result.IsSuccess
+    ? StatusCode((int)result.StatusCode, result.Data)          // 200 ou 201
+    : StatusCode((int)result.StatusCode, result.ErrorMessage); // 4xx
 ```
 
 ## Extensões de Pipeline

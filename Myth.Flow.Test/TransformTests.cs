@@ -150,19 +150,14 @@ public class TransformTests {
 
 	[Fact]
 	public async Task Transform_WithExceptionFilter_ShouldPropagateFilteredExceptionThroughTransform( ) {
-		// Arrange — register PipelineConfiguration with ArgumentException in the filter
-		var config = new PipelineConfiguration( );
-		config.ExceptionTypesToPropagate.Add( typeof( ArgumentException ) );
-
-		var services = new ServiceCollection( );
-		services.AddSingleton( config );
-		var provider = services.BuildServiceProvider( );
-		MythServiceProvider.Initialize( provider );
-
+		// Arrange — use the Action<PipelineConfiguration> overload so the filter is applied
+		// directly to the pipeline instance, avoiding a race with other test suites that
+		// reinitialize MythServiceProvider without this filter.
 		var dto = new TestDto { Value = 1 };
 
 		// Act — TapAsync throws ArgumentException (is in filter); Transform follows
-		var act = async ( ) => await Pipeline.Start( dto )
+		var act = async ( ) => await Pipeline.Start( dto,
+				config => config.ExceptionTypesToPropagate.Add( typeof( ArgumentException ) ) )
 			.TapAsync( _ => throw new ArgumentException( "filtered error" ) )
 			.Transform( d => new TestResult { Data = d.Message } )
 			.ExecuteAsync( );
@@ -175,19 +170,14 @@ public class TransformTests {
 
 	[Fact]
 	public async Task TransformAsync_WithExceptionFilter_ShouldPropagateFilteredExceptionThroughTransformAsync( ) {
-		// Arrange — register PipelineConfiguration with ArgumentException in the filter
-		var config = new PipelineConfiguration( );
-		config.ExceptionTypesToPropagate.Add( typeof( ArgumentException ) );
-
-		var services = new ServiceCollection( );
-		services.AddSingleton( config );
-		var provider = services.BuildServiceProvider( );
-		MythServiceProvider.Initialize( provider );
-
+		// Arrange — use the Action<PipelineConfiguration> overload so the filter is applied
+		// directly to the pipeline instance, avoiding a race with other test suites that
+		// reinitialize MythServiceProvider without this filter.
 		var dto = new TestDto { Value = 1 };
 
 		// Act — TapAsync throws ArgumentException (is in filter); TransformAsync follows
-		var act = async ( ) => await Pipeline.Start( dto )
+		var act = async ( ) => await Pipeline.Start( dto,
+				config => config.ExceptionTypesToPropagate.Add( typeof( ArgumentException ) ) )
 			.TapAsync( _ => throw new ArgumentException( "filtered async error" ) )
 			.TransformAsync<TestResult>( async _ => {
 				await Task.Delay( 0 );

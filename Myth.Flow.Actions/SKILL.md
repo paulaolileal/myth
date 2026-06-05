@@ -240,20 +240,22 @@ public readonly struct CommandResult {
     public string? ErrorMessage { get; }
     public Exception? Exception { get; }
     public Dictionary<string, object>? Metadata { get; }
-    public HttpStatusCode StatusCode { get; } // HTTP 200 on success, 400 on Failure()
+    public HttpStatusCode StatusCode { get; } // always set — never null
 
-    // Factory methods
-    public static CommandResult Success(Dictionary<string, object>? metadata = null);
-    public static CommandResult Failure(string message, Exception? exception = null);
+    // Success factories
+    public static CommandResult Success(Dictionary<string, object>? metadata = null);    // 200
+    public static CommandResult Created(Dictionary<string, object>? metadata = null);    // 201
+    public static CommandResult NoContent(Dictionary<string, object>? metadata = null);  // 204
+
+    // Failure factories
+    public static CommandResult Failure(string message, Exception? exception = null);    // 400
     public static CommandResult Failure(string message, HttpStatusCode statusCode, Exception? exception = null);
-
-    // Semantic factories — preferred for domain failures with specific HTTP semantics
-    public static CommandResult NotFound(string message);
-    public static CommandResult Forbidden(string message = "Access denied");
-    public static CommandResult Unauthorized(string message = "Unauthorized");
-    public static CommandResult PaymentRequired(string message);
-    public static CommandResult Conflict(string message);
-    public static CommandResult UnprocessableEntity(string message);
+    public static CommandResult NotFound(string message);           // 404
+    public static CommandResult Forbidden(string message = "Access denied");             // 403
+    public static CommandResult Unauthorized(string message = "Unauthorized");           // 401
+    public static CommandResult PaymentRequired(string message);    // 402
+    public static CommandResult Conflict(string message);           // 409
+    public static CommandResult UnprocessableEntity(string message);// 422
 }
 
 public readonly struct CommandResult<TResponse> {
@@ -263,10 +265,14 @@ public readonly struct CommandResult<TResponse> {
     public string? ErrorMessage { get; }
     public Exception? Exception { get; }
     public Dictionary<string, object>? Metadata { get; }
-    public HttpStatusCode StatusCode { get; }
+    public HttpStatusCode StatusCode { get; } // always set — never null
 
-    // Same factory methods as non-generic CommandResult
-    public static CommandResult<TResponse> Success(TResponse data, Dictionary<string, object>? metadata = null);
+    // Success factories
+    public static CommandResult<TResponse> Success(TResponse data, Dictionary<string, object>? metadata = null); // 200
+    public static CommandResult<TResponse> Created(TResponse data, Dictionary<string, object>? metadata = null); // 201
+    public static CommandResult<TResponse> NoContent(Dictionary<string, object>? metadata = null);               // 204
+
+    // Failure factories (same as non-generic)
     public static CommandResult<TResponse> Failure(string message, Exception? exception = null);
     public static CommandResult<TResponse> Failure(string message, HttpStatusCode statusCode, Exception? exception = null);
     public static CommandResult<TResponse> NotFound(string message);
@@ -286,24 +292,37 @@ public readonly struct QueryResult<TData> {
     public TData? Data { get; }
     public string? ErrorMessage { get; }
     public Exception? Exception { get; }
-    public bool FromCache { get; } // Indicates if result came from cache
-    public HttpStatusCode StatusCode { get; } // HTTP 200 on success, 400 on Failure()
+    public bool FromCache { get; }
+    public HttpStatusCode StatusCode { get; } // always set — never null
 
-    // Factory methods
-    public static QueryResult<TData> Success(TData data, bool fromCache = false);
-    public static QueryResult<TData> Failure(string message, Exception? exception = null);
+    // Success factories
+    public static QueryResult<TData> Success(TData data, bool fromCache = false);        // 200
+    public static QueryResult<TData> NoContent(Dictionary<string, object>? metadata = null); // 204
+
+    // Failure factories
+    public static QueryResult<TData> Failure(string message, Exception? exception = null);   // 400
     public static QueryResult<TData> Failure(string message, HttpStatusCode statusCode, Exception? exception = null);
-
-    // Semantic factories — prefer these over Success(null!) for absent/restricted data
-    public static QueryResult<TData> NotFound(string message = "Not found");
-    public static QueryResult<TData> Forbidden(string message = "Access denied");
-    public static QueryResult<TData> Unauthorized(string message = "Unauthorized");
+    public static QueryResult<TData> NotFound(string message = "Not found");             // 404
+    public static QueryResult<TData> Forbidden(string message = "Access denied");        // 403
+    public static QueryResult<TData> Unauthorized(string message = "Unauthorized");      // 401
+    public static QueryResult<TData> PaymentRequired(string message);                    // 402
+    public static QueryResult<TData> Conflict(string message);                           // 409
 }
 ```
 
+**Choosing the right factory:**
+
+| Situation | Factory |
+|-----------|---------|
+| Query found data | `QueryResult<T>.Success(data)` |
+| Query returned intentionally empty (e.g. empty inbox) | `QueryResult<T>.NoContent()` |
+| Resource does not exist | `QueryResult<T>.NotFound(msg)` |
+| Command updated/deleted, no body needed | `CommandResult.NoContent()` |
+| Command created a new resource | `CommandResult.Created()` / `CommandResult<T>.Created(id)` |
+
 **Using semantic factories in handlers:**
 ```csharp
-// ✅ CORRECT — NotFound expresses absence explicitly; the type does not lie
+// ✅ Query — express each outcome explicitly
 public async Task<QueryResult<ProjectDto>> HandleAsync(GetProjectQuery query, CancellationToken ct) {
     var project = await _projectRepository.FirstOrDefaultAsync(p => p.Id == query.ProjectId, ct);
 
@@ -316,27 +335,34 @@ public async Task<QueryResult<ProjectDto>> HandleAsync(GetProjectQuery query, Ca
     return QueryResult<ProjectDto>.Success(project.To<ProjectDto>());
 }
 
-// ✅ CORRECT — PaymentRequired instead of abusing ValidationException
-public async Task<CommandResult> HandleAsync(CreateWorkspaceCommand command, CancellationToken ct) {
+// ✅ Command — Created for new resource, NoContent for void operations
+public async Task<CommandResult<Guid>> HandleAsync(CreateWorkspaceCommand command, CancellationToken ct) {
     var user = await _userRepository.FirstOrDefaultAsync(u => u.Id == command.UserId, ct);
 
     if (user!.RemainingCredits < command.RequiredCredits)
-        return CommandResult.PaymentRequired("Insufficient credits to create a workspace");
+        return CommandResult<Guid>.PaymentRequired("Insufficient credits to create a workspace");
 
-    // ...
-    return CommandResult.Success();
+    var workspace = new Workspace { /* ... */ };
+    await _workspaceRepository.AddAsync(workspace, ct);
+    return CommandResult<Guid>.Created(workspace.Id);
 }
 ```
 
-**Using StatusCode in controllers:**
+**Using StatusCode in controllers — works the same via IDispatcher or Pipeline.Start:**
 ```csharp
 [HttpPost]
 public async Task<IActionResult> CreateWorkspace(CreateWorkspaceCommand command, CancellationToken ct) {
-    var result = await _dispatcher.DispatchCommandAsync(command, ct);
+    // Via IDispatcher
+    var result = await _dispatcher.DispatchCommandAsync<CreateWorkspaceCommand, Guid>(command, ct);
 
+    // StatusCode is always set — map it directly
     return result.IsSuccess
-        ? Ok()
-        : StatusCode((int)result.StatusCode, result.ErrorMessage);
+        ? StatusCode((int)result.StatusCode, result.Data)      // 200 or 201
+        : StatusCode((int)result.StatusCode, result.ErrorMessage); // 4xx
+
+    // Alternatively via Pipeline — identical StatusCode
+    // var result = await Pipeline.Start(command).Process<CreateWorkspaceCommand, Guid>().ExecuteAsync();
+    // return StatusCode((int)result.StatusCode!, result.IsSuccess ? result.Value : result.ErrorMessage);
 }
 ```
 

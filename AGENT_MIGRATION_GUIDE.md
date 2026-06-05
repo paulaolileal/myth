@@ -85,9 +85,12 @@ public interface IProductRepository : IReadWriteRepositoryAsync<Product> {
 ### What changed
 
 `CommandResult` and `CommandResult<TResponse>` gained:
-- `HttpStatusCode StatusCode { get; }` property (200 on Success, 400 on default Failure)
+- `HttpStatusCode StatusCode { get; }` property — always set, never null
 - `Failure(string, HttpStatusCode)` overload
-- Semantic factories: `NotFound()`, `Forbidden()`, `Unauthorized()`, `PaymentRequired()`, `Conflict()`, `UnprocessableEntity()`
+- Success factories: `Success()` → 200, `Created()` → 201, `NoContent()` → 204
+- Failure factories: `NotFound()`, `Forbidden()`, `Unauthorized()`, `PaymentRequired()`, `Conflict()`, `UnprocessableEntity()`
+
+`Result<T>` (returned by `Pipeline.Start().ExecuteAsync()`) also has `HttpStatusCode? StatusCode` and is always set when dispatched through the pipeline — `OK` (200) or `Created` (201) or `NoContent` (204) on success, the semantic code on failure.
 
 ### Why this matters
 
@@ -112,7 +115,7 @@ throw new ValidationException(new ValidationResult([
 return CommandResult.PaymentRequired("Insufficient credits to create a workspace");
 ```
 
-**Mapping table:**
+**Mapping table — failure conditions:**
 
 | Old pattern | New factory |
 |------------|-------------|
@@ -122,9 +125,17 @@ return CommandResult.PaymentRequired("Insufficient credits to create a workspace
 | `throw ValidationException(...HttpStatusCode.PaymentRequired)` | `return CommandResult.PaymentRequired("...")` |
 | `throw ValidationException(...HttpStatusCode.Conflict)` | `return CommandResult.Conflict("...")` |
 
+**Success factories — choose based on what the command did:**
+
+| Situation | Factory | HTTP |
+|-----------|---------|------|
+| Command updated/deleted, no body needed | `CommandResult.NoContent()` | 204 |
+| Command created a new resource | `CommandResult.Created()` or `CommandResult<T>.Created(id)` | 201 |
+| Command returned data | `CommandResult<T>.Success(data)` | 200 |
+
 **Step 2 — Update controllers to use result.StatusCode**
 
-If controllers currently hardcode HTTP status codes, replace with `result.StatusCode`:
+`result.StatusCode` is always set — use it directly without null checks:
 
 ```csharp
 // ❌ OLD — controller must know what each failure means
@@ -134,34 +145,35 @@ if (!result.IsSuccess)
 
 // ✅ NEW — handler communicates status code; controller just maps it
 var result = await _dispatcher.DispatchCommandAsync(command, ct);
+return StatusCode((int)result.StatusCode, result.IsSuccess ? null : result.ErrorMessage);
+
+// Or more explicitly:
 return result.IsSuccess
-    ? Ok()
-    : StatusCode((int)result.StatusCode, result.ErrorMessage);
+    ? StatusCode((int)result.StatusCode)            // 200, 201, or 204
+    : StatusCode((int)result.StatusCode, result.ErrorMessage);   // 4xx
 ```
 
-**Step 3 — StatusCode also propagates through the pipeline (Pipeline.Start)**
+**Step 3 — StatusCode propagates through the pipeline identically to IDispatcher**
 
-`result.StatusCode` is preserved whether the command is dispatched directly via `IDispatcher` or via the pipeline API. Both paths are equivalent:
+`result.StatusCode` is always set whether the command is dispatched directly via `IDispatcher` or via the pipeline API:
 
 ```csharp
-// Via IDispatcher — StatusCode preserved ✅
+// Via IDispatcher
 var result = await dispatcher.DispatchCommandAsync<CreateOrderCommand, Guid>(command);
-// result.StatusCode == HttpStatusCode.Forbidden if handler returned CommandResult.Forbidden()
+// result.StatusCode == HttpStatusCode.Created (201) if handler returned CommandResult<Guid>.Created(id)
 
-// Via Pipeline — StatusCode also preserved ✅ (fixed in Myth.Flow 1.x)
+// Via Pipeline — identical StatusCode
 var result = await Pipeline
     .Start(command)
     .Process<CreateOrderCommand, Guid>()
     .ExecuteAsync();
-// result.StatusCode == HttpStatusCode.Forbidden — same value
+// result.StatusCode == HttpStatusCode.Created (201) — same value
 
 // Controller usage is identical for both paths
 return result.IsSuccess
-    ? Ok(result.Value)
+    ? StatusCode((int)result.StatusCode!, result.Value)
     : StatusCode((int)result.StatusCode!, result.ErrorMessage);
 ```
-
-> **Note:** `result.StatusCode` is `HttpStatusCode?` (nullable) on `Result<T>`. It is `null` on success and set on failure. Cast with `(int)result.StatusCode!` only after checking `result.IsFailure`.
 
 **Files to search in the consumer project:**
 - All `*Handler.cs` / `*CommandHandler.cs` files
@@ -169,21 +181,22 @@ return result.IsSuccess
 
 ---
 
-## 3. Myth.Flow.Actions — QueryResult now has NotFound and Forbidden
+## 3. Myth.Flow.Actions — QueryResult now has semantic factories
 
 ### What changed
 
 `QueryResult<TData>` gained:
-- `HttpStatusCode StatusCode { get; }` property
-- `NotFound()`, `Forbidden()`, `Unauthorized()` semantic factories
+- `HttpStatusCode StatusCode { get; }` property — always set, never null
+- Success factory: `NoContent()` → 204 (intentionally empty result)
+- Failure factories: `NotFound()` → 404, `Forbidden()` → 403, `Unauthorized()` → 401, `PaymentRequired()` → 402, `Conflict()` → 409
 
 ### Why this matters
 
-The previous pattern `QueryResult<T>.Success(null!)` lies about the result state — a successful result with null data is semantically incorrect when the resource simply does not exist.
+The previous pattern `QueryResult<T>.Success(null!)` lies about the result state — a successful result with null data is semantically incorrect when the resource simply does not exist. And there was no way to express 204 No Content (optional resource that is intentionally absent, vs. 404 meaning the resource never existed).
 
 ### Instructions for the agent
 
-**Step 1 — Replace Success(null!) with NotFound()**
+**Step 1 — Replace Success(null!) with the appropriate factory**
 
 Search for `QueryResult` + `Success(null` in handler files:
 
@@ -194,14 +207,29 @@ if (project is null)
     return QueryResult<ProjectDto>.Success(null!);
 
 // ✅ NEW — explicit about the absent state
-var project = await _repo.FirstOrDefaultAsync(p => p.Id == query.Id, ct);
+// Use NotFound() if the resource is expected to exist but doesn't (404):
 if (project is null)
     return QueryResult<ProjectDto>.NotFound($"Project {query.Id} not found");
+
+// Use NoContent() if the absence is a normal, expected outcome (204):
+if (items.Count == 0)
+    return QueryResult<IReadOnlyList<ItemDto>>.NoContent();
 ```
+
+**Query failure factories — when to use each:**
+
+| Situation | Factory | HTTP |
+|-----------|---------|------|
+| Resource expected but not found | `NotFound("...")` | 404 |
+| Result intentionally empty | `NoContent()` | 204 |
+| User lacks access | `Forbidden()` | 403 |
+| User not authenticated | `Unauthorized()` | 401 |
+| Premium/paid feature not unlocked | `PaymentRequired("...")` | 402 |
+| State conflict prevents the query | `Conflict("...")` | 409 |
 
 **Step 2 — Update controllers that check for null Data**
 
-After replacing `Success(null!)` with `NotFound()`, the controller null check becomes redundant:
+After replacing `Success(null!)` with the correct factory, the null check in the controller is redundant:
 
 ```csharp
 // ❌ OLD — controller interprets null as not found
@@ -212,21 +240,20 @@ return Ok(result.Value);
 // ✅ NEW — handler signals not found; controller maps StatusCode
 var result = await _dispatcher.DispatchQueryAsync<GetProjectQuery, ProjectDto>(query, null, ct);
 return result.IsSuccess
-    ? Ok(result.Data)
-    : StatusCode((int)result.StatusCode, result.ErrorMessage);
+    ? StatusCode((int)result.StatusCode, result.Data)          // 200 or 204
+    : StatusCode((int)result.StatusCode, result.ErrorMessage); // 4xx
 ```
 
-The same applies when dispatching via the pipeline — `result.StatusCode` is preserved:
+The same pattern applies when dispatching via the pipeline — `result.StatusCode` is always set:
 
 ```csharp
-// Via Pipeline — StatusCode also preserved ✅
 var result = await PipelineExtensions
     .Start(query)
     .Query<GetProjectQuery, ProjectDto>()
     .ExecuteAsync();
 
 return result.IsSuccess
-    ? Ok(result.Value)
+    ? StatusCode((int)result.StatusCode!, result.Value)
     : StatusCode((int)result.StatusCode!, result.ErrorMessage);
 ```
 

@@ -102,6 +102,21 @@ public readonly struct QueryResult<TData> : IResultStatusCode {
 		new( false, default, errorMessage, null, false, metadata, HttpStatusCode.Unauthorized );
 
 	/// <summary>
+	/// Creates a result representing a payment requirement (HTTP 402 Payment Required),
+	/// for premium or paid-tier content that the caller has not unlocked.
+	/// </summary>
+	public static QueryResult<TData> PaymentRequired( string errorMessage, Dictionary<string, object>? metadata = null ) =>
+		new( false, default, errorMessage, null, false, metadata, HttpStatusCode.PaymentRequired );
+
+	/// <summary>
+	/// Creates a result representing a state conflict detected as a pre-condition for the query
+	/// (HTTP 409 Conflict). Use when the query cannot be answered because the current state
+	/// is inconsistent — e.g., the resource exists in a state that makes the query invalid.
+	/// </summary>
+	public static QueryResult<TData> Conflict( string errorMessage, Dictionary<string, object>? metadata = null ) =>
+		new( false, default, errorMessage, null, false, metadata, HttpStatusCode.Conflict );
+
+	/// <summary>
 	/// Indicates whether the query execution failed
 	/// </summary>
 	public bool IsFailure => !IsSuccess;
