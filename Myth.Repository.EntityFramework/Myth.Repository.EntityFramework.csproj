@@ -10,7 +10,6 @@
 		<RootNamespace>Myth</RootNamespace>
 		<!-- Package -->
 		<PackageId>Myth.Repository.EntityFramework</PackageId>
-		<Version>4.4.2</Version>
 		<Title>Myth Repository Entity Framework Implementation</Title>
 		<Authors>Paula Leal</Authors>
 		<Company>Myth</Company>
