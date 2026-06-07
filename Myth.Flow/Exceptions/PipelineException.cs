@@ -1,4 +1,5 @@
 using System.Net;
+using Myth.Interfaces;
 
 namespace Myth.Exceptions;
 
@@ -6,7 +7,7 @@ namespace Myth.Exceptions;
 /// Exception thrown when an error occurs during pipeline execution.
 /// Used to signal failures in pipeline steps or logic.
 /// </summary>
-public class PipelineException : Exception {
+public class PipelineException : Exception, IStatusCodeException {
 
 	/// <summary>
 	/// Gets the HTTP status code associated with this failure, if any.
@@ -30,7 +31,7 @@ public class PipelineException : Exception {
 	/// <param name="innerException">The exception that is the cause of the current exception, or a null reference.</param>
 	public PipelineException( string message, Exception? innerException )
 		: base( message, innerException ) {
-		StatusCode = ( innerException as PipelineException )?.StatusCode;
+		StatusCode = ( innerException as IStatusCodeException )?.StatusCode;
 	}
 
 	/// <summary>

@@ -559,7 +559,7 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 				}
 			}
 
-			return Result<TContext>.Failure( ex.Message, ex, ( ex as PipelineException )?.StatusCode );
+			return Result<TContext>.Failure( ex.Message, ex, ( ex as IStatusCodeException )?.StatusCode );
 		} finally {
 			activity?.Dispose( );
 		}

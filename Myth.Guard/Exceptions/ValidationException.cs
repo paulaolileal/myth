@@ -1,3 +1,5 @@
+using System.Net;
+using Myth.Interfaces;
 using Myth.Models;
 
 namespace Myth.Exceptions;
@@ -33,7 +35,7 @@ namespace Myth.Exceptions;
 /// }
 /// </code>
 /// </example>
-public sealed class ValidationException : Exception {
+public sealed class ValidationException : Exception, IStatusCodeException {
 
 	/// <summary>
 	/// Gets the validation result containing detailed information about all validation errors.
@@ -59,6 +61,9 @@ public sealed class ValidationException : Exception {
 	/// throw new ValidationException(result);
 	/// </code>
 	/// </example>
+	/// <inheritdoc/>
+	HttpStatusCode? IStatusCodeException.StatusCode => ValidationResult.StatusCode;
+
 	public ValidationException( ValidationResult result )
 		: base( BuildMessage( result ) ) {
 		ArgumentNullException.ThrowIfNull( result, nameof( ValidationResult ) );

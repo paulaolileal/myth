@@ -23,6 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Myth.Commons
+
+#### ✨ Added
+
+- **`IStatusCodeException` interface** — marks exceptions that carry an `HttpStatusCode?` so the pipeline can preserve the status code in `Result.Failure.StatusCode`. Defined in `Myth.Interfaces` and implemented by `PipelineException` (Myth.Flow) and `ValidationException` (Myth.Guard).
+
+---
+
 ### Myth.Morph
 
 #### ✨ Added
@@ -52,6 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Myth.Flow
 
 #### 🐛 Fixed
+
+- **`ValidationException` status code preserved in `Result.Failure`** — `PipelineException` now implements `IStatusCodeException` (Myth.Commons). The `PipelineException(message, innerException)` constructor now propagates `StatusCode` from any `IStatusCodeException` inner exception, not only from another `PipelineException`. `PipelineBuilder.ExecuteAsync` catch block updated to extract status code via `IStatusCodeException`, so exceptions like `ValidationException` thrown in `TapAsync` steps now carry their HTTP status code through to `Result.Failure.StatusCode`.
 
 - **Transform/TransformAsync step error attribution** — when an inner step re-executed by `Transform` throws an exception, the error message now identifies the specific inner step (`"Transform failed while re-executing inner step [1] 'TapAsync': ..."`) instead of just reporting "Transform". The original exception is preserved as `InnerException`.
 
@@ -117,6 +127,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Impact: Eliminates verbose exception logs during `AddMorph()` initialization while maintaining functionality
 
 ### Myth.Guard
+
+#### 🐛 Fixed
+
+- **`ValidationException` implements `IStatusCodeException`** — `ValidationException` now implements the `IStatusCodeException` interface from `Myth.Commons`, exposing `ValidationResult.StatusCode` as `HttpStatusCode?`. This allows the pipeline to automatically preserve the validation status code (400, 409, 422, etc.) in `Result.Failure.StatusCode` when a `ValidationException` is thrown inside a `TapAsync` step.
 
 #### ✨ Added
 
@@ -243,4 +257,14 @@ builder.For(Email, x => x
 - Simplified API (less cognitive load)
 - Native Microsoft types (better interoperability)
 - Built-in traceId for observability
+
+---
+
+### Myth.Testing
+
+#### 🐛 Fixed
+
+- **`BeStatusCodeCreated` accepts `CreatedAtRouteResult`** — previously cast to `CreatedResult`, causing `NullReferenceException` when the controller uses `CreatedAtRoute()`. Now casts to `ObjectResult` (common base class), accepting any 201 response regardless of whether it's `Created()`, `CreatedAtRoute()`, or `CreatedAtAction()`.
+
+- **`BeStatusCodeUnprocessableEntity` ObjectResult path** — typo: was comparing with `HttpStatusCode.OK` (200) instead of `HttpStatusCode.UnprocessableEntity` (422), causing assertions to always fail for `UnprocessableEntityObjectResult` responses.
 

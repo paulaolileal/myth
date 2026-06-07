@@ -76,7 +76,7 @@ public static class FluentAssertionExtensions {
 		if ( assertions.Subject is StatusCodeResult )
 			assertions.BeStatusCode<UnprocessableEntityResult>( HttpStatusCode.UnprocessableEntity );
 		else
-			assertions.BeObjectResultStatusCode<UnprocessableEntityObjectResult>( HttpStatusCode.OK );
+			assertions.BeObjectResultStatusCode<UnprocessableEntityObjectResult>( HttpStatusCode.UnprocessableEntity );
 	}
 
 	/// <summary>
@@ -87,6 +87,6 @@ public static class FluentAssertionExtensions {
 		if ( assertions.Subject is ContentResult )
 			assertions.BeContentResult( HttpStatusCode.Created );
 		else
-			assertions.BeObjectResultStatusCode<CreatedResult>( HttpStatusCode.Created );
+			assertions.BeObjectResultStatusCode<ObjectResult>( HttpStatusCode.Created );
 	}
 }
