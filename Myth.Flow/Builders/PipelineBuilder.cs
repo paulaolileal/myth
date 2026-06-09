@@ -534,18 +534,13 @@ internal sealed class PipelineBuilder<TContext> : IPipelineBuilder<TContext> {
 			// Always re-throw configuration exceptions (fail-fast)
 			throw;
 		} catch ( Exception ex ) when ( ShouldPropagateException( ex ) ) {
-			// Re-throw exceptions that should be propagated, always wrapped in PipelineException
-			// for consistency between void and typed pipelines (Transform already wraps typed pipelines)
 			activity?.SetStatus( ActivityStatusCode.Error, ex.Message );
 
 			logger?.LogError( ex,
 				"Pipeline execution failed at step [{StepIndex}] '{StepName}' with propagated exception",
 				stepIndex, currentStep?.Name ?? "Unknown" );
 
-			if ( ex is PipelineException )
-				throw;
-
-			throw new PipelineException( ex.Message, ex );
+			throw;
 		} catch ( Exception ex ) {
 			activity?.SetStatus( ActivityStatusCode.Error, ex.Message );
 
