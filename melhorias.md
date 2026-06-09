@@ -555,7 +555,7 @@ Tambem documentar que a extensao so funciona com Created() e nao com CreatedAtRo
 
 **Library:** Myth.Flow.Actions
 **Discovered:** 2026-06-07
-**Status:** ✅ RESOLVED 2026-06-09 — `PipelineBuilder.ExecuteAsync` agora envolve exceções propagáveis (ex.: `ValidationException`) em `PipelineException` quando ainda não são `PipelineException`. Pipelines tipados (`Process<TCmd,TResult>`) não são afetados — o `Transform` já envolve antes. O `ShouldPropagateException` percorre a cadeia de `InnerException`, então `PipelineException(inner: ValidationException)` continua satisfazendo o filtro.
+**Status:** ✅ RESOLVED 2026-06-09 — `Process<TCmd>()` void agora chama `.Transform(state => state)` internamente antes de adicionar seu step de dispatch, exatamente como `Process<TCmd, TResult>()` usa `.Transform()` para mudar o tipo. Isso garante que exceções dos steps anteriores (ex.: `TapAsync`) sejam envolvidas em `PipelineException` consistentemente, sem alterar o comportamento do `ExceptionFilter` no `ExecuteAsync` (que continua relançando o tipo original para pipelines sem Transform).
 **Context:** Fixing E2E test `DeleteEdge_WhenNotExists_ShouldThrowPipelineException` — test expected `PipelineException` but received `ValidationException` directly.
 
 **Current behavior:** When a pipeline step uses `.Process<TCommand>()` (the void/`ICommand` overload), a `ValidationException` thrown during `.TapAsync(validator.ValidateAsync)` propagates as `ValidationException` directly to the caller. When `.Process<TCommand, TResult>()` (the typed overload) is used, the exception is wrapped as `PipelineException` with the original `ValidationException` as inner exception.

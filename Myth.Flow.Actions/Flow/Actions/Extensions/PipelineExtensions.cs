@@ -44,7 +44,12 @@ public static class PipelineExtensions {
 		this IActionPipelineBuilder<TCommand> builder )
 		where TCommand : ICommand {
 		var internalBuilder = ( ActionPipelineBuilder<TCommand> )builder;
-		var newPipeline = internalBuilder.InnerPipeline.StepAsync( async ( state, ct ) => {
+
+		// Wrap preceding steps so exceptions propagate as PipelineException,
+		// matching the typed Process<TCmd, TResult> which does this via Transform.
+		var wrappedPipeline = internalBuilder.InnerPipeline.Transform( state => state );
+
+		var newPipeline = wrappedPipeline.StepAsync( async ( state, ct ) => {
 			var dispatcher = state.ServiceProvider!.GetRequiredService<IDispatcher>( );
 			var command = state.CurrentRequest!;
 			var result = await dispatcher.DispatchCommandAsync( command );
