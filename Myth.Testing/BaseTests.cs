@@ -177,9 +177,13 @@ public abstract class BaseTests : IDisposable, IAsyncDisposable {
 	/// <summary>
 	/// Create a new instance of the type informed getting the arguments services from test service collection
 	/// </summary>
-	/// <typeparam name="T">The type to create</typeparam>
+	/// <typeparam name="T">The concrete type to instantiate</typeparam>
 	/// <param name="args">Additional constructor arguments</param>
 	/// <returns>The instance of type</returns>
+	/// <remarks>
+	/// This method instantiates <typeparamref name="T"/> directly via constructor injection.
+	/// For interfaces or abstract types, use <see cref="GetRequiredService{TService}"/> instead.
+	/// </remarks>
 	public T CreateInstance<T>( params object[ ] args ) {
 		return ActivatorUtilities.CreateInstance<T>( _serviceProvider, args );
 	}

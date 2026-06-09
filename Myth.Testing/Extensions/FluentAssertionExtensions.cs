@@ -14,11 +14,9 @@ public static class FluentAssertionExtensions {
 	/// <param name="assertions">The fluent assertion</param>
 	/// <param name="statusCode">The status code expected</param>
 	public static void BeStatusCode<T>( this ObjectAssertions assertions, HttpStatusCode statusCode ) where T : StatusCodeResult {
-		assertions.Subject
-			.As<T>( )
-			.StatusCode
-			.Should( )
-			.Be( ( int )statusCode );
+		var result = assertions.Subject as T;
+		result.Should( ).NotBeNull( $"expected {typeof( T ).Name} but got {assertions.Subject?.GetType( ).Name ?? "null"}" );
+		result!.StatusCode.Should( ).Be( ( int )statusCode );
 	}
 
 	/// <summary>
@@ -28,11 +26,9 @@ public static class FluentAssertionExtensions {
 	/// <param name="assertions">The fluent assertion</param>
 	/// <param name="statusCode">The status code expected</param>
 	public static void BeObjectResultStatusCode<T>( this ObjectAssertions assertions, HttpStatusCode statusCode ) where T : ObjectResult {
-		assertions.Subject
-			.As<T>( )
-			.StatusCode
-			.Should( )
-			.Be( ( int )statusCode );
+		var result = assertions.Subject as T;
+		result.Should( ).NotBeNull( $"expected {typeof( T ).Name} but got {assertions.Subject?.GetType( ).Name ?? "null"}" );
+		result!.StatusCode.Should( ).Be( ( int )statusCode );
 	}
 
 	/// <summary>
@@ -42,11 +38,9 @@ public static class FluentAssertionExtensions {
 	/// <param name="assertions">The fluent assertion</param>
 	/// <param name="statusCode">The status code expected</param>
 	public static void BeContentResult( this ObjectAssertions assertions, HttpStatusCode statusCode ) {
-		assertions.Subject
-			.As<ContentResult>( )
-			.StatusCode
-			.Should( )
-			.Be( ( int )statusCode );
+		var result = assertions.Subject as ContentResult;
+		result.Should( ).NotBeNull( $"expected ContentResult but got {assertions.Subject?.GetType( ).Name ?? "null"}" );
+		result!.StatusCode.Should( ).Be( ( int )statusCode );
 	}
 
 	/// <summary>
@@ -65,7 +59,7 @@ public static class FluentAssertionExtensions {
 		if ( assertions.Subject is StatusCodeResult )
 			assertions.BeStatusCode<OkResult>( HttpStatusCode.OK );
 		else
-			assertions.BeObjectResultStatusCode<OkObjectResult>( HttpStatusCode.OK );
+			assertions.BeObjectResultStatusCode<ObjectResult>( HttpStatusCode.OK );
 	}
 
 	/// <summary>

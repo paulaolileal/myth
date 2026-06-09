@@ -509,3 +509,57 @@ Tambem documentar que a extensao so funciona com Created() e nao com CreatedAtRo
 2. OU documentar explicitamente que TapAsync nao deve ser usado para validacoes que lancam excecao — validator.ValidateAsync() deve ser chamado fora do pipeline ou em um Step dedicado.
 3. OU adicionar uma variante TapValidateAsync que propaga erros corretamente.
 
+
+## ChoosePlanCommand validator silently rejects B2C plans (plus/pro)
+
+**Library:** Myth.Guard + application validator
+**Discovered:** 2026-06-07
+**Status:** 📋 OUT OF SCOPE — `ChoosePlanCommand` e `SubscriptionPlan` são de aplicação específica, fora das bibliotecas Myth. A melhoria é responsabilidade da aplicação consumidora.
+**Context:** Trying to set up Plus/Pro subscription in E2E tests via `ChoosePlanAsync("plus")`.
+
+**Current behavior:** `ChoosePlanCommand.Validate()` uses `.Respect(plan => plan is "free" or "team" or "growth" or "enterprise")` — explicitly excluding "plus" and "pro". Meanwhile `SubscriptionPlan` constant class only defines Free/Plus/Pro values. The "team/growth/enterprise" string values the validator accepts have no corresponding `SubscriptionPlan` constant.
+
+**Problem / Gap:** Complete inconsistency between validator-accepted plan strings and the `SubscriptionPlan` constant class. B2C plans (plus/pro) must be set via Stripe webhook, not `ChoosePlanAsync`. In tests, this forces direct DB seeding via `ApplicationContext` to set Plus/Pro subscriptions.
+
+**Suggested improvement:** Document clearly that `ChoosePlanAsync` is only for B2B/enterprise onboarding, or add a test-friendly override for setting B2C subscription state.
+
+## CreateInstance<TInterface>() throws for interfaces — use concrete types
+
+**Library:** Myth.Testing (BaseTests.CreateInstance<T>)
+**Discovered:** 2026-06-07
+**Status:** ✅ RESOLVED 2026-06-09 — `GetService<T>()` e `GetRequiredService<T>()` já existem em `BaseTests`. XMLDoc de `CreateInstance<T>` atualizado para orientar o uso de `GetRequiredService<T>()` para interfaces e tipos abstratos.
+**Context:** Tried `CreateInstance<IAiCreditCouponRepository>()` to seed test data.
+
+**Current behavior:** `CreateInstance<T>()` calls `ActivatorUtilities.CreateInstance(serviceProvider, typeof(T))` which tries to INSTANTIATE the type directly rather than resolve from DI. This fails with "Instances of abstract classes cannot be created" for interfaces and abstract classes.
+
+**Problem / Gap:** To get a registered service, you must use `CreateInstance<ConcreteClass>()`. There's no `GetService<T>()` or `ServiceProvider.GetRequiredService<T>()` method exposed on BaseTests.
+
+**Suggested improvement:** Expose a `GetService<T>()` method on `BaseTests` that resolves from the service provider without instantiation (i.e., calls `ServiceProvider.GetRequiredService<T>()`). This would allow tests to resolve repository interfaces and other services cleanly.
+
+## GetPublicLinkAsync return type incompatible with BeStatusCodeOk
+
+**Library:** Myth.Extensions (FluentAssertionExtensions)
+**Discovered:** 2026-06-07
+**Status:** ✅ RESOLVED 2026-06-09 — `BeStatusCodeOk` agora usa `BeObjectResultStatusCode<ObjectResult>` em vez de `BeObjectResultStatusCode<OkObjectResult>`, aceitando qualquer `ObjectResult` com status 200. Null guards adicionados em `BeStatusCode<T>`, `BeObjectResultStatusCode<T>` e `BeContentResult` — type mismatch agora produz mensagem de assertion útil em vez de `NullReferenceException`.
+**Context:** Testing `ProjectsController.GetPublicLinkAsync` which uses `StatusCode((int)result.StatusCode, value)` pattern.
+
+**Current behavior:** `BeStatusCodeOk()` expects an `ObjectResult` as `assertions.Subject`. When the controller uses `StatusCode(int, object)` but `result.StatusCode` is a `QueryResult` status that doesn't map cleanly, the assertion throws `NullReferenceException` inside `BeObjectResultStatusCode<T>`.
+
+**Problem / Gap:** `BeStatusCodeOk()` should handle `ObjectResult` with non-200 status codes gracefully (return failed assertion, not NullReferenceException).
+
+**Suggested improvement:** Add null guard in `BeObjectResultStatusCode<T>` before accessing status code.
+
+---
+
+## Myth.Flow — Process<TCmd>() (void) does not wrap ValidationException in PipelineException
+
+**Library:** Myth.Flow.Actions
+**Discovered:** 2026-06-07
+**Status:** ✅ RESOLVED 2026-06-09 — `PipelineBuilder.ExecuteAsync` agora envolve exceções propagáveis (ex.: `ValidationException`) em `PipelineException` quando ainda não são `PipelineException`. Pipelines tipados (`Process<TCmd,TResult>`) não são afetados — o `Transform` já envolve antes. O `ShouldPropagateException` percorre a cadeia de `InnerException`, então `PipelineException(inner: ValidationException)` continua satisfazendo o filtro.
+**Context:** Fixing E2E test `DeleteEdge_WhenNotExists_ShouldThrowPipelineException` — test expected `PipelineException` but received `ValidationException` directly.
+
+**Current behavior:** When a pipeline step uses `.Process<TCommand>()` (the void/`ICommand` overload), a `ValidationException` thrown during `.TapAsync(validator.ValidateAsync)` propagates as `ValidationException` directly to the caller. When `.Process<TCommand, TResult>()` (the typed overload) is used, the exception is wrapped as `PipelineException` with the original `ValidationException` as inner exception.
+
+**Problem / Gap:** The asymmetry is invisible at the call site. Code that switches from `ICommand<T>` to `ICommand` (for void operations) silently changes the exception type visible to callers and breaks tests/middleware that catch `PipelineException`. The developer has no warning about this behavior difference.
+
+**Suggested improvement:** Ensure that `Process<TCommand>()` wraps thrown exceptions in `PipelineException` consistently with `Process<TCommand, TResult>()`. Alternatively, document this asymmetry explicitly in XMLDoc on both overloads so developers know to use `ICommand<bool>` for commands that need consistent exception wrapping.

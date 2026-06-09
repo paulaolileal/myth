@@ -61,6 +61,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### 🐛 Fixed
 
+- **`Process<TCmd>()` void now wraps propagated exceptions in `PipelineException`** — `ExecuteAsync` previously re-threw exceptions that matched `ShouldPropagateException` (e.g. `ValidationException`) as-is in void pipelines, while typed pipelines (`Process<TCmd,TResult>`) had them wrapped via `Transform`. The catch block now wraps any non-`PipelineException` in `PipelineException` before re-throwing, making void and typed pipelines consistent. The `ShouldPropagateException` filter continues to work because it walks the `InnerException` chain.
+
 - **`ValidationException` status code preserved in `Result.Failure`** — `PipelineException` now implements `IStatusCodeException` (Myth.Commons). The `PipelineException(message, innerException)` constructor now propagates `StatusCode` from any `IStatusCodeException` inner exception, not only from another `PipelineException`. `PipelineBuilder.ExecuteAsync` catch block updated to extract status code via `IStatusCodeException`, so exceptions like `ValidationException` thrown in `TapAsync` steps now carry their HTTP status code through to `Result.Failure.StatusCode`.
 
 - **Transform/TransformAsync step error attribution** — when an inner step re-executed by `Transform` throws an exception, the error message now identifies the specific inner step (`"Transform failed while re-executing inner step [1] 'TapAsync': ..."`) instead of just reporting "Transform". The original exception is preserved as `InnerException`.
@@ -101,6 +103,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added comprehensive cache management section to README.md and README.pt-br.md
 - Documented all `ICacheManager` methods with usage examples
 - Added note about limited pattern support in MemoryCache vs Redis
+
+### Myth.Testing
+
+#### 🐛 Fixed
+
+- **`BeStatusCodeOk` incompatible with `StatusCode(200, value)` result** — helper now uses `BeObjectResultStatusCode<ObjectResult>` instead of `BeObjectResultStatusCode<OkObjectResult>`, accepting any `ObjectResult` with status 200 (including `CreatedAtRoute`, `StatusCode(200, ...)`, etc.).
+
+- **Null guards in all `BeStatusCode*` base methods** — `BeStatusCode<T>`, `BeObjectResultStatusCode<T>`, and `BeContentResult` previously called `.As<T>().StatusCode` without a null check, producing an opaque `NullReferenceException` when the result type did not match the expected generic. All three now assert the cast is non-null with a descriptive message (`"expected OkObjectResult but got ObjectResult"`).
+
+#### 📝 Documentation
+
+- **`CreateInstance<T>` XMLDoc** — added remarks noting that this method instantiates concrete types only; for interfaces or abstract types, `GetRequiredService<TService>()` should be used instead.
+
+---
 
 ### Myth.DependencyInjection
 
